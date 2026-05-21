@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  mongodb-mcp:
+    image: node:20-alpine
+    command: >
+      sh -c "npx -y mongodb-mcp-server --transport http --httpPort 8080"
+    environment:
+      - MDB_MCP_CONNECTION_STRING=mongodb://mongodb:27017/pocketproducer
+    ports:
+      - "8081:8080"
+    depends_on:
+      - mongodb
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - MCP_SERVER_URL=http://mongodb-mcp:8080/mcp
+    depends_on:
+      - mongodb-mcp
+    volumes:
+      - ./backend/skills:/app/skills:ro
+
+volumes:
+  mongo_data:

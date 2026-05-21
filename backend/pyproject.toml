@@ -1,0 +1,39 @@
+[project]
+name = "pocket-producer"
+version = "0.1.0"
+description = "Agentic memory system for music creation"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+dependencies = [
+    "google-adk>=1.25.0",
+    "google-cloud-aiplatform[agent_engines,adk]>=1.114.0",
+    "google-cloud-speech>=2.25.0",
+    "google-cloud-storage>=2.18.0",
+    "google-cloud-secret-manager>=2.21.0",
+    "voyageai>=0.3.0",
+    "pymongo>=4.10.0",
+    "librosa>=0.10.2",
+    "numpy>=1.26.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "firebase-admin>=6.5.0",
+    "python-multipart>=0.0.9",
+    "pydantic>=2.9.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["agents*", "tools*", "api*", "jobs*"]
+
+[dependency-groups]
+dev = ["pytest", "pytest-cov", "pytest-asyncio", "ruff", "httpx"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

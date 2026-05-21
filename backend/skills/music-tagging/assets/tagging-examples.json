@@ -1,0 +1,691 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema",
+  "description": "Worked examples for music-tagging skill. Each example shows the input the Catcher Agent receives, the expected tagging output, and notes explaining the reasoning. These are the source of truth for how to apply the rules in practice.",
+  "examples": [
+    {
+      "id": "ex-001",
+      "category": "text-lyric-fragment",
+      "input": {
+        "type": "text",
+        "raw_text": "I keep waiting for the rain to stop, but the rain is me",
+        "audio_features": null
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["melancholy", "acceptance"],
+          "theme": ["self-identity", "mental-health"],
+          "structure_hint": "hook_candidate",
+          "style": [],
+          "potential": "high",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Strong distinctive phrase with metaphorical self-identification; the hook quality comes from the inversion in the second clause. Tagged mental-health because the metaphor is consistent with depression/anxiety self-talk."
+      }
+    },
+    {
+      "id": "ex-002",
+      "category": "text-mood-note",
+      "input": {
+        "type": "text",
+        "raw_text": "feeling sad today",
+        "audio_features": null
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["sadness"],
+          "theme": [],
+          "structure_hint": "lyric_fragment",
+          "style": [],
+          "potential": "low",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Generic mood note with no specificity. Tagged as low potential and lyric_fragment. Not refusing because there is a clear emotion to record, but the fragment offers little to build from."
+      }
+    },
+    {
+      "id": "ex-003",
+      "category": "text-verse-narrative",
+      "input": {
+        "type": "text",
+        "raw_text": "Mom's hands got smaller this year. She holds the coffee cup with both. The kitchen tile is colder than I remember.",
+        "audio_features": null
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["tenderness", "loss"],
+          "theme": ["family", "aging", "home"],
+          "structure_hint": "verse_candidate",
+          "style": [],
+          "potential": "high",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Specific sensory imagery building a scene; classic verse construction with descending observations. Tenderness comes from the careful attention; loss from the implicit awareness of decline."
+      }
+    },
+    {
+      "id": "ex-004",
+      "category": "text-chorus-candidate",
+      "input": {
+        "type": "text",
+        "raw_text": "I won't sleep tonight, I won't sleep tonight, you can tell me I should but I won't sleep tonight",
+        "audio_features": null
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["defiance", "tension"],
+          "theme": [],
+          "structure_hint": "chorus_candidate",
+          "style": [],
+          "potential": "medium",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Repetition and resolute statement mark this as chorus material. No clear subject matter so theme left empty."
+      }
+    },
+    {
+      "id": "ex-005",
+      "category": "audio-humming-no-text",
+      "input": {
+        "type": "audio",
+        "raw_text": "",
+        "audio_features": {
+          "bpm": 68,
+          "estimated_key": "Am",
+          "duration_sec": 12.4,
+          "pitch_range": [220, 392]
+        }
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": [],
+          "theme": [],
+          "structure_hint": "melodic_motif",
+          "style": [],
+          "potential": "medium",
+          "needs_user_input": true,
+          "user_prompt": "I captured a 12-second melodic motif in A minor at 68 BPM. To help me suggest next steps, can you tell me how you felt when you hummed this, or what it might become?"
+        },
+        "reasoning": "Pure instrumental humming with no transcript or user description. Minor key and slow tempo are consistent with melancholy/peacefulness but not enough signal alone. Requesting user input rather than guessing."
+      }
+    },
+    {
+      "id": "ex-006",
+      "category": "audio-humming-with-description",
+      "input": {
+        "type": "audio",
+        "raw_text": "[no transcribed lyrics]",
+        "user_description": "Late at night, kind of sad and quiet",
+        "audio_features": {
+          "bpm": 68,
+          "estimated_key": "Am",
+          "duration_sec": 12.4,
+          "pitch_range": [220, 392]
+        }
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["melancholy", "loneliness"],
+          "theme": [],
+          "structure_hint": "melodic_motif",
+          "style": [],
+          "potential": "medium",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "User-provided description ('sad and quiet', 'late at night') gives emotional context that audio features alone could not. Emotion tagged from user description; theme empty because no subject matter is indicated."
+      }
+    },
+    {
+      "id": "ex-007",
+      "category": "audio-with-clear-lyrics",
+      "input": {
+        "type": "audio",
+        "raw_text": "I drove past the old house. The light was on. Someone else's life inside.",
+        "audio_features": {
+          "bpm": 76,
+          "estimated_key": "C",
+          "duration_sec": 28.5,
+          "pitch_range": [165, 440]
+        }
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["nostalgia", "loss"],
+          "theme": ["home", "nostalgia-memory"],
+          "structure_hint": "verse_candidate",
+          "style": ["singer-songwriter"],
+          "potential": "high",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Clear narrative with specific imagery (driving past, lit window, someone else inside). Verse-length and verse-structured. Style inferred from singer-songwriter framing of solo vocal + narrative lyric."
+      }
+    },
+    {
+      "id": "ex-008",
+      "category": "audio-fully-produced-demo",
+      "input": {
+        "type": "audio",
+        "raw_text": "[Verse 1] I drove past the old house, the light was on, someone else's life inside. [Chorus] Could've been mine, could've been mine, every door I didn't walk through.",
+        "audio_features": {
+          "bpm": 92,
+          "estimated_key": "Am",
+          "duration_sec": 145.0,
+          "pitch_range": [110, 587]
+        }
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["nostalgia", "loss", "acceptance"],
+          "theme": ["home", "nostalgia-memory", "self-doubt"],
+          "structure_hint": "near_complete_demo",
+          "style": ["indie-folk", "singer-songwriter"],
+          "potential": "high",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Multiple sections (verse + chorus) with full arrangement. Chorus introduces self-doubt theme through 'could've been mine'. Style inferred from BPM/key/structure pattern consistent with indie-folk."
+      }
+    },
+    {
+      "id": "ex-009",
+      "category": "audio-pure-instrumental-rich-features",
+      "input": {
+        "type": "audio",
+        "raw_text": "",
+        "audio_features": {
+          "bpm": 142,
+          "estimated_key": "Em",
+          "duration_sec": 45.0,
+          "pitch_range": [82, 880]
+        }
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": [],
+          "theme": [],
+          "structure_hint": "melodic_motif",
+          "style": [],
+          "potential": "medium",
+          "needs_user_input": true,
+          "user_prompt": "I captured a 45-second instrumental in E minor at 142 BPM. The tempo and key suggest several possibilities (driving indie rock, fast folk, urgent ballad). What kind of energy were you going for, or what could you imagine this becoming?"
+        },
+        "reasoning": "Audio features alone are consistent with multiple emotional readings — driving minor-key could be melancholy, defiance, or tension. Refusing to guess and requesting user input."
+      }
+    },
+    {
+      "id": "ex-010",
+      "category": "emoji-only",
+      "input": {
+        "type": "emoji",
+        "raw_text": "🌧️💔"
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["melancholy", "loss"],
+          "theme": [],
+          "structure_hint": null,
+          "style": [],
+          "potential": "low",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Emoji combination unambiguously maps to melancholy + loss. Theme empty because no subject; structure null because emoji alone cannot suggest structural role."
+      }
+    },
+    {
+      "id": "ex-011",
+      "category": "very-short-fragment",
+      "input": {
+        "type": "text",
+        "raw_text": "undertow"
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": [],
+          "theme": [],
+          "structure_hint": "lyric_fragment",
+          "style": [],
+          "potential": "medium",
+          "needs_user_input": true,
+          "user_prompt": "Just the word 'undertow' — there's something evocative here. Can you say a few words about what it brings up for you, or what kind of song it could be the seed of?"
+        },
+        "reasoning": "Single word is evocative but ambiguous. Could be theme keyword (water/nature/being pulled under) or emotional shorthand. Requesting user expansion."
+      }
+    },
+    {
+      "id": "ex-012",
+      "category": "lyric-with-mixed-signals",
+      "input": {
+        "type": "audio",
+        "raw_text": "I'm fine, I'm fine, I'm fine",
+        "audio_features": {
+          "bpm": 72,
+          "estimated_key": "Am",
+          "duration_sec": 8.0,
+          "pitch_range": [220, 330]
+        }
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["melancholy", "vulnerability"],
+          "theme": ["mental-health"],
+          "structure_hint": "hook_candidate",
+          "style": [],
+          "potential": "high",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Words say 'fine' but minor key, slow tempo, and repetition enact the opposite. Reading for the emotion the creator is *enacting*, not the surface word — Principle 2 from SKILL.md."
+      }
+    },
+    {
+      "id": "ex-013",
+      "category": "bridge-candidate-text",
+      "input": {
+        "type": "text",
+        "raw_text": "And maybe — wait — maybe you knew this whole time and just didn't say it"
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["vulnerability", "acceptance"],
+          "theme": ["self-identity"],
+          "structure_hint": "bridge_candidate",
+          "style": [],
+          "potential": "high",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "The 'wait' and the reframe ('maybe you knew') are classic bridge moves — a realization that recontextualizes the rest of the song. Vulnerability comes from the directness of speaking to a 'you' about something previously unsaid."
+      }
+    },
+    {
+      "id": "ex-014",
+      "category": "ambient-pure-instrumental",
+      "input": {
+        "type": "audio",
+        "raw_text": "",
+        "user_description": "Something for the end of an album, very quiet",
+        "audio_features": {
+          "bpm": 0,
+          "estimated_key": "C",
+          "duration_sec": 95.0,
+          "pitch_range": [130, 392]
+        }
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["peacefulness", "acceptance"],
+          "theme": [],
+          "structure_hint": null,
+          "style": ["ambient"],
+          "potential": "medium",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "User description ('end of album, very quiet') paired with sustained ambient-like recording (no rhythmic BPM, long duration). Style 'ambient' confidently inferred. Structure null because ambient pieces often don't have song-section roles."
+      }
+    },
+    {
+      "id": "ex-015",
+      "category": "trap-style-hint",
+      "input": {
+        "type": "audio",
+        "raw_text": "I been up since the sun came out / I been up since the sun came out / Counting Js and counting doubt",
+        "audio_features": {
+          "bpm": 70,
+          "estimated_key": "F#m",
+          "duration_sec": 18.0,
+          "pitch_range": [220, 440]
+        }
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["tension", "vulnerability"],
+          "theme": ["mental-health", "self-doubt"],
+          "structure_hint": "verse_candidate",
+          "style": ["trap", "hip-hop"],
+          "potential": "high",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "BPM of 70 in minor key with rap-cadence vocal delivery and lyric form (triplet flow implied by phrasing) signals trap territory. The 'counting doubt' lyric points to mental-health/self-doubt themes through addiction adjacent imagery."
+      }
+    },
+    {
+      "id": "ex-016",
+      "category": "place-and-displacement",
+      "input": {
+        "type": "text",
+        "raw_text": "Two passports, one tongue. I dream in the wrong language."
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["loneliness", "vulnerability"],
+          "theme": ["displacement", "self-identity"],
+          "structure_hint": "lyric_fragment",
+          "style": [],
+          "potential": "high",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Compressed, distinctive imagery about immigrant identity. Could become a hook with development, but right now sits between lyric_fragment and hook_candidate — chose the more conservative tag. Strong potential."
+      }
+    },
+    {
+      "id": "ex-017",
+      "category": "playful-joyful",
+      "input": {
+        "type": "text",
+        "raw_text": "Maybe I shouldn't text him. Maybe I should. Maybe I shouldn't. Maybe I will."
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["playfulness", "desire"],
+          "theme": ["love-romantic", "self-doubt"],
+          "structure_hint": "verse_candidate",
+          "style": ["alt-pop"],
+          "potential": "medium",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Light, flirtatious indecision pattern. Playfulness over the structural form of self-doubt. Style alt-pop inferred from contemporary lyric register."
+      }
+    },
+    {
+      "id": "ex-018",
+      "category": "anger-and-defiance",
+      "input": {
+        "type": "audio",
+        "raw_text": "I'm done being polite. I'm done. I'm done. I'm done.",
+        "audio_features": {
+          "bpm": 138,
+          "estimated_key": "Em",
+          "duration_sec": 14.0,
+          "pitch_range": [220, 587]
+        }
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["defiance", "anger"],
+          "theme": ["self-identity"],
+          "structure_hint": "chorus_candidate",
+          "style": ["indie-rock"],
+          "potential": "high",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Strong rhythmic repetition with declarative statement. BPM and minor key in the rock range. Anger present but channeled through defiant declaration rather than purely aggressive expression."
+      }
+    },
+    {
+      "id": "ex-019",
+      "category": "user-asked-but-wrong-feature",
+      "input": {
+        "type": "text",
+        "raw_text": "Write me a chorus about my grandmother"
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": [],
+          "theme": ["family"],
+          "structure_hint": null,
+          "style": [],
+          "potential": "low",
+          "needs_user_input": true,
+          "user_prompt": "I see you'd like a song about your grandmother — that's a meaningful subject. Pocket Producer doesn't write lyrics for you, but I can help you develop ideas you bring in. Can you share a specific memory or feeling about her that I should help you build from?"
+        },
+        "reasoning": "User is asking for generation, not capture. The skill should refuse politely and redirect to the product's actual capability (working with the user's own material)."
+      }
+    },
+    {
+      "id": "ex-020",
+      "category": "audio-with-low-transcription-confidence",
+      "input": {
+        "type": "audio",
+        "raw_text": "[transcription confidence: 0.42] mumbling something about water or daughter",
+        "audio_features": {
+          "bpm": 84,
+          "estimated_key": "Dm",
+          "duration_sec": 22.0,
+          "pitch_range": [165, 440]
+        }
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": [],
+          "theme": [],
+          "structure_hint": "verse_candidate",
+          "style": [],
+          "potential": "medium",
+          "needs_user_input": true,
+          "user_prompt": "I had trouble making out the words clearly — I think I heard either 'water' or 'daughter'. Could you let me know which one, or type out the line you sang? Then I can tag this accurately."
+        },
+        "reasoning": "Transcription confidence below 60% means I can't trust the words. Structure (verse_candidate) inferable from duration and dynamics, but emotion and theme depend on knowing the actual lyric. Refusing on text content while preserving what I can confidently say."
+      }
+    },
+    {
+      "id": "ex-021",
+      "category": "audio-possible-copyright",
+      "input": {
+        "type": "audio",
+        "raw_text": "Hello darkness my old friend, I've come to talk with you again",
+        "audio_features": {
+          "bpm": 92,
+          "estimated_key": "Em",
+          "duration_sec": 18.0,
+          "pitch_range": [165, 440]
+        }
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": [],
+          "theme": [],
+          "structure_hint": null,
+          "style": [],
+          "potential": "low",
+          "needs_user_input": true,
+          "user_prompt": "This sounds like it might be from Simon & Garfunkel's 'The Sound of Silence'. Is this a reference or sketch you're using for inspiration, or am I mishearing? I want to make sure we're capturing your own work."
+        },
+        "reasoning": "Transcript matches well-known published lyrics. Cannot tag as user's original work without clarification. Refusing politely to handle the copyright sensitivity (per SKILL.md Case 4)."
+      }
+    },
+    {
+      "id": "ex-022",
+      "category": "non-english-fragment",
+      "input": {
+        "type": "text",
+        "raw_text": "妈妈的手今年变小了"
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["tenderness", "loss"],
+          "theme": ["family", "aging"],
+          "structure_hint": "verse_candidate",
+          "style": [],
+          "potential": "high",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Non-English (Chinese) lyric about mother's hands becoming smaller. Emotion and theme judgments are language-agnostic. Translation note in reasoning: 'Mom's hands got smaller this year' — direct parallel to ex-003."
+      }
+    },
+    {
+      "id": "ex-023",
+      "category": "abstract-experimental",
+      "input": {
+        "type": "audio",
+        "raw_text": "",
+        "user_description": "Sound design experiment, distorted vocal textures",
+        "audio_features": {
+          "bpm": 0,
+          "estimated_key": "C",
+          "duration_sec": 38.0,
+          "pitch_range": [60, 1200]
+        }
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["tension"],
+          "theme": [],
+          "structure_hint": null,
+          "style": ["experimental", "ambient"],
+          "potential": "medium",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "User describes it as a sound design experiment, which justifies the experimental style tag. The wide pitch range (60-1200 Hz) plus no clear BPM is consistent with sound design rather than song. Tension as a tentative single emotion based on 'distorted'."
+      }
+    },
+    {
+      "id": "ex-024",
+      "category": "lyric-with-specific-imagery",
+      "input": {
+        "type": "text",
+        "raw_text": "The pool smelled like summer 1998"
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["nostalgia"],
+          "theme": ["nostalgia-memory"],
+          "structure_hint": "lyric_fragment",
+          "style": [],
+          "potential": "high",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Specific year + specific sense memory (smell) + casual past-tense → textbook nostalgia. Could be a hook line or a verse opener depending on development."
+      }
+    },
+    {
+      "id": "ex-025",
+      "category": "verse-with-displacement-theme",
+      "input": {
+        "type": "text",
+        "raw_text": "I learned the word 'home' in two languages and neither one fits anymore. I used to count the hours backward to where I came from. Now I count them forward to nothing."
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["loneliness", "loss", "acceptance"],
+          "theme": ["displacement", "hometown", "self-identity"],
+          "structure_hint": "verse_candidate",
+          "style": [],
+          "potential": "high",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Three full lines with displacement as the central theme. The acceptance tag because the final line shifts from struggle (counting backward) to acknowledgment (counting forward to nothing) — pain processed."
+      }
+    },
+    {
+      "id": "ex-026",
+      "category": "wonder-and-transcendence",
+      "input": {
+        "type": "text",
+        "raw_text": "I'm not anyone for these few seconds and that's the most I've ever been"
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["transcendence", "wonder"],
+          "theme": ["self-identity", "purpose-meaning"],
+          "structure_hint": "bridge_candidate",
+          "style": [],
+          "potential": "high",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Ego-dissolution language ('not anyone') with a paradoxical resolution. The depth and contradiction make this typical bridge material — a perspective shift, not a verse statement."
+      }
+    },
+    {
+      "id": "ex-027",
+      "category": "joyful-activation",
+      "input": {
+        "type": "audio",
+        "raw_text": "I could do this all night, I could do this all night",
+        "audio_features": {
+          "bpm": 128,
+          "estimated_key": "C",
+          "duration_sec": 8.0,
+          "pitch_range": [330, 660]
+        }
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["joyful_activation"],
+          "theme": [],
+          "structure_hint": "chorus_candidate",
+          "style": ["pop", "synth-pop"],
+          "potential": "medium",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Repetition + tempo 128 + major key = pop chorus territory with full body joy energy. Style synth-pop tentative; user could clarify."
+      }
+    },
+    {
+      "id": "ex-028",
+      "category": "anxiety-theme",
+      "input": {
+        "type": "text",
+        "raw_text": "I check my phone, I check my phone, I check my phone, I check my phone. She hasn't read it."
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["anxiety", "vulnerability"],
+          "theme": ["mental-health", "love-romantic"],
+          "structure_hint": "verse_candidate",
+          "style": [],
+          "potential": "high",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Compulsive repetition (4x 'check my phone') plus the deflating reveal at the end is a precise depiction of anxious romantic waiting. Could become a chorus too, but the narrative reveal pattern is more verse-like."
+      }
+    },
+    {
+      "id": "ex-029",
+      "category": "social-critique",
+      "input": {
+        "type": "text",
+        "raw_text": "The whole machine is older than my grandfather and we keep paying it like a bill"
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["anger", "acceptance"],
+          "theme": ["social-critique", "class-money"],
+          "structure_hint": "lyric_fragment",
+          "style": [],
+          "potential": "medium",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Systemic critique with class/money imagery. Anger as the activating emotion, acceptance because the speaker frames it as ongoing, not actively resisted."
+      }
+    },
+    {
+      "id": "ex-030",
+      "category": "single-emoji-with-context",
+      "input": {
+        "type": "emoji",
+        "raw_text": "🌅"
+      },
+      "expected_output": {
+        "tags": {
+          "emotion": ["peacefulness", "wonder"],
+          "theme": [],
+          "structure_hint": null,
+          "style": [],
+          "potential": "low",
+          "needs_user_input": false,
+          "user_prompt": null
+        },
+        "reasoning": "Sunrise emoji maps cleanly to peacefulness + wonder. Low potential because emoji alone has no developed content, but tagging is straightforward; no refusal needed."
+      }
+    }
+  ]
+}
