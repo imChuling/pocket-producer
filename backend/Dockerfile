@@ -8,11 +8,15 @@ WORKDIR /app
 
 RUN pip install uv
 
-COPY pyproject.toml ./
-RUN uv pip install --system -e .
+COPY requirements.txt ./
+RUN uv pip install --system -r requirements.txt
 
+COPY agents/ ./agents/
+COPY tools/ ./tools/
+COPY api/ ./api/
+COPY jobs/ ./jobs/
 COPY skills/ ./skills/
-COPY . .
 
+ENV PORT=8000
 EXPOSE 8000
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD uvicorn api.main:app --host 0.0.0.0 --port $PORT

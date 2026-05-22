@@ -1,13 +1,20 @@
+import asyncio
+import logging
 import os
 import uuid
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
+from bson import ObjectId
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import storage
 from google.genai import types
 from pymongo import MongoClient
 
+from tools.embedding import generate_embedding
+
 from .auth import verify_firebase_token
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Pocket Producer API", version="0.1.0")
 
@@ -16,6 +23,7 @@ app.add_middleware(
     allow_origins=[
         "https://pocketproducer.app",
         "http://localhost:3000",
+        "https://pocket-producer-25253422868.us-central1.run.app",
     ],
     allow_methods=["GET", "POST"],
     allow_headers=["Authorization", "Content-Type"],
@@ -27,7 +35,7 @@ _mongo = None
 def get_db():
     global _mongo
     if _mongo is None:
-        _mongo = MongoClient(os.environ["MONGODB_CONNECTION_STRING"])
+        _mongo = MongoClient(os.environ["MONGODB_CONNECTION_STRING"], maxPoolSize=10)
     return _mongo["pocketproducer"]
 
 
@@ -66,6 +74,11 @@ def get_runner():
     return _runner
 
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
 @app.post("/api/ingest")
 async def ingest_fragment(
     file: UploadFile | None = File(None),
@@ -85,6 +98,12 @@ async def ingest_fragment(
         blob.upload_from_file(file.file, content_type=file.content_type)
         audio_url = f"gs://{os.environ['GCS_BUCKET']}/{blob_name}"
 
+    embed_text = text or ""
+    if embed_text:
+        embedding = generate_embedding(embed_text)
+    else:
+        embedding = None
+
     runner = get_runner()
 
     message = f"Process fragment for user_id={user_id}. "
@@ -94,30 +113,42 @@ async def ingest_fragment(
         message += f"text={text!r}. "
 
     try:
-        if _is_remote:
-            events = []
-            async for event in runner.async_stream_query(
-                user_id=user_id,
-                message=message,
-            ):
-                events.append(event)
-            return {"events": events}
-
-        session = await runner.session_service.create_session(
-            app_name="pocket_producer", user_id=user_id,
+        result = await asyncio.wait_for(
+            _run_agent(runner, user_id, message),
+            timeout=120.0,
         )
-        content = types.Content(
-            role="user", parts=[types.Part(text=message)],
-        )
-        result = None
-        async for event in runner.run_async(
-            user_id=user_id, session_id=session.id, new_message=content,
-        ):
-            if event.is_final_response() and event.content and event.content.parts:
-                result = event.content.parts[0].text
-        return {"result": result}
-    except Exception:
+        result["embedding_generated"] = embedding is not None
+        return result
+    except TimeoutError:
+        logger.error("Agent processing timed out for user %s", user_id)
+        raise HTTPException(status_code=504, detail="Agent processing timed out")
+    except Exception as exc:
+        logger.exception("Agent processing failed: %s", exc)
         raise HTTPException(status_code=502, detail="Agent processing failed")
+
+
+async def _run_agent(runner, user_id: str, message: str) -> dict:
+    if _is_remote:
+        events = []
+        async for event in runner.async_stream_query(
+            user_id=user_id, message=message,
+        ):
+            events.append(event)
+        return {"events": events}
+
+    session = await runner.session_service.create_session(
+        app_name="pocket_producer", user_id=user_id,
+    )
+    content = types.Content(
+        role="user", parts=[types.Part(text=message)],
+    )
+    result = None
+    async for event in runner.run_async(
+        user_id=user_id, session_id=session.id, new_message=content,
+    ):
+        if event.is_final_response() and event.content and event.content.parts:
+            result = event.content.parts[0].text
+    return {"result": result}
 
 
 @app.get("/api/fragments")
@@ -138,6 +169,19 @@ async def list_fragments(
     return {"fragments": fragments}
 
 
+@app.get("/api/fragments/{fragment_id}")
+async def get_fragment(fragment_id: str, user_id: str = Depends(verify_firebase_token)):
+    """Get a single fragment by ID."""
+    db = get_db()
+    fragment = db["fragments"].find_one(
+        {"_id": ObjectId(fragment_id), "user_id": user_id}, {"embedding": 0}
+    )
+    if not fragment:
+        raise HTTPException(status_code=404, detail="Fragment not found")
+    fragment["_id"] = str(fragment["_id"])
+    return fragment
+
+
 @app.get("/api/projects")
 async def list_projects(user_id: str = Depends(verify_firebase_token)):
     """List all projects for the current user."""
@@ -154,14 +198,12 @@ async def list_projects(user_id: str = Depends(verify_firebase_token)):
 async def get_project(project_id: str, user_id: str = Depends(verify_firebase_token)):
     """Get a single project with its fragments."""
     db = get_db()
-    from bson import ObjectId
-
     project = db["projects"].find_one({"_id": ObjectId(project_id), "user_id": user_id})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     project["_id"] = str(project["_id"])
 
-    fragment_ids = [ObjectId(fid) for fid in project.get("fragment_ids", [])]
+    fragment_ids = [ObjectId(f) for f in project.get("fragment_ids", [])]
     fragments = list(db["fragments"].find({"_id": {"$in": fragment_ids}}, {"embedding": 0}))
     for f in fragments:
         f["_id"] = str(f["_id"])
@@ -177,3 +219,45 @@ async def get_dna(user_id: str = Depends(verify_firebase_token)):
     if dna:
         dna["_id"] = str(dna["_id"])
     return dna or {}
+
+
+@app.post("/api/jobs/dna")
+async def trigger_dna_job(
+    authorization: str = Header(None),
+):
+    """Trigger DNA insights aggregation. Called by Cloud Scheduler or manually."""
+    _verify_job_auth(authorization)
+    from jobs.dna_insights import run
+    run()
+    return {"status": "completed"}
+
+
+@app.post("/api/jobs/resurrect")
+async def trigger_resurrect_job(
+    authorization: str = Header(None),
+):
+    """Trigger resurrect notifier. Called by Cloud Scheduler or manually."""
+    _verify_job_auth(authorization)
+    from jobs.resurrect import run
+    run()
+    return {"status": "completed"}
+
+
+def _verify_job_auth(authorization: str | None):
+    """Verify job trigger auth via shared secret or OIDC token."""
+    job_secret = os.environ.get("JOB_TRIGGER_SECRET")
+    if job_secret and authorization == f"Bearer {job_secret}":
+        return
+    if authorization and authorization.startswith("Bearer "):
+        try:
+            from google.auth.transport import requests as gauth_requests
+            from google.oauth2 import id_token
+
+            token = authorization[7:]
+            id_token.verify_oauth2_token(
+                token, gauth_requests.Request(),
+            )
+            return
+        except Exception:
+            pass
+    raise HTTPException(status_code=403, detail="Unauthorized")

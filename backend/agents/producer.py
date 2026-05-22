@@ -12,7 +12,7 @@ MCP_SERVER_URL = os.environ.get("MCP_SERVER_URL", "http://localhost:8081/mcp")
 
 producer_mcp = McpToolset(
     connection_params=StreamableHTTPConnectionParams(url=MCP_SERVER_URL),
-    tool_filter=["insert-many", "update-many", "find"],
+    tool_filter=["insert-many", "update", "find"],
 )
 
 PRODUCER_INSTRUCTION = """\
@@ -33,8 +33,8 @@ Step 4: Use rescue-scoring skill to compute or update the affected
         project's Rescue Score.
 Step 5: Generate ONE concrete next action (≤ 30 min for user) using
         musical-knowledge skill when relevant.
-Step 6: Use MongoDB MCP to insert-one the new fragment and update-one
-        the project.
+Step 6: Use MongoDB MCP tools: insert-many (for new fragments) and
+        update (for existing projects).
 
 Output a structured response with:
 - decision (join / new / bridge)

@@ -25,6 +25,9 @@ For audio inputs:
 
 For text-only inputs: skip audio tools, apply tagging rules directly.
 
+You MUST call generate_embedding as the final step for every fragment.
+Never skip it — fragments without embeddings break downstream search.
+
 Always output strict JSON matching the music-tagging skill's schema.
 Never fabricate musical features you cannot back with evidence.
 

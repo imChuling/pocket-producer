@@ -11,7 +11,7 @@ services:
   mongodb-mcp:
     image: node:20-alpine
     command: >
-      sh -c "npx -y mongodb-mcp-server --transport http --httpPort 8080"
+      sh -c "npx -y mongodb-mcp-server --transport http --httpPort 8080 --httpHost 0.0.0.0"
     environment:
       - MDB_MCP_CONNECTION_STRING=mongodb://mongodb:27017/pocketproducer
     ports:

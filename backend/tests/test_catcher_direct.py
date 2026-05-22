@@ -37,7 +37,8 @@ Categories: love, heartbreak, self-identity, mental-health, hometown, celebratio
   spirituality, social-commentary, isolation, youth, home, introspection
 
 ## Structure Hints
-verse, chorus, bridge, pre-chorus, hook, intro, outro, spoken-word, ad-lib
+verse_candidate, chorus_candidate, bridge_candidate, hook_candidate,
+melodic_motif, lyric_fragment, near_complete_demo
 
 ## Style Vocabulary
 Genres: pop, rock, hip-hop, r-and-b, country, electronic, jazz, classical, folk,
@@ -86,7 +87,7 @@ TEST_FRAGMENTS = [
     },
 ]
 
-MODELS = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3-flash-preview"]
+MODELS = [os.environ.get("TEST_GEMINI_MODEL", "gemini-2.5-flash")]
 
 
 def test_single(client: genai.Client, model: str, fragment: dict, index: int) -> bool:

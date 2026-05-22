@@ -16,8 +16,8 @@ memory_mcp = McpToolset(
 MEMORY_INSTRUCTION = """\
 You are the Memory Agent (Grounding layer) of Pocket Producer.
 
-Given a new fragment's embedding and user_id, use vector-search via the
-MongoDB MCP to find similar past fragments.
+Given a new fragment's embedding and user_id, use the aggregate tool with
+a $vectorSearch pipeline stage to find similar past fragments.
 
 For each candidate neighbor, apply the relationship-rules skill to classify
 the relationship:

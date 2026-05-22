@@ -36,7 +36,8 @@ freedom, rebellion, growth, loss-grief, friendship, nature, time, memory,
 spirituality, social-commentary, isolation, youth, home, introspection
 
 ## Structure Hints
-verse, chorus, bridge, pre-chorus, hook, intro, outro, spoken-word, ad-lib
+verse_candidate, chorus_candidate, bridge_candidate, hook_candidate,
+melodic_motif, lyric_fragment, near_complete_demo
 
 ## Style Vocabulary
 pop, rock, hip-hop, r-and-b, country, electronic, jazz, classical, folk,
@@ -66,7 +67,7 @@ TEST_INPUT = (
 def step_tag(client: genai.Client, text: str) -> dict:
     print("\n[Step 1] Catcher: tagging fragment...")
     resp = client.models.generate_content(
-        model="gemini-3.1-flash-lite",
+        model=os.environ.get("TEST_GEMINI_MODEL", "gemini-2.5-flash"),
         contents=f"Tag this fragment: {text}",
         config=genai.types.GenerateContentConfig(
             system_instruction=TAGGING_INSTRUCTION,

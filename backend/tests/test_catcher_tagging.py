@@ -56,7 +56,7 @@ def build_test_catcher() -> LlmAgent:
     ]
     return LlmAgent(
         name="catcher_test",
-        model="gemini-3.5-flash",
+        model=os.environ.get("TEST_GEMINI_MODEL", "gemini-2.5-flash"),
         instruction="""\
 You are the Catcher Agent (Perception layer) of Pocket Producer.
 

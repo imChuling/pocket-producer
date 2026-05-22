@@ -34,10 +34,13 @@ def extract_audio_features(audio_url: str) -> dict[str, Any]:
         tmp.flush()
         tmp_path = tmp.name
 
-    y, sr = librosa.load(tmp_path, sr=22050, mono=True)
-    os.unlink(tmp_path)
+    try:
+        y, sr = librosa.load(tmp_path, sr=22050, mono=True)
+    finally:
+        os.unlink(tmp_path)
 
-    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+    tempo_raw, _ = librosa.beat.beat_track(y=y, sr=sr)
+    tempo = float(np.mean(tempo_raw))
     chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
     key_index = int(chroma.mean(axis=1).argmax())
     keys = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]

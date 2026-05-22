@@ -19,13 +19,14 @@ dependencies = [
     "firebase-admin>=6.5.0",
     "python-multipart>=0.0.9",
     "pydantic>=2.9.0",
+    "requests>=2.31.0",
 ]
 
 [tool.setuptools.packages.find]
 include = ["agents*", "tools*", "api*", "jobs*"]
 
 [dependency-groups]
-dev = ["pytest", "pytest-cov", "pytest-asyncio", "ruff", "httpx"]
+dev = ["pytest", "pytest-cov", "pytest-asyncio", "ruff", "httpx", "python-dotenv"]
 
 [tool.ruff]
 line-length = 100
@@ -33,6 +34,12 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/seed_30_fragments.py" = ["E501"]
+"tests/seed_real_lyrics.py" = ["E402", "E501"]
+"tests/seed_fma_audio.py" = ["E402", "E501"]
+"tests/download_fma_tracks.py" = ["E402", "E501"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
