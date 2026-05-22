@@ -47,7 +47,7 @@ False positives damage user trust more than false negatives.
 
 memory_agent = LlmAgent(
     name="memory",
-    model="gemini-2.5-flash",
+    model=os.environ.get("MEMORY_MODEL", "gemini-2.5-flash"),
     instruction=MEMORY_INSTRUCTION,
     tools=[
         get_skill_toolset(["relationship-rules", "musical-knowledge", "refusal-rules"]),

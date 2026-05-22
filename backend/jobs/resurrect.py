@@ -19,10 +19,6 @@ def run():
     try:
         cutoff = datetime.now(UTC) - timedelta(days=SLEEP_THRESHOLD_DAYS)
 
-        sleeping_projects = list(projects.find({"last_activity_at": {"$lt": cutoff}}))
-        if not sleeping_projects:
-            return
-
         recent_fragments = list(
             fragments.find(
                 {"created_at": {"$gte": cutoff}, "embedding": {"$exists": True}},
@@ -30,8 +26,20 @@ def run():
             )
         )
 
+        user_ids = {f["user_id"] for f in recent_fragments if f.get("embedding")}
+        sleeping_by_user: dict[str, list] = {}
+        if user_ids:
+            for proj in projects.find(
+                {"user_id": {"$in": list(user_ids)}, "last_activity_at": {"$lt": cutoff}},
+            ):
+                sleeping_by_user.setdefault(proj["user_id"], []).append(proj)
+
         for frag in recent_fragments:
             if not frag.get("embedding"):
+                continue
+
+            user_sleeping = sleeping_by_user.get(frag["user_id"], [])
+            if not user_sleeping:
                 continue
 
             results = list(
@@ -53,7 +61,7 @@ def run():
                 )
             )
 
-            sleeping_project_ids = {str(p["_id"]) for p in sleeping_projects}
+            sleeping_project_ids = {str(p["_id"]) for p in user_sleeping}
             for match in results:
                 if match.get("project_id") and match["project_id"] in sleeping_project_ids:
                     notifications.insert_one(

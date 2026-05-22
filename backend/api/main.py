@@ -10,21 +10,27 @@ from google.cloud import storage
 from google.genai import types
 from pymongo import MongoClient
 
-from tools.embedding import generate_embedding
-
 from .auth import verify_firebase_token
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Pocket Producer API", version="0.1.0")
 
+_default_origins = [
+    "https://pocketproducer.app",
+    "http://localhost:3000",
+    "https://pocket-producer-25253422868.us-central1.run.app",
+]
+_env_origins = os.environ.get("CORS_ORIGINS")
+_cors_origins = (
+    [o.strip() for o in _env_origins.split(",") if o.strip()]
+    if _env_origins
+    else _default_origins
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://pocketproducer.app",
-        "http://localhost:3000",
-        "https://pocket-producer-25253422868.us-central1.run.app",
-    ],
+    allow_origins=_cors_origins,
     allow_methods=["GET", "POST"],
     allow_headers=["Authorization", "Content-Type"],
 )
@@ -98,12 +104,6 @@ async def ingest_fragment(
         blob.upload_from_file(file.file, content_type=file.content_type)
         audio_url = f"gs://{os.environ['GCS_BUCKET']}/{blob_name}"
 
-    embed_text = text or ""
-    if embed_text:
-        embedding = generate_embedding(embed_text)
-    else:
-        embedding = None
-
     runner = get_runner()
 
     message = f"Process fragment for user_id={user_id}. "
@@ -117,7 +117,6 @@ async def ingest_fragment(
             _run_agent(runner, user_id, message),
             timeout=120.0,
         )
-        result["embedding_generated"] = embedding is not None
         return result
     except TimeoutError:
         logger.error("Agent processing timed out for user %s", user_id)
@@ -129,12 +128,20 @@ async def ingest_fragment(
 
 async def _run_agent(runner, user_id: str, message: str) -> dict:
     if _is_remote:
-        events = []
+        result = None
         async for event in runner.async_stream_query(
             user_id=user_id, message=message,
         ):
-            events.append(event)
-        return {"events": events}
+            if isinstance(event, dict):
+                content = event.get("content")
+                if content:
+                    parts = content.get("parts", [])
+                    result = parts[0].get("text") if parts else str(content)
+            elif hasattr(event, "content") and event.content:
+                result = event.content
+        if result is None:
+            logger.warning("Agent produced no response for user %s (remote)", user_id)
+        return {"result": result}
 
     session = await runner.session_service.create_session(
         app_name="pocket_producer", user_id=user_id,
@@ -148,6 +155,8 @@ async def _run_agent(runner, user_id: str, message: str) -> dict:
     ):
         if event.is_final_response() and event.content and event.content.parts:
             result = event.content.parts[0].text
+    if result is None:
+        logger.warning("Agent produced no response for user %s (local)", user_id)
     return {"result": result}
 
 

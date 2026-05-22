@@ -59,7 +59,7 @@ confident answer.
 
 producer_agent = LlmAgent(
     name="producer",
-    model="gemini-2.5-pro",
+    model=os.environ.get("PRODUCER_MODEL", "gemini-2.5-pro"),
     instruction=PRODUCER_INSTRUCTION,
     sub_agents=[catcher_agent, memory_agent],
     tools=[

@@ -1,3 +1,5 @@
+import os
+
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
 
@@ -40,7 +42,7 @@ Never fabricate musical features you cannot back with evidence.
 
 catcher_agent = LlmAgent(
     name="catcher",
-    model="gemini-2.5-flash",
+    model=os.environ.get("CATCHER_MODEL", "gemini-2.5-flash"),
     instruction=CATCHER_INSTRUCTION,
     tools=[
         get_skill_toolset(["music-tagging", "refusal-rules"]),
