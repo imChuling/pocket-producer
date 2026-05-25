@@ -16,10 +16,11 @@ def run():
         for user_id in fragments.distinct("user_id"):
             fragment_count = fragments.count_documents({"user_id": user_id})
 
+            # Flat array fields: emotions, themes, style, structure_hint
             emotion_pipeline = [
-                {"$match": {"user_id": user_id}},
-                {"$unwind": "$tags.emotion"},
-                {"$group": {"_id": "$tags.emotion", "count": {"$sum": 1}}},
+                {"$match": {"user_id": user_id, "emotions": {"$exists": True}}},
+                {"$unwind": "$emotions"},
+                {"$group": {"_id": "$emotions", "count": {"$sum": 1}}},
                 {"$sort": {"count": -1}},
             ]
             emotions = list(fragments.aggregate(emotion_pipeline))
@@ -27,26 +28,26 @@ def run():
             dominant_emotion = emotions[0]["_id"] if emotions else None
 
             theme_pipeline = [
-                {"$match": {"user_id": user_id}},
-                {"$unwind": "$tags.theme"},
-                {"$group": {"_id": "$tags.theme", "count": {"$sum": 1}}},
+                {"$match": {"user_id": user_id, "themes": {"$exists": True}}},
+                {"$unwind": "$themes"},
+                {"$group": {"_id": "$themes", "count": {"$sum": 1}}},
                 {"$sort": {"count": -1}},
                 {"$limit": 10},
             ]
             themes = list(fragments.aggregate(theme_pipeline))
 
             style_pipeline = [
-                {"$match": {"user_id": user_id}},
-                {"$unwind": "$tags.style"},
-                {"$group": {"_id": "$tags.style", "count": {"$sum": 1}}},
+                {"$match": {"user_id": user_id, "style": {"$exists": True}}},
+                {"$unwind": "$style"},
+                {"$group": {"_id": "$style", "count": {"$sum": 1}}},
                 {"$sort": {"count": -1}},
                 {"$limit": 10},
             ]
             styles = list(fragments.aggregate(style_pipeline))
 
             structure_pipeline = [
-                {"$match": {"user_id": user_id}},
-                {"$group": {"_id": "$tags.structure_hint", "count": {"$sum": 1}}},
+                {"$match": {"user_id": user_id, "structure_hint": {"$exists": True, "$ne": None}}},
+                {"$group": {"_id": "$structure_hint", "count": {"$sum": 1}}},
                 {"$sort": {"count": -1}},
             ]
             structures = list(fragments.aggregate(structure_pipeline))
@@ -60,17 +61,23 @@ def run():
             hours = list(fragments.aggregate(time_pipeline))
             peak = max(hours, key=lambda x: x["count"]) if hours else None
 
+            project_count = db["projects"].count_documents({"user_id": user_id})
+            theme_dist = {t["_id"]: t["count"] for t in themes}
+            hourly_dist = {str(h["_id"]): h["count"] for h in hours}
+
             user_dna.update_one(
                 {"user_id": user_id},
                 {
                     "$set": {
-                        "fragment_count": fragment_count,
-                        "emotion_distribution": emotion_dist,
+                        "user_id": user_id,
+                        "total_fragments": fragment_count,
+                        "total_projects": project_count,
+                        "emotions": emotion_dist,
+                        "themes": theme_dist,
+                        "hourly_distribution": hourly_dist,
                         "dominant_emotion": dominant_emotion,
-                        "top_themes": themes,
                         "top_styles": styles,
                         "structure_distribution": structures,
-                        "hourly_distribution": hours,
                         "peak_hours": (
                             f"{peak['_id']}:00 - {(peak['_id'] + 2) % 24}:00"
                             if peak

@@ -65,8 +65,12 @@ def _richness(fragments: list[dict]) -> int:
 def _structure_completeness(fragments: list[dict]) -> int:
     section_types: set[str] = set()
     for f in fragments:
-        tags = f.get("tags") or {}
-        hint = tags.get("structure_hint", "")
+        # Support both nested tags.structure_hint and flat structure_hint
+        hint = f.get("structure_hint", "")
+        if not hint:
+            tags = f.get("tags")
+            if isinstance(tags, dict):
+                hint = tags.get("structure_hint", "")
         if hint:
             section_types.add(hint)
 
@@ -88,8 +92,12 @@ def _structure_completeness(fragments: list[dict]) -> int:
 def _emotional_coherence(fragments: list[dict]) -> int:
     all_emotions: list[str] = []
     for f in fragments:
-        tags = f.get("tags") or {}
-        emotions = tags.get("emotion", [])
+        # Support both flat emotions list and nested tags.emotion
+        emotions = f.get("emotions", [])
+        if not emotions:
+            tags = f.get("tags")
+            if isinstance(tags, dict):
+                emotions = tags.get("emotion", [])
         if isinstance(emotions, list):
             all_emotions.extend(emotions)
         elif isinstance(emotions, str):
@@ -164,7 +172,11 @@ def _explanation(
     n = len(fragments)
     sections = set()
     for f in fragments:
-        hint = (f.get("tags") or {}).get("structure_hint", "")
+        hint = f.get("structure_hint", "")
+        if not hint:
+            tags = f.get("tags")
+            if isinstance(tags, dict):
+                hint = tags.get("structure_hint", "")
         if hint:
             sections.add(hint)
     section_names = [s.replace("_candidate", "").replace("_", " ") for s in sections if s]

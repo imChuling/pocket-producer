@@ -1,19 +1,13 @@
 import os
 
 from google.adk.agents import LlmAgent
-from google.adk.tools.mcp_tool import McpToolset
-from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
+from google.adk.tools import FunctionTool
+
+from tools.mongodb import find_documents, insert_documents, update_document
 
 from ._skills_loader import get_skill_toolset
 from .catcher import catcher_agent
 from .memory import memory_agent
-
-MCP_SERVER_URL = os.environ.get("MCP_SERVER_URL", "http://localhost:8081/mcp")
-
-producer_mcp = McpToolset(
-    connection_params=StreamableHTTPConnectionParams(url=MCP_SERVER_URL),
-    tool_filter=["insert-many", "update", "find"],
-)
 
 PRODUCER_INSTRUCTION = """\
 You are the Producer Agent (Action layer) — root orchestrator of Pocket
@@ -33,8 +27,8 @@ Step 4: Use rescue-scoring skill to compute or update the affected
         project's Rescue Score.
 Step 5: Generate ONE concrete next action (≤ 30 min for user) using
         musical-knowledge skill when relevant.
-Step 6: Use MongoDB MCP tools: insert-many (for new fragments) and
-        update (for existing projects).
+Step 6: Use MongoDB tools: insert_documents (for new fragments) and
+        update_document (for existing projects).
 
 Output a structured response with:
 - decision (join / new / bridge)
@@ -50,6 +44,11 @@ The user's trust depends on you NOT making confident mistakes. A polite
 "I'm not sure, here are two options" is always better than a wrong
 confident answer.
 
+== Available tools ==
+- insert_documents(collection, documents) — insert docs (documents is JSON array)
+- update_document(collection, filter, update) — update a doc (filter and update are JSON)
+- find_documents(collection, filter, limit) — read docs
+
 == Boundaries (what you do NOT do) ==
 - Do NOT tag fragments directly (Catcher does that)
 - Do NOT run vector search directly (Memory does that)
@@ -59,11 +58,13 @@ confident answer.
 
 producer_agent = LlmAgent(
     name="producer",
-    model=os.environ.get("PRODUCER_MODEL", "gemini-2.5-pro"),
+    model=os.environ.get("PRODUCER_MODEL", "gemini-2.5-flash"),
     instruction=PRODUCER_INSTRUCTION,
     sub_agents=[catcher_agent, memory_agent],
     tools=[
         get_skill_toolset(["rescue-scoring", "refusal-rules", "musical-knowledge"]),
-        producer_mcp,
+        FunctionTool(insert_documents),
+        FunctionTool(update_document),
+        FunctionTool(find_documents),
     ],
 )

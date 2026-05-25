@@ -1,3 +1,4 @@
+import asyncio
 import os
 import tempfile
 from typing import Any
@@ -6,8 +7,7 @@ import requests
 from google.cloud import storage
 
 
-def extract_audio_features(audio_url: str) -> dict[str, Any]:
-    """Extract objective audio features (BPM, key, duration, pitch range) using librosa."""
+def _extract_sync(audio_url: str) -> dict[str, Any]:
     audio_service_url = os.environ.get("AUDIO_SERVICE_URL")
     if audio_service_url:
         response = requests.post(
@@ -58,3 +58,8 @@ def extract_audio_features(audio_url: str) -> dict[str, Any]:
         "duration_sec": round(duration, 2),
         "pitch_range": pitch_range,
     }
+
+
+async def extract_audio_features(audio_url: str) -> dict[str, Any]:
+    """Extract objective audio features (BPM, key, duration, pitch range) using librosa."""
+    return await asyncio.to_thread(_extract_sync, audio_url)

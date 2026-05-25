@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 import voyageai
@@ -12,13 +13,16 @@ def _get_client() -> voyageai.Client:
     return _client
 
 
-def generate_embedding(text: str) -> list[float]:
+def _embed_sync(text: str, input_type: str) -> list[float]:
+    result = _get_client().embed([text], model="voyage-3", input_type=input_type)
+    return result.embeddings[0]
+
+
+async def generate_embedding(text: str) -> list[float]:
     """Generate 1024-dim embedding using Voyage AI (MongoDB-provided)."""
-    result = _get_client().embed([text], model="voyage-3", input_type="document")
-    return result.embeddings[0]
+    return await asyncio.to_thread(_embed_sync, text, "document")
 
 
-def generate_query_embedding(query: str) -> list[float]:
+async def generate_query_embedding(query: str) -> list[float]:
     """Same model but with input_type='query' for search."""
-    result = _get_client().embed([query], model="voyage-3", input_type="query")
-    return result.embeddings[0]
+    return await asyncio.to_thread(_embed_sync, query, "query")

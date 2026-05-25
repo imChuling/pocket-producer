@@ -1,23 +1,17 @@
 import os
 
 from google.adk.agents import LlmAgent
-from google.adk.tools.mcp_tool import McpToolset
-from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
+from google.adk.tools import FunctionTool
+
+from tools.mongodb import count_documents, find_documents, vector_search
 
 from ._skills_loader import get_skill_toolset
-
-MCP_SERVER_URL = os.environ.get("MCP_SERVER_URL", "http://localhost:8081/mcp")
-
-memory_mcp = McpToolset(
-    connection_params=StreamableHTTPConnectionParams(url=MCP_SERVER_URL),
-    tool_filter=["aggregate", "find", "count"],
-)
 
 MEMORY_INSTRUCTION = """\
 You are the Memory Agent (Grounding layer) of Pocket Producer.
 
-Given a new fragment's embedding and user_id, use the aggregate tool with
-a $vectorSearch pipeline stage to find similar past fragments.
+Given a new fragment's embedding and user_id, use the vector_search tool
+to find similar past fragments in the "fragments" collection.
 
 For each candidate neighbor, apply the relationship-rules skill to classify
 the relationship:
@@ -38,6 +32,11 @@ needs_user_confirmation).
 Conservative bias: when uncertain, choose the WEAKER relationship type.
 False positives damage user trust more than false negatives.
 
+== Available tools ==
+- vector_search(collection, query_vector, user_id, limit) — $vectorSearch
+- find_documents(collection, filter, limit) — read documents
+- count_documents(collection, filter) — count documents
+
 == Boundaries (what you do NOT do) ==
 - Do NOT write to the database
 - Do NOT make creative decisions or suggestions
@@ -51,6 +50,8 @@ memory_agent = LlmAgent(
     instruction=MEMORY_INSTRUCTION,
     tools=[
         get_skill_toolset(["relationship-rules", "musical-knowledge", "refusal-rules"]),
-        memory_mcp,
+        FunctionTool(vector_search),
+        FunctionTool(find_documents),
+        FunctionTool(count_documents),
     ],
 )
