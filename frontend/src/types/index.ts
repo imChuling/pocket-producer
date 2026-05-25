@@ -1,0 +1,74 @@
+export interface Fragment {
+  _id: string;
+  user_id: string;
+  type: "audio" | "text";
+  status?: "processing" | "ready" | "error" | "timeout";
+  title?: string;
+  text?: string;
+  raw_text?: string;
+  audio_url?: string;
+  tags: string[];
+  emotions: string[];
+  themes: string[];
+  style?: string[];
+  structure_hint?: string;
+  potential?: "high" | "medium" | "low";
+  key?: string;
+  bpm?: number;
+  embedding?: number[];
+  suggestion?: string;
+  project_id?: string;
+  project_title?: string;
+  agent_result?: string;
+  created_at: string;
+}
+
+export interface ScoreBreakdown {
+  richness: number;
+  structure: number;
+  coherence: number;
+  freshness: number;
+}
+
+export interface NextAction {
+  action: string;
+  estimated_time?: string;
+}
+
+export interface Project {
+  _id: string;
+  user_id: string;
+  title: string;
+  rescue_score: number | null;
+  score_breakdown?: ScoreBreakdown;
+  next_action?: NextAction;
+  fragment_ids: string[];
+  sections: string[];
+  last_activity_at: string;
+  created_at: string;
+}
+
+export interface ProjectDetail extends Project {
+  fragments: Fragment[];
+}
+
+export interface DNAData {
+  user_id: string;
+  emotions: Record<string, number>;
+  themes: Record<string, number>;
+  hourly_distribution: Record<string, number>;
+  total_fragments: number;
+  total_projects: number;
+  updated_at: string;
+}
+
+export interface Notification {
+  _id: string;
+  type: "resurrect";
+  new_fragment_id: string;
+  sleeping_project_id: string;
+  sleeping_project_title?: string;
+  similarity_score: number;
+  created_at: string;
+  read: boolean;
+}
