@@ -11,6 +11,7 @@ from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadF
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import storage
 from google.genai import types
+from pydantic import BaseModel
 from pymongo import MongoClient
 
 from .auth import verify_firebase_token
@@ -348,7 +349,7 @@ Return JSON with these fields:
 - "emotions": list of 1-3 emotions from: [wonder, transcendence, tenderness, nostalgia, peacefulness, joyful_activation, power, tension, sadness, bittersweet, defiance, longing, melancholy, energetic, dreamy, hopeful]. Order strongest first.
 - "themes": list of 1-3 themes (noun-phrase topics, e.g. "love", "night city", "journey", "solitude", "freedom", "identity", "heartbreak")
 - "tags": list of 2-4 descriptive tags (e.g. "melody", "chord progression", "beat", "lyric", "hook idea", "vocal riff")
-- "structure_hint": one of ["verse_candidate", "chorus_candidate", "hook_candidate", "bridge_candidate", "intro_candidate", "outro_candidate", "interlude_candidate", "near_complete_demo"] or null. Infer from text patterns (repetition=chorus, narrative=verse, tonal shift=bridge) and audio duration if available.
+- "structure_hint": one of ["verse_candidate", "chorus_candidate", "hook_candidate", "bridge_candidate", "intro_candidate", "outro_candidate", "interlude_candidate", "loop_candidate", "drop_candidate", "buildup_candidate", "breakdown_candidate", "ad_lib_candidate", "near_complete_demo"] or null. Infer from text patterns (repetition=chorus, narrative=verse, tonal shift=bridge, rhythmic repetition=loop, energy peak=drop, rising tension=buildup, stripped-back=breakdown) and audio duration if available.
 - "style": list of 0-2 style tags ONLY if confident (e.g. "lo-fi", "indie folk", "trap", "R&B", "ambient"). Empty list if unsure.
 - "potential": "high" (specific imagery + structural clarity + emotional coherence), "medium" (clear emotion but lacks specificity), or "low" (generic/very short/vague)
 - "key": musical key if detectable (e.g. "Em", "C#m", "Bb"), null otherwise
@@ -682,7 +683,7 @@ async def list_fragments(
     db = get_db()
     fragments = list(
         db["fragments"]
-        .find({"user_id": user_id}, {"embedding": 0})
+        .find({"user_id": user_id}, {"embedding": 0, "edit_history": 0})
         .sort("created_at", -1)
         .limit(limit)
     )
@@ -722,6 +723,59 @@ async def update_fragment_title(
     return {"updated": True}
 
 
+class TagUpdateRequest(BaseModel):
+    tags: list[str] | None = None
+    emotions: list[str] | None = None
+    potential: str | None = None
+    structure_hint: str | None = None
+    style: list[str] | None = None
+
+
+@app.post("/api/fragments/{fragment_id}/tags")
+async def update_fragment_tags(
+    fragment_id: str,
+    body: TagUpdateRequest,
+    user_id: str = Depends(verify_firebase_token),
+):
+    """Update user-editable fields on a fragment. Tracks which fields were manually edited."""
+    db = get_db()
+    oid = _parse_object_id(fragment_id, "fragment_id")
+    fragment = db["fragments"].find_one({"_id": oid, "user_id": user_id})
+    if not fragment:
+        raise HTTPException(status_code=404, detail="Fragment not found")
+
+    update: dict = {}
+    edited_fields: list[str] = list(fragment.get("user_edited_fields", []))
+
+    if body.tags is not None:
+        update["tags"] = body.tags
+        if "tags" not in edited_fields:
+            edited_fields.append("tags")
+    if body.emotions is not None:
+        update["emotions"] = body.emotions
+        if "emotions" not in edited_fields:
+            edited_fields.append("emotions")
+    if body.potential is not None:
+        update["potential"] = body.potential
+        if "potential" not in edited_fields:
+            edited_fields.append("potential")
+    if body.structure_hint is not None:
+        update["structure_hint"] = body.structure_hint
+        if "structure_hint" not in edited_fields:
+            edited_fields.append("structure_hint")
+    if body.style is not None:
+        update["style"] = body.style
+        if "style" not in edited_fields:
+            edited_fields.append("style")
+
+    if not update:
+        return {"updated": False, "message": "No fields to update"}
+
+    update["user_edited_fields"] = edited_fields
+    db["fragments"].update_one({"_id": oid}, {"$set": update})
+    return {"updated": True, "user_edited_fields": edited_fields}
+
+
 @app.post("/api/fragments/{fragment_id}/delete")
 async def delete_fragment(fragment_id: str, user_id: str = Depends(verify_firebase_token)):
     """Delete a single fragment by ID."""
@@ -729,6 +783,110 @@ async def delete_fragment(fragment_id: str, user_id: str = Depends(verify_fireba
     oid = _parse_object_id(fragment_id, "fragment_id")
     result = db["fragments"].delete_one({"_id": oid, "user_id": user_id})
     if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Fragment not found")
+    return {"deleted": True}
+
+
+class TextEditRequest(BaseModel):
+    text: str
+
+
+@app.post("/api/fragments/{fragment_id}/edit-text")
+async def edit_fragment_text(
+    fragment_id: str,
+    body: TextEditRequest,
+    user_id: str = Depends(verify_firebase_token),
+):
+    """Edit a fragment's text content. Saves previous version to edit_history and triggers AI re-analysis."""
+    db = get_db()
+    oid = _parse_object_id(fragment_id, "fragment_id")
+    fragment = db["fragments"].find_one({"_id": oid, "user_id": user_id})
+    if not fragment:
+        raise HTTPException(status_code=404, detail="Fragment not found")
+
+    new_text = body.text.strip()
+    if not new_text:
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+
+    old_text = fragment.get("text", "")
+    if old_text == new_text:
+        return {"updated": False, "message": "No change"}
+
+    # Build history entry for the previous version
+    history_entry = {
+        "id": str(uuid.uuid4()),
+        "text": old_text,
+        "edited_at": datetime.now(UTC).isoformat(),
+    }
+
+    edited_fields = list(fragment.get("user_edited_fields", []))
+    if "text" not in edited_fields:
+        edited_fields.append("text")
+
+    db["fragments"].update_one(
+        {"_id": oid},
+        {
+            "$push": {"edit_history": {"$each": [history_entry], "$slice": -50}},
+            "$set": {
+                "text": new_text,
+                "status": "processing",
+                "user_edited_fields": edited_fields,
+            },
+        },
+    )
+
+    # Trigger AI re-analysis in background
+    asyncio.create_task(_reanalyze_fragment_text(user_id, str(oid), new_text))
+
+    return {"updated": True, "text": new_text}
+
+
+async def _reanalyze_fragment_text(user_id: str, fragment_id: str, new_text: str):
+    """Re-run AI tagging and embedding on edited text."""
+    from tools.embedding import generate_embedding
+
+    db = get_db()
+    oid = ObjectId(fragment_id)
+    try:
+        tag_task = _tag_fragment_direct(new_text)
+        embed_task = generate_embedding(new_text)
+        tag_result, embedding = await asyncio.gather(tag_task, embed_task, return_exceptions=True)
+
+        update: dict = {"status": "ready"}
+
+        if isinstance(tag_result, dict):
+            fragment = db["fragments"].find_one({"_id": oid})
+            edited_fields = fragment.get("user_edited_fields", []) if fragment else []
+            for field in ["emotions", "themes", "tags", "structure_hint", "style", "potential", "key", "bpm", "suggestion"]:
+                if field not in edited_fields and field in tag_result:
+                    update[field] = tag_result[field]
+
+        if not isinstance(embedding, Exception) and embedding:
+            update["embedding"] = embedding
+
+        db["fragments"].update_one({"_id": oid, "user_id": user_id}, {"$set": update})
+        logger.info("Re-analysis complete for fragment %s", fragment_id)
+    except Exception:
+        logger.exception("Re-analysis failed for fragment %s", fragment_id)
+        db["fragments"].update_one(
+            {"_id": oid, "user_id": user_id}, {"$set": {"status": "ready"}}
+        )
+
+
+@app.post("/api/fragments/{fragment_id}/edit-history/{entry_id}/delete")
+async def delete_edit_history_entry(
+    fragment_id: str,
+    entry_id: str,
+    user_id: str = Depends(verify_firebase_token),
+):
+    """Delete a single edit history entry."""
+    db = get_db()
+    oid = _parse_object_id(fragment_id, "fragment_id")
+    result = db["fragments"].update_one(
+        {"_id": oid, "user_id": user_id},
+        {"$pull": {"edit_history": {"id": entry_id}}},
+    )
+    if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Fragment not found")
     return {"deleted": True}
 
@@ -807,6 +965,59 @@ async def get_project(project_id: str, user_id: str = Depends(verify_firebase_to
         f["_id"] = str(f["_id"])
     project["fragments"] = fragments
     return project
+
+
+# ---------------------------------------------------------------------------
+# Notifications
+# ---------------------------------------------------------------------------
+
+@app.get("/api/notifications")
+async def list_notifications(user_id: str = Depends(verify_firebase_token)):
+    """List unread + recent notifications for the current user."""
+    db = get_db()
+    notifications = list(
+        db["notifications"]
+        .find({"user_id": user_id})
+        .sort("created_at", -1)
+        .limit(20)
+    )
+    for n in notifications:
+        n["_id"] = str(n["_id"])
+        # Resolve sleeping project title if missing
+        if not n.get("sleeping_project_title") and n.get("sleeping_project_id"):
+            proj = db["projects"].find_one(
+                {"_id": ObjectId(n["sleeping_project_id"])},
+                {"title": 1},
+            )
+            if proj:
+                n["sleeping_project_title"] = proj.get("title", "")
+    unread = sum(1 for n in notifications if not n.get("read"))
+    return {"notifications": notifications, "unread_count": unread}
+
+
+@app.post("/api/notifications/{notification_id}/read")
+async def mark_notification_read(
+    notification_id: str, user_id: str = Depends(verify_firebase_token)
+):
+    """Mark a single notification as read."""
+    db = get_db()
+    oid = _parse_object_id(notification_id, "notification_id")
+    result = db["notifications"].update_one(
+        {"_id": oid, "user_id": user_id}, {"$set": {"read": True}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    return {"updated": True}
+
+
+@app.post("/api/notifications/read-all")
+async def mark_all_notifications_read(user_id: str = Depends(verify_firebase_token)):
+    """Mark all notifications as read for the current user."""
+    db = get_db()
+    db["notifications"].update_many(
+        {"user_id": user_id, "read": False}, {"$set": {"read": True}}
+    )
+    return {"updated": True}
 
 
 # ---------------------------------------------------------------------------
