@@ -33,8 +33,8 @@ export interface Fragment {
 
 export interface ScoreBreakdown {
   richness: number;
-  structure: number;
-  coherence: number;
+  structure_completeness: number;
+  emotional_coherence: number;
   freshness: number;
 }
 

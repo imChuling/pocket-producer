@@ -11,3 +11,5 @@ firebase-admin-key.json
 *.m4a
 *.wav
 *.webm
+landing-redesign/
+frontend/test-results/

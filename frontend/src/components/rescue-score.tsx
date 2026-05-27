@@ -2,8 +2,8 @@ import type { ScoreBreakdown } from "@/types";
 
 const dimensions = [
   { key: "richness" as const, label: "RICHNESS", max: 30, gradient: "from-[#a0b5eb] to-[#6366f1]" },
-  { key: "structure" as const, label: "STRUCTURE", max: 30, gradient: "from-[#ffa773] to-[#e06030]" },
-  { key: "coherence" as const, label: "COHERENCE", max: 20, gradient: "from-[#e2c161] to-[#d4940a]" },
+  { key: "structure_completeness" as const, label: "STRUCTURE", max: 30, gradient: "from-[#ffa773] to-[#e06030]" },
+  { key: "emotional_coherence" as const, label: "COHERENCE", max: 20, gradient: "from-[#e2c161] to-[#d4940a]" },
   { key: "freshness" as const, label: "FRESHNESS", max: 20, gradient: "from-[#a7fccd] to-[#34d399]" },
 ];
 
