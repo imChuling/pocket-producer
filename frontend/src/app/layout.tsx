@@ -1,18 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, Archivo, IBM_Plex_Mono } from "next/font/google";
+import { Cormorant_Garamond, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
-import { BottomNav } from "@/components/bottom-nav";
+import { TopNav } from "@/components/top-nav";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
   subsets: ["latin"],
+  weight: ["300", "400"],
   display: "swap",
 });
 
-const archivo = Archivo({
-  variable: "--font-archivo",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  weight: ["400", "500"],
   display: "swap",
 });
 
@@ -29,7 +31,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#09090B",
+  themeColor: "#fdfcfc",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -43,14 +45,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${archivo.variable} ${ibmPlexMono.variable} h-full antialiased`}
+      className={`${cormorant.variable} ${inter.variable} ${ibmPlexMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#09090B]">
+      <body className="min-h-full flex flex-col bg-[#fdfcfc]">
         <AuthProvider>
-          <main className="flex-1 w-full max-w-[480px] mx-auto px-5 pb-20">
+          <TopNav />
+          <main className="flex-1 w-full">
             {children}
           </main>
-          <BottomNav />
         </AuthProvider>
       </body>
     </html>

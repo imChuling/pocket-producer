@@ -1,3 +1,9 @@
+export interface EditHistoryEntry {
+  id: string;
+  text: string;
+  edited_at: string;
+}
+
 export interface Fragment {
   _id: string;
   user_id: string;
@@ -19,7 +25,9 @@ export interface Fragment {
   suggestion?: string;
   project_id?: string;
   project_title?: string;
+  user_edited_fields?: string[];
   agent_result?: string;
+  edit_history?: EditHistoryEntry[];
   created_at: string;
 }
 
@@ -59,6 +67,10 @@ export interface DNAData {
   hourly_distribution: Record<string, number>;
   total_fragments: number;
   total_projects: number;
+  dominant_emotion?: string;
+  top_styles?: { _id: string; count: number }[];
+  structure_distribution?: { _id: string; count: number }[];
+  peak_hours?: string;
   updated_at: string;
 }
 

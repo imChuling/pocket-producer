@@ -56,20 +56,38 @@ export function FileDropzone({ onFile }: FileDropzoneProps) {
   return (
     <div
       {...getRootProps()}
-      className={`flex flex-col items-center justify-center gap-1.5 py-4 px-4 rounded-xl border border-dashed cursor-pointer transition-colors ${
+      className={`relative flex flex-col items-center justify-center gap-2 py-6 px-4 rounded-[20px] border border-dashed cursor-pointer transition-all duration-300 overflow-hidden ${
         isDragActive
-          ? "border-zinc-400 bg-surface-raised"
-          : "border-zinc-800 hover:border-zinc-600"
+          ? "border-sky-mint/60 scale-[1.01]"
+          : "border-chalk hover:border-slate/50"
       }`}
+      style={{
+        background: isDragActive
+          ? "linear-gradient(135deg, rgba(160,181,235,0.08), rgba(226,193,97,0.04))"
+          : "rgba(255,255,255,0.3)",
+      }}
     >
       <input {...getInputProps()} />
-      <div className="flex items-center gap-2">
+      {/* Decorative gradient on drag */}
+      {isDragActive && (
+        <div
+          className="absolute inset-0 pointer-events-none animate-fade-in"
+          style={{
+            background: "radial-gradient(circle at center, rgba(160,181,235,0.08) 0%, transparent 70%)",
+          }}
+        />
+      )}
+      <div className="relative flex items-center gap-2.5">
         {fileName ? (
-          <Check size={16} className="text-emerald-400" />
+          <div className="w-8 h-8 rounded-full bg-obsidian/5 flex items-center justify-center">
+            <Check size={14} className="text-obsidian" />
+          </div>
         ) : (
-          <Upload size={16} className="text-zinc-500" />
+          <div className="w-8 h-8 rounded-full bg-powder flex items-center justify-center">
+            <Upload size={14} className="text-slate" />
+          </div>
         )}
-        <span className="text-sm text-zinc-400">
+        <span className="text-sm text-gravel">
           {fileName
             ? fileName
             : isDragActive
@@ -78,12 +96,12 @@ export function FileDropzone({ onFile }: FileDropzoneProps) {
         </span>
       </div>
       {!fileName && !error && (
-        <span className="text-[11px] text-zinc-600">
+        <span className="text-[10px] text-slate tracking-wide">
           MP3, WAV, M4A, WebM, OGG, FLAC · Max 25 MB
         </span>
       )}
       {error && (
-        <span className="text-[11px] text-red-400">{error}</span>
+        <span className="text-[11px] text-red-500 animate-fade-in">{error}</span>
       )}
     </div>
   );

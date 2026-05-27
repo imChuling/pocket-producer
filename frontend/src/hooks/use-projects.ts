@@ -28,6 +28,9 @@ export function useProjectDetail(id: string) {
   const { user } = useAuth();
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tick, setTick] = useState(0);
+
+  const refresh = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
     if (!user) return;
@@ -35,7 +38,7 @@ export function useProjectDetail(id: string) {
       .then(setProject)
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [user, id]);
+  }, [user, id, tick]);
 
-  return { project, loading };
+  return { project, loading, refresh };
 }
