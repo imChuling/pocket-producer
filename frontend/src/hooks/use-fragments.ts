@@ -5,7 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { useAuth } from "./use-auth";
 import type { Fragment } from "@/types";
 
-const POLL_INTERVAL = 5_000; // 5 seconds
+const POLL_INTERVAL = 10_000;
 
 export function useFragments() {
   const { user } = useAuth();

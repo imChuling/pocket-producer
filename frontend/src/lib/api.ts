@@ -13,16 +13,33 @@ export async function apiFetch<T>(
   init?: RequestInit,
 ): Promise<T> {
   const headers = await authHeaders();
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: { ...headers, ...init?.headers },
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    console.error(`API error: ${res.status} ${path}`, body);
-    throw new Error(`API ${res.status}: ${body || res.statusText}`);
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(`${API_BASE}${path}`, {
+        ...init,
+        headers: { ...headers, ...init?.headers },
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        if (attempt === 0 && res.status >= 500) {
+          await new Promise((r) => setTimeout(r, 1000));
+          continue;
+        }
+        console.error(`API error: ${res.status} ${path}`, body);
+        throw new Error(`API ${res.status}: ${body || res.statusText}`);
+      }
+      return res.json();
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+      if (attempt === 0 && !lastError.message.startsWith("API ")) {
+        await new Promise((r) => setTimeout(r, 1000));
+        continue;
+      }
+      throw lastError;
+    }
   }
-  return res.json();
+  throw lastError!;
 }
 
 export async function apiPost<T>(

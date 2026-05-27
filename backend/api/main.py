@@ -4,6 +4,7 @@ import os
 import uuid
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -19,16 +20,26 @@ from .auth import verify_firebase_token
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 logger = logging.getLogger(__name__)
 
+# Shared Gemini client (singleton)
+_genai_client = None
+
+def get_genai_client():
+    global _genai_client
+    if _genai_client is None:
+        from google import genai
+        _genai_client = genai.Client(vertexai=True)
+    return _genai_client
+
 # ---------------------------------------------------------------------------
 # Lifespan: warm up runner + DB on startup so first request isn't cold
 # ---------------------------------------------------------------------------
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
-    logger.info("Warming up runner and DB connection...")
+    logger.info("Warming up DB connection and Gemini client...")
     try:
         get_db()
-        get_runner()
+        get_genai_client()
         logger.info("Warmup complete")
     except Exception:
         logger.exception("Warmup failed — will retry on first request")
@@ -52,7 +63,7 @@ _cors_origins = (
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_methods=["GET", "POST"],
+    allow_methods=["*"],
     allow_headers=["Authorization", "Content-Type"],
 )
 
@@ -120,22 +131,120 @@ def _try_parse_agent_json(text: str) -> dict | None:
 
     if not text:
         return None
-    # Agent may wrap JSON in ```json ... ``` markdown blocks
     md_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
     if md_match:
         text = md_match.group(1)
-    # Try to find a JSON object in the text
-    brace_match = re.search(r"\{.*\}", text, re.DOTALL)
-    if brace_match:
-        try:
-            return json.loads(brace_match.group())
-        except json.JSONDecodeError:
-            pass
+    # Try json.loads on the full text first
+    try:
+        result = json.loads(text)
+        if isinstance(result, dict):
+            return result
+    except json.JSONDecodeError:
+        pass
+    # Find first '{' and try progressively larger slices
+    start = text.find("{")
+    if start == -1:
+        return None
+    for end in range(len(text), start, -1):
+        if text[end - 1] == "}":
+            try:
+                result = json.loads(text[start:end])
+                if isinstance(result, dict):
+                    return result
+            except json.JSONDecodeError:
+                continue
     return None
 
 
-# Background task tracking (simple in-memory for MVP)
-_background_tasks: dict[str, dict] = {}
+# ---------------------------------------------------------------------------
+# Skill loader — injects music-tagging skill content as Gemini system context
+# ---------------------------------------------------------------------------
+
+_SKILLS_DIR = Path(__file__).resolve().parent.parent / "skills"
+_tagging_skill_cache: str | None = None
+
+
+def _load_tagging_skill_context() -> str:
+    """Load music-tagging skill files into a single system instruction string.
+
+    Cached after first load. Includes:
+    - SKILL.md (rules, principles, procedure)
+    - emotion-taxonomy.md (20 emotion tags with definitions)
+    - theme-taxonomy.md (24 theme categories with decision tree)
+    - structure-hints.md (7 structure types with decision rules)
+    - style-vocabulary.md (18 style tags with evidence criteria)
+    - A selection of worked examples from tagging-examples.json
+    """
+    global _tagging_skill_cache
+    if _tagging_skill_cache is not None:
+        return _tagging_skill_cache
+
+    skill_dir = _SKILLS_DIR / "music-tagging"
+    parts: list[str] = []
+
+    # Core rules and procedure
+    skill_md = skill_dir / "SKILL.md"
+    if skill_md.exists():
+        content = skill_md.read_text(encoding="utf-8")
+        # Strip the YAML frontmatter
+        if content.startswith("---"):
+            end = content.find("---", 3)
+            if end != -1:
+                content = content[end + 3:].strip()
+        parts.append(content)
+
+    # Reference documents
+    refs_dir = skill_dir / "references"
+    for ref_name in [
+        "emotion-taxonomy.md",
+        "theme-taxonomy.md",
+        "structure-hints.md",
+        "style-vocabulary.md",
+    ]:
+        ref_path = refs_dir / ref_name
+        if ref_path.exists():
+            parts.append(ref_path.read_text(encoding="utf-8"))
+
+    # Selected examples (include up to 10 representative ones)
+    import json as _json
+
+    examples_path = skill_dir / "assets" / "tagging-examples.json"
+    if examples_path.exists():
+        try:
+            data = _json.loads(examples_path.read_text(encoding="utf-8"))
+            examples = data.get("examples", [])
+            # Pick a representative subset covering different categories
+            selected_ids = [
+                "ex-001",  # text lyric fragment (melancholy, hook)
+                "ex-003",  # verse narrative (tenderness, family)
+                "ex-005",  # pure humming, needs_user_input
+                "ex-007",  # audio with lyrics (nostalgia, singer-songwriter)
+                "ex-012",  # mixed signals ("I'm fine" in minor key)
+                "ex-015",  # trap style hint
+                "ex-018",  # anger/defiance, indie-rock
+                "ex-022",  # non-English (Chinese)
+                "ex-025",  # displacement theme
+                "ex-028",  # anxiety, mental-health
+            ]
+            selected = [e for e in examples if e.get("id") in selected_ids]
+            if selected:
+                parts.append(
+                    "# Worked Examples\n\n"
+                    "These examples show how to apply the rules above. "
+                    "Use them as calibration for ambiguous cases.\n\n"
+                    + _json.dumps(selected, indent=2, ensure_ascii=False)
+                )
+        except Exception:
+            pass  # Skip examples if loading fails
+
+    _tagging_skill_cache = "\n\n---\n\n".join(parts)
+    logger.info(
+        "Loaded tagging skill context: %d chars", len(_tagging_skill_cache)
+    )
+    return _tagging_skill_cache
+
+
+_background_tasks: set[asyncio.Task] = set()
 
 
 @app.get("/health")
@@ -202,10 +311,11 @@ async def ingest_fragment(
     result = db["fragments"].insert_one(fragment_doc)
     fragment_id = str(result.inserted_id)
 
-    # Fire-and-forget background Agent processing
-    asyncio.create_task(
+    task = asyncio.create_task(
         _process_fragment_background(user_id, fragment_id, audio_url, text)
     )
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
     return {
         "fragment_id": fragment_id,
@@ -217,7 +327,14 @@ async def ingest_fragment(
 async def _process_fragment_background(
     user_id: str, fragment_id: str, audio_url: str | None, text: str | None
 ):
-    """Fast path: direct Gemini call + embedding, no multi-agent overhead."""
+    """Fast path: direct Gemini multimodal call + embedding, no multi-agent overhead.
+
+    For audio fragments: Gemini receives the actual audio file (multimodal) plus
+    librosa-extracted features as supplementary numbers. No separate transcription
+    step needed — Gemini hears the audio directly.
+
+    For text fragments: Gemini receives text only with skill context.
+    """
     import json
     import time
 
@@ -226,34 +343,29 @@ async def _process_fragment_background(
     db = get_db()
     t0 = time.monotonic()
     try:
-        # --- Phase 1: audio pre-processing (parallel, skip for text) ---
-        transcript = None
+        # --- Phase 1: audio feature extraction (skip transcription — Gemini hears directly) ---
         features = None
         if audio_url:
             from tools.audio_features import extract_audio_features
-            from tools.transcription import transcribe_audio
 
-            logger.info("Pre-processing audio for %s", fragment_id)
-            transcript_result, features_result = await asyncio.gather(
-                transcribe_audio(audio_url),
-                extract_audio_features(audio_url),
-                return_exceptions=True,
-            )
-            if not isinstance(transcript_result, Exception):
-                transcript = transcript_result
-            else:
-                logger.warning("Transcription failed: %s", transcript_result)
-            if not isinstance(features_result, Exception):
-                features = features_result
-            else:
-                logger.warning("Audio features failed: %s", features_result)
+            logger.info("Extracting audio features for %s", fragment_id)
+            try:
+                features = await extract_audio_features(audio_url)
+            except Exception as e:
+                logger.warning("Audio features extraction failed: %s", e)
             logger.info("Audio pre-processing done in %.1fs", time.monotonic() - t0)
 
-        fragment_text = text or transcript or ""
+        # --- Phase 2: Gemini tagging (multimodal for audio) + embedding in parallel ---
+        # For audio: pass GCS URI so Gemini hears the actual recording
+        # For text: pass text directly
+        tag_task = _tag_fragment_direct(
+            text=text or "",
+            audio_features=features,
+            audio_gcs_uri=audio_url,  # Gemini will listen to this directly
+        )
 
-        # --- Phase 2: single Gemini call for tagging + embedding in parallel ---
-        tag_task = _tag_fragment_direct(fragment_text, features)
-        embed_task = generate_embedding(fragment_text) if fragment_text else None
+        # Start embedding generation in parallel if we have text
+        embed_task = generate_embedding(text) if text else None
 
         if embed_task:
             tag_result, embedding = await asyncio.gather(tag_task, embed_task)
@@ -261,22 +373,32 @@ async def _process_fragment_background(
             tag_result = await tag_task
             embedding = None
 
-        # If no text was available (pure audio, transcription failed), build
-        # an embedding from the tag result so Memory phase can still work.
-        if not embedding and tag_result:
-            tag_text_parts = []
-            for k in ("emotions", "themes", "tags", "style"):
-                vals = tag_result.get(k, [])
-                if isinstance(vals, list) and vals:
-                    tag_text_parts.extend(vals)
-            if tag_result.get("suggestion"):
-                tag_text_parts.append(tag_result["suggestion"])
-            if tag_text_parts:
+        # For audio fragments: use Gemini's transcript (if returned) for embedding
+        transcript = None
+        if tag_result and tag_result.get("transcript"):
+            transcript = tag_result.pop("transcript")  # Remove from tags, store separately
+
+        # Generate embedding from transcript or tag-derived text if we don't have one yet
+        if not embedding:
+            embed_source = transcript  # Gemini's heard transcript
+            if not embed_source and tag_result:
+                # Fallback: build embedding from tag metadata
+                tag_text_parts = []
+                for k in ("emotions", "themes", "tags", "style"):
+                    vals = tag_result.get(k, [])
+                    if isinstance(vals, list) and vals:
+                        tag_text_parts.extend(vals)
+                if tag_result.get("suggestion"):
+                    tag_text_parts.append(tag_result["suggestion"])
+                embed_source = " ".join(tag_text_parts) if tag_text_parts else None
+
+            if embed_source:
                 try:
-                    embedding = await generate_embedding(" ".join(tag_text_parts))
-                    logger.info("Generated embedding from tags for %s", fragment_id)
+                    embedding = await generate_embedding(embed_source)
+                    logger.info("Generated embedding from %s for %s",
+                                "transcript" if transcript else "tags", fragment_id)
                 except Exception:
-                    logger.warning("Tag-based embedding failed for %s", fragment_id)
+                    logger.warning("Embedding generation failed for %s", fragment_id)
 
         # --- Phase 3: write everything back to the fragment ---
         final_update: dict = {"status": "ready"}
@@ -331,42 +453,139 @@ async def _process_fragment_background(
         )
 
 
-async def _tag_fragment_direct(text: str, audio_features: object = None) -> dict | None:
-    """Single Gemini call for tagging — no agent overhead."""
+def _guess_audio_mime_type(gcs_uri: str) -> str:
+    """Guess MIME type from GCS URI file extension."""
+    ext = gcs_uri.rsplit(".", 1)[-1].lower() if "." in gcs_uri else ""
+    mime_map = {
+        "mp3": "audio/mpeg",
+        "wav": "audio/wav",
+        "m4a": "audio/mp4",
+        "webm": "audio/webm",
+        "ogg": "audio/ogg",
+        "flac": "audio/flac",
+        "aac": "audio/aac",
+        "opus": "audio/opus",
+    }
+    return mime_map.get(ext, "audio/webm")  # Default to webm (MediaRecorder default)
+
+
+async def _tag_fragment_direct(
+    text: str,
+    audio_features: object = None,
+    audio_gcs_uri: str | None = None,
+) -> dict | None:
+    """Gemini tagging with full skill context. Multimodal for audio fragments.
+
+    When audio_gcs_uri is provided, Gemini receives the actual audio file and
+    can hear melody, timbre, dynamics, vocal style — far richer than text alone.
+    """
     import json
 
-    from google import genai
+    # Load skill knowledge as system instruction (cached after first call)
+    system_context = _load_tagging_skill_context()
 
+    # Build the supplementary info string with interpretation hints
     features_str = ""
     if audio_features:
-        features_str = f"\nAudio features: {json.dumps(audio_features, default=str)}"
+        features_str = (
+            f"\nLibrosa-detected audio features: {json.dumps(audio_features, default=str)}"
+            "\nInterpretation guide for enriched features:"
+            "\n- energy_curve: RMS loudness over time segments (low→high = build-up, high→low = fade-out, spike = drop/climax)"
+            "\n- brightness: spectral centroid in Hz (low <1500 = warm/dark/mellow, high >3000 = bright/harsh/crisp)"
+            "\n- onset_density: note attacks per second (low <2 = sustained/ambient, high >6 = rhythmically dense/percussive)"
+            "\n- estimated_mode: major/minor from chroma correlation (use YOUR ears to override if the audio tells you differently)"
+        )
 
-    prompt = f"""You are an experienced music producer assistant. Analyze this music fragment and return ONLY a JSON object.
+    # Construct the prompt based on whether we have audio
+    if audio_gcs_uri:
+        # Multimodal: Gemini will listen to the audio directly
+        prompt_text = f"""Tag this music fragment. You are receiving the ACTUAL AUDIO recording — listen to it carefully.
+
+Follow the tagging procedure from your system instructions exactly. Pay attention to:
+- What you HEAR: melody, timbre, vocal style, dynamics, arrangement, rhythm feel
+- Any lyrics or vocals you can make out
+- The overall energy and emotional arc of the recording
+{features_str}
+{f'Additional text context from the creator: {text!r}' if text else ''}
+
+Return ONLY a JSON object with these fields (flat structure, not nested):
+- "emotions": list of 1-3 emotion tags from the emotion taxonomy. Order strongest first.
+- "themes": list of 1-3 theme tags from the theme taxonomy. Empty [] if no discernible subject.
+- "tags": list of 2-4 descriptive content tags (e.g. "melody", "chord progression", "lyric", "hook idea", "vocal riff", "beat sketch", "piano motif", "guitar riff").
+- "structure_hint": one value from the structure hints reference, or null.
+- "style": list of 0-2 style tags from the style vocabulary. Empty [] if not confident.
+- "potential": "high", "medium", or "low" per the potential rating rules.
+- "key": musical key you detect from the audio (e.g. "Em", "C#m"), null if unclear. Prefer your own hearing over librosa if they conflict.
+- "bpm": BPM you detect, null if unclear. Prefer librosa's value if provided.
+- "suggestion": a concrete, actionable next-step for the creator (1-2 sentences, same language as any lyrics/text). Be specific to what you HEARD.
+- "transcript": if you can make out any sung/spoken words, include them here as a string. null if purely instrumental.
+
+ONLY output the JSON object. No markdown wrapping, no explanation outside the JSON."""
+    else:
+        # Text-only: no audio to listen to
+        prompt_text = f"""Tag this music fragment. Follow the tagging procedure from your system instructions exactly.
 
 Fragment text: {text!r}{features_str}
 
-Return JSON with these fields:
-- "emotions": list of 1-3 emotions from: [wonder, transcendence, tenderness, nostalgia, peacefulness, joyful_activation, power, tension, sadness, bittersweet, defiance, longing, melancholy, energetic, dreamy, hopeful]. Order strongest first.
-- "themes": list of 1-3 themes (noun-phrase topics, e.g. "love", "night city", "journey", "solitude", "freedom", "identity", "heartbreak")
-- "tags": list of 2-4 descriptive tags (e.g. "melody", "chord progression", "beat", "lyric", "hook idea", "vocal riff")
-- "structure_hint": one of ["verse_candidate", "chorus_candidate", "hook_candidate", "bridge_candidate", "intro_candidate", "outro_candidate", "interlude_candidate", "loop_candidate", "drop_candidate", "buildup_candidate", "breakdown_candidate", "ad_lib_candidate", "near_complete_demo"] or null. Infer from text patterns (repetition=chorus, narrative=verse, tonal shift=bridge, rhythmic repetition=loop, energy peak=drop, rising tension=buildup, stripped-back=breakdown) and audio duration if available.
-- "style": list of 0-2 style tags ONLY if confident (e.g. "lo-fi", "indie folk", "trap", "R&B", "ambient"). Empty list if unsure.
-- "potential": "high" (specific imagery + structural clarity + emotional coherence), "medium" (clear emotion but lacks specificity), or "low" (generic/very short/vague)
-- "key": musical key if detectable (e.g. "Em", "C#m", "Bb"), null otherwise
-- "bpm": BPM if detectable, null otherwise
-- "suggestion": a concrete, actionable next-step for the creator (1-2 sentences in the same language as the fragment). Be specific to THIS fragment. Examples: "Try layering a soft pad underneath to fill out the low end", "This lyric has strong imagery — consider building a verse melody in Am around it".
+Return ONLY a JSON object with these fields (flat structure, not nested):
+- "emotions": list of 1-3 emotion tags from the emotion taxonomy. Order strongest first.
+- "themes": list of 1-3 theme tags from the theme taxonomy. Empty [] if no discernible subject.
+- "tags": list of 2-4 descriptive content tags (e.g. "melody", "chord progression", "lyric", "hook idea", "vocal riff", "beat sketch").
+- "structure_hint": one value from the structure hints reference, or null.
+- "style": list of 0-2 style tags from the style vocabulary. Empty [] if not confident.
+- "potential": "high", "medium", or "low" per the potential rating rules.
+- "key": musical key if detectable (e.g. "Em", "C#m"), null otherwise.
+- "bpm": BPM if detectable, null otherwise.
+- "suggestion": a concrete, actionable next-step for the creator (1-2 sentences, same language as the fragment). Be specific to THIS fragment's content and potential.
 
-ONLY output the JSON object, no markdown, no explanation."""
+ONLY output the JSON object. No markdown wrapping, no explanation outside the JSON."""
 
     try:
-        client = genai.Client(vertexai=True)
+        client = get_genai_client()
+
+        # Build content parts — multimodal if audio available
+        if audio_gcs_uri:
+            mime_type = _guess_audio_mime_type(audio_gcs_uri)
+            contents = [
+                types.Part.from_uri(file_uri=audio_gcs_uri, mime_type=mime_type),
+                types.Part.from_text(prompt_text),
+            ]
+        else:
+            contents = prompt_text
+
         response = await asyncio.to_thread(
             client.models.generate_content,
             model="gemini-2.5-flash",
-            contents=prompt,
+            contents=contents,
+            config=types.GenerateContentConfig(
+                system_instruction=system_context,
+                temperature=0.3,  # Lower temperature for more consistent tagging
+            ),
         )
         result_text = response.text.strip()
         parsed = _try_parse_agent_json(result_text)
+        if not parsed:
+            logger.warning("Failed to parse tagging response: %s", result_text[:200])
+            return None
+
+        # Handle case where model returns nested format from skill examples
+        # (skill examples use {"tags": {"emotion": ...}} but we need flat)
+        if "tags" in parsed and isinstance(parsed["tags"], dict):
+            nested = parsed["tags"]
+            flat: dict = {}
+            flat["emotions"] = nested.get("emotion", [])
+            flat["themes"] = nested.get("theme", [])
+            flat["structure_hint"] = nested.get("structure_hint")
+            flat["style"] = nested.get("style", [])
+            flat["potential"] = nested.get("potential", "medium")
+            flat["tags"] = []  # No content tags in nested format
+            # Preserve key/bpm/suggestion/transcript from outer level
+            flat["key"] = parsed.get("key")
+            flat["bpm"] = parsed.get("bpm")
+            flat["suggestion"] = parsed.get("suggestion")
+            flat["transcript"] = parsed.get("transcript")
+            parsed = flat
+
         return parsed
     except Exception:
         logger.exception("Direct tagging failed")
@@ -381,7 +600,6 @@ async def _memory_and_project(
     import json
     import time
 
-    from google import genai
     from tools.rescue_score import compute_rescue_score
 
     # 4a. Vector search for similar fragments (skip self)
@@ -533,8 +751,6 @@ async def _generate_project_title(
     themes: list[str], emotions: list[str]
 ) -> str:
     """Generate a short creative project title from themes and emotions."""
-    from google import genai
-
     context = f"themes: {themes}, emotions: {emotions}"
     prompt = f"""Generate a short, evocative project title (2-4 words) for a music project with these characteristics:
 {context}
@@ -543,7 +759,7 @@ The title should feel like a working album/song title — poetic but not pretent
 Return ONLY the title, nothing else."""
 
     try:
-        client = genai.Client(vertexai=True)
+        client = get_genai_client()
         response = await asyncio.to_thread(
             client.models.generate_content,
             model="gemini-2.5-flash",
@@ -565,8 +781,6 @@ async def _generate_next_action(
     fragments: list[dict], score_data: dict, sections: list[str]
 ) -> dict | None:
     """Generate a concrete next action for the project."""
-    from google import genai
-
     frag_summary = []
     for f in fragments[:6]:
         info = f.get("type", "text")
@@ -593,7 +807,7 @@ Return ONLY a JSON object: {{"action": "...", "estimated_time": "15 min"}}
 The action should be 1-2 sentences, specific and practical. Use the same language as the fragment content."""
 
     try:
-        client = genai.Client(vertexai=True)
+        client = get_genai_client()
         response = await asyncio.to_thread(
             client.models.generate_content,
             model="gemini-2.5-flash",
@@ -836,7 +1050,9 @@ async def edit_fragment_text(
     )
 
     # Trigger AI re-analysis in background
-    asyncio.create_task(_reanalyze_fragment_text(user_id, str(oid), new_text))
+    task = asyncio.create_task(_reanalyze_fragment_text(user_id, str(oid), new_text))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
     return {"updated": True, "text": new_text}
 
@@ -869,7 +1085,8 @@ async def _reanalyze_fragment_text(user_id: str, fragment_id: str, new_text: str
     except Exception:
         logger.exception("Re-analysis failed for fragment %s", fragment_id)
         db["fragments"].update_one(
-            {"_id": oid, "user_id": user_id}, {"$set": {"status": "ready"}}
+            {"_id": oid, "user_id": user_id},
+            {"$set": {"status": "ready"}, "$unset": {"embedding": ""}},
         )
 
 
@@ -892,9 +1109,13 @@ async def delete_edit_history_entry(
 
 
 @app.get("/api/fragments/{fragment_id}/audio")
-async def stream_audio(fragment_id: str, user_id: str = Depends(verify_firebase_token)):
-    """Stream audio file from GCS for playback."""
-    from fastapi.responses import StreamingResponse
+async def stream_audio(
+    fragment_id: str,
+    user_id: str = Depends(verify_firebase_token),
+    range: str | None = Header(None),
+):
+    """Stream audio file from GCS with Range support for seeking."""
+    from fastapi.responses import Response, StreamingResponse
 
     db = get_db()
     oid = _parse_object_id(fragment_id, "fragment_id")
@@ -904,22 +1125,55 @@ async def stream_audio(fragment_id: str, user_id: str = Depends(verify_firebase_
     if not fragment or not fragment.get("audio_url"):
         raise HTTPException(status_code=404, detail="Audio not found")
 
-    gcs_uri = fragment["audio_url"]  # gs://bucket/path
+    gcs_uri = fragment["audio_url"]
     parts = gcs_uri.replace("gs://", "").split("/", 1)
     bucket_name, blob_name = parts[0], parts[1]
 
     gcs_client = storage.Client()
     blob = gcs_client.bucket(bucket_name).blob(blob_name)
-    if not blob.exists():
+    blob.reload()
+    file_size = blob.size
+    if not file_size:
         raise HTTPException(status_code=404, detail="Audio file not found in storage")
 
-    # Guess content type from extension
     ext = blob_name.rsplit(".", 1)[-1].lower() if "." in blob_name else ""
     content_types = {
         "mp3": "audio/mpeg", "wav": "audio/wav", "m4a": "audio/mp4",
         "webm": "audio/webm", "ogg": "audio/ogg", "flac": "audio/flac",
     }
     content_type = content_types.get(ext, "audio/mpeg")
+
+    if range:
+        range_spec = range.replace("bytes=", "")
+        range_start_str, range_end_str = range_spec.split("-", 1)
+        range_start = int(range_start_str) if range_start_str else 0
+        range_end = int(range_end_str) if range_end_str else file_size - 1
+        range_end = min(range_end, file_size - 1)
+        content_length = range_end - range_start + 1
+
+        def stream_range():
+            with blob.open("rb") as f:
+                f.seek(range_start)
+                remaining = content_length
+                while remaining > 0:
+                    chunk_size = min(64 * 1024, remaining)
+                    data = f.read(chunk_size)
+                    if not data:
+                        break
+                    remaining -= len(data)
+                    yield data
+
+        return StreamingResponse(
+            stream_range(),
+            status_code=206,
+            media_type=content_type,
+            headers={
+                "Content-Range": f"bytes {range_start}-{range_end}/{file_size}",
+                "Accept-Ranges": "bytes",
+                "Content-Length": str(content_length),
+                "Cache-Control": "private, max-age=3600",
+            },
+        )
 
     def stream():
         with blob.open("rb") as f:
@@ -929,7 +1183,11 @@ async def stream_audio(fragment_id: str, user_id: str = Depends(verify_firebase_
     return StreamingResponse(
         stream(),
         media_type=content_type,
-        headers={"Accept-Ranges": "bytes", "Cache-Control": "private, max-age=3600"},
+        headers={
+            "Accept-Ranges": "bytes",
+            "Content-Length": str(file_size),
+            "Cache-Control": "private, max-age=3600",
+        },
     )
 
 
@@ -942,7 +1200,7 @@ async def list_projects(user_id: str = Depends(verify_firebase_token)):
     """List all projects for the current user."""
     db = get_db()
     projects = list(
-        db["projects"].find({"user_id": user_id}).sort("rescue_score", -1).limit(50)
+        db["projects"].find({"user_id": user_id}).sort([("rescue_score", -1), ("_id", -1)]).limit(50)
     )
     for p in projects:
         p["_id"] = str(p["_id"])
@@ -1077,6 +1335,41 @@ async def reprocess_projects(user_id: str = Depends(verify_firebase_token)):
     await asyncio.to_thread(run_dna)
 
     return {"message": f"Processed {processed} fragments", "processed": processed}
+
+
+@app.post("/api/reanalyze-all")
+async def reanalyze_all_fragments(user_id: str = Depends(verify_firebase_token)):
+    """Re-run the full Gemini multimodal pipeline on all user fragments."""
+    db = get_db()
+    fragments = list(
+        db["fragments"].find(
+            {"user_id": user_id},
+            {"_id": 1, "audio_url": 1, "text": 1, "type": 1},
+        )
+    )
+    if not fragments:
+        return {"message": "No fragments found", "processed": 0}
+
+    db["fragments"].update_many(
+        {"user_id": user_id},
+        {"$set": {"status": "processing"}},
+    )
+
+    tasks = set()
+    for frag in fragments:
+        frag_id = str(frag["_id"])
+        audio_url = frag.get("audio_url")
+        text = frag.get("text")
+        task = asyncio.create_task(
+            _process_fragment_background(user_id, frag_id, audio_url, text)
+        )
+        tasks.add(task)
+        task.add_done_callback(tasks.discard)
+
+    return {
+        "message": f"Reanalyzing {len(fragments)} fragments in background",
+        "processing": len(fragments),
+    }
 
 
 @app.post("/api/jobs/dna")
