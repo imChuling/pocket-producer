@@ -23,7 +23,7 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["agents*", "tools*", "api*", "jobs*"]
+include = ["agents*", "tools*", "api*", "jobs*", "services*"]
 
 [dependency-groups]
 dev = ["pytest", "pytest-cov", "pytest-asyncio", "ruff", "httpx", "python-dotenv"]
@@ -36,11 +36,11 @@ target-version = "py311"
 select = ["E", "F", "I", "N", "W", "UP"]
 
 [tool.ruff.lint.per-file-ignores]
+"api/main.py" = ["E501"]
 "tests/seed_30_fragments.py" = ["E501"]
 "tests/seed_real_lyrics.py" = ["E402", "E501"]
 "tests/seed_fma_audio.py" = ["E402", "E501"]
 "tests/download_fma_tracks.py" = ["E402", "E501"]
 
 [tool.pytest.ini_options]
-asyncio_mode = "auto"
 testpaths = ["tests"]

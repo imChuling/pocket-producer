@@ -25,6 +25,8 @@ export interface Fragment {
   suggestion?: string;
   project_id?: string;
   project_title?: string;
+  connection_reason?: string;
+  connection_types?: string[];
   user_edited_fields?: string[];
   agent_result?: string;
   edit_history?: EditHistoryEntry[];
@@ -52,6 +54,8 @@ export interface Project {
   next_action?: NextAction;
   fragment_ids: string[];
   sections: string[];
+  connection_reasons?: string[];
+  connection_types?: string[];
   last_activity_at: string;
   created_at: string;
 }

@@ -27,7 +27,10 @@ export function useFragments() {
 
   // Initial fetch
   useEffect(() => {
-    refresh();
+    const id = window.setTimeout(() => {
+      void refresh();
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [refresh]);
 
   // Auto-poll while any fragment is still processing

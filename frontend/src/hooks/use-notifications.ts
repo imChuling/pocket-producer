@@ -32,7 +32,11 @@ export function useNotifications() {
 
   // Initial fetch
   useEffect(() => {
-    if (user) refresh();
+    if (!user) return;
+    const id = window.setTimeout(() => {
+      void refresh();
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [user, refresh]);
 
   // Poll periodically for new notifications

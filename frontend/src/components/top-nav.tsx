@@ -46,7 +46,8 @@ export function TopNav() {
 
   // Close panel on route change
   useEffect(() => {
-    setOpen(false);
+    const id = window.setTimeout(() => setOpen(false), 0);
+    return () => window.clearTimeout(id);
   }, [pathname]);
 
   // Hide nav on login page

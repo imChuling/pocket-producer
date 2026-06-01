@@ -14,6 +14,7 @@ export default function ProjectsPage() {
   const { projects, loading, refresh } = useProjects();
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) router.replace("/login");
@@ -37,6 +38,21 @@ export default function ProjectsPage() {
     }
   }, [refresh]);
 
+  const handleReset = useCallback(async () => {
+    setResetting(true);
+    setScanResult(null);
+    try {
+      const res = await apiPost<{ deleted_projects: number }>("/reset-projects", {});
+      setScanResult(`Reset ${res.deleted_projects} projects. Use Reanalyze All on Capture page to re-group.`);
+      refresh();
+    } catch {
+      setScanResult("Reset failed");
+    } finally {
+      setResetting(false);
+      setTimeout(() => setScanResult(null), 6000);
+    }
+  }, [refresh]);
+
   if (authLoading || !user) return null;
 
   return (
@@ -55,19 +71,30 @@ export default function ProjectsPage() {
               {projects.length} project{projects.length !== 1 && "s"} assembled from your fragments
             </p>
           </div>
-          <button
-            onClick={handleScan}
-            disabled={scanning}
-            className="flex items-center gap-1.5 text-xs text-gravel hover:text-obsidian transition-colors disabled:opacity-40 cursor-pointer btn-press"
-            title="Scan fragments for project connections"
-          >
-            {scanning ? (
-              <Loader2 size={13} className="animate-spin" />
-            ) : (
-              <RefreshCw size={13} />
-            )}
-            Scan
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleReset}
+              disabled={resetting || scanning}
+              className="flex items-center gap-1.5 text-xs text-gravel hover:text-red-500 transition-colors disabled:opacity-40 cursor-pointer btn-press"
+              title="Reset all projects and re-group from scratch"
+            >
+              {resetting ? <Loader2 size={13} className="animate-spin" /> : <Layers size={13} />}
+              Reset
+            </button>
+            <button
+              onClick={handleScan}
+              disabled={scanning || resetting}
+              className="flex items-center gap-1.5 text-xs text-gravel hover:text-obsidian transition-colors disabled:opacity-40 cursor-pointer btn-press"
+              title="Scan fragments for project connections"
+            >
+              {scanning ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <RefreshCw size={13} />
+              )}
+              Scan
+            </button>
+          </div>
         </div>
 
         {scanResult && (

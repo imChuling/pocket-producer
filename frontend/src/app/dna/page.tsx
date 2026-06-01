@@ -10,6 +10,8 @@ import { ThemeBar } from "@/components/theme-bar";
 import { HourlyHeatmap } from "@/components/hourly-heatmap";
 import type { DNAData } from "@/types";
 
+const STRUCTURE_COLORS = ["#a0b5eb", "#d4a06a", "#c4a44e", "#8fa3d0", "#b8c8e8", "#96a8c8"];
+
 /* ═══════════════════════════════════════════════════════════════
    Creative Personality — hero card with animated gradient border
    ═══════════════════════════════════════════════════════════════ */
@@ -288,8 +290,6 @@ function StructureDonut({ structures }: { structures: { _id: string; count: numb
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const total = structures.reduce((sum, s) => sum + s.count, 0);
 
-  const colors = ["#a0b5eb", "#d4a06a", "#c4a44e", "#8fa3d0", "#b8c8e8", "#96a8c8"];
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || structures.length === 0) return;
@@ -323,7 +323,7 @@ function StructureDonut({ structures }: { structures: { _id: string; count: numb
       structures.forEach((s, i) => {
         const sweep = ((s.count / total) * Math.PI * 2 - gap) * t;
         const endAngle = startAngle + sweep;
-        const color = colors[i % colors.length];
+        const color = STRUCTURE_COLORS[i % STRUCTURE_COLORS.length];
 
         // Shadow / glow
         ctx!.shadowColor = color;
@@ -376,7 +376,7 @@ function StructureDonut({ structures }: { structures: { _id: string; count: numb
             <div key={seg._id} className="flex items-center gap-2 animate-card-enter" style={{ animationDelay: `${i * 60}ms` }}>
               <div
                 className="w-3 h-3 rounded-[4px] flex-shrink-0"
-                style={{ background: colors[i % colors.length] }}
+                style={{ background: STRUCTURE_COLORS[i % STRUCTURE_COLORS.length] }}
               />
               <span className="text-xs text-gravel flex-1 truncate">
                 {seg._id.replace("_candidate", "").replace("_", " ")}

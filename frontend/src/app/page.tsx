@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Send, Loader2, ArrowRight } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
 import { motion, AnimatePresence, useScroll, useTransform } from "motion/react";
 import { useAuth } from "@/hooks/use-auth";
 import { useFragments } from "@/hooks/use-fragments";
@@ -713,6 +713,21 @@ function CaptureDashboard() {
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [reanalyzing, setReanalyzing] = useState(false);
+
+  const handleReanalyze = useCallback(async () => {
+    setReanalyzing(true);
+    try {
+      const res = await apiPost<{ message: string; processing: number }>("/reanalyze-all", {});
+      setStatus(res.message);
+      setTimeout(() => refresh(), 5000);
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : "Reanalyze failed");
+    } finally {
+      setReanalyzing(false);
+      setTimeout(() => setStatus(null), 5000);
+    }
+  }, [refresh]);
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -860,6 +875,13 @@ function CaptureDashboard() {
                   >
                     {fragments.length}
                   </span>
+                  <button
+                    onClick={handleReanalyze}
+                    disabled={reanalyzing}
+                    className="font-mono text-[11px] text-gravel px-3 py-1 rounded-full border border-chalk hover:bg-powder transition-colors disabled:opacity-50 btn-press"
+                  >
+                    {reanalyzing ? "Reanalyzing..." : "Reanalyze All"}
+                  </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                   <AnimatePresence mode="popLayout">

@@ -1,8 +1,12 @@
 FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y \
-    libsndfile1 ffmpeg \
+    libsndfile1 ffmpeg curl \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
+
+RUN npm install -g mongodb-mcp-server@latest
 
 WORKDIR /app
 
@@ -15,8 +19,14 @@ COPY agents/ ./agents/
 COPY tools/ ./tools/
 COPY api/ ./api/
 COPY jobs/ ./jobs/
+COPY services/ ./services/
 COPY skills/ ./skills/
+COPY start.sh ./
+
+RUN chmod +x start.sh
 
 ENV PORT=8000
+ENV ENABLE_MCP_MEMORY_TOOLS=1
+ENV MCP_SERVER_URL=http://127.0.0.1:8081/mcp
 EXPOSE 8000
-CMD uvicorn api.main:app --host 0.0.0.0 --port $PORT
+CMD ["./start.sh"]

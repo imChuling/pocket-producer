@@ -3,7 +3,7 @@ import logging
 import os
 import uuid
 from contextlib import asynccontextmanager
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 
 from bson import ObjectId
@@ -335,7 +335,6 @@ async def _process_fragment_background(
 
     For text fragments: Gemini receives text only with skill context.
     """
-    import json
     import time
 
     from tools.embedding import generate_embedding
@@ -428,7 +427,8 @@ async def _process_fragment_background(
                 final_update["potential"] = tag_result["potential"]
 
         db["fragments"].update_one(
-            {"_id": ObjectId(fragment_id)}, {"$set": final_update}
+            {"_id": ObjectId(fragment_id), "user_id": user_id},
+            {"$set": final_update},
         )
         logger.info(
             "Fragment %s tagged in %.1fs (tags=%s)",
@@ -448,7 +448,7 @@ async def _process_fragment_background(
     except Exception:
         logger.exception("Processing failed for fragment %s", fragment_id)
         db["fragments"].update_one(
-            {"_id": ObjectId(fragment_id)},
+            {"_id": ObjectId(fragment_id), "user_id": user_id},
             {"$set": {"status": "error"}},
         )
 
@@ -548,7 +548,7 @@ ONLY output the JSON object. No markdown wrapping, no explanation outside the JS
             mime_type = _guess_audio_mime_type(audio_gcs_uri)
             contents = [
                 types.Part.from_uri(file_uri=audio_gcs_uri, mime_type=mime_type),
-                types.Part.from_text(prompt_text),
+                types.Part.from_text(text=prompt_text),
             ]
         else:
             contents = prompt_text
@@ -596,229 +596,26 @@ async def _memory_and_project(
     db, user_id: str, fragment_id: str,
     embedding: list[float], tag_result: dict | None, t0: float,
 ):
-    """Phase 4: vector search → relationship classification → project grouping."""
-    import json
+    """Phase 4: Producer Agent → Memory Agent pipeline for project grouping.
+
+    Producer (root) delegates to Memory (sub_agent) for vector search and
+    relationship classification, then executes the project decision.
+    """
     import time
 
-    from tools.rescue_score import compute_rescue_score
+    from agents import group_fragment_with_agents
 
-    # 4a. Vector search for similar fragments (skip self)
-    pipeline = [
-        {
-            "$vectorSearch": {
-                "index": "fragment_vector_index",
-                "path": "embedding",
-                "queryVector": embedding,
-                "numCandidates": 100,
-                "limit": 6,
-                "filter": {"user_id": user_id},
-            }
-        },
-        {"$addFields": {"score": {"$meta": "vectorSearchScore"}}},
-        {"$project": {"embedding": 0}},
-    ]
-    neighbors = list(db["fragments"].aggregate(pipeline))
-    # Remove self from results
-    neighbors = [n for n in neighbors if str(n["_id"]) != fragment_id]
-
-    if not neighbors:
-        logger.info("No neighbors for %s — creating solo project later if needed", fragment_id)
+    if not embedding:
+        logger.info("Fragment %s has no embedding — skipping agent pipeline", fragment_id)
         return
 
-    # 4b. Check if any high-scoring neighbor already belongs to a project
-    best = neighbors[0]
-    best_score = best.get("score", 0)
-
-    # If similarity is too low, skip project grouping
-    if best_score < 0.75:
-        logger.info(
-            "Best neighbor score %.3f < 0.75 for %s — no project match",
-            best_score, fragment_id,
-        )
-        return
-
-    # 4c. Decide: join existing project or create new one
-    target_project_id = best.get("project_id")
-    project_fragments = []
-
-    if target_project_id:
-        # Join existing project
-        project = db["projects"].find_one({"_id": ObjectId(target_project_id)})
-        if project:
-            # Add fragment to project
-            db["projects"].update_one(
-                {"_id": ObjectId(target_project_id)},
-                {
-                    "$addToSet": {"fragment_ids": fragment_id},
-                    "$set": {"last_activity_at": datetime.now(UTC)},
-                },
-            )
-            db["fragments"].update_one(
-                {"_id": ObjectId(fragment_id)},
-                {"$set": {
-                    "project_id": target_project_id,
-                    "project_title": project.get("title", ""),
-                }},
-            )
-            # Load all project fragments for rescue score
-            frag_ids = [ObjectId(fid) for fid in project.get("fragment_ids", [])]
-            frag_ids.append(ObjectId(fragment_id))
-            project_fragments = list(db["fragments"].find(
-                {"_id": {"$in": frag_ids}}, {"embedding": 0}
-            ))
-            logger.info(
-                "Fragment %s joined project %s (score=%.3f)",
-                fragment_id, target_project_id, best_score,
-            )
-    else:
-        # Best neighbor has no project — create a new project with both
-        neighbor_id = str(best["_id"])
-        # Use Gemini to generate a project title from the two fragments
-        frag_text = tag_result.get("themes", []) if tag_result else []
-        neighbor_themes = best.get("themes", [])
-        all_themes = frag_text + neighbor_themes
-        all_emotions = (tag_result.get("emotions", []) if tag_result else []) + best.get("emotions", [])
-
-        project_title = await _generate_project_title(all_themes, all_emotions)
-
-        new_project = {
-            "user_id": user_id,
-            "title": project_title,
-            "fragment_ids": [neighbor_id, fragment_id],
-            "sections": [],
-            "rescue_score": None,
-            "last_activity_at": datetime.now(UTC),
-            "created_at": datetime.now(UTC),
-        }
-        result = db["projects"].insert_one(new_project)
-        new_project_id = str(result.inserted_id)
-
-        # Tag both fragments with project info
-        db["fragments"].update_many(
-            {"_id": {"$in": [ObjectId(neighbor_id), ObjectId(fragment_id)]}},
-            {"$set": {
-                "project_id": new_project_id,
-                "project_title": project_title,
-            }},
-        )
-
-        project_fragments = list(db["fragments"].find(
-            {"_id": {"$in": [ObjectId(neighbor_id), ObjectId(fragment_id)]}},
-            {"embedding": 0},
-        ))
-        target_project_id = new_project_id
-        logger.info(
-            "Created project '%s' (%s) from fragments %s + %s (score=%.3f)",
-            project_title, new_project_id, fragment_id, neighbor_id, best_score,
-        )
-
-    # 4d. Compute rescue score + sections + next_action
-    if project_fragments and target_project_id:
-        score_data = compute_rescue_score(
-            project_fragments, target_project_id
-        )
-        # Collect sections from structure_hints
-        sections = list({
-            f.get("structure_hint", "").replace("_candidate", "").replace("_", " ")
-            for f in project_fragments
-            if f.get("structure_hint")
-        })
-        # Generate next_action via quick Gemini call
-        next_action = await _generate_next_action(
-            project_fragments, score_data, sections
-        )
-        project_update = {
-            "rescue_score": score_data.get("rescue_score"),
-            "score_breakdown": score_data.get("components"),
-            "sections": sections,
-        }
-        if next_action:
-            project_update["next_action"] = next_action
-        db["projects"].update_one(
-            {"_id": ObjectId(target_project_id)},
-            {"$set": project_update},
-        )
-        logger.info(
-            "Project %s updated: score=%s sections=%s (total %.1fs)",
-            target_project_id,
-            score_data.get("rescue_score"),
-            sections,
-            time.monotonic() - t0,
-        )
-
-
-async def _generate_project_title(
-    themes: list[str], emotions: list[str]
-) -> str:
-    """Generate a short creative project title from themes and emotions."""
-    context = f"themes: {themes}, emotions: {emotions}"
-    prompt = f"""Generate a short, evocative project title (2-4 words) for a music project with these characteristics:
-{context}
-
-The title should feel like a working album/song title — poetic but not pretentious.
-Return ONLY the title, nothing else."""
-
-    try:
-        client = get_genai_client()
-        response = await asyncio.to_thread(
-            client.models.generate_content,
-            model="gemini-2.5-flash",
-            contents=prompt,
-        )
-        title = response.text.strip().strip('"').strip("'")
-        return title[:60] if title else "Untitled Project"
-    except Exception:
-        logger.exception("Project title generation failed")
-        # Fallback: use first theme or emotion
-        if themes:
-            return themes[0].title()
-        if emotions:
-            return emotions[0].title()
-        return "Untitled Project"
-
-
-async def _generate_next_action(
-    fragments: list[dict], score_data: dict, sections: list[str]
-) -> dict | None:
-    """Generate a concrete next action for the project."""
-    frag_summary = []
-    for f in fragments[:6]:
-        info = f.get("type", "text")
-        if f.get("text"):
-            info += f': "{f["text"][:80]}"'
-        if f.get("emotions"):
-            info += f" [{', '.join(f['emotions'][:2])}]"
-        if f.get("structure_hint"):
-            info += f" ({f['structure_hint']})"
-        frag_summary.append(info)
-
-    tier = score_data.get("tier", "low")
-    score = score_data.get("rescue_score")
-
-    prompt = f"""You are a music producer. A creator has a project with these fragments:
-{chr(10).join('- ' + s for s in frag_summary)}
-
-Sections so far: {sections if sections else 'none'}
-Rescue score: {score}/100 (tier: {tier})
-
-Give ONE specific, actionable next step the creator can do in ≤30 minutes to move this project forward. Consider what's missing structurally.
-
-Return ONLY a JSON object: {{"action": "...", "estimated_time": "15 min"}}
-The action should be 1-2 sentences, specific and practical. Use the same language as the fragment content."""
-
-    try:
-        client = get_genai_client()
-        response = await asyncio.to_thread(
-            client.models.generate_content,
-            model="gemini-2.5-flash",
-            contents=prompt,
-        )
-        parsed = _try_parse_agent_json(response.text.strip())
-        if parsed and "action" in parsed:
-            return parsed
-    except Exception:
-        logger.exception("Next action generation failed")
-    return None
+    result = await group_fragment_with_agents(db, user_id, fragment_id)
+    logger.info(
+        "Producer→Memory pipeline result for %s after %.1fs: %s",
+        fragment_id,
+        time.monotonic() - t0,
+        result,
+    )
 
 
 async def _run_agent(runner, user_id: str, message: str) -> dict:
@@ -986,7 +783,7 @@ async def update_fragment_tags(
         return {"updated": False, "message": "No fields to update"}
 
     update["user_edited_fields"] = edited_fields
-    db["fragments"].update_one({"_id": oid}, {"$set": update})
+    db["fragments"].update_one({"_id": oid, "user_id": user_id}, {"$set": update})
     return {"updated": True, "user_edited_fields": edited_fields}
 
 
@@ -995,9 +792,24 @@ async def delete_fragment(fragment_id: str, user_id: str = Depends(verify_fireba
     """Delete a single fragment by ID."""
     db = get_db()
     oid = _parse_object_id(fragment_id, "fragment_id")
+    fragment = db["fragments"].find_one(
+        {"_id": oid, "user_id": user_id}, {"audio_url": 1}
+    )
+    if not fragment:
+        raise HTTPException(status_code=404, detail="Fragment not found")
+
     result = db["fragments"].delete_one({"_id": oid, "user_id": user_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Fragment not found")
+
+    audio_url = fragment.get("audio_url")
+    if audio_url and audio_url.startswith("gs://"):
+        try:
+            bucket_name, blob_name = audio_url.replace("gs://", "").split("/", 1)
+            storage.Client().bucket(bucket_name).blob(blob_name).delete()
+        except Exception:
+            logger.warning("Failed to delete GCS object for fragment %s", fragment_id)
+
     return {"deleted": True}
 
 
@@ -1038,7 +850,7 @@ async def edit_fragment_text(
         edited_fields.append("text")
 
     db["fragments"].update_one(
-        {"_id": oid},
+        {"_id": oid, "user_id": user_id},
         {
             "$push": {"edit_history": {"$each": [history_entry], "$slice": -50}},
             "$set": {
@@ -1071,7 +883,7 @@ async def _reanalyze_fragment_text(user_id: str, fragment_id: str, new_text: str
         update: dict = {"status": "ready"}
 
         if isinstance(tag_result, dict):
-            fragment = db["fragments"].find_one({"_id": oid})
+            fragment = db["fragments"].find_one({"_id": oid, "user_id": user_id})
             edited_fields = fragment.get("user_edited_fields", []) if fragment else []
             for field in ["emotions", "themes", "tags", "structure_hint", "style", "potential", "key", "bpm", "suggestion"]:
                 if field not in edited_fields and field in tag_result:
@@ -1115,7 +927,7 @@ async def stream_audio(
     range: str | None = Header(None),
 ):
     """Stream audio file from GCS with Range support for seeking."""
-    from fastapi.responses import Response, StreamingResponse
+    from fastapi.responses import StreamingResponse
 
     db = get_db()
     oid = _parse_object_id(fragment_id, "fragment_id")
@@ -1218,7 +1030,12 @@ async def get_project(project_id: str, user_id: str = Depends(verify_firebase_to
     project["_id"] = str(project["_id"])
 
     fragment_ids = [ObjectId(f) for f in project.get("fragment_ids", [])]
-    fragments = list(db["fragments"].find({"_id": {"$in": fragment_ids}}, {"embedding": 0}))
+    fragments = list(
+        db["fragments"].find(
+            {"_id": {"$in": fragment_ids}, "user_id": user_id},
+            {"embedding": 0},
+        )
+    )
     for f in fragments:
         f["_id"] = str(f["_id"])
     project["fragments"] = fragments
@@ -1244,7 +1061,7 @@ async def list_notifications(user_id: str = Depends(verify_firebase_token)):
         # Resolve sleeping project title if missing
         if not n.get("sleeping_project_title") and n.get("sleeping_project_id"):
             proj = db["projects"].find_one(
-                {"_id": ObjectId(n["sleeping_project_id"])},
+                {"_id": ObjectId(n["sleeping_project_id"]), "user_id": user_id},
                 {"title": 1},
             )
             if proj:
@@ -1369,6 +1186,104 @@ async def reanalyze_all_fragments(user_id: str = Depends(verify_firebase_token))
     return {
         "message": f"Reanalyzing {len(fragments)} fragments in background",
         "processing": len(fragments),
+    }
+
+
+@app.post("/api/fix-stuck")
+async def fix_stuck_fragments(user_id: str = Depends(verify_firebase_token)):
+    """Fix fragments stuck in 'processing' that already have tags."""
+    db = get_db()
+    result = db["fragments"].update_many(
+        {
+            "user_id": user_id,
+            "status": "processing",
+            "tags": {"$exists": True, "$ne": []},
+        },
+        {"$set": {"status": "ready"}},
+    )
+    return {"fixed": result.modified_count}
+
+
+@app.post("/api/reset-projects")
+async def reset_projects(user_id: str = Depends(verify_firebase_token)):
+    """Delete all projects and clear project associations from fragments, so they can be re-grouped."""
+    db = get_db()
+    deleted = db["projects"].delete_many({"user_id": user_id})
+    db["fragments"].update_many(
+        {"user_id": user_id},
+        {"$unset": {
+            "project_id": "", "project_title": "",
+            "connection_reason": "", "connection_types": "",
+        }},
+    )
+    return {"deleted_projects": deleted.deleted_count}
+
+
+@app.post("/api/fragments/{fragment_id}/reanalyze")
+async def reanalyze_fragment(fragment_id: str, user_id: str = Depends(verify_firebase_token)):
+    """Re-run the full Gemini multimodal pipeline on a single fragment."""
+    db = get_db()
+    frag = db["fragments"].find_one(
+        {"_id": ObjectId(fragment_id), "user_id": user_id},
+        {"_id": 1, "audio_url": 1, "text": 1},
+    )
+    if not frag:
+        raise HTTPException(404, "Fragment not found")
+
+    db["fragments"].update_one(
+        {"_id": ObjectId(fragment_id), "user_id": user_id},
+        {"$set": {"status": "processing"}},
+    )
+
+    task = asyncio.create_task(
+        _process_fragment_background(user_id, fragment_id, frag.get("audio_url"), frag.get("text"))
+    )
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+
+    return {"message": "Reanalyzing fragment", "fragment_id": fragment_id}
+
+
+@app.post("/api/fragments/{fragment_id}/group-with-agent")
+async def group_fragment_with_agent_endpoint(
+    fragment_id: str,
+    user_id: str = Depends(verify_firebase_token),
+):
+    """Demo/debug endpoint: run the Producer→Memory agent pipeline for one fragment."""
+    db = get_db()
+    oid = _parse_object_id(fragment_id, "fragment_id")
+    fragment = db["fragments"].find_one(
+        {"_id": oid, "user_id": user_id},
+        {"embedding": 1, "status": 1},
+    )
+    if not fragment:
+        raise HTTPException(status_code=404, detail="Fragment not found")
+    if not fragment.get("embedding"):
+        raise HTTPException(status_code=400, detail="Fragment has no embedding yet")
+
+    from agents import group_fragment_with_agents
+
+    result = await group_fragment_with_agents(db, user_id, fragment_id)
+    return {
+        "fragment_id": fragment_id,
+        "pipeline": "producer→memory",
+        "mcp_read_tools_enabled": os.environ.get("ENABLE_MCP_MEMORY_TOOLS") == "1",
+        "result": result,
+    }
+
+
+@app.get("/api/agent-memory/status")
+async def agent_memory_status(user_id: str = Depends(verify_firebase_token)):
+    """Report the active agent pipeline status."""
+    return {
+        "user_id": user_id,
+        "pipeline": "producer_agent → memory_agent (sub_agent)",
+        "path": "direct Gemini tagging → Producer Agent → Memory Agent (vector search + relationship rules) → project decision",
+        "producer_model": os.environ.get("PRODUCER_MODEL", "gemini-2.5-flash"),
+        "memory_model": os.environ.get("MEMORY_MODEL", "gemini-2.5-flash"),
+        "mcp_read_tools_enabled": os.environ.get("ENABLE_MCP_MEMORY_TOOLS") == "1",
+        "mcp_server_url_configured": bool(os.environ.get("MCP_SERVER_URL")),
+        "skills_loaded": ["rescue-scoring", "musical-knowledge", "refusal-rules", "relationship-rules"],
     }
 
 
