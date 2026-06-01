@@ -3,8 +3,8 @@
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
-  Loader2, Mic, FileText, X, Play, Pause, Pencil, Check,
-  Lightbulb, Plus, UserPen, History, Trash2,
+  Loader2, FileText, X, Play, Pause, Pencil, Check,
+  Lightbulb, Plus, UserPen, History, Trash2, RefreshCw, GitMerge,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { apiFetch, apiPost } from "@/lib/api";
@@ -38,6 +38,7 @@ interface FragmentCardProps {
 
 export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardProps) {
   const [deleting, setDeleting] = useState(false);
+  const [reanalyzing, setReanalyzing] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [loadingAudio, setLoadingAudio] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -74,7 +75,8 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
   const [editHistory, setEditHistory] = useState<EditHistoryEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  const isProcessing = fragment.status === "processing";
+  const isStuckProcessing = fragment.status === "processing" && fragment.tags && fragment.tags.length > 0;
+  const isProcessing = reanalyzing || (fragment.status === "processing" && !isStuckProcessing);
   const isError = fragment.status === "error" || fragment.status === "timeout";
   const isAudio = fragment.type === "audio";
   const displayTitle = fragment.title || "Audio fragment";
@@ -226,6 +228,20 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
     }
   }
 
+  async function handleReanalyze() {
+    console.log("Reanalyzing fragment", fragment._id);
+    setReanalyzing(true);
+    try {
+      const res = await apiPost(`/fragments/${fragment._id}/reanalyze`, {});
+      console.log("Reanalyze response:", res);
+      setTimeout(() => onUpdated?.(), 5000);
+    } catch (e) {
+      console.error("Reanalyze failed:", e);
+    } finally {
+      setReanalyzing(false);
+    }
+  }
+
   function startEditing() {
     setEditTitle(displayTitle);
     setEditing(true);
@@ -272,8 +288,10 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
       setDragging(false);
       // Commit seek on release
       const audio = audioRef.current;
-      if (audio && duration) {
-        audio.currentTime = lastRatio * duration;
+      if (audio) {
+        const d = Number.isFinite(audio.duration) && audio.duration > 0
+          ? audio.duration : duration; // fallback to state
+        if (d > 0) audio.currentTime = lastRatio * d;
       }
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
@@ -283,6 +301,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
   }
 
   function formatTime(sec: number): string {
+    if (!Number.isFinite(sec) || sec < 0) return "0:00";
     const m = Math.floor(sec / 60);
     const s = Math.floor(sec % 60);
     return `${m}:${s.toString().padStart(2, "0")}`;
@@ -313,10 +332,50 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
       const url = URL.createObjectURL(blob);
 
       const audio = new Audio(url);
-      audio.onloadedmetadata = () => setDuration(audio.duration || 0);
-      audio.ontimeupdate = () => {
-        if (!draggingRef.current && audio.duration) setProgress(audio.currentTime / audio.duration);
+      let realDuration = 0;
+
+      const onTimeUpdate = () => {
+        // Pick up duration once it becomes finite
+        const d = audio.duration;
+        if (Number.isFinite(d) && d > 0 && realDuration === 0) {
+          realDuration = d;
+          setDuration(d);
+        }
+        if (!draggingRef.current && realDuration > 0) {
+          setProgress(audio.currentTime / realDuration);
+        }
       };
+
+      audio.ontimeupdate = onTimeUpdate;
+      audio.ondurationchange = () => {
+        const d = audio.duration;
+        if (Number.isFinite(d) && d > 0) {
+          realDuration = d;
+          setDuration(d);
+        }
+      };
+
+      // Blob URLs often report Infinity duration. Force the browser to
+      // discover the real length by seeking to the end, then reset to 0.
+      audio.onloadedmetadata = () => {
+        if (!Number.isFinite(audio.duration)) {
+          const prevTime = audio.currentTime;
+          audio.currentTime = 1e10;
+          audio.addEventListener("seeked", function onSeeked() {
+            audio.removeEventListener("seeked", onSeeked);
+            const d = audio.duration;
+            if (Number.isFinite(d) && d > 0) {
+              realDuration = d;
+              setDuration(d);
+            }
+            audio.currentTime = prevTime;
+          });
+        } else {
+          realDuration = audio.duration;
+          setDuration(audio.duration);
+        }
+      };
+
       audio.onended = () => {
         if (draggingRef.current) return;
         playingRef.current = false;
@@ -354,14 +413,24 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
           : "linear-gradient(135deg, rgba(255,255,255,0.85), rgba(226,193,97,0.07), rgba(255,200,160,0.03))",
       }}
     >
-      {/* Delete button */}
-      <button
-        onClick={handleDelete}
-        className="absolute top-3 right-3 p-1.5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-powder transition-all cursor-pointer btn-press"
-        aria-label="Delete fragment"
-      >
-        <X size={13} className="text-slate" />
-      </button>
+      {/* Action buttons */}
+      <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+        <button
+          onClick={handleReanalyze}
+          disabled={reanalyzing}
+          className="p-1.5 rounded-full hover:bg-powder transition-colors cursor-pointer btn-press disabled:opacity-40"
+          aria-label="Reanalyze fragment"
+        >
+          <RefreshCw size={13} className={`text-slate ${reanalyzing ? "animate-spin" : ""}`} />
+        </button>
+        <button
+          onClick={handleDelete}
+          className="p-1.5 rounded-full hover:bg-powder transition-colors cursor-pointer btn-press"
+          aria-label="Delete fragment"
+        >
+          <X size={13} className="text-slate" />
+        </button>
+      </div>
 
       {/* Status indicator */}
       {isProcessing && (
@@ -739,6 +808,37 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
             <Lightbulb size={10} className="text-gravel" />
           </div>
           <p className="text-xs text-gravel leading-relaxed">{fragment.suggestion}</p>
+        </div>
+      )}
+
+      {/* Project Memory Agent decision — shows the agent's multi-step reasoning */}
+      {fragment.project_id && fragment.connection_reason && (
+        <div
+          className="rounded-xl px-3.5 py-3 space-y-2"
+          style={{
+            background: "linear-gradient(135deg, rgba(160,181,235,0.12), rgba(176,212,190,0.08))",
+            border: "1px solid rgba(160,181,235,0.18)",
+          }}
+        >
+          <div className="flex items-center gap-1.5">
+            <GitMerge size={11} className="text-[#5a6f99] flex-shrink-0" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#5a6f99]">
+              Memory Agent linked this
+            </span>
+          </div>
+          <p className="text-xs text-gravel leading-relaxed">{fragment.connection_reason}</p>
+          {fragment.connection_types && fragment.connection_types.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {fragment.connection_types.map((ct) => (
+                <span
+                  key={ct}
+                  className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#a0b5eb]/15 text-[#5a6f99]"
+                >
+                  {ct.replace(/_/g, " ")}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

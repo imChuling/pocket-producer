@@ -32,6 +32,7 @@ def main():
         description="Agentic memory for music creation",
         env_vars={
             "MCP_SERVER_URL": os.environ["MCP_SERVER_URL"],
+            "ENABLE_MCP_MEMORY_TOOLS": os.environ.get("ENABLE_MCP_MEMORY_TOOLS", "1"),
             "AUDIO_SERVICE_URL": os.environ.get("AUDIO_SERVICE_URL", ""),
             "VOYAGE_API_KEY": os.environ["VOYAGE_API_KEY"],
             "GCS_BUCKET": os.environ["GCS_BUCKET"],

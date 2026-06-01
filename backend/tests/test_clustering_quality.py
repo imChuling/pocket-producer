@@ -18,8 +18,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-import pymongo  # noqa: E402
-import voyageai  # noqa: E402
+import pytest  # noqa: E402
+
+# Integration test — requires live MongoDB / Voyage. Skip cleanly when absent.
+pymongo = pytest.importorskip("pymongo")
+voyageai = pytest.importorskip("voyageai")
 
 USER_ID = "test_30plus"
 

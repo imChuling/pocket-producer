@@ -14,6 +14,7 @@ from bson import ObjectId
 from pymongo import MongoClient
 
 _client: MongoClient | None = None
+_ALLOWED_COLLECTIONS = {"fragments", "projects", "notifications", "user_dna"}
 
 
 def _get_db():
@@ -21,6 +22,16 @@ def _get_db():
     if _client is None:
         _client = MongoClient(os.environ["MONGODB_CONNECTION_STRING"], maxPoolSize=10)
     return _client["pocketproducer"]
+
+
+def _validate_collection(collection: str) -> None:
+    if collection not in _ALLOWED_COLLECTIONS:
+        raise ValueError(f"Collection not allowed: {collection}")
+
+
+def _require_user_scope(filter: dict[str, Any]) -> None:
+    if not filter.get("user_id"):
+        raise ValueError("MongoDB agent tools require a user_id filter")
 
 
 class _JSONEncoder(json.JSONEncoder):
@@ -50,6 +61,7 @@ def _vector_search_sync(
     limit: int = 10,
     num_candidates: int = 100,
 ) -> str:
+    _validate_collection(collection)
     db = _get_db()
     pipeline = [
         {
@@ -86,6 +98,8 @@ def _find_sync(
     filter: dict[str, Any] | None = None,
     limit: int = 20,
 ) -> str:
+    _validate_collection(collection)
+    _require_user_scope(filter or {})
     db = _get_db()
     cursor = db[collection].find(filter or {}, {"embedding": 0}).limit(limit)
     return _to_json(list(cursor))
@@ -102,6 +116,8 @@ async def find_documents(
 
 
 def _count_sync(collection: str, filter: dict[str, Any] | None = None) -> str:
+    _validate_collection(collection)
+    _require_user_scope(filter or {})
     db = _get_db()
     count = db[collection].count_documents(filter or {})
     return _to_json({"count": count})
@@ -122,8 +138,11 @@ async def count_documents(
 
 
 def _insert_sync(collection: str, documents: list[dict]) -> str:
+    _validate_collection(collection)
     db = _get_db()
     for doc in documents:
+        if not doc.get("user_id"):
+            raise ValueError("Inserted documents must include user_id")
         if "created_at" not in doc:
             doc["created_at"] = datetime.now(UTC)
     result = db[collection].insert_many(documents)
@@ -148,6 +167,8 @@ def _update_sync(
     filter: dict[str, Any],
     update: dict[str, Any],
 ) -> str:
+    _validate_collection(collection)
+    _require_user_scope(filter)
     db = _get_db()
     if not any(k.startswith("$") for k in update):
         update = {"$set": update}

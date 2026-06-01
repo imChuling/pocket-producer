@@ -27,6 +27,7 @@ services:
       - ./backend/.env
     environment:
       - MCP_SERVER_URL=http://mongodb-mcp:8080/mcp
+      - ENABLE_MCP_MEMORY_TOOLS=1
     depends_on:
       - mongodb-mcp
     volumes:

@@ -93,6 +93,31 @@ export default function ProjectDetailPage({
                 </div>
               )}
 
+              {(project.connection_reasons ?? []).length > 0 && (
+                <div
+                  className="backdrop-blur-sm rounded-[24px] p-5 space-y-3 shadow-hairline animate-card-enter"
+                  style={{ animationDelay: "120ms", background: "linear-gradient(135deg, rgba(255,255,255,0.7), rgba(160,181,235,0.06))" }}
+                >
+                  <span className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-slate">
+                    Why these connect
+                  </span>
+                  {(project.connection_types ?? []).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {project.connection_types!.map((t: string) => (
+                        <span key={t} className="text-[10px] font-mono uppercase tracking-wider text-gravel px-2 py-0.5 rounded-full bg-powder/60">
+                          {t.replace(/_/g, " ")}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    {project.connection_reasons!.map((r: string, i: number) => (
+                      <p key={i} className="text-xs text-gravel/80 italic">{r}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {project.next_action && (
                 <div
                   className="backdrop-blur-sm rounded-[24px] p-5 space-y-2 shadow-hairline gradient-border animate-card-enter"
@@ -101,7 +126,7 @@ export default function ProjectDetailPage({
                   <span className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-slate">
                     Next Action
                   </span>
-                  <p className="text-sm text-obsidian">{project.next_action.action}</p>
+                  <p className="text-xs text-gravel/80 italic">{project.next_action.action}</p>
                   {project.next_action.estimated_time && (
                     <p className="text-xs text-gravel">
                       ~{project.next_action.estimated_time}

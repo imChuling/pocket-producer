@@ -14,9 +14,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-import google.genai as genai  # noqa: E402
-import pymongo  # noqa: E402
-import voyageai  # noqa: E402
+import pytest  # noqa: E402
+
+# Integration test — requires live MongoDB / Voyage / Gemini. Skip cleanly when absent.
+genai = pytest.importorskip("google.genai")
+pymongo = pytest.importorskip("pymongo")
+voyageai = pytest.importorskip("voyageai")
 
 SKILLS_DIR = pathlib.Path(__file__).parent.parent / "skills"
 

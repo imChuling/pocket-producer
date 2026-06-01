@@ -1,33 +1,38 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Inter, IBM_Plex_Mono } from "next/font/google";
+import { Cormorant, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
+import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { TopNav } from "@/components/top-nav";
 
-const cormorant = Cormorant_Garamond({
-  variable: "--font-cormorant",
+const cormorant = Cormorant({
   subsets: ["latin"],
-  weight: ["300", "400"],
   display: "swap",
+  variable: "--font-cormorant",
 });
 
 const inter = Inter({
-  variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "500"],
   display: "swap",
+  variable: "--font-inter",
 });
 
 const ibmPlexMono = IBM_Plex_Mono({
-  variable: "--font-ibm-plex-mono",
+  weight: ["400", "500"],
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
   display: "swap",
+  variable: "--font-ibm-plex-mono",
 });
 
 export const metadata: Metadata = {
   title: "Pocket Producer",
   description: "AI-powered creative memory for music makers",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Pocket Producer",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {
@@ -43,12 +48,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${cormorant.variable} ${inter.variable} ${ibmPlexMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`h-full antialiased ${cormorant.variable} ${inter.variable} ${ibmPlexMono.variable}`}>
       <body className="min-h-full flex flex-col bg-[#fdfcfc]">
         <AuthProvider>
+          <ServiceWorkerRegister />
           <TopNav />
           <main className="flex-1 w-full">
             {children}

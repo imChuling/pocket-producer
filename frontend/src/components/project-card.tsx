@@ -1,6 +1,17 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Link2 } from "lucide-react";
 import type { Project } from "@/types";
+
+const CONNECTION_LABELS: Record<string, string> = {
+  shared_imagery: "Shared imagery",
+  lyrical_continuity: "Lyrical flow",
+  style_match: "Style match",
+  structural_complement: "Structural fit",
+  energy_match: "Energy match",
+  emotional_arc: "Emotional arc",
+  rhythmic_kinship: "Rhythmic kinship",
+  thematic_thread: "Thematic thread",
+};
 
 function scoreBarStyle(score: number | null): React.CSSProperties {
   if (score === null) return {};
@@ -13,6 +24,8 @@ export function ProjectCard({ project }: { project: Project }) {
   const score = project.rescue_score;
   const pct = score !== null ? score : 0;
   const fragmentCount = (project.fragment_ids ?? []).length;
+  const reasons = project.connection_reasons ?? [];
+  const types = project.connection_types ?? [];
 
   return (
     <Link href={`/projects/${project._id}`} className="block cursor-pointer group">
@@ -41,6 +54,28 @@ export function ProjectCard({ project }: { project: Project }) {
             style={{ width: `${pct}%`, ...scoreBarStyle(score) }}
           />
         </div>
+
+        {/* Connection types */}
+        {types.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {types.map((t) => (
+              <span
+                key={t}
+                className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-gravel px-2 py-0.5 rounded-full bg-powder/60"
+              >
+                <Link2 size={8} />
+                {CONNECTION_LABELS[t] || t.replace("_", " ")}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Connection reason */}
+        {reasons.length > 0 && (
+          <p className="text-xs text-gravel/80 italic line-clamp-2">
+            {reasons[reasons.length - 1]}
+          </p>
+        )}
 
         {/* Meta */}
         <div className="flex-1 space-y-2">

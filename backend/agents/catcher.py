@@ -1,3 +1,15 @@
+"""Catcher Agent (Perception layer) — fragment tagging and feature extraction.
+
+NOTE: In the live capture flow, tagging is handled by a direct Gemini multimodal
+call for latency optimization (~1-2s vs ~5s through agent overhead). This agent
+is defined for:
+1. Agent Engine deployment (full 3-agent pipeline)
+2. Batch reprocessing where latency is not critical
+3. Demonstrating the complete architectural design
+
+The active pipeline uses: direct Gemini tagging → Producer Agent → Memory Agent
+"""
+
 import os
 
 from google.adk.agents import LlmAgent
