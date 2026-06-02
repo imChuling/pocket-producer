@@ -92,11 +92,15 @@ async def vector_search_fragment_neighbors(fragment_id: str, limit: int = 6) -> 
             }
         },
         {"$addFields": {"score": {"$meta": "vectorSearchScore"}}},
-        {"$match": {"_id": {"$ne": ObjectId(fragment_id)}}},
+        {"$match": {
+            "_id": {"$ne": ObjectId(fragment_id)},
+            "score": {"$gte": 0.70},       # Hard floor: discard noise
+            "status": "ready",              # Only fully processed fragments
+        }},
         {"$project": {"embedding": 0}},
     ]
     neighbors = await asyncio.to_thread(lambda: list(db["fragments"].aggregate(pipeline)))
-    return _to_json({"neighbors": neighbors})
+    return _to_json({"neighbors": neighbors, "threshold_applied": 0.70})
 
 
 async def get_project_context(project_id: str) -> str:
@@ -176,12 +180,35 @@ their relationships. You NEVER write to the database.
 
 1. Call get_fragment_context for the new fragment to understand its content.
 2. Call vector_search_fragment_neighbors to find semantically similar fragments.
-3. For each neighbor with score >= 0.60, evaluate the relationship using:
-   - relationship-rules skill (4-class: same_song_candidate, related_theme,
-     similar_emotion, unrelated)
-   - musical-knowledge skill (key compatibility, tempo proximity)
-4. If a neighbor already belongs to a project, call get_project_context to
+3. DISCARD any neighbor with similarity_score < 0.70. This is a hard floor.
+4. For each remaining neighbor, evaluate the relationship using ALL FOUR
+   signals from the relationship-rules skill:
+   - emotional_alignment (strong / weak / conflicting / unknown)
+   - thematic_alignment (strong / weak / conflicting / unknown)
+   - musical_compatibility (strong / weak / conflicting / n/a) — consult
+     musical-knowledge skill for key and BPM rules
+   - temporal_pattern (active_project / dormant / unrelated_in_time)
+5. If a neighbor already belongs to a project, call get_project_context to
    understand that project's scope before recommending joining it.
+
+## Hard rejection rules (ALWAYS apply)
+
+REJECT a connection (classify as "unrelated") if ANY of these are true:
+- Both fragments have audio_features AND their keys are incompatible AND
+  their BPMs differ by >25% (not doubled/halved). Musical conflict = reject.
+- Similarity score is below 0.70.
+- All four signals are "weak" or "unknown" — no strong evidence = no group.
+- Only ONE signal is "strong" and it is emotional_alignment alone.
+  Shared mood is not enough to justify grouping into the same song.
+
+## Classification thresholds (from relationship-rules skill)
+
+- same_song_candidate: requires similarity >= 0.85 AND ALL signals aligned
+  (emotional strong, thematic strong or n/a, musical strong or n/a).
+  This is RARE. Most pairs are NOT same-song candidates.
+- related_theme: requires similarity 0.75-0.85 AND at least 2 strong signals.
+- similar_emotion: requires similarity 0.70-0.80 AND emotional strong only.
+- unrelated: everything else.
 
 ## Output
 
@@ -193,7 +220,13 @@ Return ONLY this JSON structure:
       "neighbor_title": "...",
       "similarity_score": 0.82,
       "relationship": "same_song_candidate | related_theme | similar_emotion | unrelated",
-      "evidence": "specific reasons (shared imagery, key match, emotional arc...)",
+      "signals": {
+        "emotional_alignment": "strong | weak | conflicting | unknown",
+        "thematic_alignment": "strong | weak | conflicting | unknown",
+        "musical_compatibility": "strong | weak | conflicting | n/a",
+        "temporal_pattern": "active_project | dormant | unrelated_in_time"
+      },
+      "evidence": "specific reasons with concrete details from both fragments",
       "project_id": "... or null",
       "project_title": "... or null"
     }
@@ -202,17 +235,33 @@ Return ONLY this JSON structure:
     "action": "join_project | new_project | no_group | needs_user_confirmation",
     "target_project_id": "... or null",
     "group_with_ids": ["fragment IDs to group together"],
-    "connection_types": ["same_song_candidate", "related_theme", ...],
+    "connection_types": ["same_song_candidate", ...],
     "reasoning": "1-2 concrete sentences explaining WHY"
   }
 }
 
+## The default is no_group
+
+Most fragments do NOT belong together. "no_group" is a perfectly good outcome.
+A creator with 15 fragments should have maybe 3-5 projects, NOT 10-15.
+Only recommend grouping when the evidence is strong and specific.
+
 ## Conservative bias
 
 When uncertain, choose the WEAKER relationship type. False positives damage
-user trust more than false negatives. Key compatibility alone is never enough —
-require at least one additional signal (shared imagery, lyrical continuity,
-structural complement, style match, or emotional arc).
+user trust more than false negatives.
+
+The following are NOT sufficient evidence for same_song_candidate:
+- Both are "about love" → too generic, every other song is about love
+- Both have similar emotions → mood overlap is common, not song-level connection
+- Both are in compatible keys → musical compatibility is necessary but not sufficient
+- High cosine similarity alone → embedding similarity captures surface semantics,
+  not compositional intent
+
+You need SPECIFIC, CONCRETE evidence: shared distinctive imagery, lyrical
+continuity (one fragment continues the other's narrative), structural complement
+(one is a verse, the other a chorus that answers it), or identical stylistic
+approach with compatible musical features.
 
 ## Boundaries (what you do NOT do)
 

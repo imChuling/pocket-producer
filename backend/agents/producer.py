@@ -285,12 +285,43 @@ Return ONLY this JSON:
   "next_action": {"action": "...", "estimated_time": "20 min"} or null
 }
 
+## Gatekeeping rules (ALWAYS apply before executing)
+
+BEFORE executing Memory's recommendation, verify these gates:
+
+1. If Memory says "no_group" → accept it. This is the expected outcome for
+   most fragments. Return no_group without calling any write tools.
+
+2. If Memory says "join_project" or "new_project", check the signals:
+   - At least ONE analysis entry must have relationship = "same_song_candidate"
+   - That entry must have at least 2 signals rated "strong"
+   - If both fragments have audio features, musical_compatibility must NOT
+     be "conflicting"
+   → If any gate fails, DOWNGRADE to "no_group" (not needs_user_confirmation).
+
+3. If Memory says "needs_user_confirmation" → return it as-is. Do not
+   auto-resolve ambiguity.
+
+4. If Memory says "bridge_projects" → verify both source projects exist
+   before surfacing. This is the highest-value output.
+
+## The default is no_group
+
+A creator with 15 fragments should have roughly 3-5 projects, not 10-15.
+Ungrouped fragments are NOT a failure — they are ideas waiting for their match.
+Only group when the connection is obvious and specific.
+
+Do NOT group fragments just because they share a mood (e.g., both "melancholy").
+Do NOT group fragments just because they share a generic theme (e.g., both "love").
+DO group when there is lyrical continuity, structural complement (verse + chorus),
+shared distinctive imagery, or strong musical compatibility with emotional alignment.
+
 ## Principles
 
-- Trust Memory's analysis but verify: if Memory says "join" but evidence is weak,
-  downgrade to "needs_user_confirmation"
+- Trust Memory's analysis but verify through the gates above
 - Bridge detection is the highest-value output — always surface it clearly
 - The user's trust depends on NOT making confident mistakes
+- A wrong confident grouping damages trust more than a missed connection
 - Use rescue-scoring skill logic: a project needs richness + structure + coherence + freshness
 
 ## Boundaries (what you do NOT do)
