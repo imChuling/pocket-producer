@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { Upload, Check } from "lucide-react";
-
-const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
+import { Upload, Check, Loader2 } from "lucide-react";
+import { MAX_AUDIO_FILE_SIZE } from "@/lib/constants";
+import { validateAudioDuration } from "@/lib/audio-validation";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -18,6 +18,27 @@ interface FileDropzoneProps {
 export function FileDropzone({ onFile }: FileDropzoneProps) {
   const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [validating, setValidating] = useState(false);
+
+  const handleAccepted = async (files: File[]) => {
+    setError(null);
+    const file = files[0];
+    if (!file) return;
+
+    setValidating(true);
+    setFileName(file.name);
+    const result = await validateAudioDuration(file);
+    setValidating(false);
+
+    if (!result.valid) {
+      setError(result.error!);
+      setFileName(null);
+      setTimeout(() => setError(null), 5000);
+      return;
+    }
+    onFile(file);
+    setTimeout(() => setFileName(null), 3000);
+  };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
@@ -30,15 +51,9 @@ export function FileDropzone({ onFile }: FileDropzoneProps) {
       "audio/flac": [".flac"],
     },
     maxFiles: 1,
-    maxSize: MAX_FILE_SIZE,
-    onDropAccepted: (files) => {
-      setError(null);
-      if (files[0]) {
-        setFileName(files[0].name);
-        onFile(files[0]);
-        setTimeout(() => setFileName(null), 3000);
-      }
-    },
+    maxSize: MAX_AUDIO_FILE_SIZE,
+    disabled: validating,
+    onDropAccepted: handleAccepted,
     onDropRejected: (rejections) => {
       const rejection = rejections[0];
       if (rejection) {
@@ -78,7 +93,11 @@ export function FileDropzone({ onFile }: FileDropzoneProps) {
         />
       )}
       <div className="relative flex items-center gap-2.5">
-        {fileName ? (
+        {validating ? (
+          <div className="w-8 h-8 rounded-full bg-powder flex items-center justify-center">
+            <Loader2 size={14} className="text-slate animate-spin" />
+          </div>
+        ) : fileName ? (
           <div className="w-8 h-8 rounded-full bg-obsidian/5 flex items-center justify-center">
             <Check size={14} className="text-obsidian" />
           </div>
@@ -88,16 +107,18 @@ export function FileDropzone({ onFile }: FileDropzoneProps) {
           </div>
         )}
         <span className="text-sm text-gravel">
-          {fileName
-            ? fileName
-            : isDragActive
-              ? "Drop audio file here"
-              : "Drop or tap to upload audio"}
+          {validating
+            ? "Checking audio..."
+            : fileName
+              ? fileName
+              : isDragActive
+                ? "Drop audio file here"
+                : "Drop or tap to upload audio"}
         </span>
       </div>
-      {!fileName && !error && (
+      {!fileName && !validating && !error && (
         <span className="text-[10px] text-slate tracking-wide">
-          MP3, WAV, M4A, WebM, OGG, FLAC · Max 25 MB
+          MP3, WAV, M4A, WebM, OGG, FLAC · Max 25 MB / 5 min
         </span>
       )}
       {error && (

@@ -1,112 +1,281 @@
 # Pocket Producer
 
-Pocket Producer is an agentic creative memory system for music makers. It captures
-small fragments, reconnects them with past ideas, and suggests a concrete next
-step for unfinished projects.
+> An agentic creative memory system for music makers — capture fleeting ideas,
+> reconnect them with past fragments, and move unfinished work forward.
+
+**Submission**: Google Cloud Rapid Agent Hackathon 2026 · MongoDB Track
+
+**Tagline**: *Your creative atlas, in your pocket.*
+
+**Live Demo**: `[TODO: hosted URL]`
+**Demo Video**: `[TODO: YouTube URL]`
+
+---
+
+## The Problem
+
+Music creators generate dozens of ideas — voice memos, lyrics, melodies — that
+scatter across devices and apps. The result:
+
+| Problem | What creators say |
+|---|---|
+| **Fragmentation** | "60+ voice memos on my phone, can't remember what any of them are" |
+| **Lost connections** | "I hummed something last month that had potential, but I can't find it" |
+| **Hidden relationships** | "Turns out that lyric and that piano motif were the same song all along" |
+| **Unfinished song paralysis** | "30 incomplete songs. No idea which one to work on next" |
+
+Existing tools either **replace creativity** (AI-generated music) or **capture
+more data** (recording + tagging). Neither solves the core bottleneck:
+
+> **The creative bottleneck isn't output — it's memory of what you've already created.**
+
+## The Solution
+
+Pocket Producer is a **grounded creative memory agent**. It does three things:
+
+1. **Capture** — record audio or type text, get instant AI-powered tagging
+   (emotion, theme, structure, style) via Gemini 2.5 Flash multimodal analysis
+2. **Reconnect** — MongoDB Atlas Vector Search finds semantically similar past
+   fragments; an ADK Memory Agent classifies relationships using domain skills
+3. **Move forward** — a Producer Agent decides project grouping, computes a
+   Rescue Score, and suggests one concrete next step you can do in 30 minutes
+
+Pocket Producer doesn't write songs for you. It remembers what you've created
+and connects what should belong together.
+
+---
 
 ## Architecture
 
-The ingest flow intentionally separates latency-sensitive perception from
-agentic memory work:
-
-1. **Fast capture/tagging path**: FastAPI stores the fragment, uploads audio to
-   Cloud Storage, and uses Gemini multimodal tagging with the local music skills.
-2. **Agentic memory path**: after an embedding exists, the ADK `Project Memory`
-   agent performs vector search, relationship reasoning, project grouping,
-   project updates, Rescue Score refresh, and next-action generation.
-
-This keeps capture responsive while making the product's core value path an
-actual agent workflow.
-
-## ADK and MongoDB MCP Path
-
-The demonstrable agent path lives in
-`backend/services/project_memory_agent.py`.
-
-The agent uses scoped business tools for all writes:
-
-- `get_fragment_context`
-- `vector_search_fragment_neighbors`
-- `get_project_context`
-- `create_project_from_fragments`
-- `attach_fragment_to_project`
-- `refresh_project_score`
-
-Every tool binds database access to the authenticated `user_id`. The older
-generic ADK Mongo tools in `backend/tools/mongodb.py` now have a collection
-allowlist and require user-scoped filters.
-
-MongoDB MCP read tools can be enabled for demo/deployment with:
-
-```bash
-ENABLE_MCP_MEMORY_TOOLS=1
-MCP_SERVER_URL=http://localhost:8081/mcp
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Frontend (Next.js 16 PWA)                                      │
+│  Deployed on Vercel                                             │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │ HTTPS + Firebase Auth Token
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Backend (FastAPI on Cloud Run)                                  │
+│                                                                  │
+│  ┌─── Fast Capture Path ────────────────────────────────────┐   │
+│  │ Audio → GCS upload → librosa features + Gemini multimodal │   │
+│  │ tagging (with music-tagging skill) → Voyage AI embedding  │   │
+│  └───────────────────────────────────────────────────────────┘   │
+│                       │                                          │
+│                       ▼                                          │
+│  ┌─── Agentic Memory Path (Google ADK) ─────────────────────┐   │
+│  │ Producer Agent (root) → Memory Agent (sub_agent)          │   │
+│  │                                                           │   │
+│  │ Memory: vector search → relationship classification       │   │
+│  │ Producer: project grouping → Rescue Score → next action   │   │
+│  └───────────────────────────────────────────────────────────┘   │
+│                       │                                          │
+│           MongoDB MCP Server (co-located)                        │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+          ┌────────────┴────────────┐
+          ▼                         ▼
+┌──────────────────┐    ┌─────────────────────┐
+│ MongoDB Atlas    │    │ Google Cloud Storage │
+│ (Vector Search)  │    │ (audio files)       │
+│                  │    │                     │
+│ Collections:     │    └─────────────────────┘
+│ • fragments      │
+│ • projects       │
+│ • user_dna       │
+│ • notifications  │
+└──────────────────┘
 ```
 
-Project writes still go through scoped business tools, so the agent can be
-MCP-aware without receiving arbitrary database write access.
+The ingest flow separates **latency-sensitive perception** from **agentic memory
+work**: Gemini multimodal tagging runs directly (~1-2s), while the ADK agent
+pipeline handles relationship discovery and project decisions asynchronously.
 
-### How to verify the ADK + MCP path (for judges)
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the full technical breakdown.
 
-This path is on the **default** ingest pipeline — every fragment with an
-embedding triggers the agent (`main.py` → `_process_fragment_background` →
-`_memory_and_project` → `group_fragment_with_agent`). To see it directly:
+---
 
-1. **Confirm the path is live and MCP is on.** With the stack running
-   (`docker compose up`, which sets `ENABLE_MCP_MEMORY_TOOLS=1`):
+## Tech Stack
 
-   ```bash
-   curl -H "Authorization: Bearer <id-token>" \
-     http://localhost:8000/api/agent-memory/status
-   # -> mcp_read_tools_enabled: true, mcp_server_url_configured: true
-   ```
+| Layer | Technology |
+|---|---|
+| **Agent Framework** | Google ADK (`google-adk` v1.25+) with 5 open-source domain skills |
+| **LLM** | Gemini 2.5 Flash (multimodal tagging, Memory Agent, Producer Agent) |
+| **Database** | MongoDB Atlas with Vector Search (cosine, 1024-dim) |
+| **MCP** | MongoDB MCP Server (HTTP transport, co-located in Cloud Run container) |
+| **Embeddings** | Voyage AI (`voyage-3`, 1024-dim) — MongoDB-provided |
+| **Audio Analysis** | librosa (BPM, key, mode, energy curve, brightness, onset density) |
+| **Transcription** | Google Cloud Speech-to-Text v2 (Chirp 2) — used by Catcher Agent |
+| **Auth** | Firebase Authentication |
+| **Storage** | Google Cloud Storage (audio files) |
+| **Backend** | FastAPI + uvicorn, deployed on Cloud Run |
+| **Frontend** | Next.js 16, React 19, Tailwind CSS v4, Recharts, Motion, shadcn/ui |
+| **Deployment** | Cloud Run (backend) + Vercel (frontend) |
+| **License** | Apache 2.0 |
 
-2. **Watch the agent reason in the logs.** Ingest a fragment (or call
-   `POST /api/fragments/{id}/group-with-agent`) and tail the backend logs:
+---
 
-   ```bash
-   docker compose logs -f backend | grep ProjectMemory
-   ```
+## Skills Layer
 
-   Expect:
-   - `ProjectMemory: mounting read-only MongoDB MCP toolset (prefix=mongo_mcp) ...`
-     (proves the MCP toolset is attached at startup)
-   - `ProjectMemory tool call: agent=project_memory tool=vector_search_fragment_neighbors`
-     then `... tool=create_project_from_fragments` / `attach_fragment_to_project`
-     (proves multi-step vector search → relationship reasoning → grouping)
+> **The key differentiator** — 5 open-source ADK skills encoding music domain
+> knowledge, loaded via progressive disclosure.
 
-3. **See the decision in the UI.** Grouped fragment cards now render a
-   **"Memory Agent linked this"** block showing the agent's `connection_reason`
-   and `connection_types` — the multi-step reasoning made visible, not just tags.
+Pocket Producer applies the
+[ADK Skills system](https://google.github.io/adk-docs/skills/) to the music
+creation domain. Skills separate **domain rules** from **agent logic**, making
+both independently testable and reusable.
 
-Useful demo endpoints:
+| Skill | Files | Lines | Purpose | Consumer |
+|---|---|---|---|---|
+| [`music-tagging`](backend/skills/music-tagging/) | 6 | ~2,350 | Emotion, theme, structure, and style taxonomy for fragment tagging | Gemini tagging pipeline |
+| [`relationship-rules`](backend/skills/relationship-rules/) | 1 | ~800 | 4-class relationship classification with multi-signal fusion | Memory Agent |
+| [`musical-knowledge`](backend/skills/musical-knowledge/) | 4 | ~1,640 | Key compatibility, tempo rules, genre conventions (35 styles) | Memory + Producer Agents |
+| [`rescue-scoring`](backend/skills/rescue-scoring/) | 1 | ~650 | Rescue Score interpretation, explanation, and next-action generation | Producer Agent |
+| [`refusal-rules`](backend/skills/refusal-rules/) | 1 | ~530 | When to refuse, request input, or escalate | All agents |
 
-- `GET /api/agent-memory/status` — reports ADK path + MCP enablement
-- `POST /api/fragments/{fragment_id}/group-with-agent` — run the agent on demand
-- `POST /api/reprocess-projects` — re-group existing fragments
+**~5,970 lines** of domain knowledge across 13 markdown files + 1 JSON asset,
+all [Apache 2.0 licensed](LICENSE).
+
+Skills load via **progressive disclosure** — only metadata (~100 tokens/skill)
+at startup; full rules load on demand. See [SKILLS.md](SKILLS.md) for details.
+
+---
+
+## Agent Pipeline
+
+Two real ADK agents run in the ingest pipeline:
+
+**Producer Agent** (root, `gemini-2.5-flash`) orchestrates:
+- Delegates to Memory Agent for relationship discovery
+- Executes project decisions (join / create / bridge)
+- Computes Rescue Score and generates next actions
+- Tools: `create_project_from_fragments`, `attach_fragment_to_project`, `refresh_project_score`
+- Skills: `rescue-scoring`, `musical-knowledge`, `refusal-rules`
+
+**Memory Agent** (sub-agent, `gemini-2.5-flash`) grounds decisions:
+- Vector search via MongoDB Atlas (`$vectorSearch` aggregation)
+- Relationship classification using domain skills
+- Optional: MongoDB MCP read tools for demo visibility
+- Tools: `get_fragment_context`, `vector_search_fragment_neighbors`, `get_project_context`
+- Skills: `relationship-rules`, `musical-knowledge`, `refusal-rules`
+
+**Catcher Agent** is defined for full Agent Engine deployment but bypassed in the
+live pipeline — direct Gemini multimodal calls are 3x faster for tagging.
+
+---
 
 ## Data Safety
 
-- Firebase Auth verifies every user request.
-- User-owned document reads and writes include `user_id` filters.
-- Fragment deletion removes both the MongoDB document and the associated GCS
-  audio object.
-- Audio streams are served through authenticated API endpoints, not public GCS
-  URLs.
+- Firebase Auth verifies every API request
+- All database reads and writes are scoped to the authenticated `user_id`
+- Creator-provided text is sanitized and wrapped in `<creator_fragment>` tags to
+  prevent prompt injection; regex patterns flag suspicious input
+- Fragment deletion removes both the MongoDB document and the GCS audio object
+- Audio is served through authenticated streaming endpoints, not public GCS URLs
+- MongoDB MCP tools are read-only with a collection allowlist (`fragments`, `projects`, `notifications`, `user_dna`)
+
+---
 
 ## Local Development
 
-Backend:
+### Prerequisites
+
+- Python 3.11+
+- Node.js 20+
+- MongoDB (local or Atlas)
+- Google Cloud project with Gemini API access
+- Voyage AI API key
+
+### Backend
 
 ```bash
 cd backend
-.venv/bin/python -m pytest tests/test_rescue_score.py
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+
+# Copy and fill environment variables
+cp .env.example .env
+
+# Run tests
+pytest tests/test_rescue_score.py
+
+# Start the server
 uvicorn api.main:app --reload --port 8000
 ```
 
-Frontend:
+### Frontend
 
 ```bash
 cd frontend
-npm run dev
+pnpm install
+pnpm dev
 ```
+
+### Docker (full stack)
+
+```bash
+docker compose up
+```
+
+This starts MongoDB, MongoDB MCP Server, and the backend. The frontend runs
+separately via `pnpm dev` or Vercel.
+
+---
+
+## API Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/ingest` | Upload audio or text fragment |
+| `GET` | `/api/fragments` | List user's fragments |
+| `GET` | `/api/fragments/:id` | Get single fragment |
+| `GET` | `/api/fragments/:id/audio` | Stream audio (with Range support) |
+| `POST` | `/api/fragments/:id/edit-text` | Edit text with AI re-analysis |
+| `POST` | `/api/fragments/:id/tags` | Update tags manually |
+| `POST` | `/api/fragments/:id/title` | Update fragment title |
+| `POST` | `/api/fragments/:id/reanalyze` | Re-run Gemini pipeline on one fragment |
+| `POST` | `/api/fragments/:id/delete` | Delete fragment + GCS audio |
+| `POST` | `/api/fragments/:id/group-with-agent` | Run agent pipeline on one fragment (debug) |
+| `GET` | `/api/projects` | List projects (sorted by Rescue Score) |
+| `GET` | `/api/projects/:id` | Get project with fragments |
+| `GET` | `/api/dna` | Creative DNA insights |
+| `GET` | `/api/notifications` | Resurrect notifications |
+| `POST` | `/api/notifications/:id/read` | Mark notification read |
+| `POST` | `/api/notifications/read-all` | Mark all notifications read |
+| `POST` | `/api/reprocess-projects` | Re-run agent pipeline on existing fragments |
+| `POST` | `/api/reanalyze-all` | Re-run full Gemini pipeline on all fragments |
+| `POST` | `/api/reset-projects` | Delete all projects (re-grouping) |
+| `POST` | `/api/fix-stuck` | Fix fragments stuck in processing |
+| `GET` | `/api/agent-memory/status` | Agent pipeline status |
+| `POST` | `/api/jobs/dna` | Trigger DNA insights job |
+| `POST` | `/api/jobs/resurrect` | Trigger resurrect notifier job |
+
+---
+
+## Verifying the Agent Pipeline
+
+Every fragment with an embedding triggers the agent pipeline automatically
+(`_process_fragment_background` → `_memory_and_project` →
+`group_fragment_with_agents`).
+
+To observe it directly:
+
+```bash
+# With docker compose running:
+docker compose logs -f backend | grep -E "Agent tool call|Producer pipeline"
+```
+
+You will see:
+- `Agent tool call: agent=memory tool=vector_search_fragment_neighbors`
+- `Agent tool call: agent=memory tool=get_project_context`
+- `Agent tool call: agent=producer tool=create_project_from_fragments`
+- `Producer pipeline completed for <id>: events=N result={...}`
+
+In the UI, grouped fragments display the agent's `connection_reason` and
+`connection_types` — the multi-step reasoning made visible, not just tags.
+
+---
+
+## License
+
+[Apache 2.0](LICENSE) — including all 5 domain skills.

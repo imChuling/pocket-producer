@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { MAX_AUDIO_FILE_SIZE, MAX_AUDIO_DURATION_SEC } from "@/lib/constants";
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024;
-const MAX_DURATION = 300;
+const MAX_FILE_SIZE = MAX_AUDIO_FILE_SIZE;
+const MAX_DURATION = MAX_AUDIO_DURATION_SEC;
 
 function formatSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;

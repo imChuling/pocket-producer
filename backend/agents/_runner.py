@@ -2,7 +2,6 @@
 
 Entry point: group_fragment_with_agents(db, user_id, fragment_id)
 
-This replaces services/project_memory_agent.py with real multi-agent orchestration:
 Producer (root) delegates to Memory (sub_agent) for relationship discovery,
 then executes project decisions.
 """

@@ -19,7 +19,6 @@ COPY agents/ ./agents/
 COPY tools/ ./tools/
 COPY api/ ./api/
 COPY jobs/ ./jobs/
-COPY services/ ./services/
 COPY skills/ ./skills/
 COPY start.sh ./
 

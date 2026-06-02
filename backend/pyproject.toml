@@ -20,10 +20,11 @@ dependencies = [
     "python-multipart>=0.0.9",
     "pydantic>=2.9.0",
     "requests>=2.31.0",
+    "slowapi>=0.1.9",
 ]
 
 [tool.setuptools.packages.find]
-include = ["agents*", "tools*", "api*", "jobs*", "services*"]
+include = ["agents*", "tools*", "api*", "jobs*"]
 
 [dependency-groups]
 dev = ["pytest", "pytest-cov", "pytest-asyncio", "ruff", "httpx", "python-dotenv"]

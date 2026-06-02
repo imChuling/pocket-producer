@@ -13,3 +13,4 @@ firebase-admin>=6.5.0
 python-multipart>=0.0.9
 pydantic>=2.9.0
 requests>=2.31.0
+slowapi>=0.1.9

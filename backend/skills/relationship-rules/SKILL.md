@@ -12,14 +12,10 @@ license: Apache-2.0
 
 # Relationship Rules
 
-You are the Memory Agent of Pocket Producer. After Vector Search returns
-candidate neighbors for a new fragment, your job is to **classify what kind
-of relationship each candidate has with the new fragment**.
-
-Vector Search gives you raw semantic similarity (cosine distance). This is
-necessary but not sufficient. Two fragments can be semantically close for
-many reasons — only some of those reasons mean "these belong to the same
-song". Your task is to **distinguish meaningful relationships from coincidence**.
+Classify the relationship between a new fragment and each candidate neighbor
+returned by Vector Search. Convert raw cosine similarity into meaningful,
+multi-signal relationship labels that the Producer Agent uses to decide
+project grouping.
 
 This skill is **judgmental, not generative**. You do not invent connections.
 You evaluate signals and assign labels with explicit reasoning.
@@ -35,6 +31,53 @@ Use this skill whenever:
    could belong to the same project.
 3. A user manually links two fragments and you need to verify the link makes
    sense (so the Producer can suggest revisions if it doesn't).
+
+## When NOT to use this skill
+
+- No candidates were returned by Vector Search (nothing to classify)
+- The fragment has not been tagged yet (run `music-tagging` first — you
+  need emotion/theme/structure tags to evaluate signals)
+- The question is about musical compatibility only (use `musical-knowledge`
+  directly)
+- The question is about whether to refuse (use `refusal-rules`)
+
+## Input
+
+You receive the new fragment's full metadata and an array of candidate
+neighbors from Vector Search:
+
+```json
+{
+  "new_fragment": {
+    "fragment_id": "string",
+    "text": "string | null",
+    "raw_text": "string | null",
+    "emotions": ["melancholy", "acceptance"],
+    "themes": ["self-identity", "mental-health"],
+    "structure_hint": "hook_candidate",
+    "style": ["singer-songwriter"],
+    "audio_features": { "bpm": 72, "estimated_key": "Am", "..." : "..." },
+    "project_id": "string | null",
+    "created_at": "ISODate"
+  },
+  "candidates": [
+    {
+      "fragment_id": "string",
+      "similarity": 0.91,
+      "text": "string | null",
+      "raw_text": "string | null",
+      "emotions": ["melancholy"],
+      "themes": [],
+      "structure_hint": "melodic_motif",
+      "style": [],
+      "audio_features": { "bpm": 72, "estimated_key": "Am", "..." : "..." },
+      "project_id": "string | null",
+      "project_title": "string | null",
+      "created_at": "ISODate"
+    }
+  ]
+}
+```
 
 ## Output schema
 
@@ -80,6 +123,54 @@ Then aggregate them into:
   the user. The Producer Agent will surface this when explaining decisions.
 - `suggested_action`: a high-level recommendation for what Producer should
   do based on all matches.
+
+## Procedure
+
+Follow these steps for every set of candidates returned by Vector Search.
+
+### Step 1: Filter candidates
+
+Discard any candidate with `similarity < 0.70`. If more than 10
+candidates remain, keep only the top 5 by similarity.
+
+### Step 2: Evaluate signals per candidate
+
+For each remaining candidate, evaluate the four signals independently
+(see "The four signals" below):
+1. Emotional alignment
+2. Thematic alignment
+3. Musical compatibility (consult `musical-knowledge` skill if audio
+   features are present)
+4. Temporal pattern
+
+### Step 3: Classify relationship type
+
+Using the signal evaluations and the rules in "The four relationship
+types" below, assign exactly one relationship label to each candidate.
+Apply the conservative bias: when uncertain between two types, choose
+the weaker one.
+
+### Step 4: Assign confidence
+
+For each classification, assign `high`, `medium`, or `low` confidence
+based on signal convergence (see "Confidence levels" below).
+
+### Step 5: Determine suggested action
+
+Looking across ALL candidates, choose one `suggested_action` for the
+new fragment: `join_project`, `bridge_projects`, `new_project`, or
+`needs_user_confirmation` (see "Suggested action logic" below).
+
+### Step 6: Write reasoning
+
+For each candidate, write 1-2 sentences explaining the classification.
+This text will be shown to the user by the Producer Agent.
+
+### Step 7: Return result
+
+Assemble the full output JSON (matches array + aggregated action).
+Filter out `unrelated` candidates from the matches — don't surface
+noise to the user.
 
 ## The four relationship types
 
@@ -453,6 +544,190 @@ Reasoning: "The new fragment 'Two passports, one tongue' connects two
 existing projects that both explore displacement and language. These may
 actually be one larger song the user split into two drafts."
 
+### Example 6: Similar emotion only (weakest meaningful type)
+
+New fragment: "3 AM and the ceiling is the only one listening"
+- emotion: [loneliness, vulnerability]
+- theme: [isolation]
+- structure_hint: lyric_fragment
+
+Candidate (3 weeks earlier):
+- raw_text: "empty parking lot, engine still running"
+- emotion: [loneliness, tension]
+- theme: [escape, uncertainty]
+- similarity: 0.74
+- project_id: null
+
+Evaluation:
+- emotional_alignment: strong (loneliness overlaps)
+- thematic_alignment: conflicting (isolation vs escape — different
+  directions despite similar mood)
+- musical_compatibility: n/a (both text-only)
+- temporal_pattern: unrelated_in_time
+
+Relationship: `similar_emotion`
+Confidence: medium
+Reasoning: "Both fragments share a lonely, late-night feeling, but their
+subject matter diverges — one is about stillness, the other about
+movement. Worth noting as an emotional pattern, not a same-song link."
+
+Why `similar_emotion` and not `related_theme`: thematic alignment is
+conflicting. The shared loneliness is the only real connection. This is
+useful for Creative DNA (user gravitates toward loneliness at night) but
+not for project grouping.
+
+### Example 7: True unrelated — filtered out
+
+New fragment: "Sunrise over the highway, golden hour"
+- emotion: [wonder, joy]
+- theme: [nature, freedom]
+- structure_hint: verse_candidate
+
+Candidate:
+- raw_text: "Golden retriever running through the yard"
+- emotion: [joy, tenderness]
+- theme: [home, family]
+- similarity: 0.73
+
+Evaluation:
+- emotional_alignment: weak (both have joy, but wonder vs tenderness are
+  not adjacent — different flavor of positive emotion)
+- thematic_alignment: weak (no shared theme; "golden" is coincidental
+  vocabulary overlap that inflated similarity)
+- musical_compatibility: n/a
+- temporal_pattern: unrelated_in_time
+
+Relationship: `unrelated`
+Confidence: high
+Reasoning: "High embedding similarity is driven by shared vocabulary
+('golden') rather than meaningful connection. Different subjects, different
+emotional specifics."
+
+Action: filter this out before returning to Producer. Do not surface to
+the user.
+
+### Example 8: Full convergence — high confidence same-song
+
+New fragment (audio):
+- raw_text: "And I'll meet you where the streetlights end"
+- audio_features: { bpm: 96, key: "G", duration: 18s }
+- emotion: [longing, hope]
+- theme: [love, meeting]
+- structure_hint: chorus_candidate
+
+Candidate (audio, in project p_007 "Streetlight Letters", 3 days ago):
+- raw_text: "I wrote your name on every envelope I never sent"
+- audio_features: { bpm: 94, key: "Em", duration: 25s }
+- emotion: [longing, melancholy]
+- theme: [love, communication]
+- structure_hint: verse_candidate
+- similarity: 0.93
+
+Evaluation:
+- emotional_alignment: strong (longing overlaps; hope + melancholy are
+  complementary, not conflicting — verse melancholy building to chorus
+  hope is a classic arc)
+- thematic_alignment: strong (both have `love`; "streetlights" and
+  "envelopes" are compatible romantic imagery)
+- musical_compatibility: strong (Em ↔ G = relative major/minor; 94 vs
+  96 BPM within 5%)
+- temporal_pattern: active_project (3 days ago, active project)
+
+Relationship: `same_song_candidate`
+Confidence: **high** (all four signals converge; similarity well above
+0.85; candidate already in an active project)
+Suggested action: `join_project` (add new fragment to project p_007)
+Reasoning: "This chorus candidate shares romantic imagery, compatible
+emotions, and near-identical tempo and key with the existing verse in
+'Streetlight Letters'. Strong evidence these are parts of the same song."
+
+### Example 9: needs_user_confirmation — ambiguous signals
+
+New fragment (audio):
+- raw_text: "Burning bridges just to see the flames"
+- audio_features: { bpm: 112, key: "Am", duration: 20s }
+- emotion: [defiance, anger]
+- theme: [destruction, self-identity]
+- structure_hint: hook_candidate
+
+Candidate A (in project p_003 "Matchstick", 2 months ago):
+- raw_text: "I'll burn this city down before I say I'm sorry"
+- emotion: [anger, defiance]
+- theme: [destruction, freedom]
+- audio_features: { bpm: 145, key: "Dm", duration: 22s }
+- similarity: 0.86
+
+Candidate B (in project p_003 "Matchstick", 2 months ago):
+- raw_text: "There's nothing left to save"
+- emotion: [acceptance, loss]
+- theme: [destruction, mental-health]
+- audio_features: { bpm: 78, key: "Am", duration: 35s }
+- similarity: 0.76
+
+Evaluation of Candidate A:
+- emotional_alignment: strong (anger + defiance overlap)
+- thematic_alignment: strong (destruction overlap; fire imagery shared)
+- musical_compatibility: **conflicting** (Am vs Dm = marginal keys;
+  112 vs 145 BPM = 29% difference, beyond 25% and not doubled/halved)
+- temporal_pattern: dormant (2 months)
+
+Candidate A classification: `same_song_candidate` by emotion + theme,
+but `conflicting` musical compatibility. Conservative bias says →
+`related_theme` with `low` confidence.
+
+Evaluation of Candidate B:
+- emotional_alignment: weak (defiance vs acceptance — different registers)
+- thematic_alignment: strong (destruction overlap)
+- musical_compatibility: weak (Am matches; 112 vs 78 BPM = 43% apart
+  — not compatible even as doubled/halved)
+- temporal_pattern: dormant
+
+Candidate B classification: `related_theme`, `low` confidence.
+
+Both candidates are in the same project and share fire/destruction
+imagery, but musical signals conflict in different ways. The new fragment
+*feels* like it could belong to "Matchstick" thematically, but the music
+doesn't fit either existing fragment.
+
+Suggested action: `needs_user_confirmation`
+Reasoning: "This fragment shares destruction imagery and defiant emotion
+with your 'Matchstick' project, but the tempo and key don't match either
+existing fragment. Is this a new direction for Matchstick, or a separate
+idea?"
+
+### Example 10: Non-English fragment
+
+New fragment: "窗外的雨声像是在说再见"
+(Translation: "The rain outside sounds like it's saying goodbye")
+- emotion: [melancholy, tenderness]
+- theme: [farewell, nature]
+- structure_hint: verse_candidate
+
+Candidate (English, 6 months ago):
+- raw_text: "I said goodbye in the rain and you didn't hear me"
+- emotion: [loss, loneliness]
+- theme: [farewell, love]
+- similarity: 0.82
+
+Evaluation:
+- emotional_alignment: strong (melancholy ↔ loss are adjacent; tenderness
+  ↔ loneliness are both vulnerable registers)
+- thematic_alignment: strong (both have `farewell`; rain imagery shared)
+- musical_compatibility: n/a (both text-only)
+- temporal_pattern: unrelated_in_time (6 months apart)
+
+Relationship: `related_theme`
+Confidence: medium
+Reasoning: "Both fragments use rain as a farewell metaphor with
+melancholic emotion. Despite being in different languages, they share
+thematic territory. Not classified as same-song because the time gap and
+language difference suggest separate creative contexts."
+
+Why not `same_song_candidate`: While the signals are strong, fragments in
+different languages are unlikely to be parts of the same unfinished song
+unless the user explicitly works bilingually. The conservative bias
+applies — downgrade to `related_theme` and let the user decide.
+
 ## Edge cases
 
 ### Both fragments have very sparse tags
@@ -501,3 +776,28 @@ False positives are the most damaging error in this system. The user can
 forgive Pocket Producer for missing a connection (they'll find it eventually
 through other paths). They lose trust when Pocket Producer confidently asserts
 a wrong connection.
+
+## Common mistakes
+
+1. **Treating high cosine similarity as sufficient.** A similarity of 0.90
+   only means the embeddings are close — it does not mean the fragments
+   belong together. Always evaluate all four signals before classifying.
+
+2. **Ignoring temporal context.** Two fragments from the same week in the
+   same project are much more likely to be related than two fragments
+   months apart with no shared project. Factor temporal pattern into
+   confidence, not just relationship type.
+
+3. **Upgrading `related_theme` to `same_song_candidate` on shared
+   vocabulary alone.** Two songs about "rain" are not automatically the
+   same song. Require convergence across emotion, theme, AND musical
+   signals before asserting `same_song_candidate`.
+
+4. **Missing bridge detection.** When candidates come from two different
+   projects, check whether both are `same_song_candidate` — this is the
+   `bridge_projects` trigger. It is rare but the highest-value insight
+   this skill can produce.
+
+5. **Surfacing `unrelated` matches.** Filter them out before returning
+   to the Producer Agent. Showing noise damages user trust more than
+   missing a weak connection.

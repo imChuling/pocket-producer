@@ -87,6 +87,36 @@ def _extract_sync(audio_url: str) -> dict[str, Any]:
     minor_corr = float(np.corrcoef(np.roll(chroma_mean, -key_index), minor_profile)[0, 1])
     estimated_mode = "major" if major_corr > minor_corr else "minor"
 
+    # --- Niche-style discriminator features ---
+
+    # Rhythm complexity — std dev of inter-onset intervals (IOI)
+    # High = irregular timing (math-rock, jazz), low = steady pulse (four-on-floor, punk)
+    # Medium = shuffle/swing patterns (blues, soul)
+    if len(onsets) >= 3:
+        ioi = np.diff(onsets)
+        rhythm_complexity = round(float(np.std(ioi)), 4)
+    else:
+        rhythm_complexity = 0.0
+
+    # Spectral flatness — how noise-like vs tonal the signal is (0=pure tone, 1=white noise)
+    # High (>0.1) = shoegaze wall-of-sound, ambient drones, noise textures
+    # Low (<0.02) = clean guitar, piano, vocals in front
+    # Use with energy to disambiguate: high flatness + high energy = shoegaze,
+    # high flatness + low energy = ambient
+    spec_flat = librosa.feature.spectral_flatness(y=y)[0]
+    spectral_flatness = round(float(np.mean(spec_flat)), 4)
+
+    # Dynamic range — ratio of 90th to 10th percentile RMS
+    # High (>4) = large dynamic swings (post-rock, classical, acoustic-ballad with climax)
+    # Low (<2) = compressed/consistent loudness (punk, metal, trap, lo-fi)
+    # Medium (2-4) = normal pop/rock dynamics
+    if len(rms) >= 10:
+        p90 = float(np.percentile(rms, 90))
+        p10 = float(np.percentile(rms, 10))
+        dynamic_range = round(p90 / max(p10, 1e-6), 2)
+    else:
+        dynamic_range = 1.0
+
     return {
         # Core (existing)
         "bpm": round(float(tempo), 1),
@@ -94,11 +124,15 @@ def _extract_sync(audio_url: str) -> dict[str, Any]:
         "estimated_mode": estimated_mode,
         "duration_sec": round(duration, 2),
         "pitch_range": pitch_range,
-        # Enriched (new)
+        # Enriched (wave 1)
         "energy_mean": rms_mean,
         "energy_curve": energy_curve,
         "brightness": centroid_mean,
         "onset_density": onset_density,
+        # Niche-style discriminators (wave 2)
+        "rhythm_complexity": rhythm_complexity,
+        "spectral_flatness": spectral_flatness,
+        "dynamic_range": dynamic_range,
     }
 
 

@@ -12,10 +12,9 @@ license: Apache-2.0
 
 # Music Tagging
 
-You are tagging a single fragment from a music creator (songwriter, producer,
-or music student). Your job is to convert raw input into structured metadata
-that downstream agents (Memory, Producer) can use to find connections and
-suggest next steps.
+Convert a music creator's raw fragment (audio transcript, text snippet, or
+emoji input) into structured metadata that downstream agents (Memory,
+Producer) use for search, relationship discovery, and next-step suggestions.
 
 This skill is **descriptive, not generative**. You describe what is there. You
 do not invent musical features that are not supported by the input.
@@ -30,11 +29,58 @@ fragment can be:
 - An emoji or short emoji string (used as quick emotional shorthand)
 - An audio file accompanied by user description
 
-You will receive either:
-- **Text-only input**: a string of text
-- **Audio + features input**: a transcript plus objective audio features
-  (BPM, estimated key, duration, pitch range) extracted by librosa
-- **Mixed input**: audio + user-provided text description
+## When NOT to use this skill
+
+- The fragment has already been tagged (re-tagging is handled by the
+  edit-text endpoint, not this skill)
+- The request is about relationships between fragments (use
+  `relationship-rules`)
+- The request is about project scoring (use `rescue-scoring`)
+- The request involves generating musical content (out of scope for all
+  Pocket Producer agents)
+
+## Input
+
+You receive one of three input shapes:
+
+**Text-only input**:
+```json
+{
+  "type": "text",
+  "text": "I keep waiting for the rain to stop, but the rain is me",
+  "audio_features": null
+}
+```
+
+**Audio + features input** (transcript + librosa features):
+```json
+{
+  "type": "audio",
+  "text": null,
+  "raw_text": "I keep waiting for the rain to stop",
+  "audio_features": {
+    "bpm": 72.0,
+    "estimated_key": "Am",
+    "estimated_mode": "minor",
+    "duration_sec": 12.4,
+    "pitch_range": [220.0, 440.0],
+    "energy_mean": 0.042,
+    "energy_curve": [0.03, 0.05, 0.06, 0.04],
+    "brightness": 2100.5,
+    "onset_density": 3.2
+  }
+}
+```
+
+**Mixed input** (audio features + user-provided text description):
+```json
+{
+  "type": "audio",
+  "text": "sad piano idea for the bridge",
+  "raw_text": "",
+  "audio_features": { "bpm": 68.0, "estimated_key": "Dm", "..." : "..." }
+}
+```
 
 ## Output schema
 
@@ -117,7 +163,7 @@ Do not impose your aesthetic preferences. If the fragment is dark, tag it
 dark. If it is naive, tag it naive. The creator decides what their work
 means; you only describe what is observable.
 
-## Tagging procedure
+## Procedure
 
 Follow these steps in order for every fragment.
 
@@ -283,10 +329,18 @@ When the audio has no clear vocals or lyrics:
      acceptance (set emotion tentatively; consider needs_user_input)
    - Major key + fast BPM (> 120) → *plausibly* joy, excitement, defiance
    - Mid-tempo (80-120) + any key → emotion ambiguous; consider asking user
-3. Theme is almost always empty for sparse audio.
-4. Structure hint: short distinctive audio often suggests `melodic_motif` or
+3. Use niche-style discriminator features for **style** assignment:
+   - `rhythm_complexity` > 0.20 → consider math-rock, jazz, fusion
+   - `spectral_flatness` > 0.12 + high energy → consider shoegaze
+   - `spectral_flatness` > 0.10 + low energy → consider ambient
+   - `dynamic_range` > 5.0 → consider post-rock, acoustic-ballad
+   - `dynamic_range` < 2.0 + high energy → consider punk, metal, trap
+   - See `references/style-vocabulary.md` § "Using librosa features for
+     style discrimination" for the full mapping table.
+4. Theme is almost always empty for sparse audio.
+5. Structure hint: short distinctive audio often suggests `melodic_motif` or
    `hook_candidate`; longer audio suggests `verse_candidate`.
-5. Default to `needs_user_input: true` unless features are highly consistent
+6. Default to `needs_user_input: true` unless features are highly consistent
    with a single emotional reading.
 
 ## Handling emoji input
@@ -314,7 +368,7 @@ See `assets/tagging-examples.json` for 30+ worked examples covering:
 Refer to these examples when uncertain. They are the source of truth for how
 to apply the rules in practice.
 
-## Common mistakes to avoid
+## Common mistakes
 
 1. **Over-tagging emotion.** Picking 3 emotions when 1 strong one is more
    accurate dilutes the embedding. Default to 1-2.
@@ -330,7 +384,7 @@ to apply the rules in practice.
 5. **Refusing too easily.** A short fragment with one strong tag is better
    than a refusal. Reserve refusals for the five cases listed above.
 
-## What this skill does not do
+## What this skill does NOT do
 
 - It does not generate musical content
 - It does not judge musical quality or commercial viability
