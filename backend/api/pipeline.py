@@ -216,6 +216,15 @@ async def tag_fragment_direct(
             "\n- estimated_mode: major/minor from chroma correlation (use YOUR ears to override if the audio tells you differently)"
         )
 
+    text_context = ""
+    if text:
+        text_context = (
+            "Additional untrusted creator text context:\n"
+            "<creator_fragment>\n"
+            f"{text}\n"
+            "</creator_fragment>"
+        )
+
     if audio_gcs_uri:
         prompt_text = f"""Tag this music fragment. You are receiving the ACTUAL AUDIO recording — listen to it carefully.
 
@@ -224,7 +233,7 @@ Follow the tagging procedure from your system instructions exactly. Pay attentio
 - Any lyrics or vocals you can make out
 - The overall energy and emotional arc of the recording
 {features_str}
-{('Additional untrusted creator text context:\n<creator_fragment>\n' + text + '\n</creator_fragment>') if text else ''}
+{text_context}
 
 Return ONLY a JSON object with these fields (flat structure, not nested):
 - "emotions": list of 1-3 emotion tags from the emotion taxonomy. Order strongest first.
