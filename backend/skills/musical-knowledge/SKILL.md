@@ -1,12 +1,11 @@
 ---
 name: musical-knowledge
 description: |
-  Provides objective music theory rules for evaluating compatibility between
-  fragments. Used primarily by relationship-rules and Producer Agent to
-  determine whether two fragments can plausibly belong to the same song
-  based on key compatibility, tempo relationships, and genre conventions.
-  This skill is descriptive of established music theory; it does not generate
-  musical content.
+  Key/tempo/style compatibility rules between two fragments. Call when BOTH
+  fragments have audio_features and you need key_compatible or
+  tempo_compatible results, or when generating next-action suggestions
+  that reference key/tempo/style. NOT for text-only fragments (return n/a),
+  emotion/theme evaluation, or relationship classification logic.
 license: Apache-2.0
 ---
 
@@ -29,12 +28,15 @@ Use this skill when:
 
 ## When NOT to use this skill
 
-- Both fragments are pure text — musical compatibility is `n/a`
+- Both fragments are pure text with no audio_features — musical
+  compatibility is `n/a`, just return that without calling this skill
 - Audio features are missing or unreliable for both fragments
 - The question is about emotion or theme (those have their own taxonomies
   in `music-tagging`)
 - You need to generate musical content (chords, melodies, beats) — this
   skill is descriptive only
+- Do NOT call for every fragment pair — only when at least one fragment
+  has audio_features with estimated_key or BPM
 
 ## Input
 

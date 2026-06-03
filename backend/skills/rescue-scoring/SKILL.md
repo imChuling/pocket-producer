@@ -1,12 +1,11 @@
 ---
 name: rescue-scoring
 description: |
-  Interpret and present the Rescue Score for a project — a 0-100 indicator
-  of how likely the project is to be completed if the user invests more
-  time. Used by Producer Agent to prioritize projects, generate next-action
-  suggestions, and explain scores to users. The actual computation is in
-  pure Python (backend/tools/rescue_score.py); this skill defines what the
-  score means and how to communicate it.
+  Interpret a project's Rescue Score and generate next_action + explanation.
+  Call after refresh_project_score returns score + breakdown. Contains
+  next-action tables by weakest component, explanation templates by tier.
+  Score computation is pure Python — do NOT calculate it yourself. NOT for
+  single-fragment projects (tier=new, skip) or fragment-level tasks.
 license: Apache-2.0
 ---
 
@@ -42,11 +41,13 @@ Use this skill whenever:
 
 - For individual fragments (fragments don't have Rescue Scores; only
   projects do)
-- For new projects with 1 fragment (insufficient data — return
-  `tier: "new"` with null score)
+- For new projects with only 1 fragment — insufficient data, return
+  `tier: "new"` with null score directly, do NOT call this skill
 - For projects the user has explicitly marked as completed or archived
 - When the question is about fragment tagging (use `music-tagging`) or
   relationships (use `relationship-rules`)
+- Do NOT call this skill to compute the score — Python does that. Only
+  call when you need to interpret, explain, or generate next_action
 
 ## Input
 

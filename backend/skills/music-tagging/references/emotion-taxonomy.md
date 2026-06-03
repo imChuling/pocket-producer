@@ -1,6 +1,6 @@
 # Emotion Taxonomy
 
-This taxonomy is used by Catcher Agent to assign emotion tags to fragments.
+This taxonomy is used by the Gemini tagging pipeline to assign emotion tags to fragments.
 It is based on the **Geneva Emotional Music Scale (GEMS)** (Zentner, Grandjean
 & Scherer, 2008), a peer-reviewed framework specifically developed for music-
 induced emotions, and extended with practical tags songwriters use day-to-day.

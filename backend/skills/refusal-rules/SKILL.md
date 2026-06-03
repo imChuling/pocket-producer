@@ -1,10 +1,10 @@
 ---
 name: refusal-rules
 description: |
-  Defines when and how agents should refuse to act, request user input, or
-  escalate. Shared across all Pocket Producer agents (Catcher, Memory,
-  Producer) to ensure consistent boundary behavior. Covers data sparsity,
-  uncertainty, copyright concerns, scope mismatches, and emotional safety.
+  When and how to refuse, request user input, or escalate. Covers: sparse
+  input, conflicting signals, copyright, scope mismatch, emotional safety,
+  technical limits. NOT for normal empty style/theme (valid defaults),
+  system errors (API layer handles those), or rate limiting.
 license: Apache-2.0
 ---
 
@@ -21,10 +21,9 @@ output, check whether any refusal condition applies. If so, follow that
 condition's specific protocol.
 
 This skill is shared by:
-- **Catcher Agent**: refusals about input that can't be confidently tagged
+- **Gemini tagging pipeline**: refusals about input that can't be confidently tagged
 - **Memory Agent**: refusals about ambiguous relationship classifications
 - **Producer Agent**: refusals about scope, copyright, and emotional context
-- **Async modules (DNA, Resurrect)**: refusals about insufficient data
 
 ## When NOT to use this skill
 
@@ -41,7 +40,7 @@ These are system-level concerns, not reasoning-level refusals.
 You do not receive a dedicated input for this skill. Instead, you apply
 refusal checks to whatever input the current agent is processing:
 
-- **Catcher Agent context**: a raw fragment (text, audio, or emoji) being
+- **Tagging pipeline context**: a raw fragment (text, audio, or emoji) being
   tagged
 - **Memory Agent context**: a set of candidate neighbors being classified
 - **Producer Agent context**: a classification result being acted on
@@ -281,9 +280,9 @@ When refusing or requesting input:
 
 When one agent refuses, what happens to downstream agents?
 
-- **Catcher refuses → Memory + Producer halt**. Without a tagged fragment,
-  there's nothing for Memory to search or Producer to act on. Return the
-  refusal directly to the user.
+- **Tagging pipeline refuses → Memory + Producer halt**. Without a tagged
+  fragment, there's nothing for Memory to search or Producer to act on.
+  Return the refusal directly to the user.
 
 - **Memory refuses (low confidence) → Producer escalates to user**. The
   Producer Agent surfaces Memory's uncertainty as part of its decision
@@ -292,7 +291,7 @@ When one agent refuses, what happens to downstream agents?
 
 - **Producer refuses → user sees the refusal, fragment is still saved**.
   The Producer's job is to suggest next steps. If it can't, the fragment
-  is still captured by Catcher and findable by Memory in the future.
+  is still saved and findable by Memory in the future.
 
 ## Special case: User has explicitly told the system to "just do it"
 
@@ -312,7 +311,7 @@ without input. Honor this in some cases, refuse in others:
 
 ## Worked examples
 
-### Example 1: Data sparsity — too short to tag (Catcher)
+### Example 1: Data sparsity — too short to tag (tagging)
 
 Input: text = "sad"
 - 1 word, no audio features, no context
@@ -322,7 +321,7 @@ Input: text = "sad"
   mood or where you think it might go?"
 - Tags: `emotions: [], themes: [], structure_hint: null`
 
-### Example 2: Copyright concern — known lyrics (Catcher)
+### Example 2: Copyright concern — known lyrics (tagging)
 
 Input: text = "Hello darkness my old friend, I've come to talk with you again"
 - Trigger: Category 3 (matches Simon & Garfunkel's "The Sound of Silence")
@@ -344,7 +343,7 @@ User message: "Write me a chorus about my grandmother"
   rough phrase or feeling about your grandmother, drop it in and I'll
   help you find connections to your other work."
 
-### Example 4: Emotional safety — crisis content (Catcher)
+### Example 4: Emotional safety — crisis content (tagging)
 
 Input: text = "I can't do this anymore. I want it to end tonight."
 - Context: no project history of dark lyrics, no clearly performative
@@ -369,7 +368,7 @@ Two candidates with conflicting signals:
   I'm not confident about either — one matches emotionally but the music
   doesn't fit, the other shares a theme but has no other signals."
 
-### Example 6: System uncertainty — mixed ideas in one upload (Catcher)
+### Example 6: System uncertainty — mixed ideas in one upload (tagging)
 
 Input: audio, 90 seconds, transcript shows two clearly separate sections:
 - First 40s: soft piano with lyrics about loneliness
@@ -391,7 +390,7 @@ Why not refuse entirely: the fragment IS capturable — emotions and themes
 can be identified. The system uncertainty is about structure, not about
 whether the input is valid.
 
-### Example 7: Dark lyrics that are NOT a safety trigger (Catcher)
+### Example 7: Dark lyrics that are NOT a safety trigger (tagging)
 
 Input: text = "I buried my heart in the backyard next to the dog / Now
 nothing grows there but silence and weeds"
@@ -412,7 +411,7 @@ artistic context is normal creative work. The system must support it, not
 pathologize it. Only present-tense, autobiographical crisis language
 triggers Category 5.
 
-### Example 8: "Just do it" override — user pushes back (Catcher)
+### Example 8: "Just do it" override — user pushes back (tagging)
 
 First pass: user uploads 3-second hum, no text
 - Trigger: Category 1 (sparse audio, < 5 seconds, no distinguishing
@@ -441,7 +440,7 @@ User responds: "I know, just tag it"
 - user_prompt: "Got it — I've saved this as a reference track so it won't
   affect your creative memory matching. Your original ideas stay distinct."
 
-### Example 9: Audio quality issues (Catcher)
+### Example 9: Audio quality issues (tagging)
 
 Input: audio, 15 seconds, heavy background noise
 - Gemini transcript: "I... [inaudible]... the morning... [inaudible]...
@@ -461,7 +460,7 @@ Key: the agent captured what it COULD (emotion from features + partial
 text, structure from duration). It didn't refuse entirely just because
 the transcript was poor.
 
-### Example 10: Copyright grey area — familiar melody (Catcher)
+### Example 10: Copyright grey area — familiar melody (tagging)
 
 Input: audio, 8 seconds, hummed melody
 - No lyrics, no user text

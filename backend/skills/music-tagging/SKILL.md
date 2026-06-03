@@ -1,12 +1,9 @@
 ---
 name: music-tagging
 description: |
-  Apply structured tags to a music creator's raw fragment (audio transcript,
-  text snippet, or emoji input). Used by Catcher Agent to convert raw input
-  into searchable, structured metadata. Covers emotion (GEMS-based taxonomy),
-  theme, structure hint, style, and potential rating. Provides clear
-  refusal/uncertainty signals when the input is too sparse for confident
-  tagging.
+  Rules and taxonomy for tagging music fragments with emotion, theme,
+  structure, style, and potential. This skill is loaded as system context
+  for the Gemini tagging pipeline — not called as a tool at runtime.
 license: Apache-2.0
 ---
 
