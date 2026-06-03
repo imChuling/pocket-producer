@@ -1,12 +1,11 @@
 ---
 name: relationship-rules
 description: |
-  Classify the relationship between a new fragment and a candidate past
-  fragment retrieved by Vector Search. Used by Memory Agent to filter raw
-  semantic similarity into meaningful relationships (same-song candidate,
-  related-theme, similar-emotion, or unrelated). Defines confidence
-  thresholds, multi-signal fusion logic, and when to escalate to user
-  confirmation.
+  Classify fragment pairs into same_song_candidate / related_theme /
+  similar_emotion / unrelated using 4-signal fusion. Call after vector
+  search returns neighbors with score >= 0.70. Also call musical-knowledge
+  for key/tempo checks when both fragments have audio_features. NOT for
+  single-fragment tagging or project scoring.
 license: Apache-2.0
 ---
 
@@ -40,6 +39,10 @@ Use this skill whenever:
 - The question is about musical compatibility only (use `musical-knowledge`
   directly)
 - The question is about whether to refuse (use `refusal-rules`)
+- Do NOT call just because two fragments belong to the same user — ALL
+  fragments belong to the same user; that is not a signal
+- Do NOT call for neighbors with similarity_score < 0.70 — they are
+  already discarded by the hard floor rule
 
 ## Input
 

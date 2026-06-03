@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema",
-  "description": "Worked examples for music-tagging skill. Each example shows the input the Catcher Agent receives, the expected tagging output, and notes explaining the reasoning. These are the source of truth for how to apply the rules in practice.",
+  "description": "Worked examples for music-tagging skill. Each example shows the input the tagging pipeline receives, the expected tagging output, and notes explaining the reasoning. These are the source of truth for how to apply the rules in practice.",
   "examples": [
     {
       "id": "ex-001",
