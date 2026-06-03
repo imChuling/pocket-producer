@@ -224,7 +224,7 @@ Follow the tagging procedure from your system instructions exactly. Pay attentio
 - Any lyrics or vocals you can make out
 - The overall energy and emotional arc of the recording
 {features_str}
-{f'Additional untrusted creator text context:\n<creator_fragment>\n{text}\n</creator_fragment>' if text else ''}
+{('Additional untrusted creator text context:\n<creator_fragment>\n' + text + '\n</creator_fragment>') if text else ''}
 
 Return ONLY a JSON object with these fields (flat structure, not nested):
 - "emotions": list of 1-3 emotion tags from the emotion taxonomy. Order strongest first.
