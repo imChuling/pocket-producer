@@ -49,7 +49,7 @@ app.add_middleware(SlowAPIMiddleware)
 
 _default_origins = [
     "https://pocketproducer.app",
-    "https://frontend-kappa-six-92.vercel.app",
+    "https://pocketproducer.vercel.app",
     "http://localhost:3000",
     "https://pocket-producer-25253422868.us-central1.run.app",
 ]
