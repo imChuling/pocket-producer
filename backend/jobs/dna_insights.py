@@ -61,6 +61,31 @@ def run():
             hours = list(fragments.aggregate(time_pipeline))
             peak = max(hours, key=lambda x: x["count"]) if hours else None
 
+            # Emotion timeline — emotions aggregated by week (ISO week)
+            emotion_timeline_pipeline = [
+                {"$match": {"user_id": user_id, "emotions": {"$exists": True}}},
+                {"$unwind": "$emotions"},
+                {"$group": {
+                    "_id": {
+                        "week": {"$dateToString": {"format": "%Y-W%V", "date": "$created_at"}},
+                        "emotion": "$emotions",
+                    },
+                    "count": {"$sum": 1},
+                }},
+                {"$sort": {"_id.week": 1}},
+            ]
+            timeline_raw = list(fragments.aggregate(emotion_timeline_pipeline))
+            # Reshape: [{week, emotions: {name: count}}]
+            weeks_map: dict[str, dict[str, int]] = {}
+            for row in timeline_raw:
+                wk = row["_id"]["week"]
+                em = row["_id"]["emotion"]
+                weeks_map.setdefault(wk, {})[em] = row["count"]
+            emotion_timeline = [
+                {"week": wk, "emotions": ems}
+                for wk, ems in sorted(weeks_map.items())
+            ]
+
             project_count = db["projects"].count_documents({"user_id": user_id})
             theme_dist = {t["_id"]: t["count"] for t in themes}
             hourly_dist = {str(h["_id"]): h["count"] for h in hours}
@@ -78,6 +103,7 @@ def run():
                         "dominant_emotion": dominant_emotion,
                         "top_styles": styles,
                         "structure_distribution": structures,
+                        "emotion_timeline": emotion_timeline,
                         "peak_hours": (
                             f"{peak['_id']}:00 - {(peak['_id'] + 2) % 24}:00"
                             if peak

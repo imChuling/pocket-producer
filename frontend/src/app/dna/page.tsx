@@ -6,6 +6,8 @@ import { Flame, Clock, Music2, Sparkles, Layers } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { apiFetch } from "@/lib/api";
 import { EmotionRadar } from "@/components/emotion-radar";
+import { FragmentNetwork } from "@/components/fragment-network";
+import { StyleBubbles } from "@/components/style-bubbles";
 import { ThemeBar } from "@/components/theme-bar";
 import { HourlyHeatmap } from "@/components/hourly-heatmap";
 import type { DNAData } from "@/types";
@@ -551,9 +553,9 @@ export default function DNAPage() {
           </div>
         </div>
 
-        {/* Emotion Flow — full width */}
+        {/* Emotion Flow — particle field */}
         {Object.keys(emotions).length >= 2 && (
-          <section className="space-y-3 animate-card-enter" style={{ animationDelay: "180ms" }}>
+          <section className="space-y-3 animate-card-enter" style={{ animationDelay: "210ms" }}>
             <span className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-slate">
               Emotion Flow
             </span>
@@ -571,15 +573,38 @@ export default function DNAPage() {
           </section>
         )}
 
+        {/* Network + Style Bubbles — side by side */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <section className="space-y-3 animate-card-enter" style={{ animationDelay: "240ms" }}>
+            <span className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-slate">
+              Fragment Network
+            </span>
+            <div className="bg-white/50 backdrop-blur-sm rounded-[24px] p-3 shadow-hairline overflow-hidden h-full">
+              <FragmentNetwork />
+            </div>
+          </section>
+
+          {styles.length > 0 && (
+            <section className="space-y-3 animate-card-enter" style={{ animationDelay: "280ms" }}>
+              <span className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-slate">
+                Your Sound Palette
+              </span>
+              <div className="bg-white/50 backdrop-blur-sm rounded-[24px] p-3 shadow-hairline h-full">
+                <StyleBubbles styles={styles} />
+              </div>
+            </section>
+          )}
+        </div>
+
         {/* Bento grid — 2-column layout for visualizations */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-12 mt-12">
           {/* Emotion Radar */}
           {Object.keys(emotions).length >= 3 && (
-            <section className="space-y-3 animate-card-enter" style={{ animationDelay: "240ms" }}>
+            <section className="space-y-3 animate-card-enter" style={{ animationDelay: "300ms" }}>
               <span className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-slate">
                 Emotional Palette
               </span>
-              <div className="bg-white/50 backdrop-blur-sm rounded-[24px] p-6 shadow-hairline h-full">
+              <div className="bg-white/50 backdrop-blur-sm rounded-[24px] p-3 shadow-hairline h-full flex items-center justify-center">
                 <EmotionRadar emotions={emotions} />
               </div>
             </section>
@@ -587,19 +612,21 @@ export default function DNAPage() {
 
           {/* Themes */}
           {Object.keys(themes).length > 0 && (
-            <section className="space-y-3 animate-card-enter" style={{ animationDelay: "320ms" }}>
+            <section className="space-y-3 animate-card-enter" style={{ animationDelay: "360ms" }}>
               <span className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-slate">
                 Top Themes
               </span>
-              <div className="bg-white/50 backdrop-blur-sm rounded-[24px] p-6 shadow-hairline h-full">
-                <ThemeBar themes={themes} />
+              <div className="bg-white/50 backdrop-blur-sm rounded-[24px] px-6 py-3 shadow-hairline h-full flex items-center">
+                <div className="w-full">
+                  <ThemeBar themes={themes} />
+                </div>
               </div>
             </section>
           )}
 
           {/* Structure Distribution */}
           {structures.length > 0 && (
-            <section className="space-y-3 animate-card-enter" style={{ animationDelay: "400ms" }}>
+            <section className="space-y-3 animate-card-enter" style={{ animationDelay: "420ms" }}>
               <span className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-slate">
                 Structure Breakdown
               </span>
@@ -621,18 +648,6 @@ export default function DNAPage() {
             </section>
           )}
         </div>
-
-        {/* Style Cloud — full width bottom */}
-        {styles.length > 0 && (
-          <section className="space-y-3 animate-card-enter" style={{ animationDelay: "560ms" }}>
-            <span className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-slate">
-              Your Sound Palette
-            </span>
-            <div className="bg-white/50 backdrop-blur-sm rounded-[24px] p-6 shadow-hairline">
-              <StyleCloud styles={styles} />
-            </div>
-          </section>
-        )}
       </div>
     </div>
   );

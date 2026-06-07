@@ -29,8 +29,8 @@ export function EmotionRadar({ emotions }: EmotionRadarProps) {
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
-    const w = 320;
-    const h = 320;
+    const w = 260;
+    const h = 260;
     canvas.width = w * dpr;
     canvas.height = h * dpr;
     canvas.style.width = `${w}px`;
@@ -39,7 +39,7 @@ export function EmotionRadar({ emotions }: EmotionRadarProps) {
 
     const cx = w / 2;
     const cy = h / 2;
-    const maxR = 120;
+    const maxR = 90;
     const rings = 4;
     const n = data.length;
     let progress = 0;
@@ -98,30 +98,39 @@ export function EmotionRadar({ emotions }: EmotionRadarProps) {
       grad.addColorStop(0.5, "rgba(255,148,115,0.12)");
       grad.addColorStop(1, "rgba(226,193,97,0.06)");
 
-      ctx!.beginPath();
-      ctx!.moveTo(points[0][0], points[0][1]);
-      // Smooth curves between points
-      for (let i = 0; i < n; i++) {
-        const curr = points[i];
-        const next = points[(i + 1) % n];
-        const cpx = (curr[0] + next[0]) / 2;
-        const cpy = (curr[1] + next[1]) / 2;
-        ctx!.quadraticCurveTo(curr[0], curr[1], cpx, cpy);
+      function drawSmooth(pts: [number, number][]) {
+        const tension = 0.18;
+        ctx!.moveTo(pts[0][0], pts[0][1]);
+        for (let i = 0; i < pts.length; i++) {
+          const p0 = pts[(i - 1 + pts.length) % pts.length];
+          const p1 = pts[i];
+          const p2 = pts[(i + 1) % pts.length];
+          const p3 = pts[(i + 2) % pts.length];
+          let cp1x = p1[0] + (p2[0] - p0[0]) * tension;
+          let cp1y = p1[1] + (p2[1] - p0[1]) * tension;
+          let cp2x = p2[0] - (p3[0] - p1[0]) * tension;
+          let cp2y = p2[1] - (p3[1] - p1[1]) * tension;
+          // Clamp control points: don't exceed the farther data point's radius
+          const r1 = Math.hypot(p1[0] - cx, p1[1] - cy);
+          const r2 = Math.hypot(p2[0] - cx, p2[1] - cy);
+          const maxCpR = Math.max(r1, r2);
+          const cp1R = Math.hypot(cp1x - cx, cp1y - cy);
+          const cp2R = Math.hypot(cp2x - cx, cp2y - cy);
+          if (cp1R > maxCpR) { cp1x = cx + (cp1x - cx) * maxCpR / cp1R; cp1y = cy + (cp1y - cy) * maxCpR / cp1R; }
+          if (cp2R > maxCpR) { cp2x = cx + (cp2x - cx) * maxCpR / cp2R; cp2y = cy + (cp2y - cy) * maxCpR / cp2R; }
+          ctx!.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2[0], p2[1]);
+        }
       }
+
+      ctx!.beginPath();
+      drawSmooth(points);
       ctx!.closePath();
       ctx!.fillStyle = grad;
       ctx!.fill();
 
       // Stroke outline
       ctx!.beginPath();
-      ctx!.moveTo(points[0][0], points[0][1]);
-      for (let i = 0; i < n; i++) {
-        const curr = points[i];
-        const next = points[(i + 1) % n];
-        const cpx = (curr[0] + next[0]) / 2;
-        const cpy = (curr[1] + next[1]) / 2;
-        ctx!.quadraticCurveTo(curr[0], curr[1], cpx, cpy);
-      }
+      drawSmooth(points);
       ctx!.closePath();
       const strokeGrad = ctx!.createLinearGradient(cx - maxR, cy - maxR, cx + maxR, cy + maxR);
       strokeGrad.addColorStop(0, "rgba(160,181,235,0.7)");
