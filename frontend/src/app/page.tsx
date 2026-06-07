@@ -729,9 +729,48 @@ function CaptureDashboard() {
 
   const handleReanalyze = useCallback(async () => {
     setReanalyzing(true);
+    setStatus("Reanalyzing...");
+    refresh();
     try {
-      const res = await apiPost<{ message: string; processed: number }>("/reanalyze-all", {});
-      setStatus(res.message);
+      const { getIdToken } = await import("@/lib/firebase");
+      const token = await getIdToken();
+      const res = await fetch("/api/reanalyze-all", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 429) {
+        setStatus("Too many requests — please wait a moment.");
+        return;
+      }
+      if (!res.ok) {
+        setStatus("Reanalyze failed");
+        return;
+      }
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (reader) {
+        let done = false;
+        while (!done) {
+          const { value, done: d } = await reader.read();
+          done = d;
+          if (value) {
+            const text = decoder.decode(value, { stream: true });
+            for (const line of text.split("\n").filter(Boolean)) {
+              try {
+                const msg = JSON.parse(line);
+                if (msg.status === "started") {
+                  setStatus(`Reanalyzing ${msg.total} fragments...`);
+                } else if (msg.status === "progress") {
+                  setStatus(`Reanalyzing... ${msg.ready}/${msg.total} done`);
+                } else if (msg.status === "done") {
+                  setStatus(`Reanalyzed ${msg.processed}/${msg.total} fragments`);
+                }
+              } catch {}
+            }
+          }
+          refresh();
+        }
+      }
       refresh();
     } catch (e) {
       setStatus(e instanceof Error ? e.message : "Reanalyze failed");

@@ -113,15 +113,17 @@ async def reprocess_projects(
     return {"message": f"Processed {processed} fragments", "processed": processed}
 
 
-_reanalyze_tasks: set[asyncio.Task] = set()
-
-
 @router.post("/api/reanalyze-all")
 @limiter.limit("2/minute")
 async def reanalyze_all_fragments(
     request: Request,
     user_id: str = Depends(verify_firebase_token),
 ):
+    """Stream progress as NDJSON so the request stays alive on Cloud Run."""
+    import json as _json
+
+    from starlette.responses import StreamingResponse
+
     from ..pipeline import process_fragment_background
 
     db = get_db()
@@ -139,8 +141,11 @@ async def reanalyze_all_fragments(
         {"$set": {"status": "processing"}},
     )
 
-    async def _run_all():
+    async def _stream():
         PER_FRAGMENT_TIMEOUT = 300
+        total = len(fragments)
+
+        yield _json.dumps({"status": "started", "total": total}) + "\n"
 
         async def _safe_process(frag):
             frag_id = str(frag["_id"])
@@ -163,9 +168,18 @@ async def reanalyze_all_fragments(
                 logger.exception("Reanalyze failed for %s", frag_id)
                 return False
 
-        results = await asyncio.gather(*[_safe_process(f) for f in fragments])
+        work = asyncio.gather(*[_safe_process(f) for f in fragments])
+        heartbeat_interval = 10
+        while True:
+            try:
+                results = await asyncio.wait_for(asyncio.shield(work), timeout=heartbeat_interval)
+                break
+            except asyncio.TimeoutError:
+                ready_count = db["fragments"].count_documents({"user_id": user_id, "status": "ready"})
+                yield _json.dumps({"status": "progress", "ready": ready_count, "total": total}) + "\n"
+
         processed = sum(1 for r in results if r)
-        logger.info("Reanalyze-all done for %s: %d/%d", user_id, processed, len(fragments))
+        logger.info("Reanalyze-all done for %s: %d/%d", user_id, processed, total)
 
         if processed > 0:
             try:
@@ -174,14 +188,9 @@ async def reanalyze_all_fragments(
             except Exception:
                 logger.exception("DNA update failed after reanalyze-all")
 
-    task = asyncio.create_task(_run_all())
-    _reanalyze_tasks.add(task)
-    task.add_done_callback(_reanalyze_tasks.discard)
+        yield _json.dumps({"status": "done", "processed": processed, "total": total}) + "\n"
 
-    return {
-        "message": f"Reanalyzing {len(fragments)} fragments",
-        "processing": len(fragments),
-    }
+    return StreamingResponse(_stream(), media_type="application/x-ndjson")
 
 
 @router.post("/api/fix-stuck")

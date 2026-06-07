@@ -56,7 +56,19 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
   async function handleReanalyze() {
     setReanalyzing(true);
     try {
-      await apiPost(`/fragments/${fragment._id}/reanalyze`, {});
+      const { getIdToken } = await import("@/lib/firebase");
+      const token = await getIdToken();
+      const res = await fetch(`/api/fragments/${fragment._id}/reanalyze`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.body) {
+        const reader = res.body.getReader();
+        while (true) {
+          const { done } = await reader.read();
+          if (done) break;
+        }
+      }
       onUpdated?.();
     } catch (e) {
       console.error("Reanalyze failed:", e);
