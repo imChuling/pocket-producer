@@ -113,6 +113,9 @@ async def reprocess_projects(
     return {"message": f"Processed {processed} fragments", "processed": processed}
 
 
+_reanalyze_tasks: set[asyncio.Task] = set()
+
+
 @router.post("/api/reanalyze-all")
 @limiter.limit("2/minute")
 async def reanalyze_all_fragments(
@@ -136,42 +139,48 @@ async def reanalyze_all_fragments(
         {"$set": {"status": "processing"}},
     )
 
-    PER_FRAGMENT_TIMEOUT = 120
+    async def _run_all():
+        PER_FRAGMENT_TIMEOUT = 300
 
-    async def _safe_process(frag):
-        frag_id = str(frag["_id"])
-        try:
-            await asyncio.wait_for(
-                process_fragment_background(
-                    user_id, frag_id, frag.get("audio_url"), frag.get("text")
-                ),
-                timeout=PER_FRAGMENT_TIMEOUT,
-            )
-            return True
-        except asyncio.TimeoutError:
-            logger.warning("Reanalyze timed out for %s", frag_id)
-            db["fragments"].update_one(
-                {"_id": frag["_id"], "user_id": user_id, "status": "processing"},
-                {"$set": {"status": "timeout"}},
-            )
-            return False
-        except Exception:
-            logger.exception("Reanalyze failed for %s", frag_id)
-            return False
+        async def _safe_process(frag):
+            frag_id = str(frag["_id"])
+            try:
+                await asyncio.wait_for(
+                    process_fragment_background(
+                        user_id, frag_id, frag.get("audio_url"), frag.get("text")
+                    ),
+                    timeout=PER_FRAGMENT_TIMEOUT,
+                )
+                return True
+            except asyncio.TimeoutError:
+                logger.warning("Reanalyze timed out for %s", frag_id)
+                db["fragments"].update_one(
+                    {"_id": frag["_id"], "user_id": user_id, "status": "processing"},
+                    {"$set": {"status": "timeout"}},
+                )
+                return False
+            except Exception:
+                logger.exception("Reanalyze failed for %s", frag_id)
+                return False
 
-    results = await asyncio.gather(*[_safe_process(f) for f in fragments])
-    processed = sum(1 for r in results if r)
+        results = await asyncio.gather(*[_safe_process(f) for f in fragments])
+        processed = sum(1 for r in results if r)
+        logger.info("Reanalyze-all done for %s: %d/%d", user_id, processed, len(fragments))
 
-    if processed > 0:
-        try:
-            from jobs.dna_insights import run as run_dna
-            await asyncio.to_thread(run_dna)
-        except Exception:
-            logger.exception("DNA update failed after reanalyze-all")
+        if processed > 0:
+            try:
+                from jobs.dna_insights import run as run_dna
+                await asyncio.to_thread(run_dna)
+            except Exception:
+                logger.exception("DNA update failed after reanalyze-all")
+
+    task = asyncio.create_task(_run_all())
+    _reanalyze_tasks.add(task)
+    task.add_done_callback(_reanalyze_tasks.discard)
 
     return {
-        "message": f"Reanalyzed {processed}/{len(fragments)} fragments",
-        "processed": processed,
+        "message": f"Reanalyzing {len(fragments)} fragments",
+        "processing": len(fragments),
     }
 
 
