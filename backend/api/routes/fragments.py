@@ -412,25 +412,38 @@ async def reanalyze_fragment(
         {"$set": {"status": "processing"}},
     )
 
-    async def _run():
+    import json as _json
+
+    from starlette.responses import StreamingResponse
+
+    async def _stream():
+        yield _json.dumps({"status": "processing", "fragment_id": fragment_id}) + "\n"
+        work = asyncio.ensure_future(
+            process_fragment_background(user_id, fragment_id, frag.get("audio_url"), frag.get("text"))
+        )
         try:
-            await asyncio.wait_for(
-                process_fragment_background(user_id, fragment_id, frag.get("audio_url"), frag.get("text")),
-                timeout=300,
-            )
-        except asyncio.TimeoutError:
-            db["fragments"].update_one(
-                {"_id": ObjectId(fragment_id), "user_id": user_id, "status": "processing"},
-                {"$set": {"status": "timeout"}},
-            )
+            while True:
+                try:
+                    await asyncio.wait_for(asyncio.shield(work), timeout=10)
+                    break
+                except asyncio.TimeoutError:
+                    yield _json.dumps({"status": "heartbeat"}) + "\n"
+            yield _json.dumps({"status": "done", "fragment_id": fragment_id}) + "\n"
         except Exception:
+            if not work.done():
+                work.cancel()
+            frag_doc = db["fragments"].find_one(
+                {"_id": ObjectId(fragment_id), "user_id": user_id}, {"status": 1}
+            )
+            if frag_doc and frag_doc.get("status") == "processing":
+                db["fragments"].update_one(
+                    {"_id": ObjectId(fragment_id), "user_id": user_id},
+                    {"$set": {"status": "error"}},
+                )
             logger.exception("Reanalyze failed for %s", fragment_id)
+            yield _json.dumps({"status": "error", "fragment_id": fragment_id}) + "\n"
 
-    task = asyncio.create_task(_run())
-    _background_tasks.add(task)
-    task.add_done_callback(_background_tasks.discard)
-
-    return {"message": "Reanalyzing fragment", "fragment_id": fragment_id}
+    return StreamingResponse(_stream(), media_type="application/x-ndjson")
 
 
 @router.post("/{fragment_id}/group-with-agent")
