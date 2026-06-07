@@ -58,7 +58,8 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
     try {
       const { getIdToken } = await import("@/lib/firebase");
       const token = await getIdToken();
-      const res = await fetch(`/api/fragments/${fragment._id}/reanalyze`, {
+      const directUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const res = await fetch(`${directUrl}/api/fragments/${fragment._id}/reanalyze`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });

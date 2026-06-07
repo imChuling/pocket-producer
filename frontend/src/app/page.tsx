@@ -734,7 +734,8 @@ function CaptureDashboard() {
     try {
       const { getIdToken } = await import("@/lib/firebase");
       const token = await getIdToken();
-      const res = await fetch("/api/reanalyze-all", {
+      const directUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const res = await fetch(`${directUrl}/api/reanalyze-all`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
