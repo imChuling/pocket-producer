@@ -8,9 +8,12 @@ then executes project decisions.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import Any
+
+from bson import ObjectId
 
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
@@ -83,17 +86,35 @@ async def group_fragment_with_agents(
             user_id=user_id,
         )
 
+        frag_doc = await asyncio.to_thread(
+            db["fragments"].find_one,
+            {"_id": ObjectId(fragment_id), "user_id": user_id},
+            {"title": 1, "text": 1, "notes": 1, "tags": 1, "emotions": 1, "themes": 1, "key": 1, "bpm": 1},
+        )
+        context_parts = [f"fragment_id={fragment_id}"]
+        if frag_doc:
+            if frag_doc.get("title"):
+                context_parts.append(f"title: {frag_doc['title']}")
+            if frag_doc.get("text"):
+                context_parts.append(f"text: {frag_doc['text']}")
+            if frag_doc.get("notes"):
+                context_parts.append(f"creator_notes: {frag_doc['notes']}")
+            if frag_doc.get("tags"):
+                context_parts.append(f"tags: {', '.join(frag_doc['tags'])}")
+            if frag_doc.get("emotions"):
+                context_parts.append(f"emotions: {', '.join(frag_doc['emotions'])}")
+
+        prompt = (
+            f"Process this newly tagged fragment.\n"
+            f"{chr(10).join(context_parts)}\n\n"
+            "Delegate to Memory Agent for relationship discovery, "
+            "then decide on project grouping. "
+            "If the creator left notes, weigh them heavily — they express intent."
+        )
+
         message = types.Content(
             role="user",
-            parts=[
-                types.Part(
-                    text=(
-                        f"Process this newly tagged fragment. fragment_id={fragment_id}\n"
-                        "Delegate to Memory Agent for relationship discovery, "
-                        "then decide on project grouping."
-                    )
-                )
-            ],
+            parts=[types.Part(text=prompt)],
         )
 
         final_text = None

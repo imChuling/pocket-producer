@@ -12,6 +12,7 @@ import type { Fragment } from "@/types";
 import { AudioPlayer } from "./audio-player";
 import { TextContent } from "./text-content";
 import { TagEditor } from "./tag-editor";
+import { NotesEditor } from "./notes-editor";
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -56,7 +57,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
     setReanalyzing(true);
     try {
       await apiPost(`/fragments/${fragment._id}/reanalyze`, {});
-      setTimeout(() => onUpdated?.(), 5000);
+      onUpdated?.();
     } catch (e) {
       console.error("Reanalyze failed:", e);
     } finally {
@@ -130,6 +131,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
       )}
 
       {/* Content */}
+      <div className="pt-4">
       {isAudio ? (
         <AudioPlayer
           fragmentId={fragment._id}
@@ -153,9 +155,13 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
           <span className="text-sm text-gravel">Text fragment</span>
         </div>
       )}
+      </div>
 
       {/* Tags */}
       <TagEditor fragment={fragment} onUpdated={onUpdated} />
+
+      {/* Creator notes */}
+      <NotesEditor fragmentId={fragment._id} notes={fragment.notes} onUpdated={onUpdated} />
 
       {/* AI suggestion */}
       {fragment.suggestion && (
@@ -175,33 +181,35 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
       )}
 
       {/* Agent connection */}
-      {fragment.project_id && fragment.connection_reason && (
+      {fragment.project_id && (fragment.agent_narrative || fragment.connection_reason) && (
         <div
-          className="rounded-xl px-3.5 py-3 space-y-2"
+          className="flex items-start gap-2.5 rounded-xl px-3.5 py-3"
           style={{
-            background: "linear-gradient(135deg, rgba(160,181,235,0.12), rgba(176,212,190,0.08))",
-            border: "1px solid rgba(160,181,235,0.18)",
+            background: "linear-gradient(135deg, rgba(160,181,235,0.08), rgba(226,193,97,0.05))",
           }}
         >
-          <div className="flex items-center gap-1.5">
-            <GitMerge size={11} className="text-[#5a6f99] flex-shrink-0" />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#5a6f99]">
-              Memory Agent linked this
-            </span>
+          <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+            style={{ background: "linear-gradient(135deg, rgba(160,181,235,0.3), rgba(226,193,97,0.2))" }}
+          >
+            <GitMerge size={10} className="text-gravel" />
           </div>
-          <p className="text-xs text-gravel leading-relaxed">{fragment.connection_reason}</p>
-          {fragment.connection_types && fragment.connection_types.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {fragment.connection_types.map((ct) => (
-                <span
-                  key={ct}
-                  className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#a0b5eb]/15 text-[#5a6f99]"
-                >
-                  {ct.replace(/_/g, " ")}
-                </span>
-              ))}
-            </div>
-          )}
+          <div className="space-y-1.5 min-w-0">
+            <p className="text-xs text-gravel leading-relaxed">
+              {fragment.agent_narrative || fragment.connection_reason}
+            </p>
+            {fragment.connection_types && fragment.connection_types.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {fragment.connection_types.map((ct) => (
+                  <span
+                    key={ct}
+                    className="text-[10px] text-slate"
+                  >
+                    {ct.replace(/_/g, " ")}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
