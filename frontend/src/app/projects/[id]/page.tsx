@@ -1,18 +1,104 @@
 "use client";
 
-import { use, useEffect } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check, SkipForward } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useProjectDetail } from "@/hooks/use-projects";
+import { apiPost } from "@/lib/api";
 import { RescueScore } from "@/components/rescue-score";
 import { FragmentCard } from "@/components/fragment-card";
+import type { NextAction } from "@/types";
 
 function scoreColor(score: number | null) {
   if (score === null) return "text-slate";
   if (score >= 70) return "text-obsidian";
   if (score >= 40) return "text-gravel";
   return "text-slate";
+}
+
+function NextActionCard({
+  projectId,
+  action,
+  onUpdate,
+}: {
+  projectId: string;
+  action: NextAction;
+  onUpdate: (newAction: NextAction | null, newScore?: number | null) => void;
+}) {
+  const [busy, setBusy] = useState<"done" | "skip" | null>(null);
+  const [current, setCurrent] = useState(action);
+
+  async function handleDone() {
+    setBusy("done");
+    try {
+      const res = await apiPost<{
+        new_action: NextAction | null;
+        rescue_score: number | null;
+      }>(`/projects/${projectId}/complete-action`, { note: "" });
+      const next = res.new_action ?? null;
+      setCurrent(next ?? { action: "All caught up!", estimated_time: "" });
+      onUpdate(next, res.rescue_score);
+    } catch {
+      /* silent */
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleSkip() {
+    setBusy("skip");
+    try {
+      const res = await apiPost<{ new_action: NextAction | null }>(
+        `/projects/${projectId}/skip-action`,
+        {}
+      );
+      const next = res.new_action ?? { action: "All caught up!", estimated_time: "" };
+      setCurrent(next);
+      onUpdate(res.new_action ?? null);
+    } catch {
+      /* silent */
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div
+      className="backdrop-blur-sm rounded-[24px] p-5 space-y-3 shadow-hairline gradient-border animate-card-enter"
+      style={{
+        animationDelay: "160ms",
+        background:
+          "linear-gradient(135deg, rgba(255,255,255,0.7), rgba(226,193,97,0.04))",
+      }}
+    >
+      <span className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-slate">
+        Next Action
+      </span>
+      <p className="text-xs text-gravel/80 italic">{current.action}</p>
+      {current.estimated_time && (
+        <p className="text-xs text-gravel">~{current.estimated_time}</p>
+      )}
+      <div className="flex gap-2 pt-1">
+        <button
+          onClick={handleDone}
+          disabled={!!busy}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-obsidian text-white text-[11px] font-medium tracking-wide hover:bg-obsidian/85 transition-colors disabled:opacity-40"
+        >
+          <Check size={12} />
+          {busy === "done" ? "Saving..." : "Done"}
+        </button>
+        <button
+          onClick={handleSkip}
+          disabled={!!busy}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-chalk text-gravel text-[11px] font-medium tracking-wide hover:border-slate/40 transition-colors disabled:opacity-40"
+        >
+          <SkipForward size={12} />
+          {busy === "skip" ? "Generating..." : "Skip"}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default function ProjectDetailPage({
@@ -119,20 +205,14 @@ export default function ProjectDetailPage({
               )}
 
               {project.next_action && (
-                <div
-                  className="backdrop-blur-sm rounded-[24px] p-5 space-y-2 shadow-hairline gradient-border animate-card-enter"
-                  style={{ animationDelay: "160ms", background: "linear-gradient(135deg, rgba(255,255,255,0.7), rgba(226,193,97,0.04))" }}
-                >
-                  <span className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-slate">
-                    Next Action
-                  </span>
-                  <p className="text-xs text-gravel/80 italic">{project.next_action.action}</p>
-                  {project.next_action.estimated_time && (
-                    <p className="text-xs text-gravel">
-                      ~{project.next_action.estimated_time}
-                    </p>
-                  )}
-                </div>
+                <NextActionCard
+                  projectId={project._id}
+                  action={project.next_action}
+                  onUpdate={(a, score) => {
+                    project.next_action = a ?? undefined;
+                    if (score !== undefined) project.rescue_score = score;
+                  }}
+                />
               )}
 
               {/* Sections summary */}

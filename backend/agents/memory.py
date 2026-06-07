@@ -80,6 +80,18 @@ async def vector_search_fragment_neighbors(fragment_id: str, limit: int = 6) -> 
     if not fragment or not fragment.get("embedding"):
         return _to_json({"neighbors": [], "reason": "fragment_missing_or_no_embedding"})
 
+    default_threshold = float(os.environ.get("SIMILARITY_THRESHOLD", "0.55"))
+    user_settings = await asyncio.to_thread(
+        db["user_settings"].find_one,
+        {"user_id": user_id},
+        {"sensitivity": 1},
+    )
+    threshold = (
+        user_settings["sensitivity"]["threshold"]
+        if user_settings and "sensitivity" in user_settings
+        else default_threshold
+    )
+
     pipeline = [
         {
             "$vectorSearch": {
@@ -94,13 +106,13 @@ async def vector_search_fragment_neighbors(fragment_id: str, limit: int = 6) -> 
         {"$addFields": {"score": {"$meta": "vectorSearchScore"}}},
         {"$match": {
             "_id": {"$ne": ObjectId(fragment_id)},
-            "score": {"$gte": 0.70},       # Hard floor: discard noise
-            "status": "ready",              # Only fully processed fragments
+            "score": {"$gte": threshold},
+            "status": "ready",
         }},
         {"$project": {"embedding": 0}},
     ]
     neighbors = await asyncio.to_thread(lambda: list(db["fragments"].aggregate(pipeline)))
-    return _to_json({"neighbors": neighbors, "threshold_applied": 0.70})
+    return _to_json({"neighbors": neighbors, "threshold_applied": threshold})
 
 
 async def get_project_context(project_id: str) -> str:
@@ -180,7 +192,7 @@ their relationships. You NEVER write to the database.
 
 1. Call get_fragment_context for the new fragment to understand its content.
 2. Call vector_search_fragment_neighbors to find semantically similar fragments.
-3. DISCARD any neighbor with similarity_score < 0.70. This is a hard floor.
+3. DISCARD any neighbor with similarity_score below the threshold returned by vector_search_fragment_neighbors.
 4. For each remaining neighbor, you MUST consult the relationship-rules skill
    tool to get the 4-signal fusion rules, classification thresholds, and
    worked examples. The skill defines exactly how to evaluate:
@@ -192,10 +204,14 @@ their relationships. You NEVER write to the database.
 
 ## Hard rejection rules (ALWAYS apply, even before consulting skills)
 
-REJECT a connection (classify as "unrelated") if ANY of these are true:
-- Similarity score is below 0.70.
-- Both fragments have audio_features AND their keys are incompatible AND
-  their BPMs differ by >25% (not doubled/halved). Musical conflict = reject.
+REJECT a connection (classify as "unrelated") if:
+- Similarity score is below the threshold returned by vector_search_fragment_neighbors.
+
+NOTE on musical compatibility: Key and tempo differences are NOT rejection
+criteria. Creators routinely transpose keys and adjust tempos when combining
+ideas. A melody in Am at 72 BPM and a vocal in C at 140 BPM can absolutely
+be part of the same song. Evaluate musical_compatibility as a SIGNAL (strong/
+weak/n/a), but never use it alone to reject a connection.
 
 For ALL other classification decisions (same_song_candidate vs related_theme
 vs similar_emotion vs unrelated), you MUST follow the thresholds and
@@ -232,28 +248,20 @@ Return ONLY this JSON structure:
   }
 }
 
-## The default is no_group
+## Grouping guidance
 
-Most fragments do NOT belong together. "no_group" is a perfectly good outcome.
-A creator with 15 fragments should have maybe 3-5 projects, NOT 10-15.
-Only recommend grouping when the evidence is strong and specific.
+When fragments share emotional, thematic, or musical connections, group them.
+A creator with 15 fragments might have 3-8 projects. Lean toward grouping when
+there is reasonable evidence — creators benefit from seeing connections.
 
-## Conservative bias
+Relationship types and when to recommend grouping:
+- "same_song_candidate": shared imagery, lyrical continuity, structural complement → new_project or join_project
+- "related_theme": overlapping themes or subject matter → new_project or join_project
+- "similar_emotion": shared emotional tone → new_project or join_project
+- "unrelated": no meaningful connection → no_group
 
-When uncertain, choose the WEAKER relationship type. False positives damage
-user trust more than false negatives.
-
-The following are NOT sufficient evidence for same_song_candidate:
-- Both are "about love" → too generic, every other song is about love
-- Both have similar emotions → mood overlap is common, not song-level connection
-- Both are in compatible keys → musical compatibility is necessary but not sufficient
-- High cosine similarity alone → embedding similarity captures surface semantics,
-  not compositional intent
-
-You need SPECIFIC, CONCRETE evidence: shared distinctive imagery, lyrical
-continuity (one fragment continues the other's narrative), structural complement
-(one is a verse, the other a chorus that answers it), or identical stylistic
-approach with compatible musical features.
+When recommending "new_project", ALWAYS include the current fragment AND at least
+one neighbor in "group_with_ids". The Producer Agent needs these IDs to create the project.
 
 ## Refusal rules (inline — always check before output)
 

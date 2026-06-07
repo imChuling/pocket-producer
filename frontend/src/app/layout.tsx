@@ -56,6 +56,9 @@ export default function RootLayout({
           <main className="flex-1 w-full">
             {children}
           </main>
+          <footer className="text-center py-4 text-[11px] text-slate">
+            <a href="/privacy" className="hover:text-gravel transition-colors">Privacy Policy</a>
+          </footer>
         </AuthProvider>
       </body>
     </html>

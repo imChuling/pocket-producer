@@ -161,10 +161,16 @@ export function TopNav() {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className={`text-sm leading-snug ${!n.read ? "text-obsidian" : "text-gravel"}`}>
-                                  A new fragment matches{" "}
-                                  <span className="font-medium">
-                                    {n.sleeping_project_title || "a sleeping project"}
-                                  </span>
+                                  {n.message ? (
+                                    n.message
+                                  ) : (
+                                    <>
+                                      A new fragment matches{" "}
+                                      <span className="font-medium">
+                                        {n.sleeping_project_title || "a sleeping project"}
+                                      </span>
+                                    </>
+                                  )}
                                 </p>
                                 <div className="flex items-center gap-2 mt-1">
                                   <span className="text-[10px] text-slate">
