@@ -711,16 +711,28 @@ function CaptureDashboard() {
   const { user } = useAuth();
   const { fragments, loading, refresh } = useFragments();
   const [text, setText] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [reanalyzing, setReanalyzing] = useState(false);
 
+  const stuckCount = fragments.filter(
+    (f) => f.status === "processing" && f.tags && f.tags.length > 0
+  ).length;
+
+  const handleFixStuck = useCallback(async () => {
+    try {
+      await apiPost("/fix-stuck", {});
+      refresh();
+    } catch {}
+  }, [refresh]);
+
   const handleReanalyze = useCallback(async () => {
     setReanalyzing(true);
     try {
-      const res = await apiPost<{ message: string; processing: number }>("/reanalyze-all", {});
+      const res = await apiPost<{ message: string; processed: number }>("/reanalyze-all", {});
       setStatus(res.message);
-      setTimeout(() => refresh(), 5000);
+      refresh();
     } catch (e) {
       setStatus(e instanceof Error ? e.message : "Reanalyze failed");
     } finally {
@@ -789,6 +801,10 @@ function CaptureDashboard() {
       form.append("text", text.trim());
       await apiPost("/ingest", form);
       setText("");
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "20px";
+        textareaRef.current.style.overflowY = "hidden";
+      }
       setStatus("Saved!");
       refresh();
     } catch (e) {
@@ -840,19 +856,33 @@ function CaptureDashboard() {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <div className="flex items-center gap-2 bg-white rounded-2xl px-5 py-3.5 shadow-hairline gradient-border">
-                <input
+              <div className="flex items-center gap-2 bg-white rounded-2xl px-5 py-3 shadow-hairline gradient-border">
+                <textarea
+                  ref={textareaRef}
                   value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && submitText()}
+                  onChange={(e) => {
+                    setText(e.target.value);
+                    const el = e.target;
+                    el.style.height = "0";
+                    el.style.height = `${el.scrollHeight}px`;
+                    el.style.overflowY = el.scrollHeight > 200 ? "auto" : "hidden";
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      submitText();
+                    }
+                  }}
                   placeholder="Type a lyric, idea, or note..."
-                  className="flex-1 bg-transparent text-sm text-obsidian placeholder:text-slate outline-none"
+                  rows={1}
+                  className="flex-1 bg-transparent text-sm text-obsidian placeholder:text-slate outline-none resize-none leading-5 max-h-[200px]"
+                  style={{ height: "20px", overflowY: "hidden" }}
                   disabled={submitting}
                 />
                 <button
                   onClick={submitText}
                   disabled={!text.trim() || submitting}
-                  className="p-2 rounded-full hover:bg-powder cursor-pointer transition-colors disabled:opacity-30 btn-press"
+                  className="p-2 rounded-full hover:bg-powder cursor-pointer transition-colors disabled:opacity-30 btn-press flex-shrink-0"
                   aria-label="Send"
                 >
                   <Send size={16} className="text-gravel" />
@@ -883,6 +913,15 @@ function CaptureDashboard() {
                     {reanalyzing ? "Reanalyzing..." : "Reanalyze All"}
                   </button>
                 </div>
+                {stuckCount > 0 && (
+                  <button
+                    onClick={handleFixStuck}
+                    className="text-xs text-gravel hover:text-obsidian transition-colors"
+                  >
+                    {stuckCount} fragment{stuckCount > 1 ? "s" : ""} stuck processing —{" "}
+                    <span className="underline">fix now</span>
+                  </button>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                   <AnimatePresence mode="popLayout">
                     {fragments.map((f, i) => (

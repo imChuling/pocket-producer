@@ -438,16 +438,159 @@ async def memory_and_project(
     import time
 
     from agents import group_fragment_with_agents
+    from agents.producer import (
+        _current_db as producer_db_var,
+        _current_user_id as producer_user_var,
+        create_project_from_fragments,
+        attach_fragment_to_project,
+        refresh_project_score,
+        generate_project_title,
+        generate_next_action,
+    )
 
     if not embedding:
         logger.info("Fragment %s has no embedding — skipping agent pipeline", fragment_id)
         return
+
+    existing = await asyncio.to_thread(
+        db["fragments"].find_one,
+        {"_id": ObjectId(fragment_id), "user_id": user_id},
+        {"_id": 1, "project_id": 1},
+    )
+    old_project_id = existing.get("project_id") if existing else None
+    if old_project_id:
+        logger.info("Fragment %s removing from project %s for re-evaluation", fragment_id, old_project_id)
+        db["fragments"].update_one(
+            {"_id": ObjectId(fragment_id), "user_id": user_id},
+            {"$unset": {"project_id": "", "project_title": "", "connection_reason": "", "connection_types": "", "agent_narrative": ""}},
+        )
+        remaining = db["fragments"].count_documents({"user_id": user_id, "project_id": old_project_id})
+        if remaining < 2:
+            db["projects"].delete_one({"_id": ObjectId(old_project_id), "user_id": user_id})
+            if remaining == 1:
+                db["fragments"].update_many(
+                    {"user_id": user_id, "project_id": old_project_id},
+                    {"$unset": {"project_id": "", "project_title": "", "connection_reason": "", "connection_types": "", "agent_narrative": ""}},
+                )
+            logger.info("Dissolved project %s (only %d fragments left)", old_project_id, remaining)
 
     result = await group_fragment_with_agents(db, user_id, fragment_id)
     logger.info(
         "Producer->Memory pipeline result for %s after %.1fs: %s",
         fragment_id, time.monotonic() - t0, result,
     )
+
+    if not result:
+        return
+
+    # Parse both Producer format (top-level "decision") and Memory format ("recommendation.action")
+    rec = result.get("recommendation", {})
+    action = (
+        result.get("decision")
+        or rec.get("action")
+        or "no_group"
+    )
+    group_ids = rec.get("group_with_ids", [])
+    connection_types = (
+        result.get("connection_types")
+        or rec.get("connection_types")
+        or []
+    )
+    reasoning = (
+        result.get("reasoning")
+        or rec.get("reasoning")
+        or ""
+    )
+    narrative = result.get("narrative") or ""
+    target_project_id = (
+        result.get("project_id")
+        or rec.get("target_project_id")
+    )
+
+    # Store narrative on the fragment so frontend can show it
+    if narrative:
+        db["fragments"].update_one(
+            {"_id": ObjectId(fragment_id), "user_id": user_id},
+            {"$set": {"agent_narrative": narrative}},
+        )
+
+    analysis = result.get("analysis", [])
+
+    if action == "needs_user_confirmation":
+        action = "new_project"
+
+    if fragment_id not in group_ids and action in ("new_project",):
+        group_ids = [fragment_id] + group_ids
+
+    # Filter out fragments already assigned to a project (avoid duplicates)
+    if action == "new_project" and group_ids:
+        already_assigned = set()
+        for gid in group_ids:
+            try:
+                f = db["fragments"].find_one(
+                    {"_id": ObjectId(gid), "user_id": user_id, "project_id": {"$exists": True}},
+                    {"_id": 1},
+                )
+                if f:
+                    already_assigned.add(gid)
+            except Exception:
+                pass
+        if already_assigned:
+            group_ids = [gid for gid in group_ids if gid not in already_assigned]
+            logger.info("Filtered %d already-assigned fragments, %d remaining", len(already_assigned), len(group_ids))
+
+    logger.info(
+        "Pipeline fallback: action=%s group_ids=%s connection_types=%s target=%s",
+        action, group_ids, connection_types, target_project_id,
+    )
+
+    db_token = producer_db_var.set(db)
+    user_token = producer_user_var.set(user_id)
+    try:
+        project_id = None
+        if action == "new_project" and len(group_ids) >= 2:
+            title_resp = await generate_project_title(
+                fragment_ids=group_ids,
+                connection_types=connection_types or ["similar_emotion"],
+            )
+            title_parsed = json.loads(title_resp) if isinstance(title_resp, str) else title_resp
+            title = title_parsed.get("title", "Untitled Project")
+            resp = await create_project_from_fragments(
+                title=title,
+                fragment_ids=group_ids,
+                connection_reason=narrative or reasoning,
+                connection_types=connection_types or ["similar_emotion"],
+            )
+            logger.info("Created project: %s", resp)
+            parsed = json.loads(resp) if isinstance(resp, str) else resp
+            project_id = parsed.get("project_id")
+        elif action == "join_project":
+            target = target_project_id
+            if target:
+                resp = await attach_fragment_to_project(
+                    fragment_id=fragment_id,
+                    project_id=target,
+                    connection_reason=narrative or reasoning,
+                    connection_types=connection_types or ["similar_emotion"],
+                )
+                logger.info("Attached to project: %s", resp)
+                project_id = target
+
+        if project_id:
+            try:
+                na_resp = await generate_next_action(project_id=project_id)
+                na_parsed = json.loads(na_resp) if isinstance(na_resp, str) else na_resp
+                next_action = na_parsed if "action" in (na_parsed or {}) else None
+                score_resp = await refresh_project_score(
+                    project_id=project_id,
+                    next_action=json.dumps(next_action, ensure_ascii=False) if next_action else None,
+                )
+                logger.info("Rescue score updated: %s", score_resp)
+            except Exception:
+                logger.exception("Failed to compute rescue score for %s", project_id)
+    finally:
+        producer_db_var.reset(db_token)
+        producer_user_var.reset(user_token)
 
 
 async def run_agent(runner, user_id: str, message: str, is_remote: bool) -> dict:

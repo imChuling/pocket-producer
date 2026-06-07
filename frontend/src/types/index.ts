@@ -27,6 +27,8 @@ export interface Fragment {
   project_title?: string;
   connection_reason?: string;
   connection_types?: string[];
+  agent_narrative?: string;
+  notes?: string;
   user_edited_fields?: string[];
   agent_result?: string;
   edit_history?: EditHistoryEntry[];
@@ -74,17 +76,41 @@ export interface DNAData {
   dominant_emotion?: string;
   top_styles?: { _id: string; count: number }[];
   structure_distribution?: { _id: string; count: number }[];
+  emotion_timeline?: { week: string; emotions: Record<string, number> }[];
   peak_hours?: string;
   updated_at: string;
+}
+
+export interface NetworkNode {
+  id: string;
+  title: string;
+  type: "audio" | "text";
+  emotions: string[];
+  project_id?: string;
+  project_title?: string;
+}
+
+export interface NetworkEdge {
+  source: string;
+  target: string;
+  project_id: string;
+  project_title: string;
+}
+
+export interface NetworkData {
+  nodes: NetworkNode[];
+  edges: NetworkEdge[];
 }
 
 export interface Notification {
   _id: string;
   type: "resurrect";
   new_fragment_id: string;
+  new_fragment_title?: string;
   sleeping_project_id: string;
   sleeping_project_title?: string;
   similarity_score: number;
+  message?: string;
   created_at: string;
   read: boolean;
 }

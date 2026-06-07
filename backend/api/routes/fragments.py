@@ -69,6 +69,36 @@ async def update_fragment_title(
     return {"updated": True}
 
 
+class NotesUpdateRequest(BaseModel):
+    notes: str
+
+
+@router.post("/{fragment_id}/notes")
+@limiter.limit("30/minute")
+async def update_fragment_notes(
+    request: Request,
+    fragment_id: str,
+    body: NotesUpdateRequest,
+    user_id: str = Depends(verify_firebase_token),
+):
+    db = get_db()
+    oid = parse_object_id(fragment_id, "fragment_id")
+    trimmed = body.notes.strip()
+    if trimmed:
+        result = db["fragments"].update_one(
+            {"_id": oid, "user_id": user_id},
+            {"$set": {"notes": sanitize_creator_text(trimmed)}},
+        )
+    else:
+        result = db["fragments"].update_one(
+            {"_id": oid, "user_id": user_id},
+            {"$unset": {"notes": ""}},
+        )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Fragment not found")
+    return {"updated": True}
+
+
 class TagUpdateRequest(BaseModel):
     tags: list[str] | None = None
     emotions: list[str] | None = None
@@ -382,13 +412,20 @@ async def reanalyze_fragment(
         {"$set": {"status": "processing"}},
     )
 
-    task = asyncio.create_task(
-        process_fragment_background(user_id, fragment_id, frag.get("audio_url"), frag.get("text"))
-    )
-    _background_tasks.add(task)
-    task.add_done_callback(_background_tasks.discard)
-
-    return {"message": "Reanalyzing fragment", "fragment_id": fragment_id}
+    try:
+        await asyncio.wait_for(
+            process_fragment_background(user_id, fragment_id, frag.get("audio_url"), frag.get("text")),
+            timeout=120,
+        )
+        return {"message": "Reanalysis complete", "fragment_id": fragment_id}
+    except asyncio.TimeoutError:
+        db["fragments"].update_one(
+            {"_id": ObjectId(fragment_id), "user_id": user_id, "status": "processing"},
+            {"$set": {"status": "timeout"}},
+        )
+        return {"message": "Reanalysis timed out", "fragment_id": fragment_id}
+    except Exception:
+        return {"message": "Reanalysis failed", "fragment_id": fragment_id}
 
 
 @router.post("/{fragment_id}/group-with-agent")

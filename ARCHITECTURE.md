@@ -69,6 +69,7 @@ Producer Agent (root)
   └─ delegates to → Memory Agent (sub_agent)
        │
        ├─ get_fragment_context(fragment_id)
+       │    └─ includes creator notes if present
        ├─ vector_search_fragment_neighbors(fragment_id)
        │    └─ MongoDB $vectorSearch (cosine, 1024-dim, user-scoped)
        ├─ get_project_context(project_id)  [if neighbor has a project]
@@ -79,6 +80,8 @@ Producer Agent (root)
             - connection types and reasoning
   │
   ├─ create_project_from_fragments() or attach_fragment_to_project()
+  ├─ generate_project_title() — poetic title via Gemini
+  ├─ generate_next_action() — musically-specific suggestion
   ├─ refresh_project_score() with Rescue Score computation
   └─ returns decision JSON to the pipeline
 ```
@@ -86,6 +89,56 @@ Producer Agent (root)
 The `_runner.py` module manages the ADK `Runner`, `InMemorySessionService`,
 and `ContextVar`-based DB/user scoping so both agents' tools can access the
 database safely.
+
+**Context passed to agent**: The runner enriches the prompt with fragment
+metadata (title, text, creator notes, tags, emotions) so the Producer Agent
+has context before delegating to Memory. Creator notes are explicitly flagged
+as expressing the creator's intent.
+
+**Grouping philosophy**: The agent respects `no_group` decisions — it does
+NOT override them. A wrong grouping damages user trust more than a missed
+connection. Fragments left ungrouped are re-evaluated whenever new fragments
+arrive or when the user triggers reanalysis.
+
+### Reanalyze Flow
+
+Reanalysis re-runs the full pipeline (Phase 2 + Phase 3) for a fragment.
+
+**Single fragment** (`POST /api/fragments/{id}/reanalyze`):
+
+1. Fragment status set to `processing`
+2. Re-tag, re-embed (Phase 2)
+3. If the fragment was in a project:
+   - Remove it from the project
+   - If the project has <2 fragments remaining, dissolve the project
+4. Re-run the agent pipeline (Phase 3) — may join a different project,
+   create a new one, or remain ungrouped
+5. Returns only after processing completes (120s timeout)
+
+**All fragments** (`POST /api/reanalyze-all`):
+
+1. All fragments set to `processing`
+2. Process all in parallel with `asyncio.gather` (120s per-fragment timeout)
+3. Fragments that timeout get `status: "timeout"`
+4. After completion, triggers DNA Insights update
+
+The key invariant: **reanalyze always re-evaluates project connections**.
+The old project assignment is cleared before the agent pipeline runs, so
+the agent makes a fresh decision based on current data.
+
+### Creator Notes
+
+Fragments can have user-authored `notes` — free-text context the creator
+adds to express intent ("this is the chorus for my rain song", "same vibe
+as the recording from last week"). Notes are:
+
+- Stored on the fragment document (`notes` field)
+- Included in the prompt sent to the Producer Agent
+- Visible to the Memory Agent via `get_fragment_context`
+- Weighted heavily in grouping decisions
+
+Notes give the agent human context that pure AI analysis cannot infer,
+improving project grouping accuracy.
 
 ### Why Not a Full 3-Agent Pipeline?
 
@@ -109,7 +162,7 @@ The Catcher Agent is still defined in `backend/agents/catcher.py` for:
 - **Role**: Action layer — root orchestrator
 - **Model**: `gemini-2.5-flash` (configurable via `PRODUCER_MODEL`)
 - **Sub-agents**: Memory Agent
-- **Skills**: `rescue-scoring`, `musical-knowledge`, `refusal-rules`
+- **Skills**: `rescue-scoring`, `musical-knowledge`, `refusal-rules`, `music-tagging`
 - **Write tools**:
   - `create_project_from_fragments(title, fragment_ids, connection_reason, connection_types)`:
     create a project and attach fragments. Validates all fragment IDs belong to
@@ -120,6 +173,10 @@ The Catcher Agent is still defined in `backend/agents/catcher.py` for:
   - `refresh_project_score(project_id, next_action)`: compute Rescue Score via
     pure Python (`tools/rescue_score.py`) and persist the score, breakdown,
     sections, and next action.
+  - `generate_project_title(fragment_ids, connection_types)`: Gemini call to
+    generate a poetic project title from fragment content.
+  - `generate_next_action(project_id)`: Gemini call to suggest a concrete,
+    musically-specific next step for the creator.
 
 All write tools use `ContextVar` to bind to the current `user_id` and `db`
 connection, ensuring user isolation without passing credentials through the
@@ -326,8 +383,10 @@ from following instructions embedded in creator-provided content.
   "project_title": "string | null",
   "connection_reason": "string | null",
   "connection_types": ["same_song_candidate"],
+  "agent_narrative": "string | null (Producer's Note to creator)",
+  "notes": "string | null (creator's own context/intent)",
   "prompt_injection_flag": false,
-  "status": "processing | ready | error",
+  "status": "processing | ready | error | timeout",
   "user_edited_fields": ["emotions"],
   "edit_history": [{"id": "uuid", "text": "old text", "edited_at": "ISO"}],
   "created_at": "ISODate"
@@ -422,8 +481,13 @@ Index name: `fragment_vector_index`.
 
 ### DNA Insights (`backend/jobs/dna_insights.py`)
 
-Daily aggregation of user creative patterns. Pure MongoDB aggregation
-pipelines, no LLM calls. For each user, computes:
+Aggregation of user creative patterns. Pure MongoDB aggregation pipelines,
+no LLM calls. Triggered in three ways:
+1. Daily Cloud Scheduler job (`POST /api/jobs/dna`)
+2. After `reanalyze-all` completes (inline)
+3. After `reprocess-projects` completes (inline)
+
+For each user, computes:
 - Emotion distribution (full histogram)
 - Theme frequency (top 10)
 - Style frequency (top 10)
@@ -503,7 +567,9 @@ The frontend runs separately with `pnpm dev`.
 
 - `AudioRecorder` — MediaRecorder API for in-browser recording
 - `FileDropzone` — drag-and-drop audio file upload (react-dropzone)
-- `FragmentCard` — displays tags, emotions, connection info, inline audio player
+- `FragmentCard` — displays tags, emotions, connection info, inline audio
+  player, creator notes editor, reanalyze button (hover). Reanalyze re-runs
+  the full pipeline including project re-evaluation.
 - `RescueScore` — visual score breakdown with component bars
 - `EmotionRadar` — Recharts radar chart for emotion distribution
 - `HourlyHeatmap` — creation time patterns visualization

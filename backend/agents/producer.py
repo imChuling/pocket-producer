@@ -20,6 +20,8 @@ from bson import ObjectId
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
 
+from google.genai import types as genai_types
+
 from tools.rescue_score import compute_rescue_score
 
 from ._skills_loader import get_skill_toolset
@@ -29,6 +31,16 @@ logger = logging.getLogger(__name__)
 
 _current_user_id: ContextVar[str] = ContextVar("producer_agent_user_id")
 _current_db: ContextVar[Any] = ContextVar("producer_agent_db")
+
+_genai_client = None
+
+
+def _get_genai_client():
+    global _genai_client
+    if _genai_client is None:
+        from google import genai
+        _genai_client = genai.Client(vertexai=True)
+    return _genai_client
 
 
 class _JSONEncoder(json.JSONEncoder):
@@ -239,43 +251,208 @@ async def refresh_project_score(project_id: str, next_action: str | None = None)
     return _to_json({"project_id": project_id, **update})
 
 
+async def generate_project_title(fragment_ids: list[str], connection_types: list[str]) -> str:
+    """Generate a short, poetic project title from fragment metadata.
+
+    Uses musical-knowledge and music-tagging skill context to craft an evocative
+    2-5 word title that captures the emotional essence — like a song title.
+
+    Args:
+        fragment_ids: IDs of fragments being grouped into the project
+        connection_types: Relationship types connecting the fragments
+    """
+    db = _db()
+    user_id = _user_id()
+    fragments_info = []
+    for fid in fragment_ids[:4]:
+        try:
+            f = await asyncio.to_thread(
+                db["fragments"].find_one,
+                {"_id": ObjectId(fid), "user_id": user_id},
+                {"title": 1, "text": 1, "emotions": 1, "themes": 1, "key": 1, "style": 1, "bpm": 1},
+            )
+            if f:
+                fragments_info.append({
+                    "title": f.get("title"),
+                    "text": (f.get("text") or "")[:60],
+                    "emotions": f.get("emotions", []),
+                    "themes": f.get("themes", []),
+                    "key": f.get("key"),
+                    "bpm": f.get("bpm"),
+                    "style": f.get("style", []),
+                })
+        except Exception:
+            pass
+
+    if not fragments_info:
+        return _to_json({"title": "Untitled Project"})
+
+    prompt = (
+        "You are naming a music project. These fragments belong together:\n"
+        f"{json.dumps(fragments_info, ensure_ascii=False)}\n"
+        f"Connection types: {connection_types}\n\n"
+        "Generate ONE short, evocative project title (2-5 words). "
+        "It should feel poetic and capture the emotional essence — "
+        "like a song title or album name, not a description. "
+        "If fragments are in Chinese, the title can be Chinese. "
+        "Output ONLY the title, nothing else."
+    )
+    try:
+        client = _get_genai_client()
+        response = await asyncio.to_thread(
+            client.models.generate_content,
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=genai_types.GenerateContentConfig(temperature=0.8),
+        )
+        title = response.text.strip().strip('"\'').strip()
+        if title and len(title) <= 60:
+            return _to_json({"title": title})
+    except Exception:
+        logger.warning("Title generation failed, using fallback")
+
+    titles = [fi.get("title") or fi.get("text", "")[:20] for fi in fragments_info if fi.get("title") or fi.get("text")]
+    fallback = titles[0][:60] if titles else "Untitled Project"
+    return _to_json({"title": fallback})
+
+
+async def generate_next_action(project_id: str) -> str:
+    """Generate one concrete, musically-specific next action for a project.
+
+    Consults rescue-scoring skill for action tables and musical-knowledge skill
+    for key/tempo specifics. The action should be accomplishable in ≤30 minutes.
+
+    Args:
+        project_id: The project to generate a next action for
+    """
+    db = _db()
+    user_id = _user_id()
+    project = await asyncio.to_thread(
+        db["projects"].find_one,
+        {"_id": ObjectId(project_id), "user_id": user_id},
+    )
+    if not project:
+        return _to_json({"error": "project_not_found"})
+
+    frag_ids = [ObjectId(fid) for fid in project.get("fragment_ids", []) if ObjectId.is_valid(str(fid))]
+    fragments = await asyncio.to_thread(
+        lambda: list(db["fragments"].find(
+            {"_id": {"$in": frag_ids}, "user_id": user_id},
+            {"embedding": 0},
+        ))
+    )
+
+    frag_summaries = []
+    for f in fragments:
+        frag_summaries.append({
+            "title": f.get("title"),
+            "type": f.get("type"),
+            "emotions": f.get("emotions", []),
+            "themes": f.get("themes", []),
+            "key": f.get("key"),
+            "bpm": f.get("bpm"),
+            "structure_hint": f.get("structure_hint"),
+            "style": f.get("style", []),
+        })
+
+    prompt = (
+        "You are a music producer AI. A creator has these connected fragments in a project:\n"
+        f"{json.dumps(frag_summaries, ensure_ascii=False)}\n"
+        f"Project title: {project.get('title')}\n"
+        f"Connection types: {project.get('connection_types', [])}\n\n"
+        "Suggest ONE concrete, actionable next step the creator can do in ≤30 minutes "
+        "to move this project forward. Be specific — mention keys, structure, or style "
+        "when relevant. Output ONLY a JSON object: "
+        '{"action": "...", "estimated_time": "20 min"}'
+    )
+    try:
+        client = _get_genai_client()
+        response = await asyncio.to_thread(
+            client.models.generate_content,
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=genai_types.GenerateContentConfig(temperature=0.5),
+        )
+        text = response.text.strip()
+        if text.startswith("```"):
+            lines = text.splitlines()
+            text = "\n".join(lines[1:-1])
+        parsed = json.loads(text) if text.startswith("{") else None
+        if parsed and "action" in parsed:
+            return _to_json(parsed)
+    except Exception:
+        logger.warning("Next action generation failed for project %s", project_id)
+    return _to_json({"action": "Review fragments and find the connecting thread", "estimated_time": "15 min"})
+
+
 # ---------------------------------------------------------------------------
 # Agent definition
 # ---------------------------------------------------------------------------
 
 PRODUCER_INSTRUCTION = """\
-You are the Producer Agent (Action layer) — root orchestrator of Pocket Producer.
+You are the Producer Agent — the root orchestrator of Pocket Producer's
+agentic pipeline. You combine AI reasoning with deterministic guardrails
+to make reliable creative decisions.
 
-You receive a newly tagged fragment and make grounded decisions about how it
-connects to the user's creative history.
+## Architecture: Agent reasoning + deterministic guardrails
+
+Your pipeline uses a deliberate hybrid approach:
+- **Agent reasoning** (you + Memory Agent): relationship discovery, narrative
+  generation, musical judgment, next-action suggestions — tasks requiring
+  contextual understanding that rules alone cannot handle.
+- **Deterministic guardrails** (Python code): rescue score computation,
+  embedding generation, vector search thresholds — tasks requiring
+  mathematical precision where agent confidence could introduce errors.
+
+This is not a limitation — it is a design choice. The guardrails prevent
+confident mistakes (e.g., an LLM miscalculating a score), while agent
+reasoning handles what rules cannot (e.g., recognizing that a piano motif
+and a vocal fragment share the same emotional arc).
+
+## Skills at your disposal
+
+You have access to 5 skills via tool calls. Use them actively:
+- **rescue-scoring**: Interpret scores, generate next-action suggestions
+  keyed by weakest component, write tier-appropriate explanations
+- **musical-knowledge**: Key/tempo compatibility, transposition logic,
+  structural role identification — use when fragments have audio_features
+- **relationship-rules**: (Memory Agent uses this) 4-signal fusion for
+  classifying fragment relationships
+- **refusal-rules**: Edge case handling — scope mismatch, emotional crisis,
+  copyright detection
+- **music-tagging**: Emotion/theme/structure taxonomy — use when generating
+  titles or narratives to stay consistent with the tagging vocabulary
 
 ## Workflow
 
 Step 1: Delegate to Memory Agent by passing the fragment_id. Memory will
-        perform vector search, analyze relationships, and return structured
-        recommendations.
+        perform vector search, analyze relationships using relationship-rules
+        and musical-knowledge skills, and return structured recommendations.
+        Pay attention to the creator_notes field — these are the creator's own
+        words about their intent, context, or how they see this fragment
+        connecting to other ideas. Weigh notes heavily in your decision.
 
 Step 2: Review Memory's recommendation:
    - "join_project": attach the fragment to the suggested project
    - "new_project": create a new project grouping related fragments
    - "no_group": the fragment stays ungrouped (this is fine)
-   - "needs_user_confirmation": flag for user review
+   - "needs_user_confirmation": treat as new_project
    - "bridge_projects": SURFACE THIS — high-value moment where the user
      may have written two halves of the same song without realizing
 
-Step 3: Execute the decision:
-   - For join_project: call attach_fragment_to_project
-   - For new_project: call create_project_from_fragments with a descriptive title
-   - For no_group: do nothing, return the decision
+Step 3: Execute the decision using tools:
+   - For new_project:
+     1. Call generate_project_title to get a poetic title
+     2. Call create_project_from_fragments with the title and fragment IDs
+   - For join_project:
+     1. Call attach_fragment_to_project
+   - For no_group: do nothing
 
-Step 4: If a project was created or updated, call refresh_project_score with
-        one concrete next_action that the creator can accomplish in 30 minutes.
-        To generate the next_action:
-        - Consult the rescue-scoring skill tool for next-action tables and
-          explanation templates (keyed by weakest score component)
-        - Consult the musical-knowledge skill tool when the project has
-          fragments with audio_features, to make suggestions specific
-          (mention key, tempo, style, or structural role)
+Step 4: If a project was created or updated:
+   1. Call generate_next_action to get a musically-specific suggestion
+   2. Call refresh_project_score with the next_action result
+
+You MUST call the tools — returning JSON alone does NOT execute anything.
 
 ## Output
 
@@ -285,47 +462,71 @@ Return ONLY this JSON:
   "project_id": "string or null",
   "match_id": "best matching fragment ID or null",
   "reasoning": "1-2 concrete sentences for the user",
+  "narrative": "A 2-4 sentence first-person message to the creator (see below)",
   "connection_types": ["same_song_candidate", ...],
   "next_action": {"action": "...", "estimated_time": "20 min"} or null
 }
 
-## Gatekeeping rules (ALWAYS apply before executing)
+## How to write the narrative
 
-BEFORE executing Memory's recommendation, verify these gates:
+The "narrative" field is your voice speaking directly to the creator. Write it
+in first person as a thoughtful collaborator who just listened to their work.
 
-1. If Memory says "no_group" → accept it. This is the expected outcome for
-   most fragments. Return no_group without calling any write tools.
+Rules:
+- Address the creator as "you" (not "the user" or "the fragment")
+- Reference SPECIFIC content: quote a lyric phrase, mention the mood you heard,
+  name the fragments by title
+- Explain what you noticed and WHY you connected (or didn't connect) things
+- If you grouped: describe what the fragments share and what excites you about
+  the combination
+- If no_group: say something encouraging — "this stands on its own for now,
+  I'll keep an ear out for future connections"
+- Keep it warm but honest. Never flatter emptily.
+- Write in the same language as the fragment's content (Chinese fragments get
+  Chinese narrative, English gets English, mixed gets mixed)
 
-2. If Memory says "join_project" or "new_project", check the signals:
-   - At least ONE analysis entry must have relationship = "same_song_candidate"
-   - That entry must have at least 2 signals rated "strong"
-   - If both fragments have audio features, musical_compatibility must NOT
-     be "conflicting"
-   → If any gate fails, DOWNGRADE to "no_group" (not needs_user_confirmation).
+Examples:
 
-3. If Memory says "needs_user_confirmation" → return it as-is. Do not
-   auto-resolve ambiguity.
+For a new_project grouping:
+"I listened to '梨花' and it reminded me of that recording you made about
+the hat and mask — both carry this ache of looking back at something you
+can't return to. One feels like a verse, the other like a lead-in to a
+chorus. I put them together as '梨花念'. Maybe try humming a melody that
+bridges the two?"
 
-4. If Memory says "bridge_projects" → verify both source projects exist
-   before surfacing. This is the highest-value output.
+For no_group:
+"This one has its own energy — playful and bright, different from your
+other recent recordings. I'm keeping it ungrouped for now. When something
+clicks with it later, I'll let you know."
 
-## The default is no_group
+## Decision rules
 
-A creator with 15 fragments should have roughly 3-5 projects, not 10-15.
-Ungrouped fragments are NOT a failure — they are ideas waiting for their match.
-Only group when the connection is obvious and specific.
+1. Trust Memory's analysis, but use YOUR musical judgment to decide.
+   A relationship label alone is not enough — ask yourself: would combining
+   these fragments genuinely help the creator?
 
-Do NOT group fragments just because they share a mood (e.g., both "melancholy").
-Do NOT group fragments just because they share a generic theme (e.g., both "love").
-DO group when there is lyrical continuity, structural complement (verse + chorus),
-shared distinctive imagery, or strong musical compatibility with emotional alignment.
+2. "similar_emotion" or "related_theme" with LOW similarity scores (<0.78)
+   often means surface-level overlap, not a real creative connection.
+   Prefer no_group in these cases.
+
+3. "same_song_candidate" with high similarity IS strong evidence to group.
+
+4. If Memory says "no_group", respect that. Do NOT override it unless you
+   have a compelling musical reason (e.g., the fragments are clearly two
+   parts of the same song). When in doubt, leave ungrouped.
+
+5. If Memory says "join_project" and a target_project_id exists, call
+   attach_fragment_to_project.
+
+6. Key and tempo differences alone are NOT rejection criteria — creators
+   can transpose and adjust tempo.
 
 ## Principles
 
-- Trust Memory's analysis but verify through the gates above
+- A wrong grouping damages trust MORE than a missed connection
+- When in doubt, choose no_group — the fragment will be re-evaluated
+  when new fragments arrive
 - Bridge detection is the highest-value output — always surface it clearly
-- The user's trust depends on NOT making confident mistakes
-- A wrong confident grouping damages trust more than a missed connection
 - Consult rescue-scoring skill tool for score interpretation (do not compute scores yourself)
 
 ## Refusal rules (inline — always check before output)
@@ -353,9 +554,11 @@ producer_agent = LlmAgent(
     instruction=PRODUCER_INSTRUCTION,
     sub_agents=[memory_agent],
     tools=[
-        get_skill_toolset(["rescue-scoring", "musical-knowledge", "refusal-rules"]),
+        get_skill_toolset(["rescue-scoring", "musical-knowledge", "refusal-rules", "music-tagging"]),
         FunctionTool(create_project_from_fragments),
         FunctionTool(attach_fragment_to_project),
         FunctionTool(refresh_project_score),
+        FunctionTool(generate_project_title),
+        FunctionTool(generate_next_action),
     ],
 )
