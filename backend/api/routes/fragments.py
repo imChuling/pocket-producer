@@ -412,20 +412,25 @@ async def reanalyze_fragment(
         {"$set": {"status": "processing"}},
     )
 
-    try:
-        await asyncio.wait_for(
-            process_fragment_background(user_id, fragment_id, frag.get("audio_url"), frag.get("text")),
-            timeout=120,
-        )
-        return {"message": "Reanalysis complete", "fragment_id": fragment_id}
-    except asyncio.TimeoutError:
-        db["fragments"].update_one(
-            {"_id": ObjectId(fragment_id), "user_id": user_id, "status": "processing"},
-            {"$set": {"status": "timeout"}},
-        )
-        return {"message": "Reanalysis timed out", "fragment_id": fragment_id}
-    except Exception:
-        return {"message": "Reanalysis failed", "fragment_id": fragment_id}
+    async def _run():
+        try:
+            await asyncio.wait_for(
+                process_fragment_background(user_id, fragment_id, frag.get("audio_url"), frag.get("text")),
+                timeout=300,
+            )
+        except asyncio.TimeoutError:
+            db["fragments"].update_one(
+                {"_id": ObjectId(fragment_id), "user_id": user_id, "status": "processing"},
+                {"$set": {"status": "timeout"}},
+            )
+        except Exception:
+            logger.exception("Reanalyze failed for %s", fragment_id)
+
+    task = asyncio.create_task(_run())
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+
+    return {"message": "Reanalyzing fragment", "fragment_id": fragment_id}
 
 
 @router.post("/{fragment_id}/group-with-agent")
