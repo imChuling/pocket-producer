@@ -762,7 +762,7 @@ function CaptureDashboard() {
                 if (msg.status === "started") {
                   setStatus(`Reanalyzing ${msg.total} fragments...`);
                 } else if (msg.status === "progress") {
-                  setStatus(`Reanalyzing... ${msg.ready}/${msg.total} done`);
+                  setStatus(`Reanalyzing... ${msg.done}/${msg.total} done`);
                 } else if (msg.status === "done") {
                   setStatus(`Reanalyzed ${msg.processed}/${msg.total} fragments`);
                 }

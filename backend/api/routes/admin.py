@@ -168,15 +168,28 @@ async def reanalyze_all_fragments(
                 logger.exception("Reanalyze failed for %s", frag_id)
                 return False
 
-        work = asyncio.gather(*[_safe_process(f) for f in fragments])
+        semaphore = asyncio.Semaphore(3)
+
+        async def _throttled(frag):
+            async with semaphore:
+                return await _safe_process(frag)
+
+        done_count = 0
+
+        async def _track(frag):
+            nonlocal done_count
+            result = await _throttled(frag)
+            done_count += 1
+            return result
+
+        work = asyncio.gather(*[_track(f) for f in fragments])
         heartbeat_interval = 10
         while True:
             try:
                 results = await asyncio.wait_for(asyncio.shield(work), timeout=heartbeat_interval)
                 break
             except asyncio.TimeoutError:
-                ready_count = db["fragments"].count_documents({"user_id": user_id, "status": "ready"})
-                yield _json.dumps({"status": "progress", "ready": ready_count, "total": total}) + "\n"
+                yield _json.dumps({"status": "progress", "done": done_count, "total": total}) + "\n"
 
         processed = sum(1 for r in results if r)
         logger.info("Reanalyze-all done for %s: %d/%d", user_id, processed, total)
