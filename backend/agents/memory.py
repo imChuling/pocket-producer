@@ -47,6 +47,19 @@ def _user_id() -> str:
     return _current_user_id.get()
 
 
+def _normalize_ejson(doc: Any) -> Any:
+    """Convert EJSON types (e.g. {"$oid": "..."}) to plain Python values."""
+    if isinstance(doc, dict):
+        if "$oid" in doc and len(doc) == 1:
+            return doc["$oid"]
+        if "$date" in doc and len(doc) == 1:
+            return doc["$date"]
+        return {k: _normalize_ejson(v) for k, v in doc.items()}
+    if isinstance(doc, list):
+        return [_normalize_ejson(item) for item in doc]
+    return doc
+
+
 # ---------------------------------------------------------------------------
 # Read-only tools for Memory Agent
 # ---------------------------------------------------------------------------
@@ -65,10 +78,10 @@ async def get_fragment_context(fragment_id: str) -> str:
 
 
 async def vector_search_fragment_neighbors(fragment_id: str, limit: int = 6) -> str:
-    """Find semantically similar fragments using MongoDB Atlas Vector Search.
+    """Find semantically similar fragments via MongoDB Atlas Vector Search.
 
-    Uses the fragment's embedding to find neighbors. Returns documents with
-    cosine similarity scores. Excludes the query fragment itself.
+    Routes through the MongoDB MCP server when available, falling back to
+    direct pymongo if MCP is unreachable.
     """
     db = _db()
     user_id = _user_id()
@@ -92,6 +105,23 @@ async def vector_search_fragment_neighbors(fragment_id: str, limit: int = 6) -> 
         else default_threshold
     )
 
+    mcp_url = os.environ.get("MCP_SERVER_URL")
+    if mcp_url:
+        try:
+            neighbors = await _mcp_vector_search(
+                fragment["embedding"], fragment_id, user_id, threshold, limit, mcp_url,
+            )
+            logger.info(
+                "Vector search via MCP: %d neighbors for %s (threshold=%.2f)",
+                len(neighbors), fragment_id, threshold,
+            )
+            return _to_json({"neighbors": neighbors, "threshold_applied": threshold, "via": "mcp"})
+        except Exception:
+            logger.warning(
+                "MCP vector search failed for %s, falling back to direct pymongo",
+                fragment_id, exc_info=True,
+            )
+
     pipeline = [
         {
             "$vectorSearch": {
@@ -113,6 +143,60 @@ async def vector_search_fragment_neighbors(fragment_id: str, limit: int = 6) -> 
     ]
     neighbors = await asyncio.to_thread(lambda: list(db["fragments"].aggregate(pipeline)))
     return _to_json({"neighbors": neighbors, "threshold_applied": threshold})
+
+
+async def _mcp_vector_search(
+    embedding: list[float],
+    fragment_id: str,
+    user_id: str,
+    threshold: float,
+    limit: int,
+    mcp_url: str,
+) -> list[dict]:
+    """Execute vector search through the MongoDB MCP server."""
+    from mcp import ClientSession
+    from mcp.client.streamable_http import streamablehttp_client
+
+    pipeline = [
+        {
+            "$vectorSearch": {
+                "index": "fragment_vector_index",
+                "path": "embedding",
+                "queryVector": embedding,
+                "numCandidates": 100,
+                "limit": max(2, min(limit, 10)),
+                "filter": {"user_id": user_id},
+            }
+        },
+        {"$addFields": {"score": {"$meta": "vectorSearchScore"}}},
+        {"$match": {
+            "score": {"$gte": threshold},
+            "status": "ready",
+        }},
+        {"$project": {"embedding": 0}},
+    ]
+
+    async with streamablehttp_client(url=mcp_url) as (read, write, _):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            result = await session.call_tool(
+                "aggregate",
+                arguments={"collection": "fragments", "pipeline": pipeline},
+            )
+
+    docs: list[dict] = []
+    if result and result.content:
+        for block in result.content:
+            text = getattr(block, "text", None)
+            if text:
+                parsed = json.loads(text)
+                if isinstance(parsed, list):
+                    docs = parsed
+                elif isinstance(parsed, dict) and "documents" in parsed:
+                    docs = parsed["documents"]
+
+    normalized = [_normalize_ejson(d) for d in docs]
+    return [n for n in normalized if str(n.get("_id", "")) != fragment_id]
 
 
 async def get_project_context(project_id: str) -> str:
@@ -147,8 +231,8 @@ async def get_project_context(project_id: str) -> str:
 
 
 def _build_mcp_toolset():
-    """Attach read-only MongoDB MCP tools when enabled."""
-    if os.environ.get("ENABLE_MCP_MEMORY_TOOLS") != "1":
+    """Attach read-only MongoDB MCP tools (enabled by default)."""
+    if os.environ.get("ENABLE_MCP_MEMORY_TOOLS") == "0":
         return None
     mcp_url = os.environ.get("MCP_SERVER_URL")
     if not mcp_url:
@@ -280,22 +364,52 @@ For edge cases, consult the refusal-rules skill tool for worked examples.
 """
 
 
+MEMORY_MCP_ADDENDUM = """
+
+## MongoDB MCP Integration
+
+This agent is connected to the MongoDB MCP server for direct database access.
+The vector_search_fragment_neighbors tool already routes through MCP internally.
+
+You also have access to raw MongoDB MCP tools (prefixed `mongo_mcp_`):
+- **mongo_mcp_find**: Query any collection directly
+- **mongo_mcp_aggregate**: Run aggregation pipelines
+
+When a neighbor belongs to a project (has a project_id), use the **mongo_mcp_find**
+tool to look up the project context:
+
+  mongo_mcp_find(collection="projects", filter={"_id": {"$oid": "<project_id>"}, "user_id": "<user_id>"})
+
+This gives you the full project document (title, fragment_ids, connection_types,
+rescue_score, etc.) so you can evaluate whether the new fragment belongs there.
+
+Database: pocketproducer
+Collections: fragments, projects, user_settings, notifications
+"""
+
+
 def build_memory_agent() -> LlmAgent:
     """Build the Memory Agent with all tools and skills."""
     tools: list[Any] = [
         get_skill_toolset(["relationship-rules", "musical-knowledge", "refusal-rules"]),
         FunctionTool(get_fragment_context),
         FunctionTool(vector_search_fragment_neighbors),
-        FunctionTool(get_project_context),
     ]
+
     mcp = _build_mcp_toolset()
     if mcp is not None:
         tools.append(mcp)
+        instruction = MEMORY_INSTRUCTION + MEMORY_MCP_ADDENDUM
+        logger.info("Memory Agent: MCP enabled, project lookups will use mongo_mcp_find")
+    else:
+        tools.append(FunctionTool(get_project_context))
+        instruction = MEMORY_INSTRUCTION
+        logger.info("Memory Agent: MCP not available, using direct pymongo tools")
 
     return LlmAgent(
         name="memory",
         model=os.environ.get("MEMORY_MODEL", "gemini-2.5-flash"),
-        instruction=MEMORY_INSTRUCTION,
+        instruction=instruction,
         tools=tools,
     )
 

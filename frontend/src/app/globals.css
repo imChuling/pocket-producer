@@ -425,6 +425,16 @@
   animation: shimmer-text 4s ease-in-out infinite;
 }
 
+/* ── Processing card border pulse ── */
+@keyframes pulse-border {
+  0%, 100% {
+    box-shadow: 0 0 0 1px rgba(160,181,235,0.15), 0 0 12px rgba(160,181,235,0);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(160,181,235,0.35), 0 0 12px rgba(160,181,235,0.08);
+  }
+}
+
 /* ── Glow pulse for recording area ── */
 @keyframes glow-pulse {
   0%, 100% {

@@ -79,6 +79,7 @@ async def group_fragment_with_agents(
     prod_user_token = producer_user_var.set(user_id)
     prod_db_token = producer_db_var.set(db)
 
+    session = None
     try:
         runner = _get_runner()
         session = await runner.session_service.create_session(
@@ -117,25 +118,33 @@ async def group_fragment_with_agents(
             parts=[types.Part(text=prompt)],
         )
 
-        final_text = None
-        event_count = 0
-        async for event in runner.run_async(
-            user_id=user_id,
-            session_id=session.id,
-            new_message=message,
-        ):
-            event_count += 1
-            author = getattr(event, "author", "?")
-            if event.content and event.content.parts:
-                for part in event.content.parts:
-                    if getattr(part, "function_call", None):
-                        logger.info(
-                            "Agent tool call: agent=%s tool=%s",
-                            author,
-                            part.function_call.name,
-                        )
-                    if event.is_final_response() and getattr(part, "text", None):
-                        final_text = part.text
+        async def _run():
+            _final = None
+            _count = 0
+            async for event in runner.run_async(
+                user_id=user_id,
+                session_id=session.id,
+                new_message=message,
+            ):
+                _count += 1
+                author = getattr(event, "author", "?")
+                if event.content and event.content.parts:
+                    for part in event.content.parts:
+                        if getattr(part, "function_call", None):
+                            logger.info(
+                                "Agent tool call: agent=%s tool=%s",
+                                author,
+                                part.function_call.name,
+                            )
+                        if event.is_final_response() and getattr(part, "text", None):
+                            _final = part.text
+            return _final, _count
+
+        try:
+            final_text, event_count = await asyncio.wait_for(_run(), timeout=90)
+        except asyncio.TimeoutError:
+            logger.warning("Agent pipeline timed out (90s) for fragment %s", fragment_id)
+            return None
 
         result = _try_parse_json(final_text)
         logger.info(
@@ -147,6 +156,15 @@ async def group_fragment_with_agents(
         return result
 
     finally:
+        if session is not None:
+            try:
+                await runner.session_service.delete_session(
+                    app_name="pocket_producer",
+                    user_id=user_id,
+                    session_id=session.id,
+                )
+            except Exception:
+                pass
         memory_db_var.reset(mem_db_token)
         memory_user_var.reset(mem_user_token)
         producer_db_var.reset(prod_db_token)

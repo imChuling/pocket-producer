@@ -1,5 +1,6 @@
 """Shared dependencies used across route modules."""
 
+import asyncio
 import logging
 import os
 import re
@@ -40,6 +41,49 @@ PROMPT_INJECTION_RE = re.compile(
 )
 
 limiter = Limiter(key_func=get_remote_address)
+
+# ---------------------------------------------------------------------------
+# Concurrent pipeline guard — reject (not queue) when too many are running
+# ---------------------------------------------------------------------------
+MAX_CONCURRENT_PIPELINES = int(os.environ.get("MAX_CONCURRENT_PIPELINES", "5"))
+_pipeline_count = 0
+_pipeline_count_lock = asyncio.Lock()
+
+
+async def acquire_pipeline_slot() -> bool:
+    global _pipeline_count
+    async with _pipeline_count_lock:
+        if _pipeline_count >= MAX_CONCURRENT_PIPELINES:
+            return False
+        _pipeline_count += 1
+        return True
+
+
+async def release_pipeline_slot():
+    global _pipeline_count
+    async with _pipeline_count_lock:
+        _pipeline_count = max(0, _pipeline_count - 1)
+
+
+# DNA update debounce — collapse rapid successive triggers into one run
+_dna_lock = asyncio.Lock()
+_dna_pending = False
+
+
+async def debounced_dna_update(delay: float = 2.0):
+    """Schedule a DNA update, collapsing multiple calls within `delay` seconds."""
+    global _dna_pending
+    if _dna_pending:
+        return
+    _dna_pending = True
+    await asyncio.sleep(delay)
+    async with _dna_lock:
+        _dna_pending = False
+        try:
+            from jobs.dna_insights import run as run_dna
+            await asyncio.to_thread(run_dna)
+        except Exception:
+            logger.exception("Debounced DNA update failed")
 
 _mongo = None
 
