@@ -14,7 +14,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from slowapi.extension import _rate_limit_exceeded_handler
 
 from .auth import verify_firebase_token
-from .deps import get_db, limiter, sanitize_creator_text
+from .deps import acquire_pipeline_slot, debounced_dna_update, get_db, limiter, release_pipeline_slot, sanitize_creator_text
 from .pipeline import get_genai_client, process_fragment_background, validate_audio_upload
 from .routes import admin_router, fragments_router, notifications_router, projects_router
 
@@ -152,11 +152,23 @@ async def ingest_fragment(
     result = db["fragments"].insert_one(fragment_doc)
     fragment_id = str(result.inserted_id)
 
-    task = asyncio.create_task(
-        process_fragment_background(user_id, fragment_id, audio_url, sanitized_text)
-    )
+    async def _ingest_pipeline():
+        while not await acquire_pipeline_slot():
+            await asyncio.sleep(1)
+        try:
+            await process_fragment_background(user_id, fragment_id, audio_url, sanitized_text)
+        finally:
+            await release_pipeline_slot()
+        await debounced_dna_update()
+
+    def _on_task_done(t):
+        _background_tasks.discard(t)
+        if not t.cancelled() and t.exception():
+            logger.error("Ingest pipeline failed: %s", t.exception())
+
+    task = asyncio.create_task(_ingest_pipeline())
     _background_tasks.add(task)
-    task.add_done_callback(_background_tasks.discard)
+    task.add_done_callback(_on_task_done)
 
     return {
         "fragment_id": fragment_id,

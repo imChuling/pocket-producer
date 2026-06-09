@@ -128,7 +128,8 @@ def try_parse_agent_json(text: str) -> dict | None:
 
 
 def inspect_upload_sync(file_obj, filename: str | None, content_type: str | None) -> dict:
-    if content_type and content_type not in ALLOWED_AUDIO_CONTENT_TYPES:
+    base_type = content_type.split(";")[0].strip() if content_type else None
+    if base_type and base_type not in ALLOWED_AUDIO_CONTENT_TYPES:
         raise HTTPException(status_code=415, detail=f"Unsupported audio type: {content_type}")
 
     suffix = Path(filename or "upload.webm").suffix or ".webm"
@@ -322,6 +323,13 @@ ONLY output the JSON object. No markdown wrapping, no explanation outside the JS
 # Background processing
 # ---------------------------------------------------------------------------
 
+def _set_step(db, fragment_id: str, user_id: str, step: str):
+    db["fragments"].update_one(
+        {"_id": ObjectId(fragment_id), "user_id": user_id},
+        {"$set": {"pipeline_step": step}},
+    )
+
+
 async def process_fragment_background(
     user_id: str, fragment_id: str, audio_url: str | None, text: str | None
 ):
@@ -336,6 +344,7 @@ async def process_fragment_background(
         if audio_url:
             from tools.audio_features import extract_audio_features
 
+            _set_step(db, fragment_id, user_id, "Listening to your audio...")
             logger.info("Extracting audio features for %s", fragment_id)
             try:
                 features = await extract_audio_features(audio_url)
@@ -343,6 +352,7 @@ async def process_fragment_background(
                 logger.warning("Audio features extraction failed: %s", e)
             logger.info("Audio pre-processing done in %.1fs", time.monotonic() - t0)
 
+        _set_step(db, fragment_id, user_id, "Analyzing emotions and themes...")
         tag_task = tag_fragment_direct(
             text=text or "",
             audio_features=features,
@@ -362,6 +372,7 @@ async def process_fragment_background(
             transcript = tag_result.pop("transcript")
 
         if not embedding:
+            _set_step(db, fragment_id, user_id, "Building memory fingerprint...")
             embed_source = transcript
             if not embed_source and tag_result:
                 tag_text_parts = []
@@ -416,6 +427,7 @@ async def process_fragment_background(
         )
 
         if embedding:
+            _set_step(db, fragment_id, user_id, "Searching memory for connections...")
             try:
                 await memory_and_project(
                     db, user_id, fragment_id, embedding, tag_result, t0
@@ -423,11 +435,13 @@ async def process_fragment_background(
             except Exception:
                 logger.exception("Memory/project phase failed for %s", fragment_id)
 
+        _set_step(db, fragment_id, user_id, "done")
+
     except Exception:
         logger.exception("Processing failed for fragment %s", fragment_id)
         db["fragments"].update_one(
             {"_id": ObjectId(fragment_id), "user_id": user_id},
-            {"$set": {"status": "error"}},
+            {"$set": {"status": "error", "pipeline_step": "error"}},
         )
 
 
@@ -480,6 +494,17 @@ async def memory_and_project(
         fragment_id, time.monotonic() - t0, result,
     )
 
+    # If agent's tool calls already assigned the fragment, skip fallback
+    post_run = db["fragments"].find_one(
+        {"_id": ObjectId(fragment_id), "user_id": user_id},
+        {"project_id": 1, "project_title": 1},
+    )
+    if post_run and post_run.get("project_id"):
+        ptitle = post_run.get("project_title", "")
+        _set_step(db, fragment_id, user_id, f"Joined project: {ptitle}" if ptitle else "Grouped into a project")
+        logger.info("Agent tools already handled fragment %s → project %s", fragment_id, post_run["project_id"])
+        return
+
     if not result:
         return
 
@@ -516,6 +541,30 @@ async def memory_and_project(
 
     analysis = result.get("analysis", [])
 
+    if action == "bridge_projects":
+        bridge_pids = set()
+        for entry in analysis:
+            pid = entry.get("project_id")
+            if pid:
+                bridge_pids.add(pid)
+        if len(bridge_pids) >= 2:
+            all_fids = {fragment_id}
+            for pid in bridge_pids:
+                proj = db["projects"].find_one({"_id": ObjectId(pid), "user_id": user_id})
+                if proj:
+                    all_fids.update(proj.get("fragment_ids", []))
+            for pid in bridge_pids:
+                db["projects"].delete_one({"_id": ObjectId(pid), "user_id": user_id})
+                db["fragments"].update_many(
+                    {"user_id": user_id, "project_id": pid},
+                    {"$unset": {"project_id": "", "project_title": "", "connection_reason": "", "connection_types": "", "agent_narrative": ""}},
+                )
+            group_ids = list(all_fids)
+            logger.info("Bridge: merging %d projects into new project with %d fragments", len(bridge_pids), len(group_ids))
+        else:
+            logger.warning("bridge_projects with < 2 projects (%s), falling through to new_project", bridge_pids)
+        action = "new_project"
+
     if action == "needs_user_confirmation":
         action = "new_project"
 
@@ -549,6 +598,7 @@ async def memory_and_project(
     try:
         project_id = None
         if action == "new_project" and len(group_ids) >= 2:
+            _set_step(db, fragment_id, user_id, "Creating a new project...")
             title_resp = await generate_project_title(
                 fragment_ids=group_ids,
                 connection_types=connection_types or ["similar_emotion"],
@@ -567,6 +617,7 @@ async def memory_and_project(
         elif action == "join_project":
             target = target_project_id
             if target:
+                _set_step(db, fragment_id, user_id, "Found a matching project...")
                 resp = await attach_fragment_to_project(
                     fragment_id=fragment_id,
                     project_id=target,
@@ -588,6 +639,27 @@ async def memory_and_project(
                 logger.info("Rescue score updated: %s", score_resp)
             except Exception:
                 logger.exception("Failed to compute rescue score for %s", project_id)
+    finally:
+        producer_db_var.reset(db_token)
+        producer_user_var.reset(user_token)
+
+
+async def _generate_next_action(db, user_id: str, project_id: str) -> dict | None:
+    from agents.producer import (
+        _current_db as producer_db_var,
+        _current_user_id as producer_user_var,
+        generate_next_action,
+    )
+
+    db_token = producer_db_var.set(db)
+    user_token = producer_user_var.set(user_id)
+    try:
+        resp = await generate_next_action(project_id=project_id)
+        parsed = json.loads(resp) if isinstance(resp, str) else resp
+        return parsed if parsed and "action" in parsed else None
+    except Exception:
+        logger.exception("Failed to generate next action for project %s", project_id)
+        return None
     finally:
         producer_db_var.reset(db_token)
         producer_user_var.reset(user_token)

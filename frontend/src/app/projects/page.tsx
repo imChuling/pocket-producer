@@ -43,7 +43,7 @@ export default function ProjectsPage() {
     setScanResult(null);
     try {
       const res = await apiPost<{ deleted_projects: number }>("/reset-projects", {});
-      setScanResult(`Reset ${res.deleted_projects} projects. Use Reanalyze All on Capture page to re-group.`);
+      setScanResult(`Reset ${res.deleted_projects} projects. Use Scan to re-group.`);
       refresh();
     } catch {
       setScanResult("Reset failed");

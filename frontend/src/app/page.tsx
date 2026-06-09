@@ -714,7 +714,6 @@ function CaptureDashboard() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-  const [reanalyzing, setReanalyzing] = useState(false);
 
   const stuckCount = fragments.filter(
     (f) => f.status === "processing" && f.tags && f.tags.length > 0
@@ -727,59 +726,6 @@ function CaptureDashboard() {
     } catch {}
   }, [refresh]);
 
-  const handleReanalyze = useCallback(async () => {
-    setReanalyzing(true);
-    setStatus("Reanalyzing...");
-    refresh();
-    try {
-      const { getIdToken } = await import("@/lib/firebase");
-      const token = await getIdToken();
-      const directUrl = process.env.NEXT_PUBLIC_API_URL || "";
-      const res = await fetch(`${directUrl}/api/reanalyze-all`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.status === 429) {
-        setStatus("Too many requests — please wait a moment.");
-        return;
-      }
-      if (!res.ok) {
-        setStatus("Reanalyze failed");
-        return;
-      }
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-      if (reader) {
-        let done = false;
-        while (!done) {
-          const { value, done: d } = await reader.read();
-          done = d;
-          if (value) {
-            const text = decoder.decode(value, { stream: true });
-            for (const line of text.split("\n").filter(Boolean)) {
-              try {
-                const msg = JSON.parse(line);
-                if (msg.status === "started") {
-                  setStatus(`Reanalyzing ${msg.total} fragments...`);
-                } else if (msg.status === "progress") {
-                  setStatus(`Reanalyzing... ${msg.done}/${msg.total} done`);
-                } else if (msg.status === "done") {
-                  setStatus(`Reanalyzed ${msg.processed}/${msg.total} fragments`);
-                }
-              } catch {}
-            }
-          }
-          refresh();
-        }
-      }
-      refresh();
-    } catch (e) {
-      setStatus(e instanceof Error ? e.message : "Reanalyze failed");
-    } finally {
-      setReanalyzing(false);
-      setTimeout(() => setStatus(null), 5000);
-    }
-  }, [refresh]);
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -945,13 +891,6 @@ function CaptureDashboard() {
                   >
                     {fragments.length}
                   </span>
-                  <button
-                    onClick={handleReanalyze}
-                    disabled={reanalyzing}
-                    className="font-mono text-[11px] text-gravel px-3 py-1 rounded-full border border-chalk hover:bg-powder transition-colors disabled:opacity-50 btn-press"
-                  >
-                    {reanalyzing ? "Reanalyzing..." : "Reanalyze All"}
-                  </button>
                 </div>
                 {stuckCount > 0 && (
                   <button

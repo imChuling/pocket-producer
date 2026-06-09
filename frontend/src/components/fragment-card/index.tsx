@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   Loader2, FileText, X, Lightbulb, RefreshCw, GitMerge,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { apiPost } from "@/lib/api";
 import type { Fragment } from "@/types";
 
@@ -35,6 +35,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
   const [reanalyzing, setReanalyzing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
+  const [pipelineStep, setPipelineStep] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const isStuckProcessing = fragment.status === "processing" && fragment.tags && fragment.tags.length > 0;
@@ -42,6 +43,45 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
   const isError = fragment.status === "error" || fragment.status === "timeout";
   const isAudio = fragment.type === "audio";
   const displayTitle = fragment.title || "Audio fragment";
+
+  useEffect(() => {
+    if (!isProcessing) {
+      setPipelineStep(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { getIdToken } = await import("@/lib/firebase");
+        const token = await getIdToken();
+        const url = `${process.env.NEXT_PUBLIC_API_URL || ""}/api/fragments/${fragment._id}/status-stream`;
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.body) return;
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        while (!cancelled) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const lines = buf.split("\n");
+          buf = lines.pop() || "";
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            try {
+              const msg = JSON.parse(line.slice(6));
+              if (msg.step && msg.step !== "done") setPipelineStep(msg.step);
+              if (msg.status === "ready" || msg.step === "done") {
+                setPipelineStep(null);
+                onUpdated?.();
+              }
+            } catch {}
+          }
+        }
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [isProcessing, fragment._id]);
 
   async function handleDelete() {
     setDeleting(true);
@@ -53,8 +93,11 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
     }
   }
 
+  const [reanalyzeError, setReanalyzeError] = useState<string | null>(null);
+
   async function handleReanalyze() {
     setReanalyzing(true);
+    setReanalyzeError(null);
     try {
       const { getIdToken } = await import("@/lib/firebase");
       const token = await getIdToken();
@@ -63,6 +106,14 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (res.status === 429) {
+        setReanalyzeError("Too busy — try again shortly");
+        return;
+      }
+      if (!res.ok) {
+        setReanalyzeError("Reanalyze failed");
+        return;
+      }
       if (res.body) {
         const reader = res.body.getReader();
         while (true) {
@@ -73,8 +124,10 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
       onUpdated?.();
     } catch (e) {
       console.error("Reanalyze failed:", e);
+      setReanalyzeError("Reanalyze failed");
     } finally {
       setReanalyzing(false);
+      setTimeout(() => setReanalyzeError(null), 4000);
     }
   }
 
@@ -104,13 +157,15 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
       whileHover={{ y: -3, boxShadow: "rgba(0,0,0,0.08) 0px 8px 24px 0px, rgba(160,181,235,0.1) 0px 4px 16px 0px" }}
       whileTap={{ scale: 0.99 }}
       transition={{ type: "spring", stiffness: 300, damping: 22 }}
-      className={`group relative backdrop-blur-sm rounded-[24px] p-5 space-y-3 shadow-hairline ${
-        isProcessing ? "opacity-60" : ""
-      }`}
+      className="group relative backdrop-blur-sm rounded-[24px] p-5 space-y-3 shadow-hairline"
       style={{
         background: isAudio
           ? "linear-gradient(135deg, rgba(255,255,255,0.85), rgba(160,181,235,0.08), rgba(207,218,245,0.04))"
           : "linear-gradient(135deg, rgba(255,255,255,0.85), rgba(226,193,97,0.07), rgba(255,200,160,0.03))",
+        ...(isProcessing ? {
+          boxShadow: "0 0 0 1px rgba(160,181,235,0.2)",
+          animation: "pulse-border 2s ease-in-out infinite",
+        } : {}),
       }}
     >
       {/* Action buttons */}
@@ -134,13 +189,26 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
 
       {/* Status */}
       {isProcessing && (
-        <div className="flex items-center gap-2 text-xs text-gravel">
-          <Loader2 size={12} className="animate-spin" />
-          <span>Processing...</span>
+        <div className="flex items-center gap-2 text-xs text-gravel min-h-[20px]">
+          <Loader2 size={12} className="animate-spin flex-shrink-0" />
+          <AnimatePresence mode="wait">
+            <motion.span
+              key={pipelineStep || "default"}
+              initial={{ opacity: 0, y: 6, filter: "blur(4px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -6, filter: "blur(4px)" }}
+              transition={{ duration: 0.3 }}
+            >
+              {pipelineStep || "Processing..."}
+            </motion.span>
+          </AnimatePresence>
         </div>
       )}
       {isError && (
         <div className="text-xs text-red-500">Processing failed</div>
+      )}
+      {reanalyzeError && (
+        <div className="text-xs text-amber-600">{reanalyzeError}</div>
       )}
 
       {/* Content */}

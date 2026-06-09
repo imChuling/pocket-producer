@@ -9,13 +9,56 @@ from google.cloud import storage
 from pydantic import BaseModel
 
 from ..auth import verify_firebase_token
-from ..deps import get_db, limiter, parse_object_id, sanitize_creator_text
+from ..deps import acquire_pipeline_slot, debounced_dna_update, get_db, limiter, parse_object_id, release_pipeline_slot, sanitize_creator_text
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/fragments", tags=["fragments"])
 
 _background_tasks: set[asyncio.Task] = set()
+
+
+@router.get("/{fragment_id}/status-stream")
+async def fragment_status_stream(
+    request: Request,
+    fragment_id: str,
+    user_id: str = Depends(verify_firebase_token),
+):
+    from starlette.responses import StreamingResponse
+
+    db = get_db()
+    oid = parse_object_id(fragment_id, "fragment_id")
+
+    async def _sse():
+        last_step = None
+        for _ in range(120):
+            if await request.is_disconnected():
+                break
+            frag = db["fragments"].find_one(
+                {"_id": oid, "user_id": user_id},
+                {"status": 1, "pipeline_step": 1, "project_id": 1, "project_title": 1},
+            )
+            if not frag:
+                yield f"data: {{}}\n\n"
+                break
+            step = frag.get("pipeline_step", "")
+            status = frag.get("status", "processing")
+            if step != last_step:
+                last_step = step
+                import json as _json
+                payload = {"step": step, "status": status}
+                if frag.get("project_title"):
+                    payload["project_title"] = frag["project_title"]
+                yield f"data: {_json.dumps(payload)}\n\n"
+            if status in ("ready", "error") or step == "done":
+                break
+            await asyncio.sleep(1.5)
+
+    return StreamingResponse(
+        _sse(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.get("")
@@ -85,17 +128,47 @@ async def update_fragment_notes(
     oid = parse_object_id(fragment_id, "fragment_id")
     trimmed = body.notes.strip()
     if trimmed:
+        cleaned_notes, _ = sanitize_creator_text(trimmed)
         result = db["fragments"].update_one(
             {"_id": oid, "user_id": user_id},
-            {"$set": {"notes": sanitize_creator_text(trimmed)}},
+            {"$set": {"notes": cleaned_notes}},
         )
     else:
+        cleaned_notes = None
         result = db["fragments"].update_one(
             {"_id": oid, "user_id": user_id},
             {"$unset": {"notes": ""}},
         )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Fragment not found")
+
+    if cleaned_notes:
+        frag = db["fragments"].find_one(
+            {"_id": oid, "user_id": user_id},
+            {"embedding": 1, "emotions": 1, "themes": 1, "tags": 1},
+        )
+        if frag and frag.get("embedding"):
+            import time
+            from ..pipeline import memory_and_project
+            tag_for_project = {
+                "emotions": frag.get("emotions", []),
+                "themes": frag.get("themes", []),
+                "tags": frag.get("tags", []),
+            }
+
+            async def _reeval():
+                try:
+                    await memory_and_project(
+                        db, user_id, str(oid), frag["embedding"], tag_for_project, time.monotonic(),
+                    )
+                    await debounced_dna_update()
+                except Exception:
+                    logger.exception("Project re-evaluation after notes failed for %s", fragment_id)
+
+            task = asyncio.create_task(_reeval())
+            _background_tasks.add(task)
+            task.add_done_callback(lambda t: _background_tasks.discard(t))
+
     return {"updated": True}
 
 
@@ -246,11 +319,23 @@ async def edit_fragment_text(
         },
     )
 
+    if not await acquire_pipeline_slot():
+        db["fragments"].update_one(
+            {"_id": oid, "user_id": user_id},
+            {"$set": {"status": "ready"}},
+        )
+        raise HTTPException(429, "Too many fragments processing, please try again shortly")
+
     from ..pipeline import tag_fragment_direct
+
+    def _on_task_done(t):
+        _background_tasks.discard(t)
+        if not t.cancelled() and t.exception():
+            logger.error("Edit-text re-analysis failed: %s", t.exception())
 
     task = asyncio.create_task(_reanalyze_fragment_text(user_id, str(oid), new_text, tag_fragment_direct))
     _background_tasks.add(task)
-    task.add_done_callback(_background_tasks.discard)
+    task.add_done_callback(_on_task_done)
 
     return {"updated": True, "text": new_text}
 
@@ -279,12 +364,22 @@ async def _reanalyze_fragment_text(user_id: str, fragment_id: str, new_text: str
 
         db["fragments"].update_one({"_id": oid, "user_id": user_id}, {"$set": update})
         logger.info("Re-analysis complete for fragment %s", fragment_id)
+
+        if not isinstance(embedding, Exception) and embedding:
+            import time
+            from ..pipeline import memory_and_project
+            tag_for_project = tag_result if isinstance(tag_result, dict) else None
+            await memory_and_project(db, user_id, fragment_id, embedding, tag_for_project, time.monotonic())
+
+        await debounced_dna_update()
     except Exception:
         logger.exception("Re-analysis failed for fragment %s", fragment_id)
         db["fragments"].update_one(
             {"_id": oid, "user_id": user_id},
             {"$set": {"status": "ready"}, "$unset": {"embedding": ""}},
         )
+    finally:
+        await release_pipeline_slot()
 
 
 @router.post("/{fragment_id}/edit-history/{entry_id}/delete")
@@ -399,12 +494,16 @@ async def reanalyze_fragment(
 ):
     from ..pipeline import process_fragment_background
 
+    if not await acquire_pipeline_slot():
+        raise HTTPException(429, "Too many fragments processing, please try again shortly")
+
     db = get_db()
     frag = db["fragments"].find_one(
         {"_id": ObjectId(fragment_id), "user_id": user_id},
         {"_id": 1, "audio_url": 1, "text": 1},
     )
     if not frag:
+        await release_pipeline_slot()
         raise HTTPException(404, "Fragment not found")
 
     db["fragments"].update_one(
@@ -417,31 +516,35 @@ async def reanalyze_fragment(
     from starlette.responses import StreamingResponse
 
     async def _stream():
-        yield _json.dumps({"status": "processing", "fragment_id": fragment_id}) + "\n"
-        work = asyncio.ensure_future(
-            process_fragment_background(user_id, fragment_id, frag.get("audio_url"), frag.get("text"))
-        )
         try:
-            while True:
-                try:
-                    await asyncio.wait_for(asyncio.shield(work), timeout=10)
-                    break
-                except asyncio.TimeoutError:
-                    yield _json.dumps({"status": "heartbeat"}) + "\n"
-            yield _json.dumps({"status": "done", "fragment_id": fragment_id}) + "\n"
-        except Exception:
-            if not work.done():
-                work.cancel()
-            frag_doc = db["fragments"].find_one(
-                {"_id": ObjectId(fragment_id), "user_id": user_id}, {"status": 1}
+            yield _json.dumps({"status": "processing", "fragment_id": fragment_id}) + "\n"
+            work = asyncio.ensure_future(
+                process_fragment_background(user_id, fragment_id, frag.get("audio_url"), frag.get("text"))
             )
-            if frag_doc and frag_doc.get("status") == "processing":
-                db["fragments"].update_one(
-                    {"_id": ObjectId(fragment_id), "user_id": user_id},
-                    {"$set": {"status": "error"}},
+            try:
+                while True:
+                    try:
+                        await asyncio.wait_for(asyncio.shield(work), timeout=10)
+                        break
+                    except asyncio.TimeoutError:
+                        yield _json.dumps({"status": "heartbeat"}) + "\n"
+                await debounced_dna_update()
+                yield _json.dumps({"status": "done", "fragment_id": fragment_id}) + "\n"
+            except Exception:
+                if not work.done():
+                    work.cancel()
+                frag_doc = db["fragments"].find_one(
+                    {"_id": ObjectId(fragment_id), "user_id": user_id}, {"status": 1}
                 )
-            logger.exception("Reanalyze failed for %s", fragment_id)
-            yield _json.dumps({"status": "error", "fragment_id": fragment_id}) + "\n"
+                if frag_doc and frag_doc.get("status") == "processing":
+                    db["fragments"].update_one(
+                        {"_id": ObjectId(fragment_id), "user_id": user_id},
+                        {"$set": {"status": "error"}},
+                    )
+                logger.exception("Reanalyze failed for %s", fragment_id)
+                yield _json.dumps({"status": "error", "fragment_id": fragment_id}) + "\n"
+        finally:
+            await release_pipeline_slot()
 
     return StreamingResponse(_stream(), media_type="application/x-ndjson")
 
@@ -472,6 +575,6 @@ async def group_fragment_with_agent_endpoint(
     return {
         "fragment_id": fragment_id,
         "pipeline": "producer->memory",
-        "mcp_read_tools_enabled": os.environ.get("ENABLE_MCP_MEMORY_TOOLS") == "1",
+        "mcp_read_tools_enabled": os.environ.get("ENABLE_MCP_MEMORY_TOOLS") != "0",
         "result": result,
     }

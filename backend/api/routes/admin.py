@@ -6,7 +6,7 @@ from bson import ObjectId
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 
 from ..auth import verify_firebase_token
-from ..deps import get_db, limiter
+from ..deps import debounced_dna_update, get_db, limiter
 
 logger = logging.getLogger(__name__)
 
@@ -107,103 +107,9 @@ async def reprocess_projects(
     results = await asyncio.gather(*[_process_one(f) for f in fragments])
     processed = sum(1 for r in results if r)
 
-    from jobs.dna_insights import run as run_dna
-    await asyncio.to_thread(run_dna)
+    await debounced_dna_update()
 
     return {"message": f"Processed {processed} fragments", "processed": processed}
-
-
-@router.post("/api/reanalyze-all")
-@limiter.limit("2/minute")
-async def reanalyze_all_fragments(
-    request: Request,
-    user_id: str = Depends(verify_firebase_token),
-):
-    """Stream progress as NDJSON so the request stays alive on Cloud Run."""
-    import json as _json
-
-    from starlette.responses import StreamingResponse
-
-    from ..pipeline import process_fragment_background
-
-    db = get_db()
-    fragments = list(
-        db["fragments"].find(
-            {"user_id": user_id},
-            {"_id": 1, "audio_url": 1, "text": 1, "type": 1},
-        )
-    )
-    if not fragments:
-        return {"message": "No fragments found", "processed": 0}
-
-    db["fragments"].update_many(
-        {"user_id": user_id},
-        {"$set": {"status": "processing"}},
-    )
-
-    async def _stream():
-        PER_FRAGMENT_TIMEOUT = 300
-        total = len(fragments)
-
-        yield _json.dumps({"status": "started", "total": total}) + "\n"
-
-        async def _safe_process(frag):
-            frag_id = str(frag["_id"])
-            try:
-                await asyncio.wait_for(
-                    process_fragment_background(
-                        user_id, frag_id, frag.get("audio_url"), frag.get("text")
-                    ),
-                    timeout=PER_FRAGMENT_TIMEOUT,
-                )
-                return True
-            except asyncio.TimeoutError:
-                logger.warning("Reanalyze timed out for %s", frag_id)
-                db["fragments"].update_one(
-                    {"_id": frag["_id"], "user_id": user_id, "status": "processing"},
-                    {"$set": {"status": "timeout"}},
-                )
-                return False
-            except Exception:
-                logger.exception("Reanalyze failed for %s", frag_id)
-                return False
-
-        semaphore = asyncio.Semaphore(3)
-
-        async def _throttled(frag):
-            async with semaphore:
-                return await _safe_process(frag)
-
-        done_count = 0
-
-        async def _track(frag):
-            nonlocal done_count
-            result = await _throttled(frag)
-            done_count += 1
-            return result
-
-        work = asyncio.gather(*[_track(f) for f in fragments])
-        heartbeat_interval = 10
-        while True:
-            try:
-                results = await asyncio.wait_for(asyncio.shield(work), timeout=heartbeat_interval)
-                break
-            except asyncio.TimeoutError:
-                yield _json.dumps({"status": "progress", "done": done_count, "total": total}) + "\n"
-
-        processed = sum(1 for r in results if r)
-        logger.info("Reanalyze-all done for %s: %d/%d", user_id, processed, total)
-
-        if processed > 0:
-            try:
-                from jobs.dna_insights import run as run_dna
-                await asyncio.to_thread(run_dna)
-            except Exception:
-                logger.exception("DNA update failed after reanalyze-all")
-
-        yield _json.dumps({"status": "done", "processed": processed, "total": total}) + "\n"
-
-    return StreamingResponse(_stream(), media_type="application/x-ndjson")
 
 
 @router.post("/api/fix-stuck")
@@ -251,7 +157,7 @@ async def agent_memory_status(request: Request, user_id: str = Depends(verify_fi
         "path": "direct Gemini tagging -> Producer Agent -> Memory Agent (vector search + relationship rules) -> project decision",
         "producer_model": os.environ.get("PRODUCER_MODEL", "gemini-2.5-flash"),
         "memory_model": os.environ.get("MEMORY_MODEL", "gemini-2.5-flash"),
-        "mcp_read_tools_enabled": os.environ.get("ENABLE_MCP_MEMORY_TOOLS") == "1",
+        "mcp_read_tools_enabled": os.environ.get("ENABLE_MCP_MEMORY_TOOLS") != "0",
         "mcp_server_url_configured": bool(os.environ.get("MCP_SERVER_URL")),
         "skills_loaded": ["rescue-scoring", "musical-knowledge", "refusal-rules", "relationship-rules"],
     }
