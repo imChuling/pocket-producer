@@ -715,9 +715,12 @@ function CaptureDashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
-  const stuckCount = fragments.filter(
-    (f) => f.status === "processing" && f.tags && f.tags.length > 0
-  ).length;
+  const stuckCount = fragments.filter((f) => {
+    if (f.status !== "processing") return false;
+    if (f.tags && f.tags.length > 0) return true;
+    const age = Date.now() - new Date(f.created_at).getTime();
+    return age > 2 * 60 * 1000;
+  }).length;
 
   const handleFixStuck = useCallback(async () => {
     try {

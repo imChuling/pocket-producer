@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+from datetime import UTC, datetime
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
@@ -118,12 +119,17 @@ async def fix_stuck_fragments(
     request: Request,
     user_id: str = Depends(verify_firebase_token),
 ):
+    from datetime import timedelta
     db = get_db()
+    cutoff = datetime.now(UTC) - timedelta(minutes=2)
     result = db["fragments"].update_many(
         {
             "user_id": user_id,
             "status": "processing",
-            "tags": {"$exists": True, "$ne": []},
+            "$or": [
+                {"tags": {"$exists": True, "$ne": []}},
+                {"created_at": {"$lt": cutoff}},
+            ],
         },
         {"$set": {"status": "ready"}},
     )
