@@ -87,7 +87,7 @@ export function NotesEditor({ fragmentId, notes, onUpdated }: NotesEditorProps) 
   return (
     <button
       onClick={startEditing}
-      className="flex items-center gap-1.5 text-[11px] text-slate hover:text-gravel transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+      className="flex items-center gap-1.5 text-[11px] text-slate hover:text-gravel transition-colors cursor-pointer"
     >
       <StickyNote size={10} />
       Add note
