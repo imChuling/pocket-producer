@@ -419,8 +419,13 @@ async def process_fragment_background(
                 final_update["structure_hint"] = tag_result["structure_hint"]
             if tag_result.get("potential"):
                 final_update["potential"] = tag_result["potential"]
-            if features and not tag_result.get("bpm") and features.get("bpm"):
+        if features:
+            if not final_update.get("bpm") and features.get("bpm"):
                 final_update["bpm"] = features["bpm"]
+            if not final_update.get("key") and features.get("estimated_key"):
+                mode = features.get("estimated_mode", "")
+                fkey = features["estimated_key"]
+                final_update["key"] = f"{fkey}m" if mode == "minor" else fkey
 
         db["fragments"].update_one(
             {"_id": ObjectId(fragment_id), "user_id": user_id},
