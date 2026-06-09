@@ -77,17 +77,12 @@ def _load_tagging_skill_context() -> str:
         try:
             data = json.loads(examples_path.read_text(encoding="utf-8"))
             examples = data.get("examples", [])
-            selected_ids = [
-                "ex-001", "ex-003", "ex-005", "ex-007", "ex-012",
-                "ex-015", "ex-018", "ex-022", "ex-025", "ex-028",
-            ]
+            selected_ids = ["ex-001", "ex-007", "ex-015"]
             selected = [e for e in examples if e.get("id") in selected_ids]
             if selected:
                 parts.append(
-                    "# Worked Examples\n\n"
-                    "These examples show how to apply the rules above. "
-                    "Use them as calibration for ambiguous cases.\n\n"
-                    + json.dumps(selected, indent=2, ensure_ascii=False)
+                    "# Worked Examples (calibration)\n\n"
+                    + json.dumps(selected, ensure_ascii=False)
                 )
         except Exception:
             pass
@@ -283,14 +278,18 @@ ONLY output the JSON object. No markdown wrapping, no explanation outside the JS
         else:
             contents = prompt_text
 
-        response = await asyncio.to_thread(
-            client.models.generate_content,
-            model="gemini-2.5-flash",
-            contents=contents,
-            config=types.GenerateContentConfig(
-                system_instruction=system_context,
-                temperature=0.3,
+        response = await asyncio.wait_for(
+            asyncio.to_thread(
+                client.models.generate_content,
+                model="gemini-2.5-flash",
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_context,
+                    temperature=0.3,
+                    response_modalities=["TEXT"],
+                ),
             ),
+            timeout=90,
         )
         result_text = response.text.strip()
         parsed = try_parse_agent_json(result_text)
