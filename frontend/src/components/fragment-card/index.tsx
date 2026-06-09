@@ -212,7 +212,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
       )}
 
       {/* Content */}
-      <div className="pt-4">
+      <div className="pt-5">
       {isAudio ? (
         <AudioPlayer
           fragmentId={fragment._id}

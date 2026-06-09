@@ -116,7 +116,7 @@ export function TextContent({ fragment, onUpdated }: TextContentProps) {
           </div>
         </div>
       ) : (
-        <div className="group/text">
+        <div className="group/text pr-8">
           <p className="text-sm text-gravel italic leading-relaxed line-clamp-3">
             &ldquo;{fragment.text}&rdquo;
           </p>
