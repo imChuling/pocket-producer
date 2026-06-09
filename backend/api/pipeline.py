@@ -340,22 +340,16 @@ async def process_fragment_background(
     db = get_db()
     t0 = time.monotonic()
     try:
-        features = None
+        features_task = None
         if audio_url:
             from tools.audio_features import extract_audio_features
-
             _set_step(db, fragment_id, user_id, "Listening to your audio...")
-            logger.info("Extracting audio features for %s", fragment_id)
-            try:
-                features = await extract_audio_features(audio_url)
-            except Exception as e:
-                logger.warning("Audio features extraction failed: %s", e)
-            logger.info("Audio pre-processing done in %.1fs", time.monotonic() - t0)
+            features_task = asyncio.create_task(extract_audio_features(audio_url))
 
         _set_step(db, fragment_id, user_id, "Analyzing emotions and themes...")
         tag_task = tag_fragment_direct(
             text=text or "",
-            audio_features=features,
+            audio_features=None,
             audio_gcs_uri=audio_url,
         )
 
@@ -366,6 +360,8 @@ async def process_fragment_background(
         else:
             tag_result = await tag_task
             embedding = None
+
+        logger.info("Gemini tagging done in %.1fs", time.monotonic() - t0)
 
         transcript = None
         if tag_result and tag_result.get("transcript"):
@@ -392,6 +388,14 @@ async def process_fragment_background(
                 except Exception:
                     logger.warning("Embedding generation failed for %s", fragment_id)
 
+        features = None
+        if features_task:
+            try:
+                features = await features_task
+                logger.info("Audio features done in %.1fs", time.monotonic() - t0)
+            except Exception as e:
+                logger.warning("Audio features extraction failed: %s", e)
+
         final_update: dict = {"status": "ready"}
         if transcript:
             final_update["raw_text"] = transcript
@@ -415,6 +419,8 @@ async def process_fragment_background(
                 final_update["structure_hint"] = tag_result["structure_hint"]
             if tag_result.get("potential"):
                 final_update["potential"] = tag_result["potential"]
+            if features and not tag_result.get("bpm") and features.get("bpm"):
+                final_update["bpm"] = features["bpm"]
 
         db["fragments"].update_one(
             {"_id": ObjectId(fragment_id), "user_id": user_id},
@@ -629,14 +635,17 @@ async def memory_and_project(
 
         if project_id:
             try:
-                na_resp = await generate_next_action(project_id=project_id)
-                na_parsed = json.loads(na_resp) if isinstance(na_resp, str) else na_resp
-                next_action = na_parsed if "action" in (na_parsed or {}) else None
-                score_resp = await refresh_project_score(
-                    project_id=project_id,
-                    next_action=json.dumps(next_action, ensure_ascii=False) if next_action else None,
-                )
-                logger.info("Rescue score updated: %s", score_resp)
+                na_task = generate_next_action(project_id=project_id)
+                score_task = refresh_project_score(project_id=project_id, next_action=None)
+                na_resp, score_resp = await asyncio.gather(na_task, score_task, return_exceptions=True)
+                if not isinstance(na_resp, Exception):
+                    na_parsed = json.loads(na_resp) if isinstance(na_resp, str) else na_resp
+                    if na_parsed and "action" in na_parsed:
+                        await refresh_project_score(
+                            project_id=project_id,
+                            next_action=json.dumps(na_parsed, ensure_ascii=False),
+                        )
+                logger.info("Rescue score updated: %s", score_resp if not isinstance(score_resp, Exception) else "error")
             except Exception:
                 logger.exception("Failed to compute rescue score for %s", project_id)
     finally:
