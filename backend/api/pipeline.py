@@ -174,7 +174,7 @@ def inspect_upload_sync(file_obj, filename: str | None, content_type: str | None
                     break
                 total += len(chunk)
                 if total > MAX_AUDIO_BYTES:
-                    raise HTTPException(status_code=413, detail="Audio file must be 25 MB or smaller")
+                    raise HTTPException(status_code=413, detail="Audio file must be 10 MB or smaller")
                 tmp.write(chunk)
 
         if total == 0:
