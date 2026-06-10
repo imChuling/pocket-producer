@@ -15,7 +15,7 @@ from slowapi.util import get_remote_address
 logger = logging.getLogger(__name__)
 
 MAX_AUDIO_BYTES = 10 * 1024 * 1024
-MAX_AUDIO_DURATION_SEC = 180
+MAX_AUDIO_DURATION_SEC = 300
 MAX_TEXT_CHARS = 4000
 ALLOWED_AUDIO_CONTENT_TYPES = {
     "audio/mpeg",

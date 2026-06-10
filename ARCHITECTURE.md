@@ -28,7 +28,7 @@ The ingest flow is the core of the system. It intentionally separates
 
 When a user submits a fragment (`POST /api/ingest`):
 
-1. Input validation: audio size ≤ 25 MB, duration ≤ 5 min, text ≤ 4,000 chars
+1. Input validation: audio size ≤ 10 MB, duration ≤ 5 min, text ≤ 4,000 chars
 2. Text sanitization: strip control characters, detect prompt injection patterns,
    wrap in `<creator_fragment>` tags
 3. Audio file (if any) uploads to Google Cloud Storage
@@ -612,7 +612,7 @@ The frontend runs separately with `pnpm dev`.
 ### Input Sanitization
 - Text: control character stripping, length limit (4,000 chars), XML tag
   removal, prompt injection regex detection
-- Audio: MIME type allowlist, size limit (25 MB), duration limit (5 min via
+- Audio: MIME type allowlist, size limit (10 MB), duration limit (5 min via
   librosa validation)
 - Rate limiting via slowapi (per-IP)
 

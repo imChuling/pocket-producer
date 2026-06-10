@@ -59,7 +59,7 @@ export function FileDropzone({ onFile }: FileDropzoneProps) {
       if (rejection) {
         const sizeErr = rejection.errors.find((e) => e.code === "file-too-large");
         if (sizeErr) {
-          setError(`File too large (${formatSize(rejection.file.size)}). Max 25 MB.`);
+          setError(`File too large (${formatSize(rejection.file.size)}). Max 10 MB.`);
         } else {
           setError(rejection.errors[0]?.message ?? "File not accepted");
         }
@@ -118,7 +118,7 @@ export function FileDropzone({ onFile }: FileDropzoneProps) {
       </div>
       {!fileName && !validating && !error && (
         <span className="text-[10px] text-slate tracking-wide">
-          MP3, WAV, M4A, WebM, OGG, FLAC · Max 10 MB / 3 min
+          MP3, WAV, M4A, WebM, OGG, FLAC · Max 10 MB / 5 min
         </span>
       )}
       {error && (
