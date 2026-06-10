@@ -199,7 +199,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
               exit={{ opacity: 0, y: -6, filter: "blur(4px)" }}
               transition={{ duration: 0.3 }}
             >
-              {pipelineStep || "Processing..."}
+              {pipelineStep || (isAudio ? "Analyzing audio — usually ~30–60s" : "Processing...")}
             </motion.span>
           </AnimatePresence>
         </div>

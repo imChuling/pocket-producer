@@ -62,7 +62,7 @@ export function FragmentNetwork() {
     ctx.scale(dpr, dpr);
 
     const cx = w / 2;
-    const cy = h / 2;
+    const cy = h / 2 + 20;
 
     const edgeLookup = new Map<string, number>();
     for (const e of data.edges) {
@@ -158,7 +158,7 @@ export function FragmentNetwork() {
         node.x += node.vx;
         node.y += node.vy;
         node.x = Math.max(node.radius, Math.min(w - node.radius, node.x));
-        node.y = Math.max(node.radius, Math.min(h - node.radius, node.y));
+        node.y = Math.max(node.radius + 16, Math.min(h - node.radius, node.y));
       }
     }
 
@@ -189,40 +189,49 @@ export function FragmentNetwork() {
         ctx!.stroke();
       }
 
+      let hoveredNode: SimNode | null = null;
       for (const node of nodes) {
-        const isHovered = hoveredRef.current === node.id;
+        if (hoveredRef.current === node.id) { hoveredNode = node; continue; }
         const baseColor = NODE_COLORS[node.type] || "#a0b5eb";
+        ctx!.beginPath();
+        ctx!.arc(node.x, node.y, node.radius * drawT, 0, Math.PI * 2);
+        ctx!.fillStyle = baseColor + "88";
+        ctx!.fill();
+        ctx!.strokeStyle = "white";
+        ctx!.lineWidth = 1.2;
+        ctx!.stroke();
+      }
 
-        if (isHovered) {
-          const glow = ctx!.createRadialGradient(
-            node.x, node.y, 0,
-            node.x, node.y, node.radius * 4,
-          );
-          glow.addColorStop(0, baseColor + "44");
-          glow.addColorStop(1, "transparent");
-          ctx!.beginPath();
-          ctx!.arc(node.x, node.y, node.radius * 4, 0, Math.PI * 2);
-          ctx!.fillStyle = glow;
-          ctx!.fill();
-        }
+      if (hoveredNode) {
+        const node = hoveredNode;
+        const baseColor = NODE_COLORS[node.type] || "#a0b5eb";
+        const glow = ctx!.createRadialGradient(
+          node.x, node.y, 0,
+          node.x, node.y, node.radius * 4,
+        );
+        glow.addColorStop(0, baseColor + "44");
+        glow.addColorStop(1, "transparent");
+        ctx!.beginPath();
+        ctx!.arc(node.x, node.y, node.radius * 4, 0, Math.PI * 2);
+        ctx!.fillStyle = glow;
+        ctx!.fill();
 
         ctx!.beginPath();
         ctx!.arc(node.x, node.y, node.radius * drawT, 0, Math.PI * 2);
-        ctx!.fillStyle = baseColor + (isHovered ? "cc" : "88");
+        ctx!.fillStyle = baseColor + "cc";
         ctx!.fill();
         ctx!.strokeStyle = "white";
         ctx!.lineWidth = 1.2;
         ctx!.stroke();
 
-        if (isHovered) {
-          ctx!.font = "10px var(--font-ibm-plex-mono, monospace)";
-          ctx!.fillStyle = "#555049";
-          ctx!.textAlign = "center";
-          const label = node.title.length > 30
-            ? node.title.slice(0, 28) + "..."
-            : node.title;
-          ctx!.fillText(label, node.x, node.y - node.radius - 6);
-        }
+        ctx!.font = "10px var(--font-ibm-plex-mono, monospace)";
+        ctx!.fillStyle = "#555049";
+        ctx!.textAlign = "center";
+        const label = node.title.length > 30
+          ? node.title.slice(0, 28) + "..."
+          : node.title;
+        const labelY = node.y - node.radius - 6;
+        ctx!.fillText(label, node.x, labelY < 10 ? node.y + node.radius + 14 : labelY);
       }
 
       rafId = requestAnimationFrame(draw);

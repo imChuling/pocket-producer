@@ -29,8 +29,8 @@ export function EmotionRadar({ emotions }: EmotionRadarProps) {
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
-    const w = 260;
-    const h = 260;
+    const w = 380;
+    const h = 270;
     canvas.width = w * dpr;
     canvas.height = h * dpr;
     canvas.style.width = `${w}px`;
@@ -79,7 +79,8 @@ export function EmotionRadar({ emotions }: EmotionRadarProps) {
         const ly = cy + Math.sin(angle) * labelR;
         ctx!.font = "11px var(--font-ibm-plex-mono, monospace)";
         ctx!.fillStyle = "#777169";
-        ctx!.textAlign = "center";
+        const cosA = Math.cos(angle);
+        ctx!.textAlign = cosA < -0.3 ? "right" : cosA > 0.3 ? "left" : "center";
         ctx!.textBaseline = "middle";
         ctx!.fillText(data[i].name, lx, ly);
       }
