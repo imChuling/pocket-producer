@@ -37,7 +37,7 @@ When a user submits a fragment (`POST /api/ingest`):
 
 Rate limit: 12 requests/minute per IP.
 
-### Phase 2: Tagging (background, ~1-3s)
+### Phase 2: Tagging (background, ~2s for text, ~15s for audio)
 
 A background task runs:
 
@@ -48,9 +48,10 @@ A background task runs:
    (inter-onset interval std dev), spectral flatness (noise-like vs tonal),
    and dynamic range (90th/10th percentile RMS ratio). See
    `backend/tools/audio_features.py`.
-2. **Gemini multimodal tagging**: the audio file (via GCS URI) or text is sent
-   to `gemini-2.5-flash` with the full `music-tagging` skill loaded as system
-   context (~2,350 lines of domain knowledge). Gemini *listens* to the audio
+2. **Gemini multimodal tagging**: the audio file (via GCS URI) is sent to
+   `gemini-2.5-flash` (text-only fragments use `gemini-2.5-flash-lite`) with
+   the full `music-tagging` skill loaded as system context (~2,350 lines of
+   domain knowledge). Gemini *listens* to the audio
    directly — no separate transcription step. Returns structured JSON: emotions,
    themes, tags, structure hint, style, potential, key, BPM, suggestion, and
    transcript (for audio).
@@ -60,13 +61,13 @@ A background task runs:
 
 The fragment is updated to `status: "ready"` with all extracted metadata.
 
-### Phase 3: Agent Pipeline (background, ~5-15s)
+### Phase 3: Agent Pipeline (background, ~30-90s)
 
 Once an embedding exists, the ADK agent pipeline runs:
 
 ```
 Producer Agent (root)
-  └─ delegates to → Memory Agent (sub_agent)
+  └─ calls as AgentTool → Memory Agent
        │
        ├─ get_fragment_context(fragment_id)
        │    └─ includes creator notes if present
@@ -161,7 +162,10 @@ The Catcher Agent is still defined in `backend/agents/catcher.py` for:
 
 - **Role**: Action layer — root orchestrator
 - **Model**: `gemini-2.5-flash` (configurable via `PRODUCER_MODEL`)
-- **Sub-agents**: Memory Agent
+- **Agent tools**: Memory Agent, wired as an ADK `AgentTool` rather than a
+  sub-agent — Memory's analysis returns to Producer as a tool result, so the
+  root agent keeps control and always emits the final decision (an AutoFlow
+  transfer would hand the session over and never come back)
 - **Skills**: `rescue-scoring`, `musical-knowledge`, `refusal-rules`, `music-tagging`
 - **Write tools**:
   - `create_project_from_fragments(title, fragment_ids, connection_reason, connection_types)`:
@@ -210,7 +214,7 @@ agent.
     fragments (excluding embeddings)
 - **MCP tools** (optional): when `ENABLE_MCP_MEMORY_TOOLS=1`, read-only
   MongoDB MCP tools (`find`, `aggregate`, `vector-search`) are attached via
-  `McpToolset` with `tool_name_prefix="mongo_mcp"` and a collection allowlist
+  `McpToolset` with `tool_name_prefix="mongo_mcp"` and a tool allowlist
 
 Memory Agent never writes to the database. It returns structured JSON
 recommendations to the Producer Agent.
@@ -327,14 +331,15 @@ tokens per agent call, scaling up when the agent needs deeper reference data.
 
 The fast tagging path doesn't use ADK skill loading — it reads skill files
 directly and injects them as Gemini system instructions
-(`_load_tagging_skill_context` in `api/main.py`). This includes:
+(`_load_tagging_skill_context` in `api/pipeline.py`). This includes:
 
 - `SKILL.md` — core rules and tagging procedure
 - `references/emotion-taxonomy.md` — 20 GEMS-based emotion tags
 - `references/theme-taxonomy.md` — 24 theme categories with decision tree
 - `references/structure-hints.md` — 7 structure types
 - `references/style-vocabulary.md` — 35 style tags across 9 clusters
-- Up to 10 selected worked examples from `assets/tagging-examples.json`
+- 3 selected worked examples from `assets/tagging-examples.json` (calibration
+  for ambiguous cases without inflating the context)
 
 The system instruction also includes a security boundary preventing the model
 from following instructions embedded in creator-provided content.
@@ -607,7 +612,6 @@ The frontend runs separately with `pnpm dev`.
 ### User Isolation
 - All MongoDB queries include `user_id` filter
 - `ContextVar`-based scoping for agent tools (no user_id in agent prompts)
-- MongoDB direct tools (`tools/mongodb.py`) require `user_id` in every filter
 
 ### Input Sanitization
 - Text: control character stripping, length limit (4,000 chars), XML tag

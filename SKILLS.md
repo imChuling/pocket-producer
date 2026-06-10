@@ -256,7 +256,7 @@ Each agent declares which skills it needs:
 tools=[get_skill_toolset(["relationship-rules", "musical-knowledge", "refusal-rules"]), ...]
 
 # Producer Agent
-tools=[get_skill_toolset(["rescue-scoring", "musical-knowledge", "refusal-rules"]), ...]
+tools=[get_skill_toolset(["rescue-scoring", "musical-knowledge", "refusal-rules", "music-tagging"]), ...]
 
 # Catcher Agent
 tools=[get_skill_toolset(["music-tagging", "refusal-rules"]), ...]
@@ -266,8 +266,8 @@ tools=[get_skill_toolset(["music-tagging", "refusal-rules"]), ...]
 
 For the fast capture path, `music-tagging` skill files are read directly and
 injected as Gemini system context (`_load_tagging_skill_context` in
-`api/main.py`). This includes SKILL.md, all reference documents, and a
-selection of 10 worked examples from `tagging-examples.json`.
+`api/pipeline.py`). This includes SKILL.md, all reference documents, and a
+selection of 3 worked examples from `tagging-examples.json`.
 
 The result is cached after first load, so subsequent tagging calls pay no
 file I/O cost.
