@@ -6,7 +6,9 @@ RUN apt-get update && apt-get install -y \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g mongodb-mcp-server@latest
+# Pinned to match the standalone mongodb-mcp service and avoid
+# @latest protocol/endpoint drift between builds.
+RUN npm install -g mongodb-mcp-server@1.10.0
 
 WORKDIR /app
 

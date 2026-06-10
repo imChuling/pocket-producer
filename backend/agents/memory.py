@@ -10,6 +10,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 from contextvars import ContextVar
 from typing import Any
 
@@ -145,6 +146,41 @@ async def vector_search_fragment_neighbors(fragment_id: str, limit: int = 6) -> 
     return _to_json({"neighbors": neighbors, "threshold_applied": threshold})
 
 
+# mongodb-mcp-server wraps result documents in untrusted-user-data tags and
+# prepends a human-readable summary block — extract only the JSON payload.
+_MCP_UNTRUSTED_RE = re.compile(
+    r"<untrusted-user-data-[0-9a-f-]+>\s*(.*?)\s*</untrusted-user-data-[0-9a-f-]+>",
+    re.DOTALL,
+)
+
+
+def _collect_docs(parsed: Any, docs: list[dict]) -> None:
+    if isinstance(parsed, list):
+        docs.extend(p for p in parsed if isinstance(p, dict))
+    elif isinstance(parsed, dict) and "documents" in parsed:
+        docs.extend(p for p in parsed["documents"] if isinstance(p, dict))
+    elif isinstance(parsed, dict):
+        docs.append(parsed)
+
+
+def _parse_mcp_documents(content: list[Any]) -> list[dict]:
+    docs: list[dict] = []
+    for block in content:
+        text = getattr(block, "text", None)
+        if not text:
+            continue
+        # The warning preamble itself mentions the tags, so several matches
+        # exist per block — only the JSON-parsable one carries the payload.
+        candidates = _MCP_UNTRUSTED_RE.findall(text) or [text]
+        for candidate in candidates:
+            try:
+                parsed = json.loads(candidate)
+            except json.JSONDecodeError:
+                continue
+            _collect_docs(parsed, docs)
+    return docs
+
+
 async def _mcp_vector_search(
     embedding: list[float],
     fragment_id: str,
@@ -181,19 +217,21 @@ async def _mcp_vector_search(
             await session.initialize()
             result = await session.call_tool(
                 "aggregate",
-                arguments={"collection": "fragments", "pipeline": pipeline},
+                arguments={
+                    "database": "pocketproducer",
+                    "collection": "fragments",
+                    "pipeline": pipeline,
+                },
             )
 
-    docs: list[dict] = []
-    if result and result.content:
-        for block in result.content:
-            text = getattr(block, "text", None)
-            if text:
-                parsed = json.loads(text)
-                if isinstance(parsed, list):
-                    docs = parsed
-                elif isinstance(parsed, dict) and "documents" in parsed:
-                    docs = parsed["documents"]
+    if result and result.isError:
+        err_text = next(
+            (getattr(b, "text", "") for b in result.content if getattr(b, "text", None)),
+            "unknown MCP error",
+        )
+        raise RuntimeError(f"MCP aggregate failed: {err_text[:300]}")
+
+    docs = _parse_mcp_documents(result.content if result else [])
 
     normalized = [_normalize_ejson(d) for d in docs]
     return [n for n in normalized if str(n.get("_id", "")) != fragment_id]
@@ -378,7 +416,9 @@ You also have access to raw MongoDB MCP tools (prefixed `mongo_mcp_`):
 When a neighbor belongs to a project (has a project_id), use the **mongo_mcp_find**
 tool to look up the project context:
 
-  mongo_mcp_find(collection="projects", filter={"_id": {"$oid": "<project_id>"}, "user_id": "<user_id>"})
+  mongo_mcp_find(database="pocketproducer", collection="projects", filter={"_id": {"$oid": "<project_id>"}, "user_id": "<user_id>"})
+
+Always pass database="pocketproducer" — MCP tools require it explicitly.
 
 This gives you the full project document (title, fragment_ids, connection_types,
 rescue_score, etc.) so you can evaluate whether the new fragment belongs there.
