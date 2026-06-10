@@ -1,7 +1,11 @@
 import asyncio
+import logging
 import os
+import time
 
 import voyageai
+
+logger = logging.getLogger(__name__)
 
 _client = None
 
@@ -14,8 +18,17 @@ def _get_client() -> voyageai.Client:
 
 
 def _embed_sync(text: str, input_type: str) -> list[float]:
-    result = _get_client().embed([text], model="voyage-3", input_type=input_type)
-    return result.embeddings[0]
+    for attempt in range(3):
+        try:
+            result = _get_client().embed([text], model="voyage-3", input_type=input_type)
+            return result.embeddings[0]
+        except Exception as e:
+            if attempt < 2 and ("rate" in str(e).lower() or "429" in str(e)):
+                delay = 20 * (attempt + 1)
+                logger.warning("Voyage rate limited, waiting %ds... (%s)", delay, e)
+                time.sleep(delay)
+            else:
+                raise
 
 
 async def generate_embedding(text: str) -> list[float]:
