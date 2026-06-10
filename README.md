@@ -7,7 +7,7 @@
 
 **Tagline**: *Your creative atlas, in your pocket.*
 
-**Live Demo**: `[TODO: hosted URL]`
+**Live Demo**: https://pocketproducer.vercel.app
 **Demo Video**: `[TODO: YouTube URL]`
 
 ---
@@ -64,7 +64,7 @@ and connects what should belong together.
 │                       │                                          │
 │                       ▼                                          │
 │  ┌─── Agentic Memory Path (Google ADK) ─────────────────────┐   │
-│  │ Producer Agent (root) → Memory Agent (sub_agent)          │   │
+│  │ Producer Agent (root) → Memory Agent (AgentTool)          │   │
 │  │                                                           │   │
 │  │ Memory: vector search → relationship classification       │   │
 │  │ Producer: project grouping → Rescue Score → next action   │   │
@@ -88,8 +88,9 @@ and connects what should belong together.
 ```
 
 The ingest flow separates **latency-sensitive perception** from **agentic memory
-work**: Gemini multimodal tagging runs directly (~1-2s), while the ADK agent
-pipeline handles relationship discovery and project decisions asynchronously.
+work**: Gemini multimodal tagging runs directly (a few seconds for text, ~15s
+for audio), while the ADK agent pipeline handles relationship discovery and
+project decisions asynchronously.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the full technical breakdown.
 
@@ -100,12 +101,12 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full technical breakdown.
 | Layer | Technology |
 |---|---|
 | **Agent Framework** | Google ADK (`google-adk` v1.25+) with 5 open-source domain skills |
-| **LLM** | Gemini 2.5 Flash (multimodal tagging, Memory Agent, Producer Agent) |
+| **LLM** | Gemini 2.5 Flash (audio tagging, Memory + Producer Agents) and Flash-Lite (text tagging) |
 | **Database** | MongoDB Atlas with Vector Search (cosine, 1024-dim) |
 | **MCP** | MongoDB MCP Server (HTTP transport, co-located in Cloud Run container) |
 | **Embeddings** | Voyage AI (`voyage-3`, 1024-dim) — MongoDB-provided |
 | **Audio Analysis** | librosa (BPM, key, mode, energy curve, brightness, onset density) |
-| **Transcription** | Google Cloud Speech-to-Text v2 (Chirp 2) — used by Catcher Agent |
+| **Transcription** | Gemini 2.5 Flash multimodal — listens to audio directly, no separate STT step |
 | **Auth** | Firebase Authentication |
 | **Storage** | Google Cloud Storage (audio files) |
 | **Backend** | FastAPI + uvicorn, deployed on Cloud Run |
@@ -146,13 +147,15 @@ at startup; full rules load on demand. See [SKILLS.md](SKILLS.md) for details.
 Two real ADK agents run in the ingest pipeline:
 
 **Producer Agent** (root, `gemini-2.5-flash`) orchestrates:
-- Delegates to Memory Agent for relationship discovery
+- Calls the Memory Agent as an ADK `AgentTool` for relationship discovery —
+  the analysis returns to Producer as a tool result, so control never leaves
+  the root agent
 - Executes project decisions (join / create / bridge)
 - Computes Rescue Score and generates next actions
-- Tools: `create_project_from_fragments`, `attach_fragment_to_project`, `refresh_project_score`
-- Skills: `rescue-scoring`, `musical-knowledge`, `refusal-rules`
+- Tools: `memory` (AgentTool), `create_project_from_fragments`, `attach_fragment_to_project`, `refresh_project_score`, `generate_project_title`, `generate_next_action`
+- Skills: `rescue-scoring`, `musical-knowledge`, `refusal-rules`, `music-tagging`
 
-**Memory Agent** (sub-agent, `gemini-2.5-flash`) grounds decisions:
+**Memory Agent** (agent-as-a-tool, `gemini-2.5-flash`) grounds decisions:
 - Vector search via MongoDB Atlas (`$vectorSearch` aggregation)
 - Relationship classification using domain skills
 - Optional: MongoDB MCP read tools for demo visibility
@@ -172,7 +175,8 @@ live pipeline — direct Gemini multimodal calls are 3x faster for tagging.
   prevent prompt injection; regex patterns flag suspicious input
 - Fragment deletion removes both the MongoDB document and the GCS audio object
 - Audio is served through authenticated streaming endpoints, not public GCS URLs
-- MongoDB MCP tools are read-only with a collection allowlist (`fragments`, `projects`, `notifications`, `user_dna`)
+- MongoDB MCP tools exposed to agents are read-only, restricted by a tool
+  allowlist (`find`, `aggregate`, `vector-search`)
 
 ---
 
@@ -255,7 +259,7 @@ separately via `pnpm dev` or Vercel.
 ## Verifying the Agent Pipeline
 
 Every fragment with an embedding triggers the agent pipeline automatically
-(`_process_fragment_background` → `_memory_and_project` →
+(`process_fragment_background` → `memory_and_project` →
 `group_fragment_with_agents`).
 
 To observe it directly:
