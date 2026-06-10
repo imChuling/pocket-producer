@@ -19,6 +19,7 @@ from typing import Any
 from bson import ObjectId
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
+from google.adk.tools.agent_tool import AgentTool
 
 from google.genai import types as genai_types
 
@@ -299,13 +300,26 @@ async def generate_project_title(fragment_ids: list[str], connection_types: list
     )
     try:
         client = _get_genai_client()
-        response = await asyncio.to_thread(
-            client.models.generate_content,
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=genai_types.GenerateContentConfig(temperature=0.8),
+        response = await asyncio.wait_for(
+            asyncio.to_thread(
+                client.models.generate_content,
+                model="gemini-2.5-flash",
+                contents=prompt,
+                config=genai_types.GenerateContentConfig(
+                    temperature=0.8,
+                    response_mime_type="application/json",
+                    response_schema={
+                        "type": "object",
+                        "properties": {"title": {"type": "string"}},
+                        "required": ["title"],
+                    },
+                ),
+            ),
+            timeout=30,
         )
-        title = response.text.strip().strip('"\'').strip()
+        text = response.text.strip()
+        parsed = json.loads(text) if text else None
+        title = parsed.get("title", "").strip() if parsed else response.text.strip().strip('"\'').strip()
         if title and len(title) <= 60:
             return _to_json({"title": title})
     except Exception:
@@ -367,17 +381,28 @@ async def generate_next_action(project_id: str) -> str:
     )
     try:
         client = _get_genai_client()
-        response = await asyncio.to_thread(
-            client.models.generate_content,
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=genai_types.GenerateContentConfig(temperature=0.5),
+        response = await asyncio.wait_for(
+            asyncio.to_thread(
+                client.models.generate_content,
+                model="gemini-2.5-flash",
+                contents=prompt,
+                config=genai_types.GenerateContentConfig(
+                    temperature=0.5,
+                    response_mime_type="application/json",
+                    response_schema={
+                        "type": "object",
+                        "properties": {
+                            "action": {"type": "string"},
+                            "estimated_time": {"type": "string"},
+                        },
+                        "required": ["action"],
+                    },
+                ),
+            ),
+            timeout=30,
         )
         text = response.text.strip()
-        if text.startswith("```"):
-            lines = text.splitlines()
-            text = "\n".join(lines[1:-1])
-        parsed = json.loads(text) if text.startswith("{") else None
+        parsed = json.loads(text) if text else None
         if parsed and "action" in parsed:
             return _to_json(parsed)
     except Exception:
@@ -425,9 +450,12 @@ You have access to 5 skills via tool calls. Use them actively:
 
 ## Workflow
 
-Step 1: Delegate to Memory Agent by passing the fragment_id. Memory will
+Step 1: Call the `memory` tool, passing the fragment_id in your request
+        (e.g. "Analyze relationships for fragment_id=<id>"). Memory will
         perform vector search, analyze relationships using relationship-rules
-        and musical-knowledge skills, and return structured recommendations.
+        and musical-knowledge skills, and return structured recommendations
+        as the tool result. Do NOT try to transfer control to another agent —
+        memory is a tool that returns its analysis to you.
         Pay attention to the creator_notes field — these are the creator's own
         words about their intent, context, or how they see this fragment
         connecting to other ideas. Weigh notes heavily in your decision.
@@ -552,8 +580,12 @@ producer_agent = LlmAgent(
     name="producer",
     model=os.environ.get("PRODUCER_MODEL", "gemini-2.5-flash"),
     instruction=PRODUCER_INSTRUCTION,
-    sub_agents=[memory_agent],
+    # Memory is wired as an AgentTool (not a sub_agent): with sub_agents the
+    # AutoFlow transfer hands the session over and Memory's reply becomes the
+    # final response, so Producer never emits its decision JSON. As a tool,
+    # Memory's analysis returns to Producer and control stays here.
     tools=[
+        AgentTool(agent=memory_agent),
         get_skill_toolset(["rescue-scoring", "musical-knowledge", "refusal-rules", "music-tagging"]),
         FunctionTool(create_project_from_fragments),
         FunctionTool(attach_fragment_to_project),

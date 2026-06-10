@@ -108,7 +108,7 @@ async def group_fragment_with_agents(
         prompt = (
             f"Process this newly tagged fragment.\n"
             f"{chr(10).join(context_parts)}\n\n"
-            "Delegate to Memory Agent for relationship discovery, "
+            "Call the memory tool for relationship discovery, "
             "then decide on project grouping. "
             "If the creator left notes, weigh them heavily — they express intent."
         )
@@ -141,9 +141,9 @@ async def group_fragment_with_agents(
             return _final, _count
 
         try:
-            final_text, event_count = await asyncio.wait_for(_run(), timeout=90)
+            final_text, event_count = await asyncio.wait_for(_run(), timeout=150)
         except asyncio.TimeoutError:
-            logger.warning("Agent pipeline timed out (90s) for fragment %s", fragment_id)
+            logger.warning("Agent pipeline timed out (150s) for fragment %s", fragment_id)
             return None
 
         result = _try_parse_json(final_text)
