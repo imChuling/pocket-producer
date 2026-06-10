@@ -14,8 +14,8 @@ from slowapi.util import get_remote_address
 
 logger = logging.getLogger(__name__)
 
-MAX_AUDIO_BYTES = 25 * 1024 * 1024
-MAX_AUDIO_DURATION_SEC = 300
+MAX_AUDIO_BYTES = 10 * 1024 * 1024
+MAX_AUDIO_DURATION_SEC = 180
 MAX_TEXT_CHARS = 4000
 ALLOWED_AUDIO_CONTENT_TYPES = {
     "audio/mpeg",
@@ -45,7 +45,7 @@ limiter = Limiter(key_func=get_remote_address)
 # ---------------------------------------------------------------------------
 # Concurrent pipeline guard — reject (not queue) when too many are running
 # ---------------------------------------------------------------------------
-MAX_CONCURRENT_PIPELINES = int(os.environ.get("MAX_CONCURRENT_PIPELINES", "5"))
+MAX_CONCURRENT_PIPELINES = int(os.environ.get("MAX_CONCURRENT_PIPELINES", "2"))
 _pipeline_count = 0
 _pipeline_count_lock = asyncio.Lock()
 
@@ -83,7 +83,7 @@ async def debounced_dna_update(delay: float = 2.0):
             from jobs.dna_insights import run as run_dna
             await asyncio.to_thread(run_dna)
         except Exception:
-            logger.exception("Debounced DNA update failed")
+            logger.warning("Debounced DNA update failed", exc_info=True)
 
 _mongo = None
 
