@@ -749,13 +749,13 @@ function CaptureDashboard() {
         const ext = blob.type.includes("mp4") ? "m4a" : blob.type.includes("ogg") ? "ogg" : "webm";
         form.append("file", blob, `recording.${ext}`);
         await apiPost("/ingest", form);
-        setStatus("Saved!");
+        setStatus("Saved — AI analysis takes ~30–60s");
         refresh();
       } catch (e) {
         setStatus(e instanceof Error ? e.message : "Processing failed");
       } finally {
         setSubmitting(false);
-        setTimeout(() => setStatus(null), 3000);
+        setTimeout(() => setStatus(null), 5000);
       }
     },
     [refresh],
@@ -769,13 +769,13 @@ function CaptureDashboard() {
         const form = new FormData();
         form.append("file", file);
         await apiPost("/ingest", form);
-        setStatus("Saved!");
+        setStatus("Saved — AI analysis takes ~30–60s");
         refresh();
       } catch (e) {
         setStatus(e instanceof Error ? e.message : "Upload failed");
       } finally {
         setSubmitting(false);
-        setTimeout(() => setStatus(null), 3000);
+        setTimeout(() => setStatus(null), 5000);
       }
     },
     [refresh],
@@ -923,15 +923,37 @@ function CaptureDashboard() {
               </div>
             )}
             {!loading && fragments.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-24 space-y-4 animate-fade-in">
+              <div className="flex flex-col items-center justify-center py-16 space-y-8 animate-fade-in">
                 <div
-                  className="w-24 h-24 rounded-full opacity-50 morph-blob"
+                  className="w-20 h-20 rounded-full opacity-50 morph-blob"
                   style={{ background: "linear-gradient(135deg, rgba(160,181,235,0.4), rgba(226,193,97,0.2))" }}
                 />
-                <p className="text-sm text-gravel text-center">Record, type, or upload your first musical idea</p>
-                <p className="text-xs text-slate text-center max-w-[280px]">
-                  Fragments appear here as a masonry grid once you start capturing
-                </p>
+                <div className="space-y-2 text-center">
+                  <p className="text-sm text-gravel">Record, type, or upload your first musical idea</p>
+                  <p className="text-xs text-slate max-w-[300px] mx-auto leading-relaxed">
+                    Each idea becomes a fragment — AI analyzes its emotion, key, tempo, and themes, then groups related fragments into projects automatically.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-3 w-full max-w-[280px]">
+                  {[
+                    { step: "1", label: "Capture", detail: "Record, type, or drop an audio file" },
+                    { step: "2", label: "Analyze", detail: "AI profiles your idea (audio ~30–60s)" },
+                    { step: "3", label: "Connect", detail: "Related fragments form projects" },
+                  ].map((s) => (
+                    <div key={s.step} className="flex items-start gap-3">
+                      <span
+                        className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-mono font-medium text-gravel"
+                        style={{ background: "linear-gradient(135deg, rgba(160,181,235,0.2), rgba(226,193,97,0.1))" }}
+                      >
+                        {s.step}
+                      </span>
+                      <div>
+                        <p className="text-xs font-medium text-obsidian">{s.label}</p>
+                        <p className="text-[11px] text-slate leading-snug">{s.detail}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

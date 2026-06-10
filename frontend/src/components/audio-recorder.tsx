@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { MAX_AUDIO_FILE_SIZE, MAX_AUDIO_DURATION_SEC } from "@/lib/constants";
+import { MAX_AUDIO_FILE_SIZE, MAX_RECORDING_DURATION_SEC } from "@/lib/constants";
 
 const MAX_FILE_SIZE = MAX_AUDIO_FILE_SIZE;
-const MAX_DURATION = MAX_AUDIO_DURATION_SEC;
+const MAX_DURATION = MAX_RECORDING_DURATION_SEC;
 
 function formatSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -261,8 +261,17 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
 
         {/* Timer overlay — inside the ring when recording */}
         {recording && (
-          <span className="absolute bottom-[38px] z-10 font-mono text-[11px] text-slate tracking-wider animate-fade-in">
+          <span
+            className={`absolute bottom-[38px] z-10 font-mono text-[11px] tracking-wider animate-fade-in ${
+              MAX_DURATION - seconds <= 10 ? "text-red-500 animate-pulse" : "text-slate"
+            }`}
+          >
             {formatTime(seconds)}
+            {MAX_DURATION - seconds <= 10 && (
+              <span className="block text-[9px] text-center text-red-400">
+                {MAX_DURATION - seconds}s left
+              </span>
+            )}
           </span>
         )}
       </div>

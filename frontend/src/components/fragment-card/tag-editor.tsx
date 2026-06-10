@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, Plus, UserPen, Loader2 } from "lucide-react";
 import { apiPost } from "@/lib/api";
 import type { Fragment } from "@/types";
@@ -26,6 +26,15 @@ export function TagEditor({ fragment, onUpdated }: TagEditorProps) {
   const [localPotential, setLocalPotential] = useState(fragment.potential);
   const [localStructure, setLocalStructure] = useState(fragment.structure_hint);
   const [editedFields, setEditedFields] = useState<string[]>(fragment.user_edited_fields ?? []);
+
+  useEffect(() => {
+    setLocalTags(fragment.tags ?? []);
+    setLocalEmotions(fragment.emotions ?? []);
+    setLocalStyle(fragment.style ?? []);
+    setLocalPotential(fragment.potential);
+    setLocalStructure(fragment.structure_hint);
+    setEditedFields(fragment.user_edited_fields ?? []);
+  }, [fragment.tags, fragment.emotions, fragment.style, fragment.potential, fragment.structure_hint, fragment.user_edited_fields]);
   const [addingTag, setAddingTag] = useState(false);
   const [newTagValue, setNewTagValue] = useState("");
   const [saving, setSaving] = useState(false);

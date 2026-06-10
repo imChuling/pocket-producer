@@ -160,8 +160,22 @@ export function StyleBubbles({ styles }: StyleBubblesProps) {
         ctx!.fillStyle = `hsla(${hue}, 30%, 35%, 0.8)`;
         ctx!.textAlign = "center";
         ctx!.textBaseline = "middle";
-        const label = b.label.length > 12 ? b.label.slice(0, 10) + ".." : b.label;
-        ctx!.fillText(label, x, y);
+        const maxWidth = r * 1.6;
+        const measured = ctx!.measureText(b.label).width;
+        if (measured <= maxWidth) {
+          ctx!.fillText(b.label, x, y);
+        } else {
+          const words = b.label.split(/[\s-]+/);
+          if (words.length >= 2) {
+            const mid = Math.ceil(words.length / 2);
+            const line1 = words.slice(0, mid).join(" ");
+            const line2 = words.slice(mid).join(" ");
+            ctx!.fillText(line1, x, y - fontSize * 0.55);
+            ctx!.fillText(line2, x, y + fontSize * 0.55);
+          } else {
+            ctx!.fillText(b.label, x, y);
+          }
+        }
       }
     }
 

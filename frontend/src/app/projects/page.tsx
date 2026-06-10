@@ -108,9 +108,9 @@ export default function ProjectsPage() {
             <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 morph-blob" style={{ background: "linear-gradient(135deg, rgba(160,181,235,0.3), rgba(255,148,115,0.15), rgba(226,193,97,0.1))" }}>
               <Layers size={24} className="text-gravel" />
             </div>
-            <p className="text-sm text-gravel">No projects yet.</p>
-            <p className="text-xs text-slate">
-              Projects are created automatically when related fragments are detected.
+            <p className="text-sm text-gravel">No projects yet</p>
+            <p className="text-xs text-slate max-w-[300px] mx-auto leading-relaxed">
+              Keep capturing ideas — when AI finds fragments with shared emotion, key, or theme, it groups them into a project automatically.
             </p>
           </div>
         ) : (

@@ -118,7 +118,7 @@ export function FileDropzone({ onFile }: FileDropzoneProps) {
       </div>
       {!fileName && !validating && !error && (
         <span className="text-[10px] text-slate tracking-wide">
-          MP3, WAV, M4A, WebM, OGG, FLAC · Max 25 MB / 5 min
+          MP3, WAV, M4A, WebM, OGG, FLAC · Max 10 MB / 3 min
         </span>
       )}
       {error && (
