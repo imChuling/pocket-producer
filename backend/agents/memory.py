@@ -264,40 +264,66 @@ async def get_project_context(project_id: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# MCP toolset (optional, for demo visibility)
+# MCP query tool (user-scoped at the tool layer)
 # ---------------------------------------------------------------------------
 
+_ALLOWED_MCP_COLLECTIONS = {"fragments", "projects", "user_settings", "notifications"}
 
-def _build_mcp_toolset():
-    """Attach read-only MongoDB MCP tools (enabled by default)."""
-    if os.environ.get("ENABLE_MCP_MEMORY_TOOLS") == "0":
-        return None
+
+def _mcp_enabled() -> bool:
+    return (
+        bool(os.environ.get("MCP_SERVER_URL"))
+        and os.environ.get("ENABLE_MCP_MEMORY_TOOLS") != "0"
+    )
+
+
+async def mongo_mcp_find(collection: str, filter: dict, limit: int = 10) -> str:
+    """Query MongoDB through the MCP server (read-only).
+
+    Every query is scoped to the authenticated user at the tool layer:
+    user_id is injected after the model-supplied filter, so neither the
+    model nor injected fragment content can read another user's data.
+    """
     mcp_url = os.environ.get("MCP_SERVER_URL")
     if not mcp_url:
-        return None
-    try:
-        from google.adk.tools.mcp_tool import McpToolset
-        from google.adk.tools.mcp_tool.mcp_session_manager import (
-            SseConnectionParams,
-            StreamableHTTPConnectionParams,
+        return _to_json({"error": "mcp_unavailable"})
+    if collection not in _ALLOWED_MCP_COLLECTIONS:
+        return _to_json({"error": f"collection_not_allowed: {collection}"})
+
+    if isinstance(filter, str):
+        try:
+            filter = json.loads(filter)
+        except json.JSONDecodeError:
+            return _to_json({"error": "invalid_filter_json"})
+    scoped_filter = dict(filter or {})
+    scoped_filter["user_id"] = _user_id()
+
+    from mcp import ClientSession
+    from mcp.client.streamable_http import streamablehttp_client
+
+    async with streamablehttp_client(url=mcp_url) as (read, write, _):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            result = await session.call_tool(
+                "find",
+                arguments={
+                    "database": "pocketproducer",
+                    "collection": collection,
+                    "filter": scoped_filter,
+                    "limit": max(1, min(int(limit), 20)),
+                    "projection": {"embedding": 0},
+                },
+            )
+
+    if result and result.isError:
+        err_text = next(
+            (getattr(b, "text", "") for b in result.content if getattr(b, "text", None)),
+            "unknown MCP error",
         )
-        params = (
-            SseConnectionParams(url=mcp_url)
-            if mcp_url.endswith("/sse")
-            else StreamableHTTPConnectionParams(url=mcp_url)
-        )
-        logger.info("MemoryAgent: mounting read-only MongoDB MCP from %s", mcp_url)
-        return McpToolset(
-            connection_params=params,
-            tool_filter=[
-                "find", "aggregate", "vector-search",
-                "mongodb.find", "mongodb.aggregate", "mongodb.vector-search",
-            ],
-            tool_name_prefix="mongo_mcp",
-        )
-    except Exception:
-        logger.exception("Failed to configure MongoDB MCP toolset for MemoryAgent")
-        return None
+        return _to_json({"error": f"mcp_find_failed: {err_text[:200]}"})
+
+    docs = [_normalize_ejson(d) for d in _parse_mcp_documents(result.content if result else [])]
+    return _to_json({"documents": docs, "via": "mcp", "scoped_to_user": True})
 
 
 # ---------------------------------------------------------------------------
@@ -406,25 +432,22 @@ MEMORY_MCP_ADDENDUM = """
 
 ## MongoDB MCP Integration
 
-This agent is connected to the MongoDB MCP server for direct database access.
+This agent is connected to the MongoDB MCP server for database reads.
 The vector_search_fragment_neighbors tool already routes through MCP internally.
 
-You also have access to raw MongoDB MCP tools (prefixed `mongo_mcp_`):
-- **mongo_mcp_find**: Query any collection directly
-- **mongo_mcp_aggregate**: Run aggregation pipelines
+You also have the **mongo_mcp_find** tool — a read-only query routed through
+the MCP server. Every query is automatically scoped to the current user at
+the tool layer; you do not need to (and cannot) set user_id yourself.
 
-When a neighbor belongs to a project (has a project_id), use the **mongo_mcp_find**
-tool to look up the project context:
+When a neighbor belongs to a project (has a project_id), use **mongo_mcp_find**
+to look up the project context:
 
-  mongo_mcp_find(database="pocketproducer", collection="projects", filter={"_id": {"$oid": "<project_id>"}, "user_id": "<user_id>"})
-
-Always pass database="pocketproducer" — MCP tools require it explicitly.
+  mongo_mcp_find(collection="projects", filter={"_id": {"$oid": "<project_id>"}})
 
 This gives you the full project document (title, fragment_ids, connection_types,
 rescue_score, etc.) so you can evaluate whether the new fragment belongs there.
 
-Database: pocketproducer
-Collections: fragments, projects, user_settings, notifications
+Collections available: fragments, projects, user_settings, notifications
 """
 
 
@@ -436,11 +459,10 @@ def build_memory_agent() -> LlmAgent:
         FunctionTool(vector_search_fragment_neighbors),
     ]
 
-    mcp = _build_mcp_toolset()
-    if mcp is not None:
-        tools.append(mcp)
+    if _mcp_enabled():
+        tools.append(FunctionTool(mongo_mcp_find))
         instruction = MEMORY_INSTRUCTION + MEMORY_MCP_ADDENDUM
-        logger.info("Memory Agent: MCP enabled, project lookups will use mongo_mcp_find")
+        logger.info("Memory Agent: MCP enabled, project lookups will use mongo_mcp_find (user-scoped)")
     else:
         tools.append(FunctionTool(get_project_context))
         instruction = MEMORY_INSTRUCTION
@@ -448,7 +470,7 @@ def build_memory_agent() -> LlmAgent:
 
     return LlmAgent(
         name="memory",
-        model=os.environ.get("MEMORY_MODEL", "gemini-2.5-flash"),
+        model=os.environ.get("MEMORY_MODEL", "gemini-3-flash-preview"),
         instruction=instruction,
         tools=tools,
     )
