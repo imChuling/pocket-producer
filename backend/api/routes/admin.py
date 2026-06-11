@@ -1,4 +1,5 @@
 import asyncio
+import hmac
 import logging
 import os
 from datetime import UTC, datetime
@@ -254,22 +255,29 @@ async def delete_account(request: Request, user_id: str = Depends(verify_firebas
 
 
 def _verify_job_auth(authorization: str | None):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    token = authorization[7:]
+
     job_secret = os.environ.get("JOB_TRIGGER_SECRET")
-    if job_secret and authorization == f"Bearer {job_secret}":
+    if job_secret and hmac.compare_digest(token, job_secret):
         return
-    service_url = os.environ.get("SERVICE_URL", "")
-    if authorization and authorization.startswith("Bearer "):
+
+    # OIDC path (Cloud Scheduler with oidcToken). Only enabled when both the
+    # expected audience AND the allowed caller are configured — verifying with
+    # audience=None would accept any Google-issued identity token.
+    audience = os.environ.get("SERVICE_URL")
+    allowed_sa = os.environ.get("JOB_INVOKER_SA")
+    if audience and allowed_sa:
         try:
             from google.auth.transport import requests as gauth_requests
             from google.oauth2 import id_token
 
-            token = authorization[7:]
-            id_token.verify_oauth2_token(
-                token,
-                gauth_requests.Request(),
-                audience=service_url or None,
+            claims = id_token.verify_oauth2_token(
+                token, gauth_requests.Request(), audience=audience
             )
-            return
+            if claims.get("email") == allowed_sa and claims.get("email_verified"):
+                return
         except Exception:
             pass
     raise HTTPException(status_code=403, detail="Unauthorized")

@@ -538,6 +538,9 @@ Environment variables:
 - `PRODUCER_MODEL`, `MEMORY_MODEL`, `CATCHER_MODEL` (optional) — override
   Gemini model (default: `gemini-2.5-flash`)
 - `JOB_TRIGGER_SECRET` — shared secret for Cloud Scheduler job auth
+- `SERVICE_URL` + `JOB_INVOKER_SA` (optional) — enable OIDC verification for
+  job endpoints; both the expected audience and the allowed service-account
+  caller must be configured
 
 ### Frontend (Vercel)
 
