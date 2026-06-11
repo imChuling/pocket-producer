@@ -693,6 +693,27 @@ async def _memory_and_project_locked(
         ptitle = post_run.get("project_title", "")
         _set_step(db, fragment_id, user_id, f"Joined project: {ptitle}" if ptitle else "Grouped into a project")
         logger.info("Agent tools already handled fragment %s → project %s", fragment_id, post_run["project_id"])
+        # The agent occasionally skips the scoring tool — backstop with the
+        # deterministic scorer so no project is ever left unscored.
+        pid = str(post_run["project_id"])
+        proj = db["projects"].find_one(
+            {"_id": ObjectId(pid), "user_id": user_id}, {"rescue_score": 1}
+        ) if ObjectId.is_valid(pid) else None
+        if proj and proj.get("rescue_score") is None:
+            db_token = producer_db_var.set(db)
+            user_token = producer_user_var.set(user_id)
+            try:
+                na = (result or {}).get("next_action")
+                await refresh_project_score(
+                    project_id=pid,
+                    next_action=json.dumps(na, ensure_ascii=False) if na else None,
+                )
+                logger.info("Backstop rescue score computed for project %s", pid)
+            except Exception:
+                logger.warning("Backstop rescue score failed for %s", pid, exc_info=True)
+            finally:
+                producer_db_var.reset(db_token)
+                producer_user_var.reset(user_token)
         return
 
     if not result:
