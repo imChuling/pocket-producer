@@ -8,7 +8,7 @@
 **Tagline**: *Your creative atlas, in your pocket.*
 
 **Live Demo**: https://pocketproducer.vercel.app
-**Demo Video**: `[TODO: YouTube URL]`
+**Demo Video**: https://youtu.be/yZbZ7jUQ_0A
 
 ---
 
