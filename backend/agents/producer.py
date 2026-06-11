@@ -108,6 +108,23 @@ async def create_project_from_fragments(
     if count != len(oids):
         return _to_json({"error": "one_or_more_fragments_not_found"})
 
+    # Guard against duplicate projects: if these fragments are already grouped,
+    # reuse that project instead of creating a parallel copy.
+    already = await asyncio.to_thread(
+        lambda: list(db["fragments"].find(
+            {"_id": {"$in": oids}, "user_id": user_id, "project_id": {"$exists": True}},
+            {"project_id": 1},
+        ))
+    )
+    if already:
+        existing_pid = str(already[0]["project_id"])
+        return _to_json({
+            "project_id": existing_pid,
+            "already_grouped": True,
+            "hint": "Some fragments already belong to this project. Use "
+                    "attach_fragment_to_project for the remaining ones instead.",
+        })
+
     now = datetime.now(UTC)
     project = {
         "user_id": user_id,

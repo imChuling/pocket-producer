@@ -610,6 +610,19 @@ async def memory_and_project(
     db, user_id: str, fragment_id: str,
     embedding: list[float], tag_result: dict | None, t0: float,
 ):
+    if not embedding:
+        logger.info("Fragment %s has no embedding — skipping agent pipeline", fragment_id)
+        return
+
+    from .deps import get_user_agent_lock
+    user_lock = await get_user_agent_lock(user_id)
+    async with user_lock:
+        await _memory_and_project_locked(db, user_id, fragment_id, tag_result, t0)
+
+
+async def _memory_and_project_locked(
+    db, user_id: str, fragment_id: str, tag_result: dict | None, t0: float,
+):
     import time
 
     from agents import group_fragment_with_agents
@@ -622,10 +635,6 @@ async def memory_and_project(
         generate_project_title,
         generate_next_action,
     )
-
-    if not embedding:
-        logger.info("Fragment %s has no embedding — skipping agent pipeline", fragment_id)
-        return
 
     existing = await asyncio.to_thread(
         db["fragments"].find_one,
