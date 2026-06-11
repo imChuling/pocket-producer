@@ -261,6 +261,24 @@ separately via `pnpm dev` or Vercel.
 
 ## Verifying the Agent Pipeline
 
+### Required tech, invoked at runtime
+
+All three hackathon-required technologies are imported and called on every
+fragment ingest — not just named in this README:
+
+| Requirement | Where it runs | Code |
+|---|---|---|
+| **Gemini 3** | `gemini-3-flash-preview` powers the Producer + Memory Agents and audio tagging; `gemini-3.1-flash-lite` tags text — all via Vertex AI (`genai.Client(vertexai=True)`, global endpoint) | [`api/pipeline.py`](backend/api/pipeline.py), [`agents/producer.py`](backend/agents/producer.py), [`agents/memory.py`](backend/agents/memory.py) |
+| **Google Cloud Agent Builder (ADK)** | `google.adk` `LlmAgent` + `Runner` + `AgentTool` execute the Producer → Memory pipeline on every ingest; skills load via ADK `SkillToolset` | [`agents/_runner.py`](backend/agents/_runner.py), [`agents/producer.py`](backend/agents/producer.py) |
+| **MongoDB MCP Server** | Runs inside the Cloud Run container (`start.sh`); every vector search is an `aggregate` call through the MCP protocol, and the Memory Agent's `mongo_mcp_find` tool routes project lookups through it | [`backend/start.sh`](backend/start.sh), [`agents/memory.py`](backend/agents/memory.py) |
+
+No competing AI or cloud services: embeddings are Voyage AI
+(MongoDB-provided, per MongoDB track rules), auth is Firebase, and all agent
+infrastructure runs on Google Cloud (Cloud Run, Vertex AI, Cloud Storage,
+Cloud Scheduler).
+
+### How it triggers
+
 Every fragment with an embedding triggers the agent pipeline automatically
 (`process_fragment_background` → `memory_and_project` →
 `group_fragment_with_agents`).
@@ -295,8 +313,13 @@ Agent tool call: agent=producer tool=create_project_from_fragments
 Agent tool call: agent=producer tool=generate_next_action
 Agent tool call: agent=producer tool=refresh_project_score
 Producer pipeline completed: events=11 result={'decision': 'new_project',
-  'reasoning': "...did not have any strong musical or thematic connections
-  to existing projects, suggesting it's the start of a fresh creative idea.", ...}
+  'reasoning': 'Both fragments share strong thematic alignment through rain
+  imagery and matching slow, minor-key musical profiles.',
+  'narrative': "I was listening to your new line, 'the rain is me,' and it
+  immediately called back to that minor-key piano motif you recorded. Both
+  carry such a heavy, beautiful sense of acceptance. I've grouped them
+  together as 'The Rain Is Me' because they feel like they're breathing the
+  same air.", ...}
 ```
 
 **Refusal rules firing on real input** — a tester uploaded a cover of a
