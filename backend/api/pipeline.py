@@ -573,7 +573,8 @@ async def process_fragment_background(
             for _retry in range(3):
                 try:
                     await memory_and_project(
-                        db, user_id, fragment_id, embedding, tag_result, t0
+                        db, user_id, fragment_id, embedding, tag_result, t0,
+                        skip_if_grouped=True,
                     )
                     break
                 except Exception as exc:
@@ -609,6 +610,7 @@ async def process_fragment_background(
 async def memory_and_project(
     db, user_id: str, fragment_id: str,
     embedding: list[float], tag_result: dict | None, t0: float,
+    skip_if_grouped: bool = False,
 ):
     if not embedding:
         logger.info("Fragment %s has no embedding — skipping agent pipeline", fragment_id)
@@ -617,11 +619,12 @@ async def memory_and_project(
     from .deps import get_user_agent_lock
     user_lock = await get_user_agent_lock(user_id)
     async with user_lock:
-        await _memory_and_project_locked(db, user_id, fragment_id, tag_result, t0)
+        await _memory_and_project_locked(db, user_id, fragment_id, tag_result, t0, skip_if_grouped)
 
 
 async def _memory_and_project_locked(
     db, user_id: str, fragment_id: str, tag_result: dict | None, t0: float,
+    skip_if_grouped: bool = False,
 ):
     import time
 
@@ -642,6 +645,14 @@ async def _memory_and_project_locked(
         {"_id": 1, "project_id": 1},
     )
     old_project_id = existing.get("project_id") if existing else None
+    if old_project_id and skip_if_grouped:
+        # A sibling fragment's run (moments ago, under the same user lock)
+        # already grouped this fragment — that decision is fresh, not stale.
+        # Re-running would dissolve and recreate the project, losing the
+        # sibling's narrative and doubling agent cost.
+        _set_step(db, fragment_id, user_id, "Grouped into a project")
+        logger.info("Fragment %s already grouped into %s by a sibling run — skipping", fragment_id, old_project_id)
+        return
     if old_project_id:
         logger.info("Fragment %s removing from project %s for re-evaluation", fragment_id, old_project_id)
         db["fragments"].update_one(
