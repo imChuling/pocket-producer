@@ -49,7 +49,7 @@ A background task runs:
    and dynamic range (90th/10th percentile RMS ratio). See
    `backend/tools/audio_features.py`.
 2. **Gemini multimodal tagging**: the audio file (via GCS URI) is sent to
-   `gemini-2.5-flash` (text-only fragments use `gemini-2.5-flash-lite`) with
+   `gemini-3-flash-preview` (text-only fragments use `gemini-3.1-flash-lite`) with
    the full `music-tagging` skill loaded as system context (~2,350 lines of
    domain knowledge). Gemini *listens* to the audio
    directly — no separate transcription step. Returns structured JSON: emotions,
@@ -161,7 +161,7 @@ The Catcher Agent is still defined in `backend/agents/catcher.py` for:
 ### Producer Agent (`backend/agents/producer.py`)
 
 - **Role**: Action layer — root orchestrator
-- **Model**: `gemini-2.5-flash` (configurable via `PRODUCER_MODEL`)
+- **Model**: `gemini-3-flash-preview` (configurable via `PRODUCER_MODEL`)
 - **Agent tools**: Memory Agent, wired as an ADK `AgentTool` rather than a
   sub-agent — Memory's analysis returns to Producer as a tool result, so the
   root agent keeps control and always emits the final decision (an AutoFlow
@@ -202,7 +202,7 @@ agent.
 ### Memory Agent (`backend/agents/memory.py`)
 
 - **Role**: Grounding layer — read-only analysis
-- **Model**: `gemini-2.5-flash` (configurable via `MEMORY_MODEL`)
+- **Model**: `gemini-3-flash-preview` (configurable via `MEMORY_MODEL`)
 - **Skills**: `relationship-rules`, `musical-knowledge`, `refusal-rules`
 - **Read tools**:
   - `get_fragment_context(fragment_id)`: full fragment metadata excluding
@@ -212,9 +212,11 @@ agent.
     100 candidates, returns up to 10 neighbors with scores
   - `get_project_context(project_id)`: project document + all member
     fragments (excluding embeddings)
-- **MCP tools** (optional): when `ENABLE_MCP_MEMORY_TOOLS=1`, read-only
-  MongoDB MCP tools (`find`, `aggregate`, `vector-search`) are attached via
-  `McpToolset` with `tool_name_prefix="mongo_mcp"` and a tool allowlist
+- **MCP tool** (optional): when `ENABLE_MCP_MEMORY_TOOLS=1`, a read-only
+  `mongo_mcp_find` tool routes queries through the MongoDB MCP Server.
+  User scoping is enforced at the tool layer — `user_id` is injected after
+  the model-supplied filter, and collections are limited to an allowlist —
+  so prompt content can never widen a query across users
 
 Memory Agent never writes to the database. It returns structured JSON
 recommendations to the Producer Agent.
@@ -247,7 +249,7 @@ recommendations to the Producer Agent.
 ### Catcher Agent (`backend/agents/catcher.py`)
 
 - **Role**: Perception layer — fragment tagging and feature extraction
-- **Model**: `gemini-2.5-flash` (configurable via `CATCHER_MODEL`)
+- **Model**: `gemini-3-flash-preview` (configurable via `CATCHER_MODEL`)
 - **Skills**: `music-tagging`, `refusal-rules`
 - **Tools**: `extract_audio_features`, `transcribe_audio`, `generate_embedding`
 - **Status**: defined but bypassed in the live pipeline (direct Gemini call
@@ -527,7 +529,8 @@ processing, plus Node.js 20 for the MCP server.
 
 Environment variables:
 - `MONGODB_CONNECTION_STRING` — Atlas connection string
-- `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_REGION` — GCP project config
+- `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION=global` — GCP project config
+  (Gemini 3 models are served from the global Vertex AI endpoint)
 - `VOYAGE_API_KEY` — for Voyage AI embedding generation
 - `GCS_BUCKET` — Cloud Storage bucket for audio files
 - `FIREBASE_CREDENTIALS_PATH` — path to Firebase Admin SDK key
@@ -536,7 +539,7 @@ Environment variables:
 - `PRODUCER_RESOURCE_NAME` (optional) — if set, uses remote Agent Engine
   instead of local ADK Runner
 - `PRODUCER_MODEL`, `MEMORY_MODEL`, `CATCHER_MODEL` (optional) — override
-  Gemini model (default: `gemini-2.5-flash`)
+  Gemini model (default: `gemini-3-flash-preview`)
 - `JOB_TRIGGER_SECRET` — shared secret for Cloud Scheduler job auth
 - `SERVICE_URL` + `JOB_INVOKER_SA` (optional) — enable OIDC verification for
   job endpoints; both the expected audience and the allowed service-account
@@ -615,6 +618,9 @@ The frontend runs separately with `pnpm dev`.
 ### User Isolation
 - All MongoDB queries include `user_id` filter
 - `ContextVar`-based scoping for agent tools (no user_id in agent prompts)
+- The Memory Agent's MCP query tool injects `user_id` after the
+  model-supplied filter — a prompt-injected filter naming another user is
+  silently overridden (verified by test: cross-user query returns 0 docs)
 
 ### Input Sanitization
 - Text: control character stripping, length limit (4,000 chars), XML tag

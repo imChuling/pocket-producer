@@ -34,7 +34,7 @@ more data** (recording + tagging). Neither solves the core bottleneck:
 Pocket Producer is a **grounded creative memory agent**. It does three things:
 
 1. **Capture** — record audio or type text, get instant AI-powered tagging
-   (emotion, theme, structure, style) via Gemini 2.5 Flash multimodal analysis
+   (emotion, theme, structure, style) via Gemini 3 Flash multimodal analysis
 2. **Reconnect** — MongoDB Atlas Vector Search finds semantically similar past
    fragments; an ADK Memory Agent classifies relationships using domain skills
 3. **Move forward** — a Producer Agent decides project grouping, computes a
@@ -101,12 +101,12 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full technical breakdown.
 | Layer | Technology |
 |---|---|
 | **Agent Framework** | Google ADK (`google-adk` v1.25+) with 5 open-source domain skills |
-| **LLM** | Gemini 2.5 Flash (audio tagging, Memory + Producer Agents) and Flash-Lite (text tagging) |
+| **LLM** | Gemini 3 Flash (`gemini-3-flash-preview`) for agent reasoning and audio tagging; Gemini 3.1 Flash-Lite for text tagging |
 | **Database** | MongoDB Atlas with Vector Search (cosine, 1024-dim) |
 | **MCP** | MongoDB MCP Server (HTTP transport, co-located in Cloud Run container) |
 | **Embeddings** | Voyage AI (`voyage-3`, 1024-dim) — MongoDB-provided |
 | **Audio Analysis** | librosa (BPM, key, mode, energy curve, brightness, onset density) |
-| **Transcription** | Gemini 2.5 Flash multimodal — listens to audio directly, no separate STT step |
+| **Transcription** | Gemini 3 Flash multimodal — listens to audio directly, no separate STT step |
 | **Auth** | Firebase Authentication |
 | **Storage** | Google Cloud Storage (audio files) |
 | **Backend** | FastAPI + uvicorn, deployed on Cloud Run |
@@ -146,7 +146,7 @@ at startup; full rules load on demand. See [SKILLS.md](SKILLS.md) for details.
 
 Two real ADK agents run in the ingest pipeline:
 
-**Producer Agent** (root, `gemini-2.5-flash`) orchestrates:
+**Producer Agent** (root, `gemini-3-flash-preview`) orchestrates:
 - Calls the Memory Agent as an ADK `AgentTool` for relationship discovery —
   the analysis returns to Producer as a tool result, so control never leaves
   the root agent
@@ -155,7 +155,7 @@ Two real ADK agents run in the ingest pipeline:
 - Tools: `memory` (AgentTool), `create_project_from_fragments`, `attach_fragment_to_project`, `refresh_project_score`, `generate_project_title`, `generate_next_action`
 - Skills: `rescue-scoring`, `musical-knowledge`, `refusal-rules`, `music-tagging`
 
-**Memory Agent** (agent-as-a-tool, `gemini-2.5-flash`) grounds decisions:
+**Memory Agent** (agent-as-a-tool, `gemini-3-flash-preview`) grounds decisions:
 - Vector search via MongoDB Atlas (`$vectorSearch` aggregation)
 - Relationship classification using domain skills
 - Optional: MongoDB MCP read tools for demo visibility
@@ -170,13 +170,16 @@ live pipeline — direct Gemini multimodal calls are 3x faster for tagging.
 ## Data Safety
 
 - Firebase Auth verifies every API request
-- All database reads and writes are scoped to the authenticated `user_id`
+- Every database read and write — REST endpoints and agent tools alike — is
+  scoped to the authenticated `user_id`
 - Creator-provided text is sanitized and wrapped in `<creator_fragment>` tags to
   prevent prompt injection; regex patterns flag suspicious input
 - Fragment deletion removes both the MongoDB document and the GCS audio object
 - Audio is served through authenticated streaming endpoints, not public GCS URLs
-- MongoDB MCP tools exposed to agents are read-only, restricted by a tool
-  allowlist (`find`, `aggregate`, `vector-search`)
+- The agent's MongoDB MCP query tool is read-only, limited to a collection
+  allowlist, and **user-scoped at the tool layer**: `user_id` is injected
+  after the model-supplied filter, so neither the model nor prompt-injected
+  fragment content can read another user's data
 
 ---
 
@@ -278,7 +281,7 @@ reproducible by uploading a fragment:
 the MongoDB MCP Server):
 
 ```
-INFO:agents.memory:Memory Agent: MCP enabled, project lookups will use mongo_mcp_find
+INFO:agents.memory:Memory Agent: MCP enabled, project lookups will use mongo_mcp_find (user-scoped)
 INFO:agents.memory:Vector search via MCP: 5 neighbors for 6a2a0767... (threshold=0.55)
 ```
 
