@@ -11,9 +11,12 @@ import json
 import logging
 import os
 import re
+import time
 from contextvars import ContextVar
 from typing import Any
+from urllib.parse import urlparse
 
+import httpx
 from bson import ObjectId
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
@@ -185,6 +188,53 @@ def _parse_mcp_documents(content: list[Any]) -> list[dict]:
     return docs
 
 
+class _GoogleIdTokenAuth(httpx.Auth):
+    """Cloud Run service-to-service auth: attach a Google-signed ID token.
+
+    Fails open when no ambient credentials can mint an ID token (local dev
+    against a localhost MCP server stays unauthenticated).
+    """
+
+    def __init__(self, audience: str):
+        self._audience = audience
+        self._token: str | None = None
+        self._expires_at = 0.0
+        self._unavailable = False
+
+    def auth_flow(self, request):
+        if not self._unavailable and (self._token is None or time.time() >= self._expires_at):
+            try:
+                from google.auth.transport.requests import Request as _GAuthRequest
+                from google.oauth2 import id_token as _gauth_id_token
+
+                self._token = _gauth_id_token.fetch_id_token(_GAuthRequest(), self._audience)
+                self._expires_at = time.time() + 45 * 60
+            except Exception:
+                self._unavailable = True
+                logger.warning(
+                    "No ambient credentials for MCP ID token — calling %s unauthenticated",
+                    self._audience,
+                )
+        if self._token:
+            request.headers["Authorization"] = f"Bearer {self._token}"
+        yield request
+
+
+_mcp_auth_cache: dict[str, _GoogleIdTokenAuth] = {}
+_LOCAL_MCP_HOSTS = {"localhost", "127.0.0.1", "mongodb-mcp"}
+
+
+def _get_mcp_auth(mcp_url: str) -> httpx.Auth | None:
+    """ID-token auth for a Cloud Run-hosted MCP server; None for local servers."""
+    parsed = urlparse(mcp_url)
+    if parsed.hostname in _LOCAL_MCP_HOSTS:
+        return None
+    audience = f"{parsed.scheme}://{parsed.netloc}"
+    if audience not in _mcp_auth_cache:
+        _mcp_auth_cache[audience] = _GoogleIdTokenAuth(audience)
+    return _mcp_auth_cache[audience]
+
+
 async def _mcp_vector_search(
     embedding: list[float],
     fragment_id: str,
@@ -216,7 +266,7 @@ async def _mcp_vector_search(
         {"$project": {"embedding": 0}},
     ]
 
-    async with streamablehttp_client(url=mcp_url) as (read, write, _):
+    async with streamablehttp_client(url=mcp_url, auth=_get_mcp_auth(mcp_url)) as (read, write, _):
         async with ClientSession(read, write) as session:
             await session.initialize()
             result = await session.call_tool(
@@ -307,7 +357,7 @@ async def mongo_mcp_find(collection: str, filter: dict, limit: int = 10) -> str:
     from mcp import ClientSession
     from mcp.client.streamable_http import streamablehttp_client
 
-    async with streamablehttp_client(url=mcp_url) as (read, write, _):
+    async with streamablehttp_client(url=mcp_url, auth=_get_mcp_auth(mcp_url)) as (read, write, _):
         async with ClientSession(read, write) as session:
             await session.initialize()
             result = await session.call_tool(
