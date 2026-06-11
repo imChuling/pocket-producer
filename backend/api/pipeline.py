@@ -304,9 +304,9 @@ ONLY output the JSON object. No markdown wrapping, no explanation outside the JS
     # Audio needs a stronger model: flash-lite degrades on long multimodal
     # context and tends to break the response schema mid-transcript.
     if audio_gcs_uri:
-        model = os.environ.get("TAGGING_MODEL_AUDIO", "gemini-2.5-flash")
+        model = os.environ.get("TAGGING_MODEL_AUDIO", "gemini-3-flash-preview")
     else:
-        model = os.environ.get("TAGGING_MODEL", "gemini-2.5-flash-lite")
+        model = os.environ.get("TAGGING_MODEL", "gemini-3.1-flash-lite")
     timeout = 180 if audio_gcs_uri else 30
 
     tagging_schema = {

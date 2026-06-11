@@ -303,7 +303,7 @@ async def generate_project_title(fragment_ids: list[str], connection_types: list
         response = await asyncio.wait_for(
             asyncio.to_thread(
                 client.models.generate_content,
-                model="gemini-2.5-flash",
+                model=os.environ.get("PRODUCER_MODEL", "gemini-3-flash-preview"),
                 contents=prompt,
                 config=genai_types.GenerateContentConfig(
                     temperature=0.8,
@@ -384,7 +384,7 @@ async def generate_next_action(project_id: str) -> str:
         response = await asyncio.wait_for(
             asyncio.to_thread(
                 client.models.generate_content,
-                model="gemini-2.5-flash",
+                model=os.environ.get("PRODUCER_MODEL", "gemini-3-flash-preview"),
                 contents=prompt,
                 config=genai_types.GenerateContentConfig(
                     temperature=0.5,
@@ -578,7 +578,7 @@ For edge cases, consult the refusal-rules skill tool for worked examples.
 
 producer_agent = LlmAgent(
     name="producer",
-    model=os.environ.get("PRODUCER_MODEL", "gemini-2.5-flash"),
+    model=os.environ.get("PRODUCER_MODEL", "gemini-3-flash-preview"),
     instruction=PRODUCER_INSTRUCTION,
     # Memory is wired as an AgentTool (not a sub_agent): with sub_agents the
     # AutoFlow transfer hands the session over and Memory's reply becomes the
