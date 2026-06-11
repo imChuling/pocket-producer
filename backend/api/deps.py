@@ -65,6 +65,21 @@ async def release_pipeline_slot():
         _pipeline_count = max(0, _pipeline_count - 1)
 
 
+# Per-user agent-pipeline serialization — two fragments uploaded close
+# together must not both create a project for the same neighborhood.
+_user_agent_locks: dict[str, asyncio.Lock] = {}
+_user_agent_locks_guard = asyncio.Lock()
+
+
+async def get_user_agent_lock(user_id: str) -> asyncio.Lock:
+    async with _user_agent_locks_guard:
+        lock = _user_agent_locks.get(user_id)
+        if lock is None:
+            lock = asyncio.Lock()
+            _user_agent_locks[user_id] = lock
+        return lock
+
+
 # DNA update debounce — collapse rapid successive triggers into one run
 _dna_lock = asyncio.Lock()
 _dna_pending = False
