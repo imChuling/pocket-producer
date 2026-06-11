@@ -38,6 +38,7 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
   const chunks = useRef<Blob[]>([]);
   const mimeRef = useRef("");
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const recordingRef = useRef(false);
@@ -178,6 +179,8 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
       streamRef.current = stream;
 
       const audioCtx = new AudioContext();
+      audioCtxRef.current = audioCtx;
+      if (audioCtx.state === "suspended") await audioCtx.resume();
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
@@ -194,6 +197,9 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
         if (e.data.size > 0) chunks.current.push(e.data);
       };
       recorder.onstop = () => {
+        analyserRef.current = null;
+        audioCtxRef.current?.close().catch(() => {});
+        audioCtxRef.current = null;
         const blobType = mimeRef.current || "audio/webm";
         const blob = new Blob(chunks.current, { type: blobType });
         if (blob.size > MAX_FILE_SIZE) {
@@ -219,8 +225,19 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
           return s + 1;
         });
       }, 1000);
-    } catch {
-      setError("Microphone access denied");
+    } catch (err) {
+      audioCtxRef.current?.close().catch(() => {});
+      audioCtxRef.current = null;
+      const name = err instanceof DOMException ? err.name : "";
+      if (name === "NotAllowedError" || name === "SecurityError") {
+        setError("Microphone access denied — check browser and OS permission settings");
+      } else if (name === "NotFoundError" || name === "OverconstrainedError") {
+        setError("No microphone found");
+      } else if (name === "NotReadableError") {
+        setError("Microphone is in use by another app");
+      } else {
+        setError("Could not start recording — try reloading the page");
+      }
     }
   }, [onRecorded]);
 

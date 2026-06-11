@@ -258,10 +258,10 @@ export function AudioPlayer({
               />
             </div>
             <div
-              className={`absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-white shadow-md border-2 border-[#8bbfa0] transition-opacity ${
+              className={`absolute w-3.5 h-3.5 rounded-full bg-white shadow-md border-2 border-[#8bbfa0] transition-opacity ${
                 dragging ? "opacity-100 scale-110" : playing ? "opacity-100 group-hover/bar:scale-110" : "opacity-0 group-hover/bar:opacity-100"
               }`}
-              style={{ left: `calc(${progress * 100}% - 7px)` }}
+              style={{ left: `calc(${progress * 100}% - 7px)`, top: "50%", marginTop: "-7px" }}
             />
           </div>
           <span className="font-mono text-[10px] text-slate w-8 flex-shrink-0">
