@@ -664,6 +664,15 @@ async def _memory_and_project_locked(
         fragment_id, time.monotonic() - t0, result,
     )
 
+    # Persist the narrative first — the agent may have executed all project
+    # tools itself, and the early return below would otherwise skip it.
+    narrative = (result.get("narrative") or "") if result else ""
+    if narrative:
+        db["fragments"].update_one(
+            {"_id": ObjectId(fragment_id), "user_id": user_id},
+            {"$set": {"agent_narrative": narrative}},
+        )
+
     # If agent's tool calls already assigned the fragment, skip fallback
     post_run = db["fragments"].find_one(
         {"_id": ObjectId(fragment_id), "user_id": user_id},
@@ -683,14 +692,7 @@ async def _memory_and_project_locked(
     group_ids = rec.get("group_with_ids", [])
     connection_types = result.get("connection_types") or rec.get("connection_types") or []
     reasoning = result.get("reasoning") or rec.get("reasoning") or ""
-    narrative = result.get("narrative") or ""
     target_project_id = result.get("project_id") or rec.get("target_project_id")
-
-    if narrative:
-        db["fragments"].update_one(
-            {"_id": ObjectId(fragment_id), "user_id": user_id},
-            {"$set": {"agent_narrative": narrative}},
-        )
 
     # Normalize action: bridge_projects and needs_user_confirmation → new_project
     if action == "bridge_projects":
