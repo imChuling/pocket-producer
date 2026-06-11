@@ -14,8 +14,8 @@
 
 ## The Problem
 
-Music creators generate dozens of ideas — voice memos, lyrics, melodies — that
-scatter across devices and apps. The result:
+Every songwriter has a graveyard of voice memos, lyric notes, and
+half-finished demos scattered across their phone. It sounds like this:
 
 | Problem | What creators say |
 |---|---|
@@ -24,17 +24,18 @@ scatter across devices and apps. The result:
 | **Hidden relationships** | "Turns out that lyric and that piano motif were the same song all along" |
 | **Unfinished song paralysis** | "30 incomplete songs. No idea which one to work on next" |
 
-Existing tools either **replace creativity** (AI-generated music) or **capture
-more data** (recording + tagging). Neither solves the core bottleneck:
+Tools in this space either write the song for you (Suno, Udio) or help you
+record even more audio you'll never find again (voice memos with tags).
+Neither touches the real bottleneck:
 
 > **The creative bottleneck isn't output — it's memory of what you've already created.**
 
 ## The Solution
 
-Pocket Producer is a **grounded creative memory agent**. It does three things:
+Pocket Producer is a grounded creative memory agent:
 
-1. **Capture** — record audio or type text, get instant AI-powered tagging
-   (emotion, theme, structure, style) via Gemini 3 Flash multimodal analysis
+1. **Capture** — record audio or type text; Gemini 3 Flash listens and tags
+   it (emotion, theme, structure, style) within seconds
 2. **Reconnect** — MongoDB Atlas Vector Search finds semantically similar past
    fragments; an ADK Memory Agent classifies relationships using domain skills
 3. **Move forward** — a Producer Agent decides project grouping, computes a
@@ -87,10 +88,10 @@ and connects what should belong together.
 └──────────────────┘
 ```
 
-The ingest flow separates **latency-sensitive perception** from **agentic memory
-work**: Gemini multimodal tagging runs directly (a few seconds for text, ~15s
-for audio), while the ADK agent pipeline handles relationship discovery and
-project decisions asynchronously.
+The ingest flow keeps perception fast and lets memory work take its time:
+Gemini multimodal tagging runs directly (a couple of seconds for text, ~15s
+for audio), while the ADK agent pipeline does relationship discovery and
+project decisions in the background.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the full technical breakdown.
 
@@ -118,8 +119,9 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full technical breakdown.
 
 ## Skills Layer
 
-> **The key differentiator** — 5 open-source ADK skills encoding music domain
-> knowledge, loaded via progressive disclosure.
+> If you only read one part of this repo, read the skills. Five of them,
+> all open source, encoding actual music domain knowledge — and loaded via
+> progressive disclosure so they don't blow up the context window.
 
 Pocket Producer applies the
 [ADK Skills system](https://google.github.io/adk-docs/skills/) to the music
@@ -162,15 +164,16 @@ Two real ADK agents run in the ingest pipeline:
 - Tools: `get_fragment_context`, `vector_search_fragment_neighbors`, `get_project_context`
 - Skills: `relationship-rules`, `musical-knowledge`, `refusal-rules`
 
-**Catcher Agent** is defined for full Agent Engine deployment but bypassed in the
-live pipeline — direct Gemini multimodal calls are 3x faster for tagging.
+**Catcher Agent** exists in the codebase but is bypassed in the live pipeline:
+direct Gemini multimodal calls turned out 3x faster for tagging, so the agent
+is kept for batch reprocessing and Agent Engine deployment instead.
 
 ---
 
 ## Data Safety
 
 - Firebase Auth verifies every API request
-- Every database read and write — REST endpoints and agent tools alike — is
+- Every database read and write, in REST endpoints and agent tools alike, is
   scoped to the authenticated `user_id`
 - Creator-provided text is sanitized and wrapped in `<creator_fragment>` tags to
   prevent prompt injection; regex patterns flag suspicious input
