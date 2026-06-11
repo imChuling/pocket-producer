@@ -65,6 +65,17 @@ def _user_id() -> str:
     return _current_user_id.get()
 
 
+_INVALID_ID_HINT = (
+    "is not a real database id. Never invent placeholder ids: call "
+    "create_project_from_fragments first, wait for its result, then pass the "
+    "returned project_id to this tool."
+)
+
+
+def _parse_oid(value: str):
+    return ObjectId(value) if ObjectId.is_valid(str(value)) else None
+
+
 # ---------------------------------------------------------------------------
 # Write tools for Producer Agent
 # ---------------------------------------------------------------------------
@@ -86,7 +97,9 @@ async def create_project_from_fragments(
     """
     db = _db()
     user_id = _user_id()
-    oids = [ObjectId(fid) for fid in fragment_ids]
+    oids = [_parse_oid(fid) for fid in fragment_ids]
+    if any(o is None for o in oids):
+        return _to_json({"error": "invalid_fragment_id", "hint": "fragment_ids must be the real 24-hex ids from the pipeline input or memory analysis"})
 
     count = await asyncio.to_thread(
         db["fragments"].count_documents,
@@ -140,8 +153,12 @@ async def attach_fragment_to_project(
     """
     db = _db()
     user_id = _user_id()
-    fragment_oid = ObjectId(fragment_id)
-    project_oid = ObjectId(project_id)
+    fragment_oid = _parse_oid(fragment_id)
+    project_oid = _parse_oid(project_id)
+    if fragment_oid is None:
+        return _to_json({"error": "invalid_fragment_id"})
+    if project_oid is None:
+        return _to_json({"error": f"'{project_id}' " + _INVALID_ID_HINT})
 
     project = await asyncio.to_thread(
         db["projects"].find_one,
@@ -200,7 +217,9 @@ async def refresh_project_score(project_id: str, next_action: str | None = None)
     """
     db = _db()
     user_id = _user_id()
-    project_oid = ObjectId(project_id)
+    project_oid = _parse_oid(project_id)
+    if project_oid is None:
+        return _to_json({"error": f"'{project_id}' " + _INVALID_ID_HINT})
     project = await asyncio.to_thread(
         db["projects"].find_one,
         {"_id": project_oid, "user_id": user_id},
@@ -269,7 +288,7 @@ async def generate_project_title(fragment_ids: list[str], connection_types: list
         try:
             f = await asyncio.to_thread(
                 db["fragments"].find_one,
-                {"_id": ObjectId(fid), "user_id": user_id},
+                {"_id": _parse_oid(fid) or ObjectId(b"\x00" * 12), "user_id": user_id},
                 {"title": 1, "text": 1, "emotions": 1, "themes": 1, "key": 1, "style": 1, "bpm": 1},
             )
             if f:
@@ -341,9 +360,12 @@ async def generate_next_action(project_id: str) -> str:
     """
     db = _db()
     user_id = _user_id()
+    project_oid = _parse_oid(project_id)
+    if project_oid is None:
+        return _to_json({"error": f"'{project_id}' " + _INVALID_ID_HINT})
     project = await asyncio.to_thread(
         db["projects"].find_one,
-        {"_id": ObjectId(project_id), "user_id": user_id},
+        {"_id": project_oid, "user_id": user_id},
     )
     if not project:
         return _to_json({"error": "project_not_found"})
@@ -481,6 +503,13 @@ Step 4: If a project was created or updated:
    2. Call refresh_project_score with the next_action result
 
 You MUST call the tools — returning JSON alone does NOT execute anything.
+
+CRITICAL — tool sequencing: tools that take a project_id
+(generate_next_action, refresh_project_score, attach_fragment_to_project)
+accept ONLY the real project_id returned by create_project_from_fragments or
+provided in Memory's analysis. NEVER invent placeholder ids like
+"new_project_placeholder", and NEVER call these tools in parallel with
+create_project_from_fragments — wait for its result first.
 
 ## Output
 

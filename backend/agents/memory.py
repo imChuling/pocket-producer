@@ -70,6 +70,8 @@ async def get_fragment_context(fragment_id: str) -> str:
     """Return a fragment's full metadata (excluding embedding vector)."""
     db = _db()
     user_id = _user_id()
+    if not ObjectId.is_valid(str(fragment_id)):
+        return _to_json({"fragment": None, "error": "invalid_fragment_id"})
     doc = await asyncio.to_thread(
         db["fragments"].find_one,
         {"_id": ObjectId(fragment_id), "user_id": user_id},
@@ -86,6 +88,8 @@ async def vector_search_fragment_neighbors(fragment_id: str, limit: int = 6) -> 
     """
     db = _db()
     user_id = _user_id()
+    if not ObjectId.is_valid(str(fragment_id)):
+        return _to_json({"neighbors": [], "reason": "invalid_fragment_id"})
     fragment = await asyncio.to_thread(
         db["fragments"].find_one,
         {"_id": ObjectId(fragment_id), "user_id": user_id},
@@ -241,6 +245,8 @@ async def get_project_context(project_id: str) -> str:
     """Return a project and all its member fragments (excluding embeddings)."""
     db = _db()
     user_id = _user_id()
+    if not ObjectId.is_valid(str(project_id)):
+        return _to_json({"project": None, "fragments": [], "error": "invalid_project_id"})
     project = await asyncio.to_thread(
         db["projects"].find_one,
         {"_id": ObjectId(project_id), "user_id": user_id},
