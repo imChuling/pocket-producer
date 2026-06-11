@@ -266,17 +266,51 @@ To observe it directly:
 
 ```bash
 # With docker compose running:
-docker compose logs -f backend | grep -E "Agent tool call|Producer pipeline"
+docker compose logs -f backend | grep -E "Agent tool call|Producer pipeline|via MCP"
 ```
 
-You will see:
-- `Agent tool call: agent=memory tool=vector_search_fragment_neighbors`
-- `Agent tool call: agent=memory tool=get_project_context`
-- `Agent tool call: agent=producer tool=create_project_from_fragments`
-- `Producer pipeline completed for <id>: events=N result={...}`
+### Observed in production (June 2026)
 
-In the UI, grouped fragments display the agent's `connection_reason` and
-`connection_types` — the multi-step reasoning made visible, not just tags.
+Real log excerpts from the deployed Cloud Run service — every claim below is
+reproducible by uploading a fragment:
+
+**MongoDB MCP vector search** (Memory Agent routing `$vectorSearch` through
+the MongoDB MCP Server):
+
+```
+INFO:agents.memory:Memory Agent: MCP enabled, project lookups will use mongo_mcp_find
+INFO:agents.memory:Vector search via MCP: 5 neighbors for 6a2a0767... (threshold=0.55)
+```
+
+**Full agentic decision** (Producer calls Memory as an AgentTool, then
+executes project tools and returns structured JSON):
+
+```
+Agent tool call: agent=producer tool=memory
+Agent tool call: agent=producer tool=generate_project_title
+Agent tool call: agent=producer tool=create_project_from_fragments
+Agent tool call: agent=producer tool=generate_next_action
+Agent tool call: agent=producer tool=refresh_project_score
+Producer pipeline completed: events=11 result={'decision': 'new_project',
+  'reasoning': "...did not have any strong musical or thematic connections
+  to existing projects, suggesting it's the start of a fresh creative idea.", ...}
+```
+
+**Refusal rules firing on real input** — a tester uploaded a cover of a
+well-known song, and the `refusal-rules` skill declined to group it:
+
+```
+Producer pipeline completed: result={'decision': 'no_group',
+  'reasoning': 'Refused to classify: The input fragment contains copyrighted
+  lyrics from a known song ("Stairway to Heaven").', ...}
+```
+
+The skill layer is not prompt decoration — it changes agent behavior in
+production.
+
+In the UI, grouped fragments display the agent's `connection_reason`,
+`connection_types`, and a first-person `agent_narrative` — the multi-step
+reasoning made visible, not just tags.
 
 ---
 
