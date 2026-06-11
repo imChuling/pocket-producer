@@ -261,8 +261,9 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
         </div>
       )}
 
-      {/* Agent connection */}
-      {fragment.project_id && (fragment.agent_narrative || fragment.connection_reason) && (
+      {/* Agent narrative — shown for ungrouped fragments too (refusals,
+          stands-on-its-own notes); connection_reason only makes sense with a project */}
+      {(fragment.agent_narrative || (fragment.project_id && fragment.connection_reason)) && (
         <div
           className="flex items-start gap-2.5 rounded-xl px-3.5 py-3"
           style={{
