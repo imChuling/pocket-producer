@@ -1,0 +1,387 @@
+% -----------------------------------------------
+% ISMIR 2026 LBD — Pocket Producer
+% Based on the official ISMIR2026_lbd_template.tex
+% (sha256 e368d536b41c...dec3d, fetched 2026-07-31).
+% Rules: 2 pages scientific content + 1 page references only.
+% LBD submissions are NOT anonymized.
+% Results sections are populated ONLY from versioned artifacts via
+% research/render_lbd_assets.py — never hand-written numbers.
+% -----------------------------------------------
+
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[lbd,submission]{ismir}
+\usepackage{amsmath,cite,url}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{booktabs}
+\def\lbd{}	% Flag to use correct LBD settings in the paper, please do not modify this line
+
+\title{Re-entering Unfinished Music: Session-Conditioned Retrieval of Personal Audio Fragments with Reversible DAW Actions}
+
+\oneauthor
+  {Chuling Li} {Independent Researcher \\ {\tt chuling.li.cs@gmail.com}}
+
+\def\authorname{C. Li}
+
+\sloppy
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Musicians accumulate large personal libraries of unfinished audio fragments,
+yet re-entering an unfinished project offers little support for deciding which
+fragment to try next.
+We formulate \emph{session-conditioned continuation retrieval}: given the live
+state of a digital audio workstation (DAW) project, rank a musician's own
+fragments by their utility for the next creative step, rather than by generic
+acoustic similarity.
+We present Pocket Producer, a prototype that reads a live Audiotool project
+through the Nexus API, derives a transparent session fingerprint, and ranks
+personal fragments using an explainable rule baseline and frozen audio--text
+representations (MS-CLAP 2023).
+Every recommendation is previewable, grounded in structured evidence, and
+insertable into the project timeline through a single reversible transaction.
+On 1,755 weak pairs from the Freesound Loop Dataset, frozen CLAP cosine
+similarity already achieves 0.883 pairwise accuracy, and learned rerankers
+(up to 335K parameters) cannot exceed this baseline.
+However, a five-parameter logistic fusion of audio cosine, tempo match, key
+match, and tag overlap reaches 0.794 on the hardest negatives
+(embedding-similar cross-source items), a +4.0\,pp gain over cosine alone
+(0.754; sign test $p = 0.031$), demonstrating that music-theory signals
+complement audio embeddings even under weak supervision.
+Session-structure signals (instrument role gap, harmonic compatibility)
+show no gain on pack-membership labels, highlighting the need for
+task-specific evaluation.
+An external evaluation (9~raters, 20~pairs, Fleiss' $\kappa = 0.294$)
+shows that continuation preference is subjective but far from random,
+motivating evaluation protocols beyond acoustic similarity.
+\end{abstract}
+
+\section{Introduction}\label{sec:introduction}
+
+Loop-based music production accumulates a growing library of short audio
+fragments---recorded ideas, downloaded samples, half-finished stems.
+When a musician returns to an unfinished project, the central question is not
+``what sounds similar?''\ but ``what would be useful as the next step?''
+Existing work on loop compatibility~\cite{chen2020neuralloop,lattner2022samplematch,yi2024drum2bass}
+and stem coherence~\cite{ciranni2024cocola,nistal2024diffariff}
+addresses whether two audio elements can co-exist in a mix, but the query in
+our setting is a \emph{live session state}, not a single reference loop, and
+the candidates are the musician's own creative memory, not a public catalog.
+
+We define \textbf{continuation utility} as the property that a candidate
+fragment would help the musician make progress in the current session---a
+concept that subsumes tempo fit, timbral contrast, structural gap-filling, and
+the musician's stated intent, but cannot be reduced to any single acoustic
+similarity metric.
+This formulation yields three contributions:
+
+\begin{enumerate}
+\item \textbf{Task:} We cast personal fragment retrieval as a
+  session-conditioned ranking problem with a preregistered primary metric
+  (pairwise accuracy over human continuation preferences).
+\item \textbf{System:} We implement a working prototype in a real DAW
+  (Audiotool) with live document reading, reversible insertion, and
+  explainable evidence for each recommendation.
+\item \textbf{Protocol:} We report a backbone bake-off, a baseline comparison
+  showing that learned rerankers cannot beat frozen cosine but
+  multi-signal fusion can (+4.0\,pp on hard negatives), and a blind
+  A/B evaluation with 9~external raters.
+\end{enumerate}
+
+\section{Pocket Producer}\label{sec:system}
+
+Figure~\ref{fig:system} shows the six-step loop.
+The system connects to Audiotool through its Nexus SDK, which provides
+programmatic read/write access to a user's projects.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{assets/system-figure.pdf}
+  \caption{Pocket Producer retrieval loop. The session fingerprint is derived
+  from the live Nexus document; every insertion is a single reversible
+  transaction; user actions become preference feedback.}
+  \label{fig:system}
+\end{figure}
+
+\subsection{Session Fingerprint}\label{sec:fingerprint}
+
+When a project is opened, the system queries the Nexus document for
+\texttt{audioTrack}, \texttt{noteTrack}, \texttt{patternTrack}, and
+\texttt{automationTrack} entities, and reads the tempo from the project
+configuration entity.
+These are mapped deterministically to a \texttt{SessionFingerprint}:
+tempo (or \texttt{null} if absent), track count and classified track types,
+playhead position, and a user-editable text intent field.
+Only this summary leaves the browser; the raw Audiotool document is never
+sent to the Pocket Producer backend.
+Fields the document does not provide are reported as missing, never imputed.
+When session audio regions are available, their samples are downloaded and
+encoded with MS-CLAP 2023~\cite{elizalde2023clap} to form a mean session
+audio embedding, enabling the \texttt{mean-session-v1} baseline.
+We chose CLAP over recent self-supervised alternatives such as
+MERT~\cite{li2024mert} and MuQ~\cite{zhu2025muq} because
+CLAP's joint audio-text space supports the text-intent retrieval path;
+a systematic comparison of pretrained audio representations for
+recommendation is given by Tamm and Aljanaki~\cite{tamm2026representations}.
+Additionally, a linear probe trained on the bake-off's 6-class instrument
+role labels (Section~\ref{sec:bakeoff}) predicts the role of each region
+and candidate from their CLAP embeddings, and CQT-based chroma vectors
+(12-dim, mean-aggregated) are extracted for harmonic analysis.
+
+\subsection{Continuation Utility Ranking}\label{sec:ranking}
+
+Candidate fragments are scored in two stages.
+First, per-space retrieval runs independently over four signal spaces:
+(1)~structured metadata (tempo/key/tag matching),
+(2)~frozen CLAP embeddings (cosine similarity),
+(3)~\emph{role-gap fill}---a zero-shot instrument probe identifies which
+roles (e.g.\ bass, drums, melody) are present in the session and boosts
+candidates whose predicted role fills a gap, a compositional signal that
+cosine similarity over mixed-down audio fundamentally cannot capture, and
+(4)~\emph{harmonic compatibility}---transpose-invariant cross-correlation
+of CQT chroma vectors scores tonal fit across all 12 semitone shifts and
+reports the best transposition (validated on 168 synthetic trials with
+100\% alignment recovery; on 500 FSLD same-pack pairs, harmonic score
+predicts pack membership at 65.2\%, above the 50\% chance baseline).
+Results are fused with Reciprocal Rank Fusion~\cite{cormack2009rrf}.
+Second, a capacity ladder of rerankers is applied.
+Table~\ref{tab:capacity} shows the three tiers, all within a hard budget
+of 500K trainable parameters and running on CPU.
+
+\begin{table}[t]
+  \centering
+  \caption{Capacity ladder. All models run on CPU (Apple M-series, batch 32).}
+  \label{tab:capacity}
+  \footnotesize
+  \input{assets/capacity-table}
+\end{table}
+
+The \texttt{rules-v1} baseline (not shown in the table; zero learned parameters)
+combines six deterministic $[0,1]$ features---tempo match, key match, track-gap
+fill, intent-tag overlap, novelty, and recency---with fixed weights that
+produce structured evidence codes for every score.
+This baseline is always available: when a learned model is unavailable or
+times out, the system falls back to \texttt{rules-v1} within two seconds and
+labels the result as a fallback.
+The user selects an intervention intensity (Nudge: 1, Suggest: 3, Explore: 6
+results) to control how many recommendations to receive.
+
+\subsection{Reversible Audiotool Interaction}\label{sec:interaction}
+
+A recommendation can be previewed via protected audio routes and inserted
+into the timeline.
+Insertion uploads the audio sample to Audiotool, waits for the upload to be
+acknowledged, and then modifies the document in a single Nexus transaction.
+An \texttt{InsertReceipt} records every created entity ID so that undo
+restores the exact prior document state---verified against offline Nexus
+documents using the official WASM validator.
+Each preview, insertion, and undo event is logged as preference feedback
+with the recommendation's rank position, model ID, and request ID.
+
+\section{Preliminary Evaluation}\label{sec:evaluation}
+
+\subsection{Backbone Bake-off}\label{sec:bakeoff}
+
+We evaluated two frozen CLAP backbones on 2,558 items from the Freesound
+Loop Dataset (FSLD)~\cite{ramires2020fsld} using three probes:
+same-source Recall@10, linear-probe genre accuracy (8 classes), and
+linear-probe instrument role accuracy (6 classes).
+Table~\ref{tab:backbone} shows the results.
+LAION-CLAP Music~\cite{wu2023laionclap} (512-dim) outperforms MS-CLAP 2023
+(1024-dim) on all three probes while using half the storage per fragment.
+We deploy MS-CLAP 2023 because its training data license audit is
+complete; representation quality and deployment eligibility are treated as
+separate decisions.
+
+\begin{table}[t]
+  \centering
+  \caption{Backbone bake-off on 2,558 FSLD items. R@10 = same-source
+  Recall@10; Genre/Role = linear-probe accuracy.}
+  \label{tab:backbone}
+  \footnotesize
+  \input{assets/backbone-table}
+\end{table}
+
+\subsection{Baseline Comparison and Multi-Signal Fusion}\label{sec:weak}
+
+We constructed 1,755 leave-one-out pairs from FSLD, using same-pack
+membership as a weak proxy for continuation utility, with three negative
+types: \emph{easy} (tempo or key incompatible), \emph{hard\_tempo\_key}
+(tempo and key both compatible), and \emph{hard\_similar} (highest
+embedding cosine from another pack).
+Splits are grouped by source pack; all numbers are 5-seed means
+(val fraction 0.25).
+Table~\ref{tab:weak} reports validation pairwise accuracy.
+
+\begin{table}[t]
+  \centering
+  \caption{Baseline comparison on FSLD weak pairs (LAION-CLAP 512-dim,
+  5 seeds). Hard-sim = hard\_similar negatives; Hard-tk =
+  hard\_tempo\_key. Bold = best per column. Learned-model parameter
+  counts differ from Table~\ref{tab:capacity} because the offline
+  representation is 512-dim (deployed: 1024-dim MS-CLAP).}
+  \label{tab:weak}
+  \footnotesize
+  \input{assets/weak-results-table}
+\end{table}
+
+Frozen cosine similarity (0.883) is already a strong baseline: two
+learned rerankers with up to 335K parameters trained with
+BPR loss~\cite{rendle2009bpr} score below it (0.735, 0.742),
+overfitting to noise in the weak labels.
+However, a five-parameter logistic fusion of audio cosine (mean and max
+pooling), tempo match, key match, and tag Jaccard overlap---trained with
+the same BPR loss---reaches \textbf{0.794 on hard\_similar negatives},
+a +4.0\,pp gain over cosine alone (0.754); the gain holds in all 5
+seeds (sign test $p = 0.031$).
+These are embedding-similar items from different packs where the cosine
+signal is uninformative; the gain comes from music-theory compatibility
+signals that the embedding cannot encode.
+On hard\_tempo\_key negatives, where tempo and key features are neutral
+by construction, fusion (0.897) remains close to cosine (0.911),
+confirming the improvement is not an artifact of label leakage.
+
+Adding session-structure signals---a zero-shot instrument role-gap
+detector and transpose-invariant chroma correlation
+(Section~\ref{sec:ranking})---does not improve the fusion: 7-signal
+overall (0.892) and hard\_similar (0.792) are indistinguishable from
+the 5-signal model.
+The \texttt{cosine+session} ablation (0.749 hard\_similar) is slightly
+\emph{below} cosine alone, confirming that these compositional signals
+are orthogonal to pack-membership labels.
+This is expected: pack membership reflects recording context, not
+whether a candidate fills a compositional gap; purpose-built evaluation
+is needed to assess session-conditioned signals.
+
+\subsection{Author Pilot Evaluation}\label{sec:human}
+
+We preregistered an evaluation protocol (frozen 2026-07-30) before
+inspecting any model results.
+The primary metric is pairwise accuracy over human continuation
+preferences.
+As a formative pilot, the author labeled 60 blind A/B pairs with
+structured reason codes and a five-point confidence scale;
+42 pairs received a preference judgment and 18 were labeled
+``neither'' (30\%).
+On the 42 preference pairs, \texttt{mean-session-v1} and
+\texttt{linear-v1} tie at 0.571 pairwise accuracy
+(chance\,=\,0.5); \texttt{rules-v1}, \texttt{recency-v1}, and
+\texttt{pocketrank-context-v1} score 0.500;
+\texttt{deepsets-v1} falls below chance at 0.405, echoing the
+weak-label negative result.
+
+The cosine-agreement rate---how often the CLAP-cosine ranking matches
+the human preference---is 57.1\% (24/42), statistically
+indistinguishable from chance at this sample size (Wilson 95\% CI
+$[0.42, 0.71]$); the pilot cannot yet establish whether human
+preference aligns with embedding similarity.
+Two descriptive patterns motivate further study: agreement rises
+monotonically with annotator confidence (100\% at confidence\,5, 33\%
+at confidence\,1), and 30\% of pairs received ``neither''---a judgment
+a similarity ranking cannot express.
+As an exploratory secondary analysis, the role-gap signal fires on
+only 7 of the 42~pairs (most pairs share similar instrumentation),
+but agrees with the human preference in 5 of those 7 cases (71.4\%),
+suggesting a sparse but precise structural signal.
+Author labels are reported separately and excluded from the evaluation
+set per the preregistration.
+
+\subsection{External Blind Evaluation}\label{sec:external}
+
+Nine external participants each labeled the same 20~blind A/B pairs
+(180~labels total) using a structured form with a five-point confidence
+scale.
+Table~\ref{tab:external} summarizes the results.
+Fleiss' $\kappa = 0.294$ indicates fair inter-rater agreement---typical
+for subjective music-preference tasks~\cite{schedl2013music}---with
+10 of 20~pairs reaching $\geq$7/9 majority and two pairs achieving
+unanimous agreement (9/9).
+The overall preference split (A:~51.1\%, B:~40.0\%, Neither:~8.9\%)
+shows that most pairs elicit a clear preference, while the low
+``neither'' rate (versus the author pilot's 30\%) suggests that context
+information aids decision-making.
+Mean confidence is $3.07 \pm 1.06$, with higher confidence on
+high-agreement pairs.
+
+\begin{table}[t]
+  \centering
+  \caption{External blind A/B evaluation summary (9~raters, 20~pairs).}
+  \label{tab:external}
+  \footnotesize
+  \begin{tabular}{lr}
+  \toprule
+  Metric & Value \\
+  \midrule
+  Total labels & 180 \\
+  Preference split (A / B / Neither) & 51.1\% / 40.0\% / 8.9\% \\
+  Fleiss' $\kappa$ & 0.294 (fair) \\
+  Pairwise Cohen's $\kappa$ (mean $\pm$ std) & $0.298 \pm 0.187$ \\
+  High-agreement pairs ($\geq$7/9) & 10 / 20 \\
+  Unanimous pairs (9/9) & 2 / 20 \\
+  Mean confidence & $3.07 \pm 1.06$ \\
+  \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Discussion and Limitations}\label{sec:limitations}
+
+\textbf{Formative scope.}
+The external evaluation (9~raters, 20~pairs) supplements the
+single-annotator pilot with multi-rater data; Fleiss' $\kappa = 0.294$
+confirms that continuation preference is subjective but not random.
+
+\textbf{Weak labels $\neq$ ground truth.}
+Table~\ref{tab:weak} shows that capacity alone cannot surpass frozen
+cosine, but complementary signals (tempo, tags) can---especially on the
+hardest negatives.
+Weak labels still cannot establish continuation utility; purpose-built
+human evaluation remains necessary.
+
+\textbf{Session signals need richer evaluation.}
+Role-gap and harmonic signals are implemented and deployed but show no
+gain on pack-membership weak labels (Table~\ref{tab:weak}).
+This does not mean they are useless for session-conditioned retrieval---it
+means pack membership does not exercise the compositional reasoning they
+encode.
+The author pilot's exploratory analysis (Section~\ref{sec:human}) hints
+at role-gap precision (5/7 agreement), but a larger purpose-built study
+is needed.
+The fingerprint still lacks temporal structure (arrangement position,
+transition context) and rhythmic pattern analysis.
+Key signature is not available from the Nexus document API.
+
+\textbf{No creativity claims.}
+Short-term retrieval experiments cannot support assertions about
+enhancing creativity.
+We measure perceived relevance and control, not creative output quality.
+
+\textbf{Privacy.}
+The system ranks only within a user's own library; audio from sessions is
+CLAP-encoded for ranking but never stored by the backend; OAuth tokens
+remain in the browser and are never sent to the Pocket Producer server;
+feedback export uses an allowlist of named fields with one-way hashed user
+IDs.
+
+% --- Page 3: references only ---
+
+\vspace{1em}
+\noindent\textbf{Acknowledgements.}
+The author thanks the Audiotool team for the Nexus SDK and the FSLD
+creators~\cite{ramires2020fsld} for the publicly available dataset.
+
+\vspace{0.5em}
+\noindent\textbf{AI Usage Statement.}
+Claude Code (Anthropic) was used for engineering implementation and
+documentation drafting.
+All research claims, experimental design, analysis, citations, and figures
+are the sole responsibility of the author, who has verified each element
+against the linked artifacts and source publications.
+
+\bibliography{references}
+
+\end{document}
