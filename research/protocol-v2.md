@@ -86,3 +86,21 @@ All five signals, both hypotheses, all exclusions, and the stratum
 breakdown are reported regardless of outcome. Author ratings are
 excluded. Raw per-rater labels ship in `artifacts/` with hashed rater
 IDs.
+
+## Amendment A1 (2026-08-07, before any data collection)
+
+Recruitment may include a volunteer pool (Audiotool community) in
+addition to paid Prolific raters, under these frozen rules:
+
+- **Trigger**: volunteers are used only if fewer than 90 Prolific
+  sessions complete by the end of collection week 4; they top up to
+  the target only, capped at 20% of total labels.
+- **Flagging**: every label records its source (paid / volunteer).
+- **Primary analysis**: all raters passing attention checks, paid and
+  volunteer alike.
+- **Sensitivity analysis**: Prolific-only. If the primary and
+  sensitivity analyses disagree in direction on H1, H1 is reported as
+  NOT confirmed.
+
+No other recruitment branch exists; any further change requires
+protocol v3.
