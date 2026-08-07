@@ -188,9 +188,11 @@ pooling), tempo match, key match, and tag Jaccard overlap---trained with
 the same BPR loss---reaches \textbf{0.794 on hard\_similar negatives},
 a +4.0\,pp gain over cosine alone (0.754); the gain holds in all 5
 seeds (one-sided sign test $p = 0.031$).
-These are embedding-similar items from different packs where cosine is
-uninformative; the gain comes from music-theory signals the embedding
-cannot encode.
+Because hard\_similar negatives are mined as the highest-cosine item
+from another pack, this column is by construction cosine's failure
+mode: the +4.0\,pp measures how much complementary signals recover
+there, not a global improvement---the overall gain is +1.1\,pp,
+though it too holds in all 5 paired splits.
 On hard\_tempo\_key negatives, where tempo and key features are neutral
 by construction, fusion (0.897) stays close to cosine (0.911), ruling
 out label leakage.
@@ -250,9 +252,14 @@ should not be used to dismiss session conditioning.
 \section{Discussion and Limitations}\label{sec:limitations}
 
 \textbf{Weak labels $\neq$ ground truth.}
-Weak labels cannot establish continuation utility, and the session
-fingerprint still lacks temporal structure and rhythmic analysis;
-purpose-built human evaluation remains necessary.
+We use weak labels to compare signals at scale, not to establish
+continuation utility---and the dissociation in
+Section~\ref{sec:external} shows they can invert the human signal
+ranking.
+All offline numbers use the LAION-CLAP space; fusion on the deployed
+MS-CLAP space is untested.
+The session fingerprint still lacks temporal structure and rhythmic
+analysis; purpose-built human evaluation remains necessary.
 
 \textbf{Scope and privacy.}
 We measure perceived relevance, not creative output quality; session
