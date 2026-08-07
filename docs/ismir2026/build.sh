@@ -96,18 +96,12 @@ for f in "$SCRIPT_DIR/assets/"*.tex "$SCRIPT_DIR/assets/"*.pdf; do
     fi
 done
 
-# Regenerate system-figure.pdf if corrupt or missing
-if ! python3 -c "
-import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt
-fig,ax=plt.subplots(figsize=(7.0,1.1),dpi=300); ax.axis('off')
-steps=['Audiotool\nsession','Session\nfingerprint','Retrieval\n(RRF)','Ranking\n(fusion)','Reversible\naction','Preference\nfeedback']
-for i,l in enumerate(steps):
-    ax.text(i*1.18+.5,.5,l,ha='center',va='center',fontsize=7,bbox={'boxstyle':'round,pad=0.35','facecolor':'#eee','edgecolor':'#555'})
-    if i<len(steps)-1: ax.annotate('',xy=(i*1.18+1.06,.5),xytext=(i*1.18+.92,.5),arrowprops={'arrowstyle':'->','color':'#555'})
-ax.set_xlim(0,len(steps)*1.18); ax.set_ylim(0,1)
-fig.savefig('$BUILD_DIR/assets/system-figure.pdf',metadata={'CreationDate':None,'Producer':None,'Creator':None},bbox_inches='tight')
-" 2>/dev/null; then
-    echo "  WARNING: could not regenerate system-figure.pdf"
+# Regenerate system-figure.pdf using the proper render script if available
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+if [ -f "$REPO_ROOT/research/render_system_figure.py" ]; then
+    python3 "$REPO_ROOT/research/render_system_figure.py" 2>/dev/null \
+        && cp "$SCRIPT_DIR/assets/system-figure.pdf" "$BUILD_DIR/assets/system-figure.pdf" \
+        || echo "  WARNING: could not regenerate system-figure.pdf"
 fi
 
 echo "  Staged $(ls "$BUILD_DIR" | wc -l | tr -d ' ') files + $(ls "$BUILD_DIR/assets" | wc -l | tr -d ' ') assets"

@@ -179,12 +179,14 @@ overfitting to noise in the weak labels.
 However, a five-parameter logistic fusion of audio cosine (mean and max
 pooling), tempo match, key match, and tag Jaccard overlap---trained with
 the same BPR loss---reaches \textbf{0.794 on hard\_similar negatives},
-a +4.0\,pp gain over cosine alone (0.754); the gain holds in all 5
-seeds (one-sided sign test $p = 0.031$).
-Hard\_similar negatives are by construction cosine's failure mode
-(mined as highest-cosine from another pack): the +4.0\,pp measures
-what complementary signals recover there---the overall gain is
-+1.1\,pp, holding in all 5 paired splits.
+a +4.0\,pp gain over cosine alone (0.754; one-sided sign test
+$p = 0.031$, 5/5 seeds; 95\% bootstrap CI\@
+$[.760,.828]$ vs.\ $[.717,.789]$).
+Hard\_similar negatives are cosine's failure mode (mined as
+highest-cosine from another pack); the overall gain is +1.1\,pp.
+Leave-one-out ablation shows tempo contributes the most on hard\_similar
+($-2.6$\,pp when removed); key and max-pooled cosine add $<$0.1\,pp
+marginally, consistent with redundancy against the mean-pooled signal.
 On hard\_tempo\_key negatives, where tempo and key features are neutral
 by construction, fusion (0.897) stays close to cosine (0.911), ruling
 out label leakage.
@@ -237,6 +239,9 @@ motivating a preregistered replication.
 Weak labels compare signals at scale but cannot establish continuation
 utility---and can invert the human signal ranking
 (Section~\ref{sec:external}).
+Error analysis shows fusion's net gain is concentrated in hard\_similar
+(+22.6 flipped pairs/seed), with a small trade-off on hard\_tempo\_key
+($-8.2$).
 The fusion gain replicates on the deployed MS-CLAP space
 (+5.2\,pp hard\_similar, 5/5 seeds).
 
