@@ -25,9 +25,10 @@ rater session.
 - Screening: age ≥ 18, fluent English, self-reported music production
   or instrument experience ≥ 1 year, audio hardware check (headphone
   screen with an antiphase tone pair).
-- Fallback/supplement: Audiotool community volunteers via forum post
-  (unpaid, capped at 20% of labels, flagged in the data so the analysis
-  can be run with and without them).
+- Fallback/supplement: Audiotool community volunteers via forum post —
+  governed by protocol-v2 Amendment A1 (trigger condition, 20% cap,
+  source flagging, prespecified primary/sensitivity analyses); this
+  file adds no discretion beyond A1.
 
 ## Timeline (camera-ready 2026-10-16)
 
