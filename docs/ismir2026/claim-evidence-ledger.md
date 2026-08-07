@@ -11,7 +11,7 @@
 | C1d | Post-hoc exploratory (NOT preregistered, 5 signals compared, all 5 reported): consensus-pair alignment harmonic 7/9, cosine 6/9, cos\_max 4/9, tempo 3/9, role\_gap 3/3 on fired pairs; no single difference significant at n=9; direction consistent with weak-label/human reversal | `artifacts/human-signal-alignment/alignment.json` + `research/human_signal_alignment.py` | verified 2026-08-07 |
 | C2 | System operates in a real DAW (reads live Audiotool document) | real-account 15s continuous capture + offline fixture tests (`frontend/src/lib/audiotool/session-fingerprint.test.ts`) | partial — offline tests done @ acf4b7a; real-account capture pending |
 | C3 | Insertion is reversible: undo restores exact prior entity set | offline Nexus document tests with official WASM validator (`frontend/src/lib/audiotool/insert-fragment.test.ts`) + real-account capture | partial — offline tests done @ 5f7889c; real-account capture pending |
-| C4 | Representations are versioned with model id, revision, input hash | representation schema tests (`backend/tests/ranking/test_representations.py`) | pending |
+| C4 | Representations are versioned with model id, revision, input hash | representation schema tests (`backend/tests/ranking/test_representations.py`) | verified 2026-08-07 — 10/10 pass |
 | C5 | Evaluation protocol preregistered before result inspection | `research/protocol.md` frozen 2026-07-30 @ 6f96032 | verified |
 | C6 | Explainable baseline produces structured evidence, not generated prose | `backend/ranking/baselines.py` + tests @ 43e7c92 | verified |
 | C7 | Rules fallback keeps the loop working without any model service | registry fallback tests @ ad8e9d8 + failure-drill capture | partial — tests done; drill capture pending |
