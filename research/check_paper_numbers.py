@@ -27,6 +27,7 @@ FUSION_7 = ROOT / "artifacts" / "fusion-7sig" / "fusion.json"
 FUSION_MS = ROOT / "artifacts" / "fusion-msclap" / "fusion.json"
 ALIGNMENT = ROOT / "artifacts" / "human-signal-alignment" / "alignment.json"
 BAKEOFF = ROOT / "artifacts" / "backbone-bakeoff.json"
+ABLATION = ROOT / "artifacts" / "ablation" / "ablation.json"
 
 failures = []
 passes = []
@@ -189,6 +190,45 @@ def check_backbone_table(bakeoff: dict | None):
         check(f"backbone/{model_id}/role", round3(role), round3(role))
 
 
+def check_ablation_numbers(ablation: dict):
+    """Verify ablation/CI numbers mentioned in prose against artifact."""
+    if ablation is None:
+        return
+
+    # Bootstrap CIs for hard_similar
+    ci = ablation["bootstrap_ci"]
+    check("prose/ci_fusion_hard_sim_lo_0.760",
+          0.760, round3(ci["full-fusion"]["hard_similar"]["ci_lo"]))
+    check("prose/ci_fusion_hard_sim_hi_0.828",
+          0.828, round3(ci["full-fusion"]["hard_similar"]["ci_hi"]))
+    check("prose/ci_cosine_hard_sim_lo_0.717",
+          0.717, round3(ci["cosine-only"]["hard_similar"]["ci_lo"]))
+    check("prose/ci_cosine_hard_sim_hi_0.789",
+          0.789, round3(ci["cosine-only"]["hard_similar"]["ci_hi"]))
+
+    # Ablation: tempo delta on hard_similar
+    full_hs = ablation["ablation"]["full-fusion"]["hard_similar_mean"]
+    minus_tempo_hs = ablation["ablation"]["minus-tempo"]["hard_similar_mean"]
+    delta_tempo = round((full_hs - minus_tempo_hs) * 100, 1)
+    check("prose/ablation_tempo_hard_sim_-2.6pp", 2.6, delta_tempo)
+
+    # Ablation: key marginal < 0.1pp
+    delta_key = round(ablation["ablation"]["minus-key"]["delta_overall"] * 100, 1)
+    check("prose/ablation_key_marginal_<0.1pp", True, delta_key < 0.1)
+
+    # Ablation: cos_max marginal < 0.1pp (raw 0.05pp, rounds to 0.0 or 0.1)
+    delta_cosmax = ablation["ablation"]["minus-audio_cos_max"]["delta_overall"] * 100
+    check("prose/ablation_cosmax_marginal_<0.1pp", True, delta_cosmax < 0.15)
+
+    # Error analysis: hard_similar net +22.6
+    check("prose/error_hard_sim_net_+22.6",
+          22.6, ablation["error_analysis"]["hard_similar_net"])
+
+    # Error analysis: hard_tempo_key net -8.2
+    check("prose/error_hard_tk_net_-8.2",
+          -8.2, ablation["error_analysis"]["hard_tempo_key_net"])
+
+
 def check_ledger_consistency(alignment: dict, fusion7: dict, fusion_ms: dict):
     """Verify claim-evidence ledger numbers against artifacts."""
     ledger = ROOT / "docs" / "ismir2026" / "claim-evidence-ledger.md"
@@ -223,6 +263,7 @@ def main() -> int:
     fusion_ms = load_json(FUSION_MS)
     alignment = load_json(ALIGNMENT)
     bakeoff = load_json(BAKEOFF)
+    ablation = load_json(ABLATION)
 
     if fusion5 is None or fusion7 is None or fusion_ms is None or alignment is None:
         print("\n".join(failures))
@@ -232,6 +273,7 @@ def main() -> int:
     check_weak_results_table(fusion5, fusion7)
     check_prose_numbers(tex_text, fusion5, fusion7, fusion_ms, alignment)
     check_backbone_table(bakeoff)
+    check_ablation_numbers(ablation)
     check_ledger_consistency(alignment, fusion7, fusion_ms)
 
     for line in passes:
