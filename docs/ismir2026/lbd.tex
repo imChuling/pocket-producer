@@ -48,10 +48,12 @@ parameters) cannot beat it; a five-parameter fusion of cosine, tempo,
 key, and tag signals reaches 0.794 on the hardest negatives, +4.0\,pp
 over cosine (0.754; one-sided sign test $p = 0.031$).
 Session-structure signals (instrument role gap, harmonic compatibility)
-show no gain on pack-membership labels, and an external evaluation
-(9~raters, 20~pairs, Fleiss' $\kappa = 0.294$) shows continuation
-preference is subjective but not random---together motivating
-task-specific evaluation beyond acoustic similarity.
+show no gain on pack-membership labels, yet in an external evaluation
+(9~raters, 20~pairs, Fleiss' $\kappa = 0.294$) harmonic compatibility
+aligns with rater-consensus preferences \emph{better} than CLAP cosine
+(7/9 vs.\ 6/9)---a dissociation suggesting human continuation
+preference rewards music-structural compatibility that weak proxies
+cannot express.
 \end{abstract}
 
 \section{Introduction}\label{sec:introduction}
@@ -229,6 +231,21 @@ Most pairs elicit a clear preference (only 8.9\% ``neither'' versus
 the pilot's 30\%), suggesting context information aids
 decision-making; these are descriptive statistics with no
 population-level significance claims.
+
+Aligning each ranking signal with the per-pair human majority
+reveals a \emph{dissociation}: on rater-consensus pairs
+($\geq$7/9 agreement), transpose-invariant harmonic compatibility
+matches the majority in 7 of 9 cases versus 6 of 9 for CLAP cosine
+(12/19 vs.\ 10/19 over all preference pairs), max-pooled cosine drops
+to 4 of 9, and the sparse role-gap signal is correct on all 3~pairs
+where it fires---replicating the pilot's 5/7.
+The signal ranking on human preferences is thus the \emph{reverse} of
+the weak-label ranking (Table~\ref{tab:weak}), where cosine dominates
+and session-structure signals add nothing.
+Though descriptive at this sample size, the pattern suggests human
+continuation preference rewards music-structural compatibility that
+pack-membership proxies cannot express---and that weak-label results
+should not be used to dismiss session conditioning.
 
 \section{Discussion and Limitations}\label{sec:limitations}
 
