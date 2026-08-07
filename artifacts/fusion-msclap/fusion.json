@@ -1,0 +1,157 @@
+{
+  "experiment": "multi-signal fusion vs cosine",
+  "items_file": "research/data/fsld/items.jsonl",
+  "pair_seed": 20260725,
+  "signals": [
+    "audio_cos_mean",
+    "audio_cos_max",
+    "tempo",
+    "key",
+    "tag_jaccard",
+    "role_gap",
+    "harmonic"
+  ],
+  "conditions": {
+    "cosine-only": [
+      "audio_cos_mean"
+    ],
+    "cosine+theory": [
+      "audio_cos_mean",
+      "tempo",
+      "key"
+    ],
+    "cosine+tags": [
+      "audio_cos_mean",
+      "tag_jaccard"
+    ],
+    "fusion-5sig": [
+      "audio_cos_mean",
+      "audio_cos_max",
+      "tempo",
+      "key",
+      "tag_jaccard"
+    ],
+    "cosine+session": [
+      "audio_cos_mean",
+      "role_gap",
+      "harmonic"
+    ],
+    "fusion-7sig": [
+      "audio_cos_mean",
+      "audio_cos_max",
+      "tempo",
+      "key",
+      "tag_jaccard",
+      "role_gap",
+      "harmonic"
+    ]
+  },
+  "seeds": [
+    20260725,
+    20260801,
+    20260802,
+    20260803,
+    20260804
+  ],
+  "summary": {
+    "cosine-only": {
+      "mean": 0.8638,
+      "std": 0.0101,
+      "values": [
+        0.8795,
+        0.8636,
+        0.863,
+        0.8613,
+        0.8514
+      ]
+    },
+    "cosine+theory": {
+      "mean": 0.8736,
+      "std": 0.0092,
+      "values": [
+        0.8819,
+        0.8688,
+        0.8791,
+        0.8786,
+        0.8598
+      ]
+    },
+    "cosine+tags": {
+      "mean": 0.8661,
+      "std": 0.0127,
+      "values": [
+        0.8824,
+        0.8701,
+        0.8711,
+        0.8558,
+        0.851
+      ]
+    },
+    "fusion-5sig": {
+      "mean": 0.8772,
+      "std": 0.0089,
+      "values": [
+        0.8872,
+        0.8757,
+        0.8825,
+        0.8772,
+        0.8635
+      ]
+    },
+    "cosine+session": {
+      "mean": 0.8625,
+      "std": 0.0101,
+      "values": [
+        0.879,
+        0.8614,
+        0.8616,
+        0.859,
+        0.8514
+      ]
+    },
+    "fusion-7sig": {
+      "mean": 0.8769,
+      "std": 0.0094,
+      "values": [
+        0.8881,
+        0.8731,
+        0.8834,
+        0.8759,
+        0.8639
+      ]
+    }
+  },
+  "per_negative_type": {
+    "cosine-only": {
+      "easy": 0.9201,
+      "hard_similar": 0.7158,
+      "hard_tempo_key": 0.8992
+    },
+    "cosine+theory": {
+      "easy": 0.9312,
+      "hard_similar": 0.7608,
+      "hard_tempo_key": 0.8715
+    },
+    "cosine+tags": {
+      "easy": 0.9267,
+      "hard_similar": 0.7136,
+      "hard_tempo_key": 0.8974
+    },
+    "fusion-5sig": {
+      "easy": 0.934,
+      "hard_similar": 0.768,
+      "hard_tempo_key": 0.8728
+    },
+    "cosine+session": {
+      "easy": 0.9203,
+      "hard_similar": 0.7129,
+      "hard_tempo_key": 0.8966
+    },
+    "fusion-7sig": {
+      "easy": 0.9347,
+      "hard_similar": 0.7643,
+      "hard_tempo_key": 0.8738
+    }
+  },
+  "caveat": "easy negatives were mined by tempo/key incompatibility; claims rest on hard_tempo_key and hard_similar columns"
+}
