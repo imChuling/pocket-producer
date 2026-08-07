@@ -1,0 +1,821 @@
+{
+  "experiment": "signal alignment with external human majorities",
+  "n_pairs": 20,
+  "n_preference": 19,
+  "n_consensus": 9,
+  "consensus_threshold": ">=7/9",
+  "signals": {
+    "cos_mean": {
+      "all": [
+        10,
+        19
+      ],
+      "consensus": [
+        6,
+        9
+      ],
+      "split": [
+        4,
+        10
+      ]
+    },
+    "cos_max": {
+      "all": [
+        7,
+        19
+      ],
+      "consensus": [
+        4,
+        9
+      ],
+      "split": [
+        3,
+        10
+      ]
+    },
+    "harmonic": {
+      "all": [
+        12,
+        19
+      ],
+      "consensus": [
+        7,
+        9
+      ],
+      "split": [
+        5,
+        10
+      ]
+    },
+    "role_gap": {
+      "all": [
+        3,
+        19
+      ],
+      "consensus": [
+        2,
+        9
+      ],
+      "split": [
+        1,
+        10
+      ]
+    },
+    "tempo": {
+      "all": [
+        7,
+        19
+      ],
+      "consensus": [
+        3,
+        9
+      ],
+      "split": [
+        4,
+        10
+      ]
+    }
+  },
+  "per_pair": [
+    {
+      "eval_id": 1,
+      "majority": "A",
+      "agreement_ratio": 0.5555555555555556,
+      "consensus": false,
+      "avg_confidence": 2.89,
+      "cos_mean": {
+        "A": 0.3224,
+        "B": 0.4288,
+        "pick": "B",
+        "match": false
+      },
+      "cos_max": {
+        "A": 0.2691,
+        "B": 0.5859,
+        "pick": "B",
+        "match": false
+      },
+      "harmonic": {
+        "A": 0.9942,
+        "B": 0.9953,
+        "pick": "B",
+        "match": false
+      },
+      "role_gap": {
+        "A": 0.0,
+        "B": 0.0,
+        "pick": "tie",
+        "match": false
+      },
+      "tempo": {
+        "A": 0.032,
+        "B": 0.0,
+        "pick": "A",
+        "match": true
+      }
+    },
+    {
+      "eval_id": 2,
+      "majority": "A",
+      "agreement_ratio": 0.7777777777777778,
+      "consensus": true,
+      "avg_confidence": 4.0,
+      "cos_mean": {
+        "A": 0.4735,
+        "B": 0.7034,
+        "pick": "B",
+        "match": false
+      },
+      "cos_max": {
+        "A": 0.5001,
+        "B": 0.6309,
+        "pick": "B",
+        "match": false
+      },
+      "harmonic": {
+        "A": 0.9959,
+        "B": 0.9963,
+        "pick": "B",
+        "match": false
+      },
+      "role_gap": {
+        "A": 0.182,
+        "B": 0.0,
+        "pick": "A",
+        "match": true
+      },
+      "tempo": {
+        "A": 0.2686,
+        "B": 0.68,
+        "pick": "B",
+        "match": false
+      }
+    },
+    {
+      "eval_id": 3,
+      "majority": "A",
+      "agreement_ratio": 1.0,
+      "consensus": true,
+      "avg_confidence": 4.22,
+      "cos_mean": {
+        "A": 0.3923,
+        "B": 0.2355,
+        "pick": "A",
+        "match": true
+      },
+      "cos_max": {
+        "A": 0.4329,
+        "B": 0.1991,
+        "pick": "A",
+        "match": true
+      },
+      "harmonic": {
+        "A": 0.9914,
+        "B": 0.9966,
+        "pick": "B",
+        "match": false
+      },
+      "role_gap": {
+        "A": 0.0,
+        "B": 0.0,
+        "pick": "tie",
+        "match": false
+      },
+      "tempo": {
+        "A": 0.8567,
+        "B": 0.0854,
+        "pick": "A",
+        "match": true
+      }
+    },
+    {
+      "eval_id": 4,
+      "majority": "A",
+      "agreement_ratio": 0.7777777777777778,
+      "consensus": true,
+      "avg_confidence": 3.78,
+      "cos_mean": {
+        "A": 0.7413,
+        "B": 0.5493,
+        "pick": "A",
+        "match": true
+      },
+      "cos_max": {
+        "A": 0.8114,
+        "B": 0.5679,
+        "pick": "A",
+        "match": true
+      },
+      "harmonic": {
+        "A": 0.9977,
+        "B": 0.9842,
+        "pick": "A",
+        "match": true
+      },
+      "role_gap": {
+        "A": 0.0,
+        "B": 0.0,
+        "pick": "tie",
+        "match": false
+      },
+      "tempo": {
+        "A": 0.9937,
+        "B": 0.572,
+        "pick": "A",
+        "match": true
+      }
+    },
+    {
+      "eval_id": 5,
+      "majority": "B",
+      "agreement_ratio": 1.0,
+      "consensus": true,
+      "avg_confidence": 4.33,
+      "cos_mean": {
+        "A": 0.2163,
+        "B": 0.442,
+        "pick": "B",
+        "match": true
+      },
+      "cos_max": {
+        "A": 0.1961,
+        "B": 0.6001,
+        "pick": "B",
+        "match": true
+      },
+      "harmonic": {
+        "A": 0.9944,
+        "B": 0.9977,
+        "pick": "B",
+        "match": true
+      },
+      "role_gap": {
+        "A": 0.0,
+        "B": 0.0,
+        "pick": "tie",
+        "match": false
+      },
+      "tempo": {
+        "A": 0.9744,
+        "B": 0.68,
+        "pick": "A",
+        "match": false
+      }
+    },
+    {
+      "eval_id": 6,
+      "majority": "B",
+      "agreement_ratio": 0.6666666666666666,
+      "consensus": false,
+      "avg_confidence": 2.67,
+      "cos_mean": {
+        "A": 0.586,
+        "B": 0.6392,
+        "pick": "B",
+        "match": true
+      },
+      "cos_max": {
+        "A": 0.732,
+        "B": 0.7123,
+        "pick": "A",
+        "match": false
+      },
+      "harmonic": {
+        "A": 0.9947,
+        "B": 0.989,
+        "pick": "A",
+        "match": false
+      },
+      "role_gap": {
+        "A": 0.0,
+        "B": 0.0,
+        "pick": "tie",
+        "match": false
+      },
+      "tempo": {
+        "A": 0.2315,
+        "B": 0.628,
+        "pick": "B",
+        "match": true
+      }
+    },
+    {
+      "eval_id": 7,
+      "majority": "B",
+      "agreement_ratio": 0.7777777777777778,
+      "consensus": true,
+      "avg_confidence": 3.33,
+      "cos_mean": {
+        "A": 0.6931,
+        "B": 0.5573,
+        "pick": "A",
+        "match": false
+      },
+      "cos_max": {
+        "A": 0.6976,
+        "B": 0.6217,
+        "pick": "A",
+        "match": false
+      },
+      "harmonic": {
+        "A": 0.9859,
+        "B": 0.9945,
+        "pick": "B",
+        "match": true
+      },
+      "role_gap": {
+        "A": 0.0,
+        "B": 0.0,
+        "pick": "tie",
+        "match": false
+      },
+      "tempo": {
+        "A": 0.3784,
+        "B": 0.3784,
+        "pick": "tie",
+        "match": false
+      }
+    },
+    {
+      "eval_id": 8,
+      "majority": "A",
+      "agreement_ratio": 0.5555555555555556,
+      "consensus": false,
+      "avg_confidence": 1.44,
+      "cos_mean": {
+        "A": 0.9154,
+        "B": 0.5453,
+        "pick": "A",
+        "match": true
+      },
+      "cos_max": {
+        "A": 0.9033,
+        "B": 0.5428,
+        "pick": "A",
+        "match": true
+      },
+      "harmonic": {
+        "A": 0.9969,
+        "B": 0.9929,
+        "pick": "A",
+        "match": true
+      },
+      "role_gap": {
+        "A": 0.0,
+        "B": 0.0,
+        "pick": "tie",
+        "match": false
+      },
+      "tempo": {
+        "A": 0.0,
+        "B": 0.7895,
+        "pick": "B",
+        "match": false
+      }
+    },
+    {
+      "eval_id": 9,
+      "majority": "A",
+      "agreement_ratio": 0.6666666666666666,
+      "consensus": false,
+      "avg_confidence": 2.22,
+      "cos_mean": {
+        "A": 0.4517,
+        "B": 0.7034,
+        "pick": "B",
+        "match": false
+      },
+      "cos_max": {
+        "A": 0.5443,
+        "B": 0.6309,
+        "pick": "B",
+        "match": false
+      },
+      "harmonic": {
+        "A": 0.9931,
+        "B": 0.9963,
+        "pick": "B",
+        "match": false
+      },
+      "role_gap": {
+        "A": 0.0,
+        "B": 0.0,
+        "pick": "tie",
+        "match": false
+      },
+      "tempo": {
+        "A": 0.032,
+        "B": 0.68,
+        "pick": "B",
+        "match": false
+      }
+    },
+    {
+      "eval_id": 10,
+      "majority": "A",
+      "agreement_ratio": 0.7777777777777778,
+      "consensus": true,
+      "avg_confidence": 3.33,
+      "cos_mean": {
+        "A": 0.4492,
+        "B": 0.3323,
+        "pick": "A",
+        "match": true
+      },
+      "cos_max": {
+        "A": 0.3377,
+        "B": 0.3517,
+        "pick": "B",
+        "match": false
+      },
+      "harmonic": {
+        "A": 0.9986,
+        "B": 0.9959,
+        "pick": "A",
+        "match": true
+      },
+      "role_gap": {
+        "A": 0.0,
+        "B": 0.0,
+        "pick": "tie",
+        "match": false
+      },
+      "tempo": {
+        "A": 0.5392,
+        "B": 0.0,
+        "pick": "A",
+        "match": true
+      }
+    },
+    {
+      "eval_id": 11,
+      "majority": "A",
+      "agreement_ratio": 0.6666666666666666,
+      "consensus": false,
+      "avg_confidence": 2.67,
+      "cos_mean": {
+        "A": 0.2693,
+        "B": 0.8458,
+        "pick": "B",
+        "match": false
+      },
+      "cos_max": {
+        "A": 0.2891,
+        "B": 0.8338,
+        "pick": "B",
+        "match": false
+      },
+      "harmonic": {
+        "A": 0.9947,
+        "B": 0.9853,
+        "pick": "A",
+        "match": true
+      },
+      "role_gap": {
+        "A": 0.0,
+        "B": 0.0,
+        "pick": "tie",
+        "match": false
+      },
+      "tempo": {
+        "A": 0.0,
+        "B": 0.5418,
+        "pick": "B",
+        "match": false
+      }
+    },
+    {
+      "eval_id": 12,
+      "majority": "B",
+      "agreement_ratio": 0.8888888888888888,
+      "consensus": true,
+      "avg_confidence": 3.56,
+      "cos_mean": {
+        "A": 0.1941,
+        "B": 0.7582,
+        "pick": "B",
+        "match": true
+      },
+      "cos_max": {
+        "A": 0.34,
+        "B": 0.732,
+        "pick": "B",
+        "match": true
+      },
+      "harmonic": {
+        "A": 0.9869,
+        "B": 0.9957,
+        "pick": "B",
+        "match": true
+      },
+      "role_gap": {
+        "A": 0.0,
+        "B": 0.0,
+        "pick": "tie",
+        "match": false
+      },
+      "tempo": {
+        "A": 0.105,
+        "B": 0.0,
+        "pick": "A",
+        "match": false
+      }
+    },
+    {
+      "eval_id": 13,
+      "majority": "B",
+      "agreement_ratio": 0.8888888888888888,
+      "consensus": true,
+      "avg_confidence": 2.78,
+      "cos_mean": {
+        "A": 0.5664,
+        "B": 0.3891,
+        "pick": "A",
+        "match": false
+      },
+      "cos_max": {
+        "A": 0.7369,
+        "B": 0.4482,
+        "pick": "A",
+        "match": false
+      },
+      "harmonic": {
+        "A": 0.9863,
+        "B": 0.9927,
+        "pick": "B",
+        "match": true
+      },
+      "role_gap": {
+        "A": 0.0,
+        "B": 0.182,
+        "pick": "B",
+        "match": true
+      },
+      "tempo": {
+        "A": 0.5328,
+        "B": 0.3201,
+        "pick": "A",
+        "match": false
+      }
+    },
+    {
+      "eval_id": 14,
+      "majority": "N",
+      "agreement_ratio": 0.8888888888888888,
+      "consensus": true,
+      "avg_confidence": 3.0,
+      "cos_mean": {
+        "A": 0.5349,
+        "B": 0.4658,
+        "pick": "A",
+        "match": null
+      },
+      "cos_max": {
+        "A": 0.7296,
+        "B": 0.7119,
+        "pick": "A",
+        "match": null
+      },
+      "harmonic": {
+        "A": 0.9965,
+        "B": 0.9971,
+        "pick": "B",
+        "match": null
+      },
+      "role_gap": {
+        "A": 0.0,
+        "B": 0.0,
+        "pick": "tie",
+        "match": null
+      },
+      "tempo": {
+        "A": 0.0861,
+        "B": 0.0,
+        "pick": "A",
+        "match": null
+      }
+    },
+    {
+      "eval_id": 15,
+      "majority": "A",
+      "agreement_ratio": 0.5555555555555556,
+      "consensus": false,
+      "avg_confidence": 3.22,
+      "cos_mean": {
+        "A": 0.2663,
+        "B": 0.1748,
+        "pick": "A",
+        "match": true
+      },
+      "cos_max": {
+        "A": 0.3496,
+        "B": 0.1453,
+        "pick": "A",
+        "match": true
+      },
+      "harmonic": {
+        "A": 0.9828,
+        "B": 0.9938,
+        "pick": "B",
+        "match": false
+      },
+      "role_gap": {
+        "A": 0.0,
+        "B": 0.0,
+        "pick": "tie",
+        "match": false
+      },
+      "tempo": {
+        "A": 0.0712,
+        "B": 0.6399,
+        "pick": "B",
+        "match": false
+      }
+    },
+    {
+      "eval_id": 16,
+      "majority": "A",
+      "agreement_ratio": 0.5555555555555556,
+      "consensus": false,
+      "avg_confidence": 2.78,
+      "cos_mean": {
+        "A": 0.5055,
+        "B": 0.5158,
+        "pick": "B",
+        "match": false
+      },
+      "cos_max": {
+        "A": 0.4685,
+        "B": 0.5443,
+        "pick": "B",
+        "match": false
+      },
+      "harmonic": {
+        "A": 0.9949,
+        "B": 0.9965,
+        "pick": "B",
+        "match": false
+      },
+      "role_gap": {
+        "A": 0.1889,
+        "B": 0.1861,
+        "pick": "A",
+        "match": true
+      },
+      "tempo": {
+        "A": 0.7472,
+        "B": 0.0,
+        "pick": "A",
+        "match": true
+      }
+    },
+    {
+      "eval_id": 17,
+      "majority": "A",
+      "agreement_ratio": 0.6666666666666666,
+      "consensus": false,
+      "avg_confidence": 3.0,
+      "cos_mean": {
+        "A": 0.5705,
+        "B": 0.8235,
+        "pick": "B",
+        "match": false
+      },
+      "cos_max": {
+        "A": 0.5169,
+        "B": 0.8553,
+        "pick": "B",
+        "match": false
+      },
+      "harmonic": {
+        "A": 0.9937,
+        "B": 0.9866,
+        "pick": "A",
+        "match": true
+      },
+      "role_gap": {
+        "A": 0.0,
+        "B": 0.0,
+        "pick": "tie",
+        "match": false
+      },
+      "tempo": {
+        "A": 0.032,
+        "B": 0.0,
+        "pick": "A",
+        "match": true
+      }
+    },
+    {
+      "eval_id": 18,
+      "majority": "A",
+      "agreement_ratio": 0.5555555555555556,
+      "consensus": false,
+      "avg_confidence": 2.89,
+      "cos_mean": {
+        "A": 0.694,
+        "B": 0.5276,
+        "pick": "A",
+        "match": true
+      },
+      "cos_max": {
+        "A": 0.7123,
+        "B": 0.5679,
+        "pick": "A",
+        "match": true
+      },
+      "harmonic": {
+        "A": 0.9958,
+        "B": 0.9841,
+        "pick": "A",
+        "match": true
+      },
+      "role_gap": {
+        "A": 0.0,
+        "B": 0.0,
+        "pick": "tie",
+        "match": false
+      },
+      "tempo": {
+        "A": 0.628,
+        "B": 0.9118,
+        "pick": "B",
+        "match": false
+      }
+    },
+    {
+      "eval_id": 19,
+      "majority": "A",
+      "agreement_ratio": 0.7777777777777778,
+      "consensus": true,
+      "avg_confidence": 2.78,
+      "cos_mean": {
+        "A": 0.6836,
+        "B": 0.5951,
+        "pick": "A",
+        "match": true
+      },
+      "cos_max": {
+        "A": 0.7153,
+        "B": 0.7481,
+        "pick": "B",
+        "match": false
+      },
+      "harmonic": {
+        "A": 0.994,
+        "B": 0.9868,
+        "pick": "A",
+        "match": true
+      },
+      "role_gap": {
+        "A": 0.0,
+        "B": 0.0,
+        "pick": "tie",
+        "match": false
+      },
+      "tempo": {
+        "A": 0.8064,
+        "B": 0.9939,
+        "pick": "B",
+        "match": false
+      }
+    },
+    {
+      "eval_id": 20,
+      "majority": "B",
+      "agreement_ratio": 0.5555555555555556,
+      "consensus": false,
+      "avg_confidence": 2.44,
+      "cos_mean": {
+        "A": 0.7497,
+        "B": 0.2065,
+        "pick": "A",
+        "match": false
+      },
+      "cos_max": {
+        "A": 0.8011,
+        "B": 0.2398,
+        "pick": "A",
+        "match": false
+      },
+      "harmonic": {
+        "A": 0.9897,
+        "B": 0.9942,
+        "pick": "B",
+        "match": true
+      },
+      "role_gap": {
+        "A": 0.0,
+        "B": 0.0,
+        "pick": "tie",
+        "match": false
+      },
+      "tempo": {
+        "A": 0.5392,
+        "B": 0.0,
+        "pick": "A",
+        "match": false
+      }
+    }
+  ]
+}
