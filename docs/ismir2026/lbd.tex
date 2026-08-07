@@ -32,28 +32,26 @@
 \maketitle
 
 \begin{abstract}
-Musicians accumulate large libraries of unfinished audio fragments, yet
-re-entering an unfinished project offers little support for deciding
-what to try next.
+Musicians accumulate large libraries of unfinished audio fragments yet
+get little support deciding what to try next when re-entering a
+project.
 We formulate \emph{session-conditioned continuation retrieval}: given the
 live state of a DAW project, rank a musician's own fragments by their
 utility for the next creative step.
-Pocket Producer implements this in Audiotool: it derives a transparent
-fingerprint from the live project, ranks personal fragments with frozen
-audio--text representations, and inserts any recommendation through a
-single reversible transaction.
+Pocket Producer implements this in Audiotool: a transparent fingerprint
+of the live project, ranking with frozen audio--text representations,
+and reversible single-transaction insertion.
 On 1,755 weak pairs from the Freesound Loop Dataset, frozen CLAP cosine
 reaches 0.883 pairwise accuracy and learned rerankers (up to 335K
 parameters) cannot beat it; a five-parameter fusion of cosine, tempo,
 key, and tag signals reaches 0.794 on the hardest negatives, +4.0\,pp
 over cosine (0.754; one-sided sign test $p = 0.031$).
 Session-structure signals (instrument role gap, harmonic compatibility)
-show no gain on pack-membership labels, yet in an external evaluation
-(9~raters, 20~pairs, Fleiss' $\kappa = 0.294$) harmonic compatibility
-aligns with rater-consensus preferences \emph{better} than CLAP cosine
-(7/9 vs.\ 6/9)---a dissociation suggesting human continuation
-preference rewards music-structural compatibility that weak proxies
-cannot express.
+show no gain on pack-membership labels, while an exploratory alignment
+of the same signals with external rater preferences (9~raters,
+20~pairs, Fleiss' $\kappa = 0.294$) points the opposite
+way---weak-label and human evaluations appear to reward different
+structure, motivating task-specific evaluation.
 \end{abstract}
 
 \section{Introduction}\label{sec:introduction}
@@ -76,7 +74,7 @@ We contribute:
 \begin{enumerate}
 \item \textbf{Task:} session-conditioned ranking of personal fragments
   with a preregistered primary metric (pairwise accuracy over human
-  continuation preferences).
+  preferences).
 \item \textbf{System:} a working prototype in a real DAW (Audiotool)
   with live document reading, reversible insertion, and explainable
   evidence.
@@ -102,11 +100,10 @@ Audiotool projects through the Nexus SDK.
 
 \subsection{Session Fingerprint}\label{sec:fingerprint}
 
-When a project is opened, the live Nexus document is mapped
-deterministically to a \texttt{SessionFingerprint}: tempo, track counts
-and classified track types, playhead position, and a user-editable text
-intent field.
-Only this summary leaves the browser; missing fields are never imputed.
+The live Nexus document is mapped deterministically to a
+\texttt{SessionFingerprint} (tempo, track counts and types, playhead,
+user-editable intent); only this summary leaves the browser, and
+missing fields are never imputed.
 Session audio regions are encoded with
 MS-CLAP 2023~\cite{elizalde2023clap} into a mean session embedding
 (CLAP's joint audio--text space also serves text intent); per-region
@@ -120,22 +117,19 @@ First, per-space retrieval runs independently over four signal spaces:
 (1)~structured metadata (tempo/key/tag matching),
 (2)~frozen CLAP embeddings (cosine similarity),
 (3)~\emph{role-gap fill}---a zero-shot instrument probe boosts candidates
-whose predicted role fills a gap in the session, a compositional signal
-cosine similarity cannot capture, and
+whose predicted role fills a gap in the session, and
 (4)~\emph{harmonic compatibility}---transpose-invariant cross-correlation
-of CQT chroma vectors scores tonal fit across all 12 semitone shifts
-(65.2\% vs.\ 50\% chance pack-membership prediction on 500 FSLD pairs).
+of CQT chroma vectors scores tonal fit across all 12 semitone shifts.
 Results are fused with Reciprocal Rank Fusion~\cite{cormack2009rrf};
-a learned reranker (\,$\leq$500K parameters, CPU-only) can be applied on
-top, and a deterministic rule baseline with structured evidence codes
-serves as an always-available fallback.
+a learned reranker can be applied on top, and a rule baseline with
+structured evidence codes is the always-available fallback.
 
 \subsection{Reversible Audiotool Interaction}\label{sec:interaction}
 
 A recommendation can be previewed and inserted in a single Nexus
-transaction; an \texttt{InsertReceipt} records every created entity ID
-so undo restores the exact prior state (verified with the official WASM
-validator), and all interactions are logged as preference feedback.
+transaction; an \texttt{InsertReceipt} records created entity IDs so
+undo restores the exact prior state (verified with the official WASM
+validator); interactions are logged as preference feedback.
 
 \section{Preliminary Evaluation}\label{sec:evaluation}
 
@@ -145,10 +139,9 @@ On 2,558 items from the Freesound Loop Dataset
 (FSLD)~\cite{ramires2020fsld}, LAION-CLAP
 Music~\cite{wu2023laionclap} (512-dim) outperforms MS-CLAP 2023
 (1024-dim) on all three probes (Table~\ref{tab:backbone}) at half the
-storage per fragment.
-We nevertheless deploy MS-CLAP 2023 because its training-data license
-audit is complete---representation quality and deployment eligibility
-are separate decisions.
+storage.
+We deploy MS-CLAP 2023 because its training-data license audit is
+complete---quality and eligibility are separate decisions.
 
 \begin{table}[t]
   \centering
@@ -167,7 +160,7 @@ types: \emph{easy} (tempo or key incompatible), \emph{hard\_tempo\_key}
 (tempo and key both compatible), and \emph{hard\_similar} (highest
 embedding cosine from another pack).
 Splits are grouped by source pack; Table~\ref{tab:weak} reports 5-seed
-mean validation pairwise accuracy (val fraction 0.25).
+mean validation pairwise accuracy.
 
 \begin{table}[t]
   \centering
@@ -188,11 +181,10 @@ pooling), tempo match, key match, and tag Jaccard overlap---trained with
 the same BPR loss---reaches \textbf{0.794 on hard\_similar negatives},
 a +4.0\,pp gain over cosine alone (0.754); the gain holds in all 5
 seeds (one-sided sign test $p = 0.031$).
-Because hard\_similar negatives are mined as the highest-cosine item
-from another pack, this column is by construction cosine's failure
-mode: the +4.0\,pp measures how much complementary signals recover
-there, not a global improvement---the overall gain is +1.1\,pp,
-though it too holds in all 5 paired splits.
+Hard\_similar negatives are by construction cosine's failure mode
+(mined as highest-cosine from another pack): the +4.0\,pp measures
+what complementary signals recover there---the overall gain is
++1.1\,pp, holding in all 5 paired splits.
 On hard\_tempo\_key negatives, where tempo and key features are neutral
 by construction, fusion (0.897) stays close to cosine (0.911), ruling
 out label leakage.
@@ -200,77 +192,64 @@ out label leakage.
 Adding the session-structure signals (Section~\ref{sec:ranking}) does
 not improve the fusion: 7-signal results (0.892 overall, 0.792
 hard\_similar) are indistinguishable from 5-signal, and
-\texttt{cosine+session} (0.749) sits slightly below cosine alone.
-This is expected: pack membership reflects recording context, not
-whether a candidate fills a compositional gap---purpose-built evaluation
-is needed for session-conditioned signals.
+\texttt{cosine+session} (0.749) sits slightly below cosine
+alone---pack membership reflects recording context, not whether a
+candidate fills a compositional gap.
 
 \subsection{Author Pilot Evaluation}\label{sec:human}
 
 Under a preregistered protocol (frozen 2026-07-30), the author labeled
-60 blind A/B pairs; 42 received a preference and 18 were ``neither''
-(30\%).
+60 blind A/B pairs; 42 received a preference, 18 ``neither'' (30\%).
 No ranker exceeds 0.571 pairwise accuracy (chance\,=\,0.5), and
 cosine-agreement is 57.1\% (24/42)---statistically indistinguishable
 from chance (Wilson 95\% CI $[0.42, 0.71]$).
-Agreement rises monotonically with annotator confidence, and the 30\%
-``neither'' rate is a judgment a similarity ranking cannot express.
-Exploratorily, the role-gap signal fires on only 7 of 42~pairs but
-agrees with the human preference in 5 of those 7, suggesting a sparse
-but precise structural signal.
-Author labels are excluded from the evaluation set per the
-preregistration.
+The role-gap signal fires on only 7 of 42~pairs but agrees in 5 of 7.
+Author labels are excluded per the preregistration.
 
 \subsection{External Blind Evaluation}\label{sec:external}
 
-Nine external participants labeled the same 20~blind A/B pairs
-(180~labels) with a five-point confidence scale.
+Nine external raters labeled the same 20~blind A/B pairs
+(180~labels).
 Fleiss' $\kappa = 0.294$ indicates fair inter-rater
 agreement---typical for subjective music-preference
 tasks~\cite{schedl2013music}---with 10 of 20~pairs reaching
-$\geq$7/9 majority and two unanimous (9/9).
+$\geq$7/9 majority.
 Most pairs elicit a clear preference (only 8.9\% ``neither'' versus
 the pilot's 30\%), suggesting context information aids
-decision-making; these are descriptive statistics with no
-population-level significance claims.
+decision-making.
 
-Aligning each ranking signal with the per-pair human majority
-reveals a \emph{dissociation}: on rater-consensus pairs
-($\geq$7/9 agreement), transpose-invariant harmonic compatibility
-matches the majority in 7 of 9 cases versus 6 of 9 for CLAP cosine
-(12/19 vs.\ 10/19 over all preference pairs), max-pooled cosine drops
-to 4 of 9, and the sparse role-gap signal is correct on all 3~pairs
-where it fires---replicating the pilot's 5/7.
-The signal ranking on human preferences is thus the \emph{reverse} of
-the weak-label ranking (Table~\ref{tab:weak}), where cosine dominates
-and session-structure signals add nothing.
-Though descriptive at this sample size, the pattern suggests human
-continuation preference rewards music-structural compatibility that
-pack-membership proxies cannot express---and that weak-label results
-should not be used to dismiss session conditioning.
+In a post-hoc exploratory analysis (not preregistered; five signals
+compared), we align each signal with the per-pair human majority.
+On rater-consensus pairs ($\geq$7/9), harmonic compatibility matches
+the majority in 7 of 9 cases, CLAP cosine in 6, max-pooled cosine in
+4, and tempo---the strongest theory signal on weak labels---in 3;
+the sparse role-gap signal is correct on all 3~pairs where it fires,
+echoing the pilot's 5/7.
+No single difference is significant at $n = 9$, but the direction is
+consistent: the signals that win on weak labels
+(Table~\ref{tab:weak}) lose ground on human preferences and vice
+versa, suggesting the two evaluations reward different structure and
+motivating a preregistered replication.
 
 \section{Discussion and Limitations}\label{sec:limitations}
 
 \textbf{Weak labels $\neq$ ground truth.}
-We use weak labels to compare signals at scale, not to establish
-continuation utility---and the dissociation in
-Section~\ref{sec:external} shows they can invert the human signal
-ranking.
-All offline numbers use the LAION-CLAP space; fusion on the deployed
-MS-CLAP space is untested.
-The session fingerprint still lacks temporal structure and rhythmic
-analysis; purpose-built human evaluation remains necessary.
+Weak labels compare signals at scale but cannot establish continuation
+utility---and can invert the human signal ranking
+(Section~\ref{sec:external}).
+Offline numbers use LAION-CLAP; fusion on deployed MS-CLAP is
+untested.
 
 \textbf{Scope and privacy.}
-We measure perceived relevance, not creative output quality; session
-audio is never stored and OAuth tokens never leave the browser.
+We measure perceived relevance, not creative quality; session audio is
+never stored and OAuth tokens never leave the browser.
 
 % --- Page 3: references only ---
 
 \vspace{1em}
 \noindent\textbf{Acknowledgements.}
 The author thanks the Audiotool team for the Nexus SDK and the FSLD
-creators~\cite{ramires2020fsld} for the publicly available dataset.
+creators~\cite{ramires2020fsld}.
 
 \vspace{0.5em}
 \noindent\textbf{AI Usage Statement.}
