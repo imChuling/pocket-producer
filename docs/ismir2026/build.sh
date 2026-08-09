@@ -24,12 +24,23 @@ ISMIR_GITHUB="https://raw.githubusercontent.com/ismir/paper_templates/master/202
 
 echo "=== LBD Build ==="
 
+# macOS has no GNU `timeout` by default; degrade to running the command
+# directly. (The timeout only guards against iCloud-evicted files hanging.)
+run_timeout() {
+    local secs="$1"; shift
+    if command -v timeout &>/dev/null; then
+        timeout "$secs" "$@"
+    else
+        "$@"
+    fi
+}
+
 # 1. Number check
 if [ "${SKIP_CHECK:-}" = "1" ]; then
     echo "[1/5] Skipping number check (SKIP_CHECK=1)"
 elif command -v python3 &>/dev/null; then
     echo "[1/5] Running number consistency check..."
-    if timeout 30 python3 "$REPO_ROOT/research/check_paper_numbers.py" 2>/dev/null; then
+    if run_timeout 30 python3 "$REPO_ROOT/research/check_paper_numbers.py" 2>/dev/null; then
         echo "  Numbers OK."
     else
         echo "  ABORT: number check failed or timed out."
@@ -48,7 +59,7 @@ mkdir -p "$BUILD_DIR/assets"
 # Try to copy a file with a timeout; fall back to backup dir, then skip.
 safe_copy() {
     local src="$1" dst="$2" name="$(basename "$1")"
-    if timeout 3 cp "$src" "$dst" 2>/dev/null; then
+    if run_timeout 3 cp "$src" "$dst" 2>/dev/null; then
         return 0
     fi
     if [ -d "$BACKUP_DIR" ] && [ -s "$BACKUP_DIR/$name" ]; then
@@ -88,7 +99,7 @@ done
 for f in "$SCRIPT_DIR/assets/"*.tex "$SCRIPT_DIR/assets/"*.pdf; do
     [ -f "$f" ] || continue
     name="$(basename "$f")"
-    if ! timeout 3 cp "$f" "$BUILD_DIR/assets/$name" 2>/dev/null; then
+    if ! run_timeout 3 cp "$f" "$BUILD_DIR/assets/$name" 2>/dev/null; then
         if [ -d "$BACKUP_DIR/assets" ] && [ -s "$BACKUP_DIR/assets/$name" ]; then
             cp "$BACKUP_DIR/assets/$name" "$BUILD_DIR/assets/$name"
             echo "  assets/$name: from backup"
