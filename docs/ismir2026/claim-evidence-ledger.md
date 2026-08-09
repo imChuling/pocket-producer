@@ -20,6 +20,25 @@ Claim IDs map to paper sections: F = §3 Fusion, E = §4 Evidence lines, S = Sys
 | P1 | v2 protocol + split committed before the confirmatory run | `research/protocol-heldout-v2.md` + split at commit `43e1643`; eval artifacts created after | verified 2026-08-09 — freeze provable in git history |
 | P2 | v1 preregistration claim | — | RETRACTED — v1 protocol was never committed before evaluation (claimed base commit `3726d0a9` predates the file); file mtime postdates eval.json. All v1 held-out numbers demoted to exploratory and removed from paper |
 
+## Artifact integrity: SHA-256 + commit timeline (Gate A, 2026-08-10)
+
+冻结顺序在 git 历史中可验证：协议+split 先提交(`43e1643` 18:36),
+评估产物后提交(`ad0e767` 18:55),held-out 产物此后从未修改。
+
+| Artifact | SHA-256 (16) | First commit | Last modified |
+|---|---|---|---|
+| heldout-split-packonly/split.json | `94f5f2d34d7af17f` | `43e1643` 08-09 18:36 (freeze) | unchanged |
+| heldout-eval-packonly/eval.json | `14e2d80c01f0b09a` | `ad0e767` 08-09 18:55 | unchanged — single confirmatory run |
+| heldout-eval-packonly/bootstrap.json | `501a653f651e9254` | `ad0e767` 08-09 18:55 | unchanged |
+| heldout-eval-packonly/loso.json | `d854620fee80575c` | `ad0e767` 08-09 18:55 | unchanged |
+| heldout-eval-packonly/weights.json | `48bd09d3f1cfce9f` | `ad0e767` 08-09 18:55 | unchanged |
+| fusion-packonly/fusion.json | `8b554ec645244431` | `ad0e767` 08-09 18:55 (dev set) | unchanged |
+| ablation-packonly/ablation.json | `76b5cc8ea06a8c7e` | `ad0e767` 08-09 18:55 | `122eda8` 08-09 23:43 — dev-set CI methodology fix only (pair-level → source-grouped per-seed); ablation means unchanged; NOT a held-out artifact |
+| fusion-deploy/weights.json | `d40666cfb6b2ef8b` | `ad0e767` 08-09 18:55 | unchanged |
+
+v1 遗留(`artifacts/heldout-eval/`)保留原样作为撤回记录;其 bootstrap.json
+曾于 08-09 用修正后的合并方法重算(per-seed 段与原值一致,pooled 段更宽)。
+
 ## Removed claims (previously in paper, now deleted)
 
 - **"949 FSLD packs" / "pack-membership weak labels" (v1)**: 344 of 949 sources were `user:<username>` fallback groupings (26% of examples). Corrected to pack-only corpus 2026-08-09

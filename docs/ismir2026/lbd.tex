@@ -114,8 +114,8 @@ service falls back to a transparent rules baseline.
 Candidates are surfaced for preview---with per-signal evidence
 (audio similarity, tempo fit, tag overlap)---before any session
 state changes.
-Accepted candidates are inserted via a single Nexus transaction with
-undo support; rejected or undone events are logged.
+Accepted candidates are inserted in a single Nexus transaction with
+undo; rejected or undone events are logged.
 This design responds to Section~\ref{sec:evidence}'s findings: the
 proxy must not substitute its ranking for the musician's judgment.
 
@@ -160,9 +160,8 @@ proposal rather than a decision.
 
 \subsection{The Gain Is Label-Sensitive}\label{sec:labels}
 
-An earlier version of this evaluation used the manifest's fallback
-grouping, treating \emph{same-uploader} items as co-members in 26\%
-of examples.
+An earlier version used the manifest's fallback grouping, treating
+\emph{same-uploader} items as co-members in 26\% of examples.
 On that mixed-label corpus, fusion appeared to beat frozen cosine by
 +4.0\,pp on hard\_similar (949 sources, same protocol).
 Restricting to true pack co-membership erases the gain
@@ -215,8 +214,9 @@ is $+0.4$\,pp with a CI crossing zero.
 
 Residual limitations: the signal set and hyperparameters were
 designed on the earlier mixed-label corpus, which subsumes this one;
-the run is a sensitivity re-analysis under a committed split, not de
-novo confirmatory evidence.
+the run evaluates the offline LAION-CLAP model (not the deployed
+MS-CLAP variant) and is a sensitivity re-analysis, not de novo
+confirmatory evidence.
 
 \subsection{Exploratory Pilot}\label{sec:pilot}
 
@@ -224,11 +224,12 @@ Nine external raters labeled 20 blind A/B pairs (Fleiss'
 $\kappa = 0.294$).
 One pair whose majority chose ``neither'' was excluded; 9 of the
 remaining 19 preference pairs reached $\geq$7/9 consensus.
-On these 9 pairs, harmonic compatibility---a signal with no
-measurable weak-label contribution in our ablations---matches the
-human majority in 7/9 cases, while tempo, the strongest
-hard\_similar contributor in Table~\ref{tab:loso}, matches in
-3/9---a descriptive divergence from the weak-label ranking.
+On these 9 pairs, harmonic compatibility---whose weak-label
+contribution was near zero in the earlier mixed-label 7-signal
+ablation---matches the human majority in 7/9 cases, while
+tempo, the strongest hard\_similar contributor in
+Table~\ref{tab:loso}, matches in 3/9---a descriptive divergence
+from the weak-label ranking.
 The comparison is exploratory---post-hoc, small, and on a different
 corpus and pair construction---raising the possibility of
 misalignment with human judgment without confirming it.
@@ -244,12 +245,12 @@ generator---comparable to frozen cosine on held-out data
 ($+0.4$\,pp overall, CI crossing zero; $+1.5$\,pp on hard\_similar,
 uncertain; worse on hard\_tempo\_key)---that, unlike a bare cosine
 score, surfaces per-signal evidence with each proposal.
-Since its contributions switch sign across regimes and may not
-reflect human preference, it never decides alone: every
-recommendation is previewable and reversible.
+Since its contributions are regime-dependent and may not reflect
+human preference, it never decides alone: every recommendation is
+previewable and reversible.
 Whether preview and undo improve creative outcomes is untested;
-evaluating that interaction and personalization from logged feedback
-is future work.
+evaluating them, like personalization from logged feedback, is
+future work.
 
 % --- Page 3: references only ---
 
