@@ -1,0 +1,202 @@
+{
+  "median_seed": 20260803,
+  "fusion_weights": [
+    7.4595003475018435,
+    4.18865388350105,
+    -0.10101846579144001,
+    0.7372785467195526,
+    1.0583534978461944
+  ],
+  "disagreement_pairs": [
+    {
+      "example_id": "http://freesound.org/apiv2/packs/13612/",
+      "source_id": "http://freesound.org/apiv2/packs/13612/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.47433927022174327,
+      "cosine_margin": 0.016446332166277666
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/1464/",
+      "source_id": "http://freesound.org/apiv2/packs/1464/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.19917717570190874,
+      "cosine_margin": 0.07150008892215853
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/15220/",
+      "source_id": "http://freesound.org/apiv2/packs/15220/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.32896668633305737,
+      "cosine_margin": 0.04562191589604536
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/15220/",
+      "source_id": "http://freesound.org/apiv2/packs/15220/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.21488186490183203,
+      "cosine_margin": -0.07297586361776942
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/1601/",
+      "source_id": "http://freesound.org/apiv2/packs/1601/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.6328151896302519,
+      "cosine_margin": -0.02737199287006642
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/17069/",
+      "source_id": "http://freesound.org/apiv2/packs/17069/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 1.0712299087192991,
+      "cosine_margin": -0.012482400852653508
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/17069/",
+      "source_id": "http://freesound.org/apiv2/packs/17069/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.13905367832971116,
+      "cosine_margin": -0.05646159290248498
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/22873/",
+      "source_id": "http://freesound.org/apiv2/packs/22873/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.5284904669234249,
+      "cosine_margin": -0.023701736790280314
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/260/",
+      "source_id": "http://freesound.org/apiv2/packs/260/",
+      "neg_index": 2,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.14875249214824926,
+      "cosine_margin": -0.051736445943522114
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/26887/",
+      "source_id": "http://freesound.org/apiv2/packs/26887/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.017642803084738645,
+      "cosine_margin": -0.00890163297572466
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/26887/",
+      "source_id": "http://freesound.org/apiv2/packs/26887/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.816581673888269,
+      "cosine_margin": -0.015403280750392545
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/26887/",
+      "source_id": "http://freesound.org/apiv2/packs/26887/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.8852794266877453,
+      "cosine_margin": -0.002372333057382381
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/26887/",
+      "source_id": "http://freesound.org/apiv2/packs/26887/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.0906499703901229,
+      "cosine_margin": -0.007997146028306812
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/2856/",
+      "source_id": "http://freesound.org/apiv2/packs/2856/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.2170961091113508,
+      "cosine_margin": 0.10727117630465344
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/3293/",
+      "source_id": "http://freesound.org/apiv2/packs/3293/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.08171160504988073,
+      "cosine_margin": -0.001457604393170886
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/4369/",
+      "source_id": "http://freesound.org/apiv2/packs/4369/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.1138545345075137,
+      "cosine_margin": 0.09821649023278223
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/712/",
+      "source_id": "http://freesound.org/apiv2/packs/712/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.1515289376678659,
+      "cosine_margin": 0.0018237770941691434
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/8550/",
+      "source_id": "http://freesound.org/apiv2/packs/8550/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.027261051491908717,
+      "cosine_margin": 0.005903485451810742
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/8550/",
+      "source_id": "http://freesound.org/apiv2/packs/8550/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.24093688296373195,
+      "cosine_margin": 0.02518785803554413
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/8550/",
+      "source_id": "http://freesound.org/apiv2/packs/8550/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.5560843325785179,
+      "cosine_margin": 0.02033754814538491
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/9268/",
+      "source_id": "http://freesound.org/apiv2/packs/9268/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.0725599294707191,
+      "cosine_margin": -0.017369181398314004
+    }
+  ],
+  "supplement_concordant": []
+}

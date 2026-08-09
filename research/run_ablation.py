@@ -190,6 +190,33 @@ def bootstrap_ci(pairs, n_boot=2000, alpha=0.05):
     return cis
 
 
+def bootstrap_paired_diff_ci(pairs_a, pairs_b, n_boot=2000, alpha=0.05):
+    """Bootstrap CI on paired difference (a - b) per pair, stratified by neg_type."""
+    by_type = {}
+    for pa, pb in zip(pairs_a, pairs_b):
+        nt = pa["neg_type"]
+        by_type.setdefault(nt, []).append(pa["win"] - pb["win"])
+    by_type["overall"] = [pa["win"] - pb["win"] for pa, pb in zip(pairs_a, pairs_b)]
+
+    cis = {}
+    for ntype, diffs in sorted(by_type.items()):
+        diffs = np.array(diffs)
+        boot_means = []
+        for seed in BOOTSTRAP_SEEDS[:n_boot]:
+            rng = np.random.default_rng(seed)
+            sample = rng.choice(diffs, size=len(diffs), replace=True)
+            boot_means.append(float(sample.mean()))
+        lo = float(np.percentile(boot_means, 100 * alpha / 2))
+        hi = float(np.percentile(boot_means, 100 * (1 - alpha / 2)))
+        cis[ntype] = {
+            "mean_diff": round(float(diffs.mean()), 4),
+            "ci_lo": round(lo, 4),
+            "ci_hi": round(hi, 4),
+            "n": len(diffs),
+        }
+    return cis
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--items", required=True)
@@ -291,12 +318,15 @@ def main():
         # --- 3. Bootstrap CIs ---
         ci_full = bootstrap_ci(pairs_full)
         ci_cos = bootstrap_ci(pairs_cos)
-        all_cis[seed] = {"full-fusion": ci_full, "cosine-only": ci_cos}
+        ci_diff = bootstrap_paired_diff_ci(pairs_full, pairs_cos)
+        all_cis[seed] = {"full-fusion": ci_full, "cosine-only": ci_cos, "paired-diff": ci_diff}
         for ntype in sorted(ci_full.keys()):
             f = ci_full[ntype]
             c = ci_cos[ntype]
+            d = ci_diff[ntype]
             print(f"  CI {ntype:16s}  fusion={f['mean']:.4f} [{f['ci_lo']:.4f}, {f['ci_hi']:.4f}]  "
-                  f"cosine={c['mean']:.4f} [{c['ci_lo']:.4f}, {c['ci_hi']:.4f}]", flush=True)
+                  f"cosine={c['mean']:.4f} [{c['ci_lo']:.4f}, {c['ci_hi']:.4f}]  "
+                  f"diff={d['mean_diff']:+.4f} [{d['ci_lo']:+.4f}, {d['ci_hi']:+.4f}]", flush=True)
 
     # --- Aggregate ablation across seeds ---
     print("\n=== Ablation summary (mean over 5 seeds) ===\n", flush=True)
@@ -356,6 +386,21 @@ def main():
             }
             c = ci_summary[cond][nt]
             print(f"  {cond:15s} {nt:16s} {c['mean']:.4f} [{c['ci_lo']:.4f}, {c['ci_hi']:.4f}]", flush=True)
+
+    # --- Aggregate paired-difference CIs ---
+    print("\n=== Paired-difference CIs (fusion − cosine, pooled) ===\n", flush=True)
+    ci_summary["paired-diff"] = {}
+    for nt in sorted(all_cis[SEEDS[0]]["paired-diff"].keys()):
+        mean_diffs = [all_cis[s]["paired-diff"][nt]["mean_diff"] for s in SEEDS]
+        los = [all_cis[s]["paired-diff"][nt]["ci_lo"] for s in SEEDS]
+        his = [all_cis[s]["paired-diff"][nt]["ci_hi"] for s in SEEDS]
+        ci_summary["paired-diff"][nt] = {
+            "mean_diff": round(statistics.mean(mean_diffs), 4),
+            "ci_lo": round(statistics.mean(los), 4),
+            "ci_hi": round(statistics.mean(his), 4),
+        }
+        d = ci_summary["paired-diff"][nt]
+        print(f"  diff {nt:16s} {d['mean_diff']:+.4f} [{d['ci_lo']:+.4f}, {d['ci_hi']:+.4f}]", flush=True)
 
     report = {
         "experiment": "ablation + error analysis + bootstrap CIs",
