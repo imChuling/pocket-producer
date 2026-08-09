@@ -1,0 +1,59 @@
+{
+  "model_id": "fusion-5sig-v1",
+  "signals": [
+    "audio_cos_mean",
+    "audio_cos_max",
+    "tempo",
+    "key",
+    "tag_jaccard"
+  ],
+  "weights": [
+    5.764835,
+    8.734861,
+    1.453428,
+    0.197264,
+    1.357242
+  ],
+  "per_seed_weights": {
+    "20260725": [
+      6.063643,
+      8.956891,
+      1.35606,
+      0.856824,
+      0.601785
+    ],
+    "20260801": [
+      6.465248,
+      9.058307,
+      0.951122,
+      0.609586,
+      2.300393
+    ],
+    "20260802": [
+      5.51035,
+      8.960359,
+      2.123624,
+      0.197487,
+      2.238859
+    ],
+    "20260803": [
+      4.812574,
+      7.804783,
+      1.948896,
+      -0.704688,
+      1.526087
+    ],
+    "20260804": [
+      5.972359,
+      8.893963,
+      0.887436,
+      0.027113,
+      0.119087
+    ]
+  },
+  "representation_model": [
+    "msclap-2023"
+  ],
+  "trained_on": "pack-only train split (protocol-heldout-v2), pack co-membership weak labels, BPR, mean over 5 seeds",
+  "items_file": "research/data/fsld/items_msclap_packonly_train.jsonl"
+}

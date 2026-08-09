@@ -1,0 +1,112 @@
+{
+  "experiment": "held-out dual-track evaluation (protocol-heldout-v1)",
+  "protocol": "research/protocol-heldout-v1.md",
+  "split_file": "artifacts/heldout-split-packonly/split.json",
+  "split_sha256": "3f4967ca916ac5a985388836f9fb60e44bef93c3f73d2df7ee1c37ee4f36384c",
+  "items_file": "research/data/fsld/items_laion-clap-music_packonly.jsonl",
+  "pair_seed": 20260725,
+  "seeds": [
+    20260725,
+    20260801,
+    20260802,
+    20260803,
+    20260804
+  ],
+  "signals_used": [
+    "audio_cos_mean",
+    "audio_cos_max",
+    "tempo",
+    "key",
+    "tag_jaccard"
+  ],
+  "train_sources": 484,
+  "heldout_sources": 121,
+  "train_examples": 981,
+  "heldout_examples": 323,
+  "track1_summary": {
+    "cosine-only": {
+      "mean_overall": 0.9467,
+      "std_overall": 0.0,
+      "values_overall": [
+        0.9467,
+        0.9467,
+        0.9467,
+        0.9467,
+        0.9467
+      ],
+      "mean_easy": 0.9768,
+      "values_easy": [
+        0.9768,
+        0.9768,
+        0.9768,
+        0.9768,
+        0.9768
+      ],
+      "mean_hard_similar": 0.8793,
+      "values_hard_similar": [
+        0.8793,
+        0.8793,
+        0.8793,
+        0.8793,
+        0.8793
+      ],
+      "mean_hard_tempo_key": 0.9554,
+      "values_hard_tempo_key": [
+        0.9554,
+        0.9554,
+        0.9554,
+        0.9554,
+        0.9554
+      ]
+    },
+    "fusion-5sig": {
+      "mean_overall": 0.9502,
+      "std_overall": 0.0065,
+      "values_overall": [
+        0.9564,
+        0.9402,
+        0.9556,
+        0.9491,
+        0.9499
+      ],
+      "mean_easy": 0.9805,
+      "values_easy": [
+        0.9814,
+        0.9799,
+        0.983,
+        0.9799,
+        0.9783
+      ],
+      "mean_hard_similar": 0.8941,
+      "values_hard_similar": [
+        0.9102,
+        0.8762,
+        0.9102,
+        0.8885,
+        0.8854
+      ],
+      "mean_hard_tempo_key": 0.945,
+      "values_hard_tempo_key": [
+        0.9517,
+        0.9219,
+        0.9442,
+        0.948,
+        0.9591
+      ]
+    }
+  },
+  "track1_delta": {
+    "overall": 0.0035,
+    "hard_similar": 0.0148,
+    "n_positive_seeds_hs": 4
+  },
+  "track2_prep": {
+    "median_seed": 20260803,
+    "median_seed_idx": 3,
+    "n_disagreement_pairs": 21,
+    "n_fusion_correct": 12,
+    "n_cosine_correct": 9,
+    "n_concordant": 302,
+    "n_supplement": 0
+  }
+}

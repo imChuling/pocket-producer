@@ -1,0 +1,256 @@
+{
+  "experiment": "held-out LOSO ablation",
+  "split": "artifacts/heldout-split-packonly/split.json",
+  "signals": [
+    "audio_cos_mean",
+    "audio_cos_max",
+    "tempo",
+    "key",
+    "tag_jaccard"
+  ],
+  "seeds": [
+    20260725,
+    20260801,
+    20260802,
+    20260803,
+    20260804
+  ],
+  "conditions": {
+    "full-5sig": {
+      "mean_overall": 0.9502,
+      "values_overall": [
+        0.9564,
+        0.9402,
+        0.9556,
+        0.9491,
+        0.9499
+      ],
+      "mean_easy": 0.9805,
+      "values_easy": [
+        0.9814,
+        0.9799,
+        0.983,
+        0.9799,
+        0.9783
+      ],
+      "mean_hard_similar": 0.8941,
+      "values_hard_similar": [
+        0.9102,
+        0.8762,
+        0.9102,
+        0.8885,
+        0.8854
+      ],
+      "mean_hard_tempo_key": 0.945,
+      "values_hard_tempo_key": [
+        0.9517,
+        0.9219,
+        0.9442,
+        0.948,
+        0.9591
+      ]
+    },
+    "minus-audio_cos_mean": {
+      "mean_overall": 0.9473,
+      "values_overall": [
+        0.9507,
+        0.9435,
+        0.9499,
+        0.9435,
+        0.9491
+      ],
+      "mean_easy": 0.9743,
+      "values_easy": [
+        0.9721,
+        0.9783,
+        0.9752,
+        0.9721,
+        0.9737
+      ],
+      "mean_hard_similar": 0.8997,
+      "values_hard_similar": [
+        0.9164,
+        0.8916,
+        0.9164,
+        0.8885,
+        0.8854
+      ],
+      "mean_hard_tempo_key": 0.9398,
+      "values_hard_tempo_key": [
+        0.9405,
+        0.9219,
+        0.9294,
+        0.9405,
+        0.9665
+      ]
+    },
+    "minus-audio_cos_max": {
+      "mean_overall": 0.9504,
+      "values_overall": [
+        0.9572,
+        0.9394,
+        0.9588,
+        0.9491,
+        0.9475
+      ],
+      "mean_easy": 0.9802,
+      "values_easy": [
+        0.983,
+        0.9799,
+        0.983,
+        0.9799,
+        0.9752
+      ],
+      "mean_hard_similar": 0.891,
+      "values_hard_similar": [
+        0.9071,
+        0.8669,
+        0.9133,
+        0.8854,
+        0.8824
+      ],
+      "mean_hard_tempo_key": 0.9502,
+      "values_hard_tempo_key": [
+        0.9554,
+        0.9294,
+        0.9554,
+        0.9517,
+        0.9591
+      ]
+    },
+    "minus-tempo": {
+      "mean_overall": 0.9457,
+      "values_overall": [
+        0.9483,
+        0.9338,
+        0.9515,
+        0.9483,
+        0.9467
+      ],
+      "mean_easy": 0.9777,
+      "values_easy": [
+        0.9768,
+        0.9768,
+        0.9783,
+        0.9799,
+        0.9768
+      ],
+      "mean_hard_similar": 0.8793,
+      "values_hard_similar": [
+        0.8854,
+        0.8545,
+        0.8978,
+        0.8824,
+        0.8762
+      ],
+      "mean_hard_tempo_key": 0.9487,
+      "values_hard_tempo_key": [
+        0.9554,
+        0.9257,
+        0.9517,
+        0.9517,
+        0.9591
+      ]
+    },
+    "minus-key": {
+      "mean_overall": 0.9525,
+      "values_overall": [
+        0.954,
+        0.9548,
+        0.9548,
+        0.9475,
+        0.9515
+      ],
+      "mean_easy": 0.9777,
+      "values_easy": [
+        0.9783,
+        0.9799,
+        0.9783,
+        0.9737,
+        0.9783
+      ],
+      "mean_hard_similar": 0.9003,
+      "values_hard_similar": [
+        0.9071,
+        0.9009,
+        0.9071,
+        0.8916,
+        0.8947
+      ],
+      "mean_hard_tempo_key": 0.9547,
+      "values_hard_tempo_key": [
+        0.9517,
+        0.9591,
+        0.9554,
+        0.9517,
+        0.9554
+      ]
+    },
+    "minus-tag_jaccard": {
+      "mean_overall": 0.9485,
+      "values_overall": [
+        0.9548,
+        0.937,
+        0.9548,
+        0.9459,
+        0.9499
+      ],
+      "mean_easy": 0.9786,
+      "values_easy": [
+        0.9799,
+        0.9768,
+        0.9814,
+        0.9768,
+        0.9783
+      ],
+      "mean_hard_similar": 0.8892,
+      "values_hard_similar": [
+        0.9071,
+        0.8731,
+        0.904,
+        0.8762,
+        0.8854
+      ],
+      "mean_hard_tempo_key": 0.9472,
+      "values_hard_tempo_key": [
+        0.9517,
+        0.9182,
+        0.9517,
+        0.9554,
+        0.9591
+      ]
+    }
+  },
+  "loso_deltas": {
+    "audio_cos_mean": {
+      "overall": -0.0029,
+      "easy": -0.0062,
+      "hard_similar": 0.0056,
+      "hard_tempo_key": -0.0052
+    },
+    "audio_cos_max": {
+      "overall": 0.0002,
+      "easy": -0.0003,
+      "hard_similar": -0.0031,
+      "hard_tempo_key": 0.0052
+    },
+    "tempo": {
+      "overall": -0.0045,
+      "easy": -0.0028,
+      "hard_similar": -0.0148,
+      "hard_tempo_key": 0.0037
+    },
+    "key": {
+      "overall": 0.0023,
+      "easy": -0.0028,
+      "hard_similar": 0.0062,
+      "hard_tempo_key": 0.0097
+    },
+    "tag_jaccard": {
+      "overall": -0.0017,
+      "easy": -0.0019,
+      "hard_similar": -0.0049,
+      "hard_tempo_key": 0.0022
+    }
+  }
+}

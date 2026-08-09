@@ -1,0 +1,1353 @@
+{
+  "experiment": "ablation + error analysis + bootstrap CIs",
+  "signals": [
+    "audio_cos_mean",
+    "audio_cos_max",
+    "tempo",
+    "key",
+    "tag_jaccard"
+  ],
+  "seeds": [
+    20260725,
+    20260801,
+    20260802,
+    20260803,
+    20260804
+  ],
+  "ablation": {
+    "full-fusion": {
+      "overall_mean": 0.9249,
+      "overall_std": 0.0073,
+      "easy_mean": 0.9759,
+      "hard_similar_mean": 0.8133,
+      "hard_tempo_key_mean": 0.9345
+    },
+    "cosine-only": {
+      "overall_mean": 0.9293,
+      "overall_std": 0.0077,
+      "easy_mean": 0.9741,
+      "hard_similar_mean": 0.8136,
+      "hard_tempo_key_mean": 0.9557
+    },
+    "minus-audio_cos_mean": {
+      "overall_mean": 0.9198,
+      "overall_std": 0.0078,
+      "easy_mean": 0.9727,
+      "hard_similar_mean": 0.8097,
+      "hard_tempo_key_mean": 0.9241,
+      "delta_overall": 0.0051
+    },
+    "minus-audio_cos_max": {
+      "overall_mean": 0.9246,
+      "overall_std": 0.0065,
+      "easy_mean": 0.9776,
+      "hard_similar_mean": 0.8103,
+      "hard_tempo_key_mean": 0.933,
+      "delta_overall": 0.0003
+    },
+    "minus-tempo": {
+      "overall_mean": 0.9228,
+      "overall_std": 0.0086,
+      "easy_mean": 0.9732,
+      "hard_similar_mean": 0.8037,
+      "hard_tempo_key_mean": 0.9413,
+      "delta_overall": 0.0021
+    },
+    "minus-key": {
+      "overall_mean": 0.9292,
+      "overall_std": 0.0092,
+      "easy_mean": 0.9738,
+      "hard_similar_mean": 0.8227,
+      "hard_tempo_key_mean": 0.9466,
+      "delta_overall": -0.0043
+    },
+    "minus-tag_jaccard": {
+      "overall_mean": 0.9232,
+      "overall_std": 0.0066,
+      "easy_mean": 0.9768,
+      "hard_similar_mean": 0.8054,
+      "hard_tempo_key_mean": 0.9338,
+      "delta_overall": 0.0017
+    }
+  },
+  "error_analysis": {
+    "mean_fusion_wins": 19.6,
+    "mean_cosine_wins": 25.2,
+    "mean_net_gain": -5.6,
+    "easy_fusion_wins": 3.8,
+    "easy_cosine_wins": 2.4,
+    "easy_net": 1.4,
+    "hard_similar_fusion_wins": 14.8,
+    "hard_similar_cosine_wins": 14.8,
+    "hard_similar_net": 0.0,
+    "hard_tempo_key_fusion_wins": 1,
+    "hard_tempo_key_cosine_wins": 8,
+    "hard_tempo_key_net": -7
+  },
+  "error_analysis_per_seed": {
+    "20260725": {
+      "fusion_wins_cosine_loses": 15,
+      "cosine_wins_fusion_loses": 20,
+      "net_gain": -5,
+      "fusion_wins_by_type": {
+        "easy": 0,
+        "hard_similar": 15,
+        "hard_tempo_key": 0
+      },
+      "cosine_wins_by_type": {
+        "easy": 3,
+        "hard_similar": 13,
+        "hard_tempo_key": 4
+      },
+      "examples_fusion_wins": [
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/14826/",
+          "pos_item": "fsld:414200",
+          "neg_item": "fsld:182118",
+          "fusion_margin": 0.3352,
+          "cosine_margin": -0.0331,
+          "pos_signals": [
+            0.523,
+            0.6157,
+            1.0,
+            0.0,
+            0.4
+          ],
+          "neg_signals": [
+            0.5561,
+            0.5349,
+            0.9375,
+            0.0,
+            0.3636
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/16701/",
+          "pos_item": "fsld:270718",
+          "neg_item": "fsld:132052",
+          "fusion_margin": 0.2374,
+          "cosine_margin": -0.0376,
+          "pos_signals": [
+            0.6071,
+            0.6004,
+            0.2,
+            1.0,
+            0.5
+          ],
+          "neg_signals": [
+            0.6448,
+            0.636,
+            0.0,
+            0.0,
+            0.3333
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/19120/",
+          "pos_item": "fsld:337761",
+          "neg_item": "fsld:483130",
+          "fusion_margin": 0.771,
+          "cosine_margin": -0.023,
+          "pos_signals": [
+            0.7777,
+            0.7524,
+            1.0,
+            0.0,
+            0.1429
+          ],
+          "neg_signals": [
+            0.8008,
+            0.8178,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/23378/",
+          "pos_item": "fsld:417847",
+          "neg_item": "fsld:431195",
+          "fusion_margin": 0.2576,
+          "cosine_margin": -0.0026,
+          "pos_signals": [
+            0.8787,
+            0.8783,
+            0.1678,
+            1.0,
+            0.4286
+          ],
+          "neg_signals": [
+            0.8813,
+            0.8061,
+            0.4094,
+            1.0,
+            0.2857
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/26475/",
+          "pos_item": "fsld:467917",
+          "neg_item": "fsld:458550",
+          "fusion_margin": 0.3286,
+          "cosine_margin": -0.0186,
+          "pos_signals": [
+            0.8415,
+            0.8635,
+            1.0,
+            0.0,
+            0.5
+          ],
+          "neg_signals": [
+            0.8601,
+            0.86,
+            0.7333,
+            0.0,
+            0.3333
+          ]
+        }
+      ],
+      "examples_cosine_wins": [
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/10311/",
+          "pos_item": "fsld:171443",
+          "neg_item": "fsld:371606",
+          "fusion_margin": -0.1072,
+          "cosine_margin": 0.0023,
+          "pos_signals": [
+            0.7447,
+            0.6974,
+            0.3103,
+            1.0,
+            0.3333
+          ],
+          "neg_signals": [
+            0.7424,
+            0.7048,
+            0.4207,
+            1.0,
+            0.25
+          ]
+        },
+        {
+          "neg_type": "easy",
+          "source_id": "http://freesound.org/apiv2/packs/10802/",
+          "pos_item": "fsld:193596",
+          "neg_item": "fsld:242964",
+          "fusion_margin": -0.2997,
+          "cosine_margin": 0.0328,
+          "pos_signals": [
+            0.4787,
+            0.4929,
+            0.28,
+            0.0,
+            0.1429
+          ],
+          "neg_signals": [
+            0.4459,
+            0.5831,
+            0.2,
+            0.0,
+            0.2857
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/11557/",
+          "pos_item": "fsld:182680",
+          "neg_item": "fsld:161865",
+          "fusion_margin": -0.3216,
+          "cosine_margin": 0.0059,
+          "pos_signals": [
+            0.4361,
+            0.4032,
+            0.7647,
+            1.0,
+            0.0
+          ],
+          "neg_signals": [
+            0.4303,
+            0.4423,
+            0.7647,
+            1.0,
+            0.1429
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/14826/",
+          "pos_item": "fsld:413376",
+          "neg_item": "fsld:233709",
+          "fusion_margin": -1.0667,
+          "cosine_margin": 0.0014,
+          "pos_signals": [
+            0.5765,
+            0.5144,
+            0.1088,
+            1.0,
+            0.3
+          ],
+          "neg_signals": [
+            0.5752,
+            0.5739,
+            0.9585,
+            0.0,
+            0.3
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/14826/",
+          "pos_item": "fsld:414130",
+          "neg_item": "fsld:38852",
+          "fusion_margin": -0.6889,
+          "cosine_margin": 0.0622,
+          "pos_signals": [
+            0.7761,
+            0.6986,
+            0.7519,
+            0.0,
+            0.125
+          ],
+          "neg_signals": [
+            0.714,
+            0.7487,
+            0.876,
+            1.0,
+            0.5556
+          ]
+        }
+      ]
+    },
+    "20260801": {
+      "fusion_wins_cosine_loses": 29,
+      "cosine_wins_fusion_loses": 45,
+      "net_gain": -16,
+      "fusion_wins_by_type": {
+        "easy": 6,
+        "hard_similar": 22,
+        "hard_tempo_key": 1
+      },
+      "cosine_wins_by_type": {
+        "easy": 2,
+        "hard_similar": 24,
+        "hard_tempo_key": 19
+      },
+      "examples_fusion_wins": [
+        {
+          "neg_type": "easy",
+          "source_id": "http://freesound.org/apiv2/packs/1097/",
+          "pos_item": "fsld:18420",
+          "neg_item": "fsld:2624",
+          "fusion_margin": 1.8529,
+          "cosine_margin": -0.0346,
+          "pos_signals": [
+            0.3157,
+            0.4233,
+            0.9551,
+            1.0,
+            0.4286
+          ],
+          "neg_signals": [
+            0.3503,
+            0.4889,
+            0.5169,
+            0.0,
+            0.1111
+          ]
+        },
+        {
+          "neg_type": "hard_tempo_key",
+          "source_id": "http://freesound.org/apiv2/packs/1097/",
+          "pos_item": "fsld:18420",
+          "neg_item": "fsld:241210",
+          "fusion_margin": 0.144,
+          "cosine_margin": -0.0059,
+          "pos_signals": [
+            0.3157,
+            0.4233,
+            0.9551,
+            1.0,
+            0.4286
+          ],
+          "neg_signals": [
+            0.3217,
+            0.3833,
+            0.9551,
+            1.0,
+            0.3333
+          ]
+        },
+        {
+          "neg_type": "easy",
+          "source_id": "http://freesound.org/apiv2/packs/1097/",
+          "pos_item": "fsld:18428",
+          "neg_item": "fsld:244105",
+          "fusion_margin": 1.2347,
+          "cosine_margin": -0.0405,
+          "pos_signals": [
+            0.5301,
+            0.5526,
+            0.52,
+            1.0,
+            0.1667
+          ],
+          "neg_signals": [
+            0.5707,
+            0.515,
+            0.52,
+            0.0,
+            0.4
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/11189/",
+          "pos_item": "fsld:177804",
+          "neg_item": "fsld:216811",
+          "fusion_margin": 0.2979,
+          "cosine_margin": -0.0302,
+          "pos_signals": [
+            0.467,
+            0.4536,
+            1.0,
+            1.0,
+            0.1667
+          ],
+          "neg_signals": [
+            0.4972,
+            0.4985,
+            0.0,
+            1.0,
+            0.0
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/11189/",
+          "pos_item": "fsld:177817",
+          "neg_item": "fsld:53658",
+          "fusion_margin": 0.9253,
+          "cosine_margin": -0.1085,
+          "pos_signals": [
+            0.4164,
+            0.3989,
+            1.0,
+            1.0,
+            0.6
+          ],
+          "neg_signals": [
+            0.5249,
+            0.5153,
+            0.4286,
+            0.0,
+            0.5
+          ]
+        }
+      ],
+      "examples_cosine_wins": [
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/10763/",
+          "pos_item": "fsld:172235",
+          "neg_item": "fsld:324984",
+          "fusion_margin": -0.0781,
+          "cosine_margin": 0.1047,
+          "pos_signals": [
+            0.9257,
+            0.9059,
+            1.0,
+            0.0,
+            0.8571
+          ],
+          "neg_signals": [
+            0.821,
+            0.8124,
+            0.2877,
+            1.0,
+            0.6667
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/10763/",
+          "pos_item": "fsld:172236",
+          "neg_item": "fsld:324983",
+          "fusion_margin": -0.8764,
+          "cosine_margin": 0.0518,
+          "pos_signals": [
+            0.7806,
+            0.7959,
+            1.0,
+            0.0,
+            0.6
+          ],
+          "neg_signals": [
+            0.7288,
+            0.7297,
+            0.2877,
+            1.0,
+            0.6667
+          ]
+        },
+        {
+          "neg_type": "hard_tempo_key",
+          "source_id": "http://freesound.org/apiv2/packs/1097/",
+          "pos_item": "fsld:18426",
+          "neg_item": "fsld:199080",
+          "fusion_margin": -0.01,
+          "cosine_margin": 0.0297,
+          "pos_signals": [
+            0.2812,
+            0.3002,
+            0.8433,
+            1.0,
+            0.0
+          ],
+          "neg_signals": [
+            0.2515,
+            0.2538,
+            0.8763,
+            1.0,
+            0.3333
+          ]
+        },
+        {
+          "neg_type": "hard_tempo_key",
+          "source_id": "http://freesound.org/apiv2/packs/12566/",
+          "pos_item": "fsld:202384",
+          "neg_item": "fsld:32256",
+          "fusion_margin": -2.4429,
+          "cosine_margin": 0.0062,
+          "pos_signals": [
+            0.5831,
+            0.553,
+            0.5821,
+            0.0,
+            0.0
+          ],
+          "neg_signals": [
+            0.5769,
+            0.5156,
+            0.8209,
+            1.0,
+            0.6667
+          ]
+        },
+        {
+          "neg_type": "hard_tempo_key",
+          "source_id": "http://freesound.org/apiv2/packs/12785/",
+          "pos_item": "fsld:200864",
+          "neg_item": "fsld:179358",
+          "fusion_margin": -1.5812,
+          "cosine_margin": 0.0691,
+          "pos_signals": [
+            0.5001,
+            0.4674,
+            1.0,
+            0.0,
+            0.2857
+          ],
+          "neg_signals": [
+            0.431,
+            0.4141,
+            0.8696,
+            1.0,
+            0.8571
+          ]
+        }
+      ]
+    },
+    "20260802": {
+      "fusion_wins_cosine_loses": 23,
+      "cosine_wins_fusion_loses": 19,
+      "net_gain": 4,
+      "fusion_wins_by_type": {
+        "easy": 8,
+        "hard_similar": 15,
+        "hard_tempo_key": 0
+      },
+      "cosine_wins_by_type": {
+        "easy": 1,
+        "hard_similar": 10,
+        "hard_tempo_key": 8
+      },
+      "examples_fusion_wins": [
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/1103/",
+          "pos_item": "fsld:18553",
+          "neg_item": "fsld:26087",
+          "fusion_margin": 1.6283,
+          "cosine_margin": -0.0535,
+          "pos_signals": [
+            0.5531,
+            0.5534,
+            1.0,
+            1.0,
+            0.2857
+          ],
+          "neg_signals": [
+            0.6066,
+            0.5535,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "neg_type": "easy",
+          "source_id": "http://freesound.org/apiv2/packs/1103/",
+          "pos_item": "fsld:18568",
+          "neg_item": "fsld:199873",
+          "fusion_margin": 0.0417,
+          "cosine_margin": -0.0029,
+          "pos_signals": [
+            0.7019,
+            0.6289,
+            1.0,
+            0.0,
+            0.3333
+          ],
+          "neg_signals": [
+            0.7048,
+            0.7781,
+            0.0,
+            1.0,
+            0.125
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/11189/",
+          "pos_item": "fsld:177804",
+          "neg_item": "fsld:216811",
+          "fusion_margin": 0.8454,
+          "cosine_margin": -0.0302,
+          "pos_signals": [
+            0.467,
+            0.4536,
+            1.0,
+            1.0,
+            0.1667
+          ],
+          "neg_signals": [
+            0.4972,
+            0.4985,
+            0.0,
+            1.0,
+            0.0
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/12569/",
+          "pos_item": "fsld:222461",
+          "neg_item": "fsld:324793",
+          "fusion_margin": 0.2553,
+          "cosine_margin": -0.0129,
+          "pos_signals": [
+            0.818,
+            0.7968,
+            0.3846,
+            1.0,
+            0.2222
+          ],
+          "neg_signals": [
+            0.8309,
+            0.7118,
+            0.0,
+            1.0,
+            0.5556
+          ]
+        },
+        {
+          "neg_type": "easy",
+          "source_id": "http://freesound.org/apiv2/packs/12569/",
+          "pos_item": "fsld:254890",
+          "neg_item": "fsld:108446",
+          "fusion_margin": 0.6945,
+          "cosine_margin": -0.0047,
+          "pos_signals": [
+            0.4447,
+            0.6029,
+            0.3231,
+            0.0,
+            0.3333
+          ],
+          "neg_signals": [
+            0.4494,
+            0.4774,
+            0.0,
+            0.0,
+            0.5
+          ]
+        }
+      ],
+      "examples_cosine_wins": [
+        {
+          "neg_type": "easy",
+          "source_id": "http://freesound.org/apiv2/packs/10802/",
+          "pos_item": "fsld:193596",
+          "neg_item": "fsld:242964",
+          "fusion_margin": -0.1715,
+          "cosine_margin": 0.0328,
+          "pos_signals": [
+            0.4787,
+            0.4929,
+            0.28,
+            0.0,
+            0.1429
+          ],
+          "neg_signals": [
+            0.4459,
+            0.5831,
+            0.2,
+            0.0,
+            0.2857
+          ]
+        },
+        {
+          "neg_type": "hard_tempo_key",
+          "source_id": "http://freesound.org/apiv2/packs/12569/",
+          "pos_item": "fsld:210769",
+          "neg_item": "fsld:25572",
+          "fusion_margin": -0.7142,
+          "cosine_margin": 0.012,
+          "pos_signals": [
+            0.4663,
+            0.436,
+            0.1238,
+            1.0,
+            0.125
+          ],
+          "neg_signals": [
+            0.4543,
+            0.4463,
+            0.8095,
+            1.0,
+            0.125
+          ]
+        },
+        {
+          "neg_type": "hard_tempo_key",
+          "source_id": "http://freesound.org/apiv2/packs/12569/",
+          "pos_item": "fsld:222456",
+          "neg_item": "fsld:66318",
+          "fusion_margin": -0.1279,
+          "cosine_margin": 0.0012,
+          "pos_signals": [
+            0.3734,
+            0.4936,
+            0.0,
+            0.0,
+            0.875
+          ],
+          "neg_signals": [
+            0.3722,
+            0.3688,
+            0.9579,
+            1.0,
+            0.1111
+          ]
+        },
+        {
+          "neg_type": "hard_tempo_key",
+          "source_id": "http://freesound.org/apiv2/packs/14826/",
+          "pos_item": "fsld:387461",
+          "neg_item": "fsld:50437",
+          "fusion_margin": -0.0463,
+          "cosine_margin": 0.0217,
+          "pos_signals": [
+            0.3541,
+            0.362,
+            1.0,
+            1.0,
+            0.1
+          ],
+          "neg_signals": [
+            0.3324,
+            0.3734,
+            0.8125,
+            1.0,
+            0.4286
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/14826/",
+          "pos_item": "fsld:413376",
+          "neg_item": "fsld:233709",
+          "fusion_margin": -0.5925,
+          "cosine_margin": 0.0014,
+          "pos_signals": [
+            0.5765,
+            0.5144,
+            0.1088,
+            1.0,
+            0.3
+          ],
+          "neg_signals": [
+            0.5752,
+            0.5739,
+            0.9585,
+            0.0,
+            0.3
+          ]
+        }
+      ]
+    },
+    "20260803": {
+      "fusion_wins_cosine_loses": 16,
+      "cosine_wins_fusion_loses": 30,
+      "net_gain": -14,
+      "fusion_wins_by_type": {
+        "easy": 3,
+        "hard_similar": 12,
+        "hard_tempo_key": 1
+      },
+      "cosine_wins_by_type": {
+        "easy": 6,
+        "hard_similar": 19,
+        "hard_tempo_key": 5
+      },
+      "examples_fusion_wins": [
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/10311/",
+          "pos_item": "fsld:166177",
+          "neg_item": "fsld:209349",
+          "fusion_margin": 0.1445,
+          "cosine_margin": -0.0253,
+          "pos_signals": [
+            0.8442,
+            0.856,
+            0.0,
+            1.0,
+            0.6
+          ],
+          "neg_signals": [
+            0.8695,
+            0.8389,
+            0.4941,
+            1.0,
+            0.4
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/1103/",
+          "pos_item": "fsld:18553",
+          "neg_item": "fsld:26087",
+          "fusion_margin": 0.539,
+          "cosine_margin": -0.0535,
+          "pos_signals": [
+            0.5531,
+            0.5534,
+            1.0,
+            1.0,
+            0.2857
+          ],
+          "neg_signals": [
+            0.6066,
+            0.5535,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/14826/",
+          "pos_item": "fsld:414200",
+          "neg_item": "fsld:182118",
+          "fusion_margin": 0.1231,
+          "cosine_margin": -0.0331,
+          "pos_signals": [
+            0.523,
+            0.6157,
+            1.0,
+            0.0,
+            0.4
+          ],
+          "neg_signals": [
+            0.5561,
+            0.5349,
+            0.9375,
+            0.0,
+            0.3636
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/15289/",
+          "pos_item": "fsld:319313",
+          "neg_item": "fsld:198495",
+          "fusion_margin": 0.1226,
+          "cosine_margin": -0.0159,
+          "pos_signals": [
+            0.5182,
+            0.6249,
+            0.0685,
+            1.0,
+            0.1429
+          ],
+          "neg_signals": [
+            0.5341,
+            0.5166,
+            0.3973,
+            1.0,
+            0.375
+          ]
+        },
+        {
+          "neg_type": "hard_tempo_key",
+          "source_id": "http://freesound.org/apiv2/packs/15289/",
+          "pos_item": "fsld:319315",
+          "neg_item": "fsld:18427",
+          "fusion_margin": 0.3045,
+          "cosine_margin": -0.0176,
+          "pos_signals": [
+            0.6977,
+            0.7986,
+            0.7037,
+            1.0,
+            0.3333
+          ],
+          "neg_signals": [
+            0.7153,
+            0.6597,
+            1.0,
+            1.0,
+            0.5
+          ]
+        }
+      ],
+      "examples_cosine_wins": [
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/10395/",
+          "pos_item": "fsld:167175",
+          "neg_item": "fsld:187650",
+          "fusion_margin": -0.3103,
+          "cosine_margin": 0.0769,
+          "pos_signals": [
+            0.8353,
+            0.8376,
+            0.0,
+            0.0,
+            0.4
+          ],
+          "neg_signals": [
+            0.7584,
+            0.8053,
+            0.0,
+            1.0,
+            0.6667
+          ]
+        },
+        {
+          "neg_type": "easy",
+          "source_id": "http://freesound.org/apiv2/packs/10802/",
+          "pos_item": "fsld:193596",
+          "neg_item": "fsld:242964",
+          "fusion_margin": -0.2925,
+          "cosine_margin": 0.0328,
+          "pos_signals": [
+            0.4787,
+            0.4929,
+            0.28,
+            0.0,
+            0.1429
+          ],
+          "neg_signals": [
+            0.4459,
+            0.5831,
+            0.2,
+            0.0,
+            0.2857
+          ]
+        },
+        {
+          "neg_type": "easy",
+          "source_id": "http://freesound.org/apiv2/packs/1103/",
+          "pos_item": "fsld:18541",
+          "neg_item": "fsld:189593",
+          "fusion_margin": -0.6354,
+          "cosine_margin": 0.0243,
+          "pos_signals": [
+            0.5771,
+            0.49,
+            1.0,
+            1.0,
+            0.2
+          ],
+          "neg_signals": [
+            0.5527,
+            0.6272,
+            0.0,
+            1.0,
+            0.3333
+          ]
+        },
+        {
+          "neg_type": "easy",
+          "source_id": "http://freesound.org/apiv2/packs/11557/",
+          "pos_item": "fsld:182680",
+          "neg_item": "fsld:199867",
+          "fusion_margin": -0.401,
+          "cosine_margin": 0.0164,
+          "pos_signals": [
+            0.4361,
+            0.4032,
+            0.7647,
+            1.0,
+            0.0
+          ],
+          "neg_signals": [
+            0.4197,
+            0.3834,
+            0.0,
+            1.0,
+            0.5
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/11557/",
+          "pos_item": "fsld:182680",
+          "neg_item": "fsld:161865",
+          "fusion_margin": -0.2712,
+          "cosine_margin": 0.0059,
+          "pos_signals": [
+            0.4361,
+            0.4032,
+            0.7647,
+            1.0,
+            0.0
+          ],
+          "neg_signals": [
+            0.4303,
+            0.4423,
+            0.7647,
+            1.0,
+            0.1429
+          ]
+        }
+      ]
+    },
+    "20260804": {
+      "fusion_wins_cosine_loses": 15,
+      "cosine_wins_fusion_loses": 12,
+      "net_gain": 3,
+      "fusion_wins_by_type": {
+        "easy": 2,
+        "hard_similar": 10,
+        "hard_tempo_key": 3
+      },
+      "cosine_wins_by_type": {
+        "easy": 0,
+        "hard_similar": 8,
+        "hard_tempo_key": 4
+      },
+      "examples_fusion_wins": [
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/10153/",
+          "pos_item": "fsld:163661",
+          "neg_item": "fsld:244350",
+          "fusion_margin": 0.6123,
+          "cosine_margin": -0.0127,
+          "pos_signals": [
+            0.6003,
+            0.7269,
+            1.0,
+            0.0,
+            0.75
+          ],
+          "neg_signals": [
+            0.6129,
+            0.6612,
+            0.4595,
+            1.0,
+            0.75
+          ]
+        },
+        {
+          "neg_type": "easy",
+          "source_id": "http://freesound.org/apiv2/packs/1103/",
+          "pos_item": "fsld:18568",
+          "neg_item": "fsld:199873",
+          "fusion_margin": 0.0722,
+          "cosine_margin": -0.0029,
+          "pos_signals": [
+            0.7019,
+            0.6289,
+            1.0,
+            0.0,
+            0.3333
+          ],
+          "neg_signals": [
+            0.7048,
+            0.7781,
+            0.0,
+            1.0,
+            0.125
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/14826/",
+          "pos_item": "fsld:414200",
+          "neg_item": "fsld:182118",
+          "fusion_margin": 0.0044,
+          "cosine_margin": -0.0331,
+          "pos_signals": [
+            0.523,
+            0.6157,
+            1.0,
+            0.0,
+            0.4
+          ],
+          "neg_signals": [
+            0.5561,
+            0.5349,
+            0.9375,
+            0.0,
+            0.3636
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/14826/",
+          "pos_item": "fsld:414446",
+          "neg_item": "fsld:38852",
+          "fusion_margin": 0.2996,
+          "cosine_margin": -0.0022,
+          "pos_signals": [
+            0.6799,
+            0.683,
+            0.9533,
+            0.0,
+            0.4
+          ],
+          "neg_signals": [
+            0.6821,
+            0.6721,
+            0.8911,
+            1.0,
+            0.6
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/15289/",
+          "pos_item": "fsld:319313",
+          "neg_item": "fsld:198495",
+          "fusion_margin": 0.1408,
+          "cosine_margin": -0.0159,
+          "pos_signals": [
+            0.5182,
+            0.6249,
+            0.0685,
+            1.0,
+            0.1429
+          ],
+          "neg_signals": [
+            0.5341,
+            0.5166,
+            0.3973,
+            1.0,
+            0.375
+          ]
+        }
+      ],
+      "examples_cosine_wins": [
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/11557/",
+          "pos_item": "fsld:182680",
+          "neg_item": "fsld:161865",
+          "fusion_margin": -0.059,
+          "cosine_margin": 0.0059,
+          "pos_signals": [
+            0.4361,
+            0.4032,
+            0.7647,
+            1.0,
+            0.0
+          ],
+          "neg_signals": [
+            0.4303,
+            0.4423,
+            0.7647,
+            1.0,
+            0.1429
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/13602/",
+          "pos_item": "fsld:214379",
+          "neg_item": "fsld:214753",
+          "fusion_margin": -0.0276,
+          "cosine_margin": 0.0053,
+          "pos_signals": [
+            0.9547,
+            0.9479,
+            1.0,
+            1.0,
+            0.5
+          ],
+          "neg_signals": [
+            0.9494,
+            0.9326,
+            1.0,
+            0.0,
+            0.75
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/14826/",
+          "pos_item": "fsld:413376",
+          "neg_item": "fsld:233709",
+          "fusion_margin": -0.8656,
+          "cosine_margin": 0.0014,
+          "pos_signals": [
+            0.5765,
+            0.5144,
+            0.1088,
+            1.0,
+            0.3
+          ],
+          "neg_signals": [
+            0.5752,
+            0.5739,
+            0.9585,
+            0.0,
+            0.3
+          ]
+        },
+        {
+          "neg_type": "hard_tempo_key",
+          "source_id": "http://freesound.org/apiv2/packs/1578/",
+          "pos_item": "fsld:25572",
+          "neg_item": "fsld:66319",
+          "fusion_margin": -0.0036,
+          "cosine_margin": 0.0288,
+          "pos_signals": [
+            0.5275,
+            0.5126,
+            1.0,
+            1.0,
+            0.5
+          ],
+          "neg_signals": [
+            0.4987,
+            0.581,
+            0.92,
+            1.0,
+            0.2
+          ]
+        },
+        {
+          "neg_type": "hard_similar",
+          "source_id": "http://freesound.org/apiv2/packs/21329/",
+          "pos_item": "fsld:379603",
+          "neg_item": "fsld:68127",
+          "fusion_margin": -0.1591,
+          "cosine_margin": 0.0125,
+          "pos_signals": [
+            0.5348,
+            0.5794,
+            0.0,
+            1.0,
+            0.5
+          ],
+          "neg_signals": [
+            0.5223,
+            0.5253,
+            0.5349,
+            0.0,
+            0.4444
+          ]
+        }
+      ]
+    }
+  },
+  "bootstrap_ci": {
+    "full-fusion": {
+      "easy": {
+        "mean": 0.9759,
+        "ci_lo": 0.9635,
+        "ci_hi": 0.9868
+      },
+      "hard_similar": {
+        "mean": 0.8133,
+        "ci_lo": 0.7689,
+        "ci_hi": 0.8545
+      },
+      "hard_tempo_key": {
+        "mean": 0.9345,
+        "ci_lo": 0.906,
+        "ci_hi": 0.9592
+      },
+      "overall": {
+        "mean": 0.9249,
+        "ci_lo": 0.9101,
+        "ci_hi": 0.9391
+      }
+    },
+    "cosine-only": {
+      "easy": {
+        "mean": 0.9741,
+        "ci_lo": 0.9611,
+        "ci_hi": 0.9855
+      },
+      "hard_similar": {
+        "mean": 0.8136,
+        "ci_lo": 0.7697,
+        "ci_hi": 0.8555
+      },
+      "hard_tempo_key": {
+        "mean": 0.9557,
+        "ci_lo": 0.9321,
+        "ci_hi": 0.9761
+      },
+      "overall": {
+        "mean": 0.9293,
+        "ci_lo": 0.9148,
+        "ci_hi": 0.9433
+      }
+    },
+    "paired-diff": {
+      "easy": {
+        "mean_diff": 0.0019,
+        "ci_lo": -0.0052,
+        "ci_hi": 0.0095
+      },
+      "hard_similar": {
+        "mean_diff": -0.0003,
+        "ci_lo": -0.0337,
+        "ci_hi": 0.0325
+      },
+      "hard_tempo_key": {
+        "mean_diff": -0.0212,
+        "ci_lo": -0.0394,
+        "ci_hi": -0.0056
+      },
+      "overall": {
+        "mean_diff": -0.0044,
+        "ci_lo": -0.0146,
+        "ci_hi": 0.0059
+      }
+    }
+  },
+  "bootstrap_n": 2000
+}
