@@ -1,0 +1,81 @@
+% TikZ system pipeline — Pocket Producer (revised: user-control emphasis)
+\definecolor{csession}{HTML}{9BCAE7}
+\definecolor{cfingerprint}{HTML}{D4E6A9}
+\definecolor{cfusion}{HTML}{D4BFDC}
+\definecolor{cpreview}{HTML}{F9D8A0}
+\definecolor{caction}{HTML}{F9D1D2}
+\definecolor{cbadge}{HTML}{477DC0}
+\definecolor{cfeedback}{HTML}{477DC0}
+\definecolor{cedge}{HTML}{3A3A3A}
+\definecolor{ctext}{HTML}{1A1A1A}
+\definecolor{csub}{HTML}{555555}
+
+\begin{tikzpicture}[
+    node distance=0.4cm and 0.45cm,
+    every node/.style={font=\footnotesize},
+    sysbox/.style 2 args={
+        rectangle, rounded corners=2.5pt,
+        minimum width=2.1cm, minimum height=0.85cm,
+        draw=cedge, line width=0.5pt,
+        fill=#1, text=ctext, align=center,
+        inner sep=3pt,
+        append after command={
+            node [circle, fill=cbadge, text=white,
+                  font=\sffamily\tiny\bfseries,
+                  inner sep=0pt, minimum size=10pt]
+            at ([shift={(-0.10cm,0.10cm)}]\tikzlastnode.north west) {#2}
+        },
+    },
+    sub/.style={font=\tiny, text=csub},
+    arr/.style={
+        -{Stealth[length=4pt, width=3.5pt]},
+        line width=0.55pt, color=cedge,
+    },
+    fbarr/.style={
+        -{Stealth[length=4pt, width=3.5pt]},
+        line width=0.55pt, color=cfeedback, dashed,
+    },
+    brace/.style={
+        decorate, decoration={brace, amplitude=4pt, mirror},
+        line width=0.4pt, color=csub,
+    },
+]
+
+% Row 1 (top): candidate generation
+\node[sysbox={csession}{1}]   (S) {\textbf{DAW Session}};
+\node[sysbox={cfingerprint}{2}, right=of S] (F) {\textbf{Fingerprint}};
+\node[sysbox={cfusion}{3}, right=of F]   (Fu) {\textbf{Multi-Signal}\\\textbf{Ranking}};
+
+% Row 2 (bottom): user control
+\node[sysbox={cpreview}{4}, below=0.9cm of Fu]  (P) {\textbf{Preview}};
+\node[sysbox={caction}{5}, left=of P]       (A)  {\textbf{Insert / Undo}};
+\node[sysbox={csession!30}{6}, left=of A]         (Fb)  {\textbf{Feedback Log}};
+
+% Sublabels
+\node[sub, below=1pt of S.south]  {Audiotool Nexus};
+\node[sub, below=1pt of F.south]  {tempo, key, embeddings};
+\node[sub, below=1pt of Fu.south]  {cold-start BPR fusion};
+\node[sub, above=1pt of P.north] {audition before commit};
+\node[sub, above=1pt of A.north]  {single-transaction};
+\node[sub, above=1pt of Fb.north]  {accept / reject / undo};
+
+% Forward arrows
+\draw[arr] (S.east)  -- (F.west);
+\draw[arr] (F.east)  -- (Fu.west);
+\draw[arr] (Fu.south) -- (P.north);
+\draw[arr] (P.west) -- (A.east);
+\draw[arr] (A.west) -- (Fb.east);
+
+% Feedback loop
+\coordinate (fb) at ([xshift=-0.5cm]Fb.west);
+\draw[fbarr] (Fb.west) -- (fb) |- (S.west);
+\node[font=\tiny, text=cfeedback, rotate=90, anchor=south]
+    at ([xshift=-0.22cm]fb) {\textit{future personalization}};
+
+% Brace: proposer vs decider
+\draw[brace] ([yshift=-0.35cm]S.south west) -- ([yshift=-0.35cm]Fu.south east)
+    node[midway, below=5pt, font=\tiny\itshape, text=csub] {system proposes};
+\draw[brace] ([yshift=0.35cm]Fb.north west) -- ([yshift=0.35cm]P.north east)
+    node[midway, above=5pt, font=\tiny\itshape, text=csub] {musician decides};
+
+\end{tikzpicture}

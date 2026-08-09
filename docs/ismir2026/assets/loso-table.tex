@@ -1,0 +1,15 @@
+% LOSO delta table (pp): removing signal → accuracy change
+% Pack-only development set (484 train sources), mean over 5 source-grouped splits
+% Negative values = removing hurts (signal contributes)
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l r r r@{}}
+\toprule
+\textbf{Signal removed} & \textbf{easy} & \textbf{hard\_sim.} & \textbf{hard\_tk} \\
+\midrule
+audio\_cos\_mean & $-0.32$ & $-0.36$ & $-1.04$ \\
+audio\_cos\_max  & $+0.17$ & $-0.30$ & $-0.15$ \\
+\textbf{tempo}   & $-0.27$ & $\mathbf{-0.96}$ & $\mathbf{+0.68}$ \\
+key              & $-0.21$ & $+0.94$ & $+1.21$ \\
+tag\_jaccard     & $+0.09$ & $-0.79$ & $-0.07$ \\
+\bottomrule
+\end{tabular}

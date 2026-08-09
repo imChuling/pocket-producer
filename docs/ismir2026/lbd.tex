@@ -4,8 +4,6 @@
 % (sha256 e368d536b41c...dec3d, fetched 2026-07-31).
 % Rules: 2 pages scientific content + 1 page references only.
 % LBD submissions are NOT anonymized.
-% Results sections are populated ONLY from versioned artifacts via
-% research/render_lbd_assets.py — never hand-written numbers.
 % -----------------------------------------------
 
 \documentclass{article}
@@ -13,15 +11,19 @@
 \usepackage[utf8]{inputenc}
 \usepackage[lbd,submission]{ismir}
 \usepackage{amsmath,cite,url}
+\usepackage{microtype}
 \usepackage{graphicx}
 \usepackage{color}
 \usepackage{booktabs}
-\def\lbd{}	% Flag to use correct LBD settings in the paper, please do not modify this line
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,decorations.pathreplacing}
+\def\lbd{}
 
-\title{Re-entering Unfinished Music: Session-Conditioned Retrieval of Personal Audio Fragments with Reversible DAW Actions}
+\title{Pocket Producer: Session-Conditioned Retrieval\\
+as User-Controlled Proposal}
 
 \oneauthor
-  {Chuling Li} {Independent Researcher \\ {\tt chuling.li.cs@gmail.com}}
+  {Chuling Li} {University of Nottingham \\ {\tt scycl14@nottingham.ac.uk}}
 
 \def\authorname{C. Li}
 
@@ -32,237 +34,233 @@
 \maketitle
 
 \begin{abstract}
-Musicians accumulate large libraries of unfinished audio fragments yet
-get little support deciding what to try next when re-entering a
-project.
-We formulate \emph{session-conditioned continuation retrieval}: given the
-live state of a DAW project, rank a musician's own fragments by their
-utility for the next creative step.
-Pocket Producer implements this in Audiotool: a transparent fingerprint
-of the live project, ranking with frozen audio--text representations,
-and reversible single-transaction insertion.
-On 1,755 weak pairs from the Freesound Loop Dataset, frozen CLAP cosine
-reaches 0.883 pairwise accuracy and learned rerankers (up to 335K
-parameters) cannot beat it; a five-parameter fusion of cosine, tempo,
-key, and tag signals reaches 0.794 on the hardest negatives, +4.0\,pp
-over cosine (0.754; one-sided sign test $p = 0.031$).
-Session-structure signals (instrument role gap, harmonic compatibility)
-show no gain on pack-membership labels, while an exploratory alignment
-of the same signals with external rater preferences (9~raters,
-20~pairs, Fleiss' $\kappa = 0.294$) points the opposite
-way---weak-label and human evaluations appear to reward different
-structure, motivating task-specific evaluation.
+We present Pocket Producer, a working prototype that operationalizes
+\emph{session-conditioned continuation retrieval} inside the Audiotool
+DAW\@.  A five-signal logistic fusion, trained with BPR on pack
+co-membership weak labels from the Freesound Loop Dataset, is deployed
+in the system as a cold-start candidate generator.
+Four lines of evidence show that this proxy should not be trusted to
+decide autonomously:
+(1)~the apparent fusion gain is label-sensitive---+4.0\,pp over frozen
+cosine on hard\_similar negatives when 26\% of weak labels group items
+by uploader rather than pack, but $-0.03$\,pp under pack-only labels;
+(2)~leave-one-signal-out ablation reveals regime-dependent signal
+contributions---tempo helps on hard\_similar but hurts on
+hard\_tempo\_key;
+(3)~on a held-out split committed to version control before
+evaluation, the fusion$-$cosine difference is small and uncertain
+(hard\_similar $+1.5$\,pp, 95\%~CI crossing zero) and significantly
+negative on hard\_tempo\_key;
+(4)~an exploratory pilot shows a descriptive reversal between
+weak-label signal rankings and human consensus.
+Pocket Producer therefore treats every recommendation as a
+\emph{proposal}: candidates are previewable, insertion is reversible,
+and feedback is logged for future personalization---which is not yet
+evaluated.
 \end{abstract}
 
-\section{Introduction}\label{sec:introduction}
+% ==================================================================
+\section{Introduction}\label{sec:intro}
+% ==================================================================
 
-When a musician returns to an unfinished loop-based project, the central
-question is not ``what sounds similar?''\ but ``what would be useful as
-the next step?''
-Existing work on loop compatibility~\cite{chen2020neuralloop,lattner2022samplematch,yi2024drum2bass}
-and stem coherence~\cite{ciranni2024cocola,nistal2024diffariff}
-asks whether two elements can co-exist in a mix; our query is a
-\emph{live session state}, and the candidates are the musician's own
-creative memory, not a public catalog.
+When a musician returns to an unfinished loop-based project, the
+question is not ``what sounds similar?''\ but ``what would be useful
+as the next step?''
+Loop compatibility~\cite{chen2020neuralloop,lattner2022samplematch,yi2024drum2bass,roychaudhuri2026loopmatcher},
+stem coherence~\cite{ciranni2025cocola,nistal2024diffariff,riou2025stemretrieval},
+session-conditioned generation~\cite{he2025tomi}, and reversible
+co-creation~\cite{elkins2025dawzy} all address parts of this problem.
+We define \textbf{continuation utility} as the property that a
+candidate helps the musician make progress in the current
+session---unlike similarity, it is asymmetric, context-dependent, and
+multi-dimensional.
 
-We define \textbf{continuation utility} as the property that a candidate
-fragment helps the musician make progress in the current
-session---subsuming tempo fit, timbral contrast, structural gap-filling,
-and stated intent.
-We contribute:
+We contribute: (1)~a working DAW-integrated prototype whose deployed
+ranker is the same fusion model evaluated here, treating retrieval as
+user-controlled proposal, not automatic decision;
+(2)~empirical evidence that weak-label proxy scores are sensitive to
+label construction, regime-dependent, uncertain under held-out
+evaluation, and may not reflect human judgment---motivating the
+design choice to keep creative authority with the musician.
 
-\begin{enumerate}
-\item \textbf{Task:} session-conditioned ranking of personal fragments
-  with a preregistered primary metric (pairwise accuracy over human
-  preferences).
-\item \textbf{System:} a working prototype in a real DAW (Audiotool)
-  with live document reading, reversible insertion, and explainable
-  evidence.
-\item \textbf{Protocol:} a backbone bake-off, a baseline comparison
-  (learned rerankers lose to frozen cosine; multi-signal fusion gains
-  +4.0\,pp on hard negatives), and a blind A/B evaluation with
-  9~external raters.
-\end{enumerate}
-
-\section{Pocket Producer}\label{sec:system}
-
-Figure~\ref{fig:system} shows the loop; the system reads and writes
-Audiotool projects through the Nexus SDK.
+% ==================================================================
+\section{System}\label{sec:system}
+% ==================================================================
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\columnwidth]{assets/system-figure.pdf}
-  \caption{Pocket Producer retrieval loop: live session fingerprint
-  $\rightarrow$ ranking $\rightarrow$ reversible insertion
-  $\rightarrow$ preference feedback.}
+  \resizebox{\columnwidth}{!}{\input{assets/system-figure}}
+  \caption{Pocket Producer pipeline: the system proposes
+  (steps~1--3); the musician decides (steps~4--6).  Feedback is
+  logged but personalization is not yet trained.}
   \label{fig:system}
 \end{figure}
 
-\subsection{Session Fingerprint}\label{sec:fingerprint}
+Figure~\ref{fig:system} shows the pipeline.
+The live Audiotool session is read via the Nexus SDK and mapped to
+a session fingerprint (tempo, active regions, CLAP
+embeddings~\cite{elizalde2023clap}).
+A five-signal logistic fusion trained with BPR
+loss~\cite{rendle2009bpr} ranks candidates across timbral similarity
+(CLAP cosine to session regions, mean- and max-pooled), tempo match,
+key compatibility, and tag overlap.
+The deployed ranker is this same fusion model, registered as the
+default whenever session region audio is available, with two stated
+deltas from the offline evaluation: Audiotool documents carry no key
+signature, so the key term is constant zero online, and tag context
+comes from fragments used in the session rather than pack siblings.
+Without region audio the service falls back to a transparent rules
+baseline and reports that it did so.
+The system positions itself as a \emph{proposer}: candidates are
+surfaced for preview before any session state changes.
+Accepted candidates are inserted via a single Nexus transaction with
+undo support; rejected or undone events are logged.
+This design is a response to the empirical findings in
+Section~\ref{sec:evidence}: because the proxy's correspondence to
+continuation utility is limited and regime-dependent, the system must
+not substitute its ranking for the musician's judgment.
 
-The live Nexus document is mapped deterministically to a
-\texttt{SessionFingerprint} (tempo, track counts and types, playhead,
-user-editable intent); only this summary leaves the browser, and
-missing fields are never imputed.
-Session audio regions are encoded with
-MS-CLAP 2023~\cite{elizalde2023clap} into a mean session embedding
-(CLAP's joint audio--text space also serves text intent); per-region
-instrument roles and 12-dim CQT chroma are extracted for the
-session-structure signals below.
+% ==================================================================
+\section{Weak-Label Fusion}\label{sec:fusion}
+% ==================================================================
 
-\subsection{Continuation Utility Ranking}\label{sec:ranking}
+From the FSLD~\cite{ramires2020fsld} we kept only sounds with a true
+Freesound pack (1,797 items, 605 packs), discarding items whose only
+grouping is a shared uploader.
+Each multi-item pack yields one leave-one-out query per item, with
+same-pack siblings as positives and cross-pack items as negatives in
+three difficulty tiers (\emph{easy}: tempo/key mismatch;
+\emph{hard\_tempo\_key}: compatible tempo and key;
+\emph{hard\_similar}: highest cosine to the positive from another
+pack).
+A 121-source held-out split (seed 20260810) was committed to version
+control together with the evaluation protocol \emph{before} any
+evaluation ran; all development below uses only the 484 train
+sources (981 examples).
+LAION-CLAP Music~\cite{wu2023laionclap} (512-dim) provides the
+embedding backbone.
 
-Candidate fragments are scored in two stages.
-First, per-space retrieval runs independently over four signal spaces:
-(1)~structured metadata (tempo/key/tag matching),
-(2)~frozen CLAP embeddings (cosine similarity),
-(3)~\emph{role-gap fill}---a zero-shot instrument probe boosts candidates
-whose predicted role fills a gap in the session, and
-(4)~\emph{harmonic compatibility}---transpose-invariant cross-correlation
-of CQT chroma vectors scores tonal fit across all 12 semitone shifts.
-Results are fused with Reciprocal Rank Fusion~\cite{cormack2009rrf};
-a learned reranker can be applied on top, and a rule baseline with
-structured evidence codes is the always-available fallback.
+On the train side (mean over 5 source-grouped splits), frozen cosine
+reaches 0.929 overall and 0.814 on hard\_similar; five-signal fusion
+reaches 0.925 and 0.813.
+Under pack-only labels the fusion advantage is gone: $-0.03$\,pp on
+hard\_similar, and on hard\_tempo\_key fusion is significantly
+\emph{worse} than cosine ($-2.1$\,pp, paired bootstrap 95\%~CI
+$[-3.9, -0.6]$\,pp).
 
-\subsection{Reversible Audiotool Interaction}\label{sec:interaction}
+% ==================================================================
+\section{Why the Proxy Should Not Decide Alone}%
+\label{sec:evidence}
+% ==================================================================
 
-A recommendation can be previewed and inserted in a single Nexus
-transaction; an \texttt{InsertReceipt} records created entity IDs so
-undo restores the exact prior state (verified with the official WASM
-validator); interactions are logged as preference feedback.
+Four lines of evidence, each bearing a limited conclusion, jointly
+motivate treating the proxy as a proposal rather than a decision.
 
-\section{Preliminary Evaluation}\label{sec:evaluation}
+\subsection{The Gain Is Label-Sensitive}\label{sec:labels}
 
-\subsection{Backbone Bake-off}\label{sec:bakeoff}
+An earlier version of this evaluation used the manifest's fallback
+grouping, under which 26\% of examples treated
+\emph{same-uploader} items as co-members of a production context.
+On that mixed-label corpus, fusion appeared to beat frozen cosine by
++4.0\,pp on hard\_similar (949 sources, same protocol).
+Restricting to true pack co-membership erases the gain
+(Section~\ref{sec:fusion}).
+A proxy whose measured advantage depends this strongly on how weak
+labels are constructed cannot be treated as a reliable estimate of
+continuation utility.
 
-On 2,558 items from the Freesound Loop Dataset
-(FSLD)~\cite{ramires2020fsld}, LAION-CLAP
-Music~\cite{wu2023laionclap} (512-dim) outperforms MS-CLAP 2023
-(1024-dim) on all three probes (Table~\ref{tab:backbone}) at half the
-storage.
-We deploy MS-CLAP 2023 because its training-data license audit is
-complete---quality and eligibility are separate decisions.
+\subsection{Regime-Dependent Signal Contributions}\label{sec:loso}
 
 \begin{table}[t]
   \centering
-  \caption{Backbone bake-off on 2,558 FSLD items. R@10 = same-source
-  Recall@10; Genre/Role = linear-probe accuracy.}
-  \label{tab:backbone}
+  \caption{LOSO ablation: accuracy change (pp) when one signal is
+  removed.  Pack-only train side, 484 sources, mean over 5 splits.
+  Tempo (bold) shows the clearest regime dependence.}
+  \label{tab:loso}
   \footnotesize
-  \input{assets/backbone-table}
+  \input{assets/loso-table}
 \end{table}
 
-\subsection{Baseline Comparison and Multi-Signal Fusion}\label{sec:weak}
+Table~\ref{tab:loso} shows leave-one-signal-out deltas per negative
+regime.  Removing tempo costs $-0.96$\,pp on hard\_similar (where
+candidates sound alike and tempo becomes a distinguishing factor)
+but \emph{gains} $+0.68$\,pp on hard\_tempo\_key; removing key helps
+on both hard regimes ($+0.94$\,/\,$+1.21$\,pp).
+Both patterns replicate directionally on the held-out split (tempo
+$-1.48$\,/\,$+0.37$\,pp, key $+0.62$\,/\,$+0.97$\,pp, retrained on
+the train side).
+Part of this pattern is built in: the easy and hard\_tempo\_key
+regimes are themselves constructed from tempo and key, so a
+tempo/key signal is near-constant within them by design.
+The point is not that the dependence is surprising, but that a
+single fused score averages over regimes in which individual signals
+switch sign---so its ranking cannot be uniformly trusted.
 
-We constructed 1,755 leave-one-out pairs from FSLD, using same-pack
-membership as a weak proxy for continuation utility, with three negative
-types: \emph{easy} (tempo or key incompatible), \emph{hard\_tempo\_key}
-(tempo and key both compatible), and \emph{hard\_similar} (highest
-embedding cosine from another pack).
-Splits are grouped by source pack; Table~\ref{tab:weak} reports 5-seed
-mean validation pairwise accuracy.
+\subsection{Held-Out Evaluation}\label{sec:heldout}
 
-\begin{table}[t]
-  \centering
-  \caption{Baseline comparison on FSLD weak pairs (LAION-CLAP 512-dim,
-  5 seeds). Hard-sim = hard\_similar negatives; Hard-tk =
-  hard\_tempo\_key. Bold = best per column.}
-  \label{tab:weak}
-  \footnotesize
-  \input{assets/weak-results-table}
-\end{table}
+The 121-source held-out split was evaluated exactly once, after all
+development; protocol and split were committed to version control
+first, so the freeze is verifiable in the repository history.
+Fusion was retrained on the 484-source train side with the same
+hyperparameters and 5 seeds.
+The fusion$-$cosine difference on hard\_similar is $+1.5$\,pp with a
+source-grouped bootstrap 95\%~CI of $[-1.5, +4.7]$\,pp (joint
+resampling shared across seeds)---small and uncertain.
+On hard\_tempo\_key, fusion performs significantly \emph{worse} than
+cosine ($-1.0$\,pp, CI entirely below zero); overall the difference
+is $+0.4$\,pp with a CI crossing zero.
 
-Frozen cosine similarity (0.883) is already a strong baseline: two
-learned rerankers with up to 335K parameters trained with
-BPR loss~\cite{rendle2009bpr} score below it (0.735, 0.742),
-overfitting to noise in the weak labels.
-However, a five-parameter logistic fusion of audio cosine (mean and max
-pooling), tempo match, key match, and tag Jaccard overlap---trained with
-the same BPR loss---reaches \textbf{0.794 on hard\_similar negatives},
-a +4.0\,pp gain over cosine alone (0.754; one-sided sign test
-$p = 0.031$, 5/5 seeds; 95\% bootstrap CI\@
-$[.760,.828]$ vs.\ $[.717,.789]$).
-Hard\_similar negatives are cosine's failure mode (mined as
-highest-cosine from another pack); the overall gain is +1.1\,pp.
-Leave-one-out ablation shows tempo contributes the most on hard\_similar
-($-2.6$\,pp when removed); key and max-pooled cosine add $<$0.1\,pp
-marginally, consistent with redundancy against the mean-pooled signal.
-On hard\_tempo\_key negatives, where tempo and key features are neutral
-by construction, fusion (0.897) stays close to cosine (0.911), ruling
-out label leakage.
+We note residual limitations: the signal set and hyperparameters were
+designed on the earlier mixed-label corpus, and the pack-only corpus
+is a subset of data inspected during that development.  This run is a
+sensitivity re-analysis under a committed split, not de novo
+confirmatory evidence.
 
-Adding the session-structure signals (Section~\ref{sec:ranking}) does
-not improve the fusion: 7-signal results (0.892 overall, 0.792
-hard\_similar) are indistinguishable from 5-signal, and
-\texttt{cosine+session} (0.749) sits slightly below cosine
-alone---pack membership reflects recording context, not whether a
-candidate fills a compositional gap.
+\subsection{Exploratory Pilot}\label{sec:pilot}
 
-\subsection{Author Pilot Evaluation}\label{sec:human}
+Nine external raters labeled 20 blind A/B pairs (Fleiss'
+$\kappa = 0.294$; 9 consensus pairs at $\geq$7/9 majority).
+On these 9 pairs, harmonic compatibility---a signal with no
+measurable weak-label contribution in our ablations---matches the
+human majority in 7/9 cases, while tempo, the strongest
+hard\_similar contributor in Table~\ref{tab:loso}, matches in
+3/9---a descriptive reversal of the weak-label ranking.
+The comparison remains exploratory: the pilot is post-hoc, small,
+and uses a different corpus and pair construction than the weak-label
+evaluation.  It raises the possibility of misalignment between proxy
+rankings and human judgment but does not confirm it.
 
-Under a preregistered protocol (frozen 2026-07-30), the author labeled
-60 blind A/B pairs; 42 received a preference, 18 ``neither'' (30\%).
-No ranker exceeds 0.571 pairwise accuracy (chance\,=\,0.5), and
-cosine-agreement is 57.1\% (24/42)---statistically indistinguishable
-from chance (Wilson 95\% CI $[0.42, 0.71]$).
-The role-gap signal fires on only 7 of 42~pairs but agrees in 5 of 7.
-Author labels are excluded per the preregistration.
+% ==================================================================
+\section{Conclusion}\label{sec:conclusion}
+% ==================================================================
 
-\subsection{External Blind Evaluation}\label{sec:external}
-
-Nine external raters labeled the same 20~blind A/B pairs
-(180~labels).
-Fleiss' $\kappa = 0.294$ indicates fair inter-rater
-agreement---typical for subjective music-preference
-tasks~\cite{schedl2013music}---with 10 of 20~pairs reaching
-$\geq$7/9 majority.
-Most pairs elicit a clear preference (only 8.9\% ``neither'' versus
-the pilot's 30\%), suggesting context information aids
-decision-making.
-
-In a post-hoc exploratory analysis (not preregistered; five signals
-compared), we align each signal with the per-pair human majority.
-On rater-consensus pairs ($\geq$7/9), harmonic compatibility matches
-the majority in 7 of 9 cases, CLAP cosine in 6, max-pooled cosine in
-4, and tempo---the strongest theory signal on weak labels---in 3;
-the sparse role-gap signal is correct on all 3~pairs where it fires,
-echoing the pilot's 5/7.
-No single difference is significant at $n = 9$, but the direction is
-consistent: the signals that win on weak labels
-(Table~\ref{tab:weak}) lose ground on human preferences and vice
-versa, suggesting the two evaluations reward different structure and
-motivating a preregistered replication.
-
-\section{Discussion and Limitations}\label{sec:limitations}
-
-\textbf{Weak labels $\neq$ ground truth.}
-Weak labels compare signals at scale but cannot establish continuation
-utility---and can invert the human signal ranking
-(Section~\ref{sec:external}).
-Error analysis shows fusion's net gain is concentrated in hard\_similar
-(+22.6 flipped pairs/seed), with a small trade-off on hard\_tempo\_key
-($-8.2$).
-The fusion gain replicates on the deployed MS-CLAP space
-(+5.2\,pp hard\_similar, 5/5 seeds).
-
-\textbf{Scope and privacy.}
-We measure perceived relevance, not creative quality; session audio is
-never stored and OAuth tokens never leave the browser.
+Pocket Producer demonstrates that session-conditioned retrieval can
+be operationalized in a DAW while keeping creative judgment with the
+musician.
+The deployed weak-label fusion is an \emph{operational} cold-start
+candidate generator, but under clean pack-only labels it offers no
+robust advantage over frozen cosine, its signal contributions switch
+sign across negative regimes, and its rankings may not reflect human
+preference.
+Exactly this unreliability motivates the design: every recommendation
+is previewable and reversible, and the proxy never decides alone.
+Feedback logging provides the data foundation for future
+personalization, which is not yet trained or evaluated.
 
 % --- Page 3: references only ---
 
-\vspace{1em}
+\newpage
+
 \noindent\textbf{Acknowledgements.}
 The author thanks the Audiotool team for the Nexus SDK and the FSLD
 creators~\cite{ramires2020fsld}.
 
 \vspace{0.5em}
 \noindent\textbf{AI Usage Statement.}
-Claude Code (Anthropic) was used for engineering implementation and
-documentation drafting.
-All research claims, experimental design, analysis, citations, and figures
-are the sole responsibility of the author, who has verified each element
-against the linked artifacts and source publications.
+Claude Code (Anthropic) was used for engineering implementation,
+experiment scripting, and documentation drafting.
+All research claims, experimental design, and analysis are the sole
+responsibility of the author.
 
 \bibliography{references}
 
