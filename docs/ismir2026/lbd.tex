@@ -110,9 +110,11 @@ deltas from the offline evaluation: Audiotool documents carry no key
 signature, so the key term is constant zero online, and tag context
 comes from fragments used in the session rather than pack siblings.
 Without region audio the service falls back to a transparent rules
-baseline and reports that it did so.
+baseline.
 The system positions itself as a \emph{proposer}: candidates are
-surfaced for preview before any session state changes.
+surfaced for preview---together with per-signal evidence (audio
+similarity, tempo fit, tag overlap)---before any session state
+changes.
 Accepted candidates are inserted via a single Nexus transaction with
 undo support; rejected or undone events are logged.
 This design is a response to the empirical findings in
@@ -159,8 +161,8 @@ motivate treating the proxy as a proposal rather than a decision.
 \subsection{The Gain Is Label-Sensitive}\label{sec:labels}
 
 An earlier version of this evaluation used the manifest's fallback
-grouping, under which 26\% of examples treated
-\emph{same-uploader} items as co-members of a production context.
+grouping, treating \emph{same-uploader} items as co-members in 26\%
+of examples.
 On that mixed-label corpus, fusion appeared to beat frozen cosine by
 +4.0\,pp on hard\_similar (949 sources, same protocol).
 Restricting to true pack co-membership erases the gain
@@ -192,9 +194,9 @@ the train side).
 Part of this pattern is built in: the easy and hard\_tempo\_key
 regimes are themselves constructed from tempo and key, so a
 tempo/key signal is near-constant within them by design.
-The point is not that the dependence is surprising, but that a
-single fused score averages over regimes in which individual signals
-switch sign---so its ranking cannot be uniformly trusted.
+Still, a single fused score averages over regimes in which
+individual signals switch sign, so its ranking cannot be uniformly
+trusted.
 
 \subsection{Held-Out Evaluation}\label{sec:heldout}
 
@@ -238,12 +240,15 @@ Pocket Producer demonstrates that session-conditioned retrieval can
 be operationalized in a DAW while keeping creative judgment with the
 musician.
 The deployed weak-label fusion is an \emph{operational} cold-start
-candidate generator, but under clean pack-only labels it offers no
-robust advantage over frozen cosine, its signal contributions switch
-sign across negative regimes, and its rankings may not reflect human
-preference.
-Exactly this unreliability motivates the design: every recommendation
-is previewable and reversible, and the proxy never decides alone.
+candidate generator: on the held-out split it performs comparably to
+frozen cosine overall ($+0.4$\,pp, CI crossing zero), trading a
+positive but uncertain point estimate on hard\_similar ($+1.5$\,pp,
+4/5 seeds) against a significant deficit on hard\_tempo\_key---and,
+unlike a single opaque cosine score, it surfaces per-signal evidence
+with each proposal.
+Because its signal contributions switch sign across regimes and its
+rankings may not reflect human preference, the proxy never decides
+alone: every recommendation is previewable and reversible.
 Feedback logging provides the data foundation for future
 personalization, which is not yet trained or evaluated.
 
