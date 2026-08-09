@@ -101,6 +101,10 @@ def check_corpus(tex: str, split: dict, eval_data: dict):
     check_in_tex("has_seed_20260810", "20260810", tex)
     check_in_tex("has_source_grouped", "source-grouped", tex)
     check_in_tex("has_committed_before", "committed to version control", tex)
+    # Denominator honesty: query-bearing source counts must be stated.
+    check_in_tex("has_171_query_sources", "171", tex)
+    check_in_tex("has_54_query_sources", "54", tex)
+    check_in_tex("has_323_examples", "323", tex)
 
 
 def check_devset(tex: str, fusion: dict, ablation: dict):
@@ -118,20 +122,32 @@ def check_devset(tex: str, fusion: dict, ablation: dict):
     gain = round((f5_neg["hard_similar"] - cos_neg["hard_similar"]) * 100, 2)
     check("§3/hard_sim_delta_-0.03pp", -0.03, gain, tol=0.005)
 
-    # Paired bootstrap diff on hard_tempo_key from the ablation artifact
-    diff = ablation["bootstrap_ci"]["paired-diff"]["hard_tempo_key"]
-    check("§3/hard_tk_diff_-2.1pp", -2.1, round(diff["mean_diff"] * 100, 1), tol=0.05)
-    check("§3/hard_tk_ci_lo_-3.9", -3.9, round(diff["ci_lo"] * 100, 1), tol=0.05)
-    check("§3/hard_tk_ci_hi_-0.6", -0.6, round(diff["ci_hi"] * 100, 1), tol=0.05)
-    check("§3/hard_tk_ci_below_zero", True, diff["ci_hi"] < 0)
+    # hard_tempo_key deficit: DESCRIPTIVE mean only. The earlier
+    # pair-level, endpoint-averaged dev CI was statistically invalid and
+    # must not reappear; inference lives in the held-out bootstrap.
+    tk_diff = round(
+        (f5_neg["hard_tempo_key"] - cos_neg["hard_tempo_key"]) * 100, 1
+    )
+    check("§3/hard_tk_diff_-2.1pp_descriptive", -2.1, tk_diff, tol=0.05)
+
+    per_seed = ablation.get("bootstrap_ci_per_seed", {})
+    if per_seed:
+        n_neg = sum(
+            1
+            for s in per_seed.values()
+            if s["paired-diff"]["hard_tempo_key"]["mean_diff"] < 0
+        )
+        check("§3/hard_tk_negative_in_all_5_splits", 5, n_neg)
 
     check_in_tex("has_0.929", "0.929", tex)
     check_in_tex("has_0.814", "0.814", tex)
     check_in_tex("has_0.925", "0.925", tex)
     check_in_tex("has_0.813", "0.813", tex)
     check_in_tex("has_-0.03pp", "-0.03", tex)
-    check_in_tex("has_-2.1pp", "-2.1", tex)
-    check_in_tex("has_ci_-3.9_-0.6", "[-3.9, -0.6]", tex)
+    check_in_tex("has_2.1pp", "2.1", tex)
+    check_in_tex("has_descriptive", "descriptive", tex)
+    check_not_in_tex("no_invalid_dev_ci", "[-3.9, -0.6]", tex)
+    check_not_in_tex("no_dev_significance", "significantly \\emph{worse} than\ncosine ($-2.1$", tex)
 
 
 def check_label_sensitivity(tex: str, fusion_mixed: dict):
@@ -259,10 +275,14 @@ def check_pilot(tex: str, alignment: dict):
     check("§4.4/harmonic_7_of_9", 7, sigs["harmonic"]["consensus"][0])
     check("§4.4/tempo_3_of_9", 3, sigs["tempo"]["consensus"][0])
 
+    check("§4.4/n_preference_19", 19, alignment["n_preference"])
+    check("§4.4/n_pairs_20", 20, alignment["n_pairs"])
+
     check_in_tex("has_kappa_0.294", "0.294", tex)
     check_in_tex("has_7/9", "7/9", tex)
     check_in_tex("has_3/9", "3/9", tex)
-    check_in_tex("has_9_consensus", "9 consensus", tex)
+    check_in_tex("has_19_preference", "19", tex)
+    check_in_tex("has_neither_exclusion", "neither", tex)
 
 
 def check_deployment(tex: str, weights: dict):
@@ -273,9 +293,14 @@ def check_deployment(tex: str, weights: dict):
     check("§2/deploy_trained_packonly", True,
           "pack-only train split" in weights.get("trained_on", ""))
 
-    check_in_tex("has_deployed_ranker", "deployed ranker is this same fusion", tex)
+    check_in_tex("has_separate_production_model", "separate production model", tex)
+    check_in_tex("has_msclap_delta", "MS-CLAP", tex)
     check_in_tex("has_key_zero_online", "constant zero online", tex)
     check_in_tex("has_fallback", "falls back", tex)
+    # The deployed model is NOT the offline-evaluated model (different
+    # backbone, weights, and training data); the paper must not say so.
+    check_not_in_tex("no_same_fusion_model", "same fusion model", tex)
+    check_not_in_tex("no_active_regions", "active regions", tex)
 
 
 def check_removed_claims(tex: str):

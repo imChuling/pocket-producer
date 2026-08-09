@@ -125,8 +125,20 @@ class TestFusionRanker:
         )
         codes = [e.code for e in response.candidates[0].evidence]
         assert "tempo_match" in codes
-        assert "key_match" in codes
         assert "model_signal" in codes
+
+    def test_zero_contribution_signals_carry_no_evidence(self):
+        # Session key is always None online; the key term must not appear
+        # as evidence for the recommendation.
+        ranker = FusionRanker(WEIGHTS)
+        response = ranker.rank(
+            request(
+                [candidate("f1", audio_embedding=unit(1, 0, 0), key="C major")],
+            )
+        )
+        codes = [e.code for e in response.candidates[0].evidence]
+        assert "key_match" not in codes
+        assert all(e.contribution != 0.0 for e in response.candidates[0].evidence)
 
     def test_load_weights_rejects_wrong_arity(self, tmp_path):
         path = tmp_path / "weights.json"

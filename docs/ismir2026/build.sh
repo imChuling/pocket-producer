@@ -32,7 +32,9 @@ elif command -v python3 &>/dev/null; then
     if timeout 30 python3 "$REPO_ROOT/research/check_paper_numbers.py" 2>/dev/null; then
         echo "  Numbers OK."
     else
-        echo "  WARNING: number check failed or timed out (iCloud?). Continuing build."
+        echo "  ABORT: number check failed or timed out."
+        echo "  Fix the mismatch, or rerun with SKIP_CHECK=1 to override."
+        exit 1
     fi
 else
     echo "[1/5] Skipping number check (python3 not found)"
@@ -96,14 +98,6 @@ for f in "$SCRIPT_DIR/assets/"*.tex "$SCRIPT_DIR/assets/"*.pdf; do
     fi
 done
 
-# Regenerate system-figure.pdf using the proper render script if available
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-if [ -f "$REPO_ROOT/research/render_system_figure.py" ]; then
-    python3 "$REPO_ROOT/research/render_system_figure.py" 2>/dev/null \
-        && cp "$SCRIPT_DIR/assets/system-figure.pdf" "$BUILD_DIR/assets/system-figure.pdf" \
-        || echo "  WARNING: could not regenerate system-figure.pdf"
-fi
-
 echo "  Staged $(ls "$BUILD_DIR" | wc -l | tr -d ' ') files + $(ls "$BUILD_DIR/assets" | wc -l | tr -d ' ') assets"
 
 # 3. Build
@@ -123,6 +117,29 @@ echo "  File size: ${SIZE} bytes"
 
 if [ "$SIZE" -lt 10000 ]; then
     echo "  WARNING: PDF suspiciously small (< 10KB)"
+fi
+
+# Page count: LBD format is 2 content pages + 1 references = exactly 3.
+PAGES=""
+if command -v pdfinfo &>/dev/null; then
+    PAGES=$(pdfinfo "$OUT_PDF" 2>/dev/null | awk '/^Pages:/ {print $2}')
+elif command -v python3 &>/dev/null; then
+    PAGES=$(python3 - "$OUT_PDF" <<'PYEOF'
+import re, sys
+data = open(sys.argv[1], "rb").read()
+m = re.search(rb"/Type\s*/Pages.*?/Count\s+(\d+)", data, re.S)
+print(m.group(1).decode() if m else "")
+PYEOF
+)
+fi
+if [ -n "$PAGES" ]; then
+    echo "  Page count: $PAGES"
+    if [ "$PAGES" != "3" ]; then
+        echo "  ABORT: expected exactly 3 pages (2 content + 1 references), got $PAGES."
+        exit 1
+    fi
+else
+    echo "  WARNING: could not determine page count."
 fi
 
 # 5. Copy back

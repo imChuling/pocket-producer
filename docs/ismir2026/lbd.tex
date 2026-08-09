@@ -34,29 +34,29 @@ as User-Controlled Proposal}
 \maketitle
 
 \begin{abstract}
-We present Pocket Producer, a working prototype that operationalizes
+We present Pocket Producer, a prototype that operationalizes
 \emph{session-conditioned continuation retrieval} inside the Audiotool
 DAW\@.  A five-signal logistic fusion, trained with BPR on pack
-co-membership weak labels from the Freesound Loop Dataset, is deployed
-in the system as a cold-start candidate generator.
-Four lines of evidence show that this proxy should not be trusted to
-decide autonomously:
-(1)~the apparent fusion gain is label-sensitive---+4.0\,pp over frozen
-cosine on hard\_similar negatives when 26\% of weak labels group items
-by uploader rather than pack, but $-0.03$\,pp under pack-only labels;
+co-membership weak labels from the Freesound Loop Dataset, serves as
+the cold-start candidate generator; a production variant of the same
+recipe is deployed in the system.
+Four lines of evidence show this proxy should not decide
+autonomously:
+(1)~the apparent fusion gain is label-sensitive---+4.0\,pp over
+frozen cosine on hard\_similar under mixed uploader/pack labels, but
+$-0.03$\,pp under pack-only labels;
 (2)~leave-one-signal-out ablation reveals regime-dependent signal
 contributions---tempo helps on hard\_similar but hurts on
 hard\_tempo\_key;
-(3)~on a held-out split committed to version control before
-evaluation, the fusion$-$cosine difference is small and uncertain
-(hard\_similar $+1.5$\,pp, 95\%~CI crossing zero) and significantly
-negative on hard\_tempo\_key;
-(4)~an exploratory pilot shows a descriptive reversal between
+(3)~on a pre-committed held-out split the fusion$-$cosine difference
+is small and uncertain (hard\_similar $+1.5$\,pp, CI crossing zero)
+and significantly negative on hard\_tempo\_key;
+(4)~an exploratory pilot shows a descriptive divergence between
 weak-label signal rankings and human consensus.
 Pocket Producer therefore treats every recommendation as a
 \emph{proposal}: candidates are previewable, insertion is reversible,
-and feedback is logged for future personalization---which is not yet
-evaluated.
+and feedback is logged for future personalization (not yet
+evaluated).
 \end{abstract}
 
 % ==================================================================
@@ -71,17 +71,16 @@ stem coherence~\cite{ciranni2025cocola,nistal2024diffariff,riou2025stemretrieval
 session-conditioned generation~\cite{he2025tomi}, and reversible
 co-creation~\cite{elkins2025dawzy} all address parts of this problem.
 We define \textbf{continuation utility} as the property that a
-candidate helps the musician make progress in the current
-session---unlike similarity, it is asymmetric, context-dependent, and
-multi-dimensional.
+candidate helps the musician make progress in the current session;
+unlike similarity it is asymmetric and context-dependent.
 
-We contribute: (1)~a working DAW-integrated prototype whose deployed
-ranker is the same fusion model evaluated here, treating retrieval as
-user-controlled proposal, not automatic decision;
+We contribute: (1)~a DAW-integrated prototype whose deployed ranker
+shares the five-signal fusion recipe evaluated here, treating
+retrieval as user-controlled proposal, not automatic decision;
 (2)~empirical evidence that weak-label proxy scores are sensitive to
-label construction, regime-dependent, uncertain under held-out
-evaluation, and may not reflect human judgment---motivating the
-design choice to keep creative authority with the musician.
+label construction, regime-dependent, uncertain on held-out data,
+and possibly misaligned with human judgment---motivating keeping
+creative authority with the musician.
 
 % ==================================================================
 \section{System}\label{sec:system}
@@ -91,36 +90,34 @@ design choice to keep creative authority with the musician.
   \centering
   \resizebox{\columnwidth}{!}{\input{assets/system-figure}}
   \caption{Pocket Producer pipeline: the system proposes
-  (steps~1--3); the musician decides (steps~4--6).  Feedback is
-  logged but personalization is not yet trained.}
+  (steps~1--3); the musician decides (steps~4--6).}
   \label{fig:system}
 \end{figure}
 
-Figure~\ref{fig:system} shows the pipeline.
-The live Audiotool session is read via the Nexus SDK and mapped to
-a session fingerprint (tempo, active regions, CLAP
-embeddings~\cite{elizalde2023clap}).
+The live Audiotool session (Figure~\ref{fig:system}) is read via
+the Nexus SDK and mapped to a session fingerprint (tempo, and CLAP
+embeddings~\cite{elizalde2023clap} of up to eight unique samples
+referenced by the session's regions).
 A five-signal logistic fusion trained with BPR
 loss~\cite{rendle2009bpr} ranks candidates across timbral similarity
 (CLAP cosine to session regions, mean- and max-pooled), tempo match,
 key compatibility, and tag overlap.
-The deployed ranker is this same fusion model, registered as the
-default whenever session region audio is available, with two stated
-deltas from the offline evaluation: Audiotool documents carry no key
-signature, so the key term is constant zero online, and tag context
-comes from fragments used in the session rather than pack siblings.
-Without region audio the service falls back to a transparent rules
-baseline.
-The system positions itself as a \emph{proposer}: candidates are
-surfaced for preview---together with per-signal evidence (audio
-similarity, tempo fit, tag overlap)---before any session state
-changes.
+The deployed ranker follows the same five-signal recipe but is a
+separate production model, with four stated deltas from the offline
+evaluation: it runs in the production MS-CLAP space (offline:
+LAION-CLAP Music), with weights retrained there on the pack-only
+train side (mean over 5 seeds); the key term is constant zero online
+(Audiotool documents carry no key signature); and tag context comes
+from fragments used in the session rather than pack siblings.
+It is the default when session audio is available; otherwise the
+service falls back to a transparent rules baseline.
+Candidates are surfaced for preview---with per-signal evidence
+(audio similarity, tempo fit, tag overlap)---before any session
+state changes.
 Accepted candidates are inserted via a single Nexus transaction with
 undo support; rejected or undone events are logged.
-This design is a response to the empirical findings in
-Section~\ref{sec:evidence}: because the proxy's correspondence to
-continuation utility is limited and regime-dependent, the system must
-not substitute its ranking for the musician's judgment.
+This design responds to Section~\ref{sec:evidence}'s findings: the
+proxy must not substitute its ranking for the musician's judgment.
 
 % ==================================================================
 \section{Weak-Label Fusion}\label{sec:fusion}
@@ -137,8 +134,10 @@ three difficulty tiers (\emph{easy}: tempo/key mismatch;
 pack).
 A 121-source held-out split (seed 20260810) was committed to version
 control together with the evaluation protocol \emph{before} any
-evaluation ran; all development below uses only the 484 train
-sources (981 examples).
+evaluation ran.
+Development uses only the 484 train sources; the 171 with $\geq$3
+items form queries (981 examples), the rest contribute negatives
+only.
 LAION-CLAP Music~\cite{wu2023laionclap} (512-dim) provides the
 embedding backbone.
 
@@ -146,17 +145,18 @@ On the train side (mean over 5 source-grouped splits), frozen cosine
 reaches 0.929 overall and 0.814 on hard\_similar; five-signal fusion
 reaches 0.925 and 0.813.
 Under pack-only labels the fusion advantage is gone: $-0.03$\,pp on
-hard\_similar, and on hard\_tempo\_key fusion is significantly
-\emph{worse} than cosine ($-2.1$\,pp, paired bootstrap 95\%~CI
-$[-3.9, -0.6]$\,pp).
+hard\_similar, and fusion trails cosine on hard\_tempo\_key by
+2.1\,pp on average (negative in all 5 splits).
+These development-set numbers are descriptive; inference is reserved
+for the held-out evaluation (Section~\ref{sec:heldout}).
 
 % ==================================================================
 \section{Why the Proxy Should Not Decide Alone}%
 \label{sec:evidence}
 % ==================================================================
 
-Four lines of evidence, each bearing a limited conclusion, jointly
-motivate treating the proxy as a proposal rather than a decision.
+Four lines of evidence jointly motivate treating the proxy as a
+proposal rather than a decision.
 
 \subsection{The Gain Is Label-Sensitive}\label{sec:labels}
 
@@ -167,90 +167,89 @@ On that mixed-label corpus, fusion appeared to beat frozen cosine by
 +4.0\,pp on hard\_similar (949 sources, same protocol).
 Restricting to true pack co-membership erases the gain
 (Section~\ref{sec:fusion}).
-A proxy whose measured advantage depends this strongly on how weak
-labels are constructed cannot be treated as a reliable estimate of
-continuation utility.
+The restriction changes the source universe and mined negatives
+together, so the loss cannot be attributed to the uploader-grouped
+examples alone; what it shows is that the measured advantage is
+sensitive to label construction---too sensitive to treat as a
+reliable utility estimate.
 
 \subsection{Regime-Dependent Signal Contributions}\label{sec:loso}
 
 \begin{table}[t]
   \centering
   \caption{LOSO ablation: accuracy change (pp) when one signal is
-  removed.  Pack-only train side, 484 sources, mean over 5 splits.
-  Tempo (bold) shows the clearest regime dependence.}
+  removed.  Pack-only train side (Section~\ref{sec:fusion}), mean
+  over 5 splits.}
   \label{tab:loso}
   \footnotesize
   \input{assets/loso-table}
 \end{table}
 
 Table~\ref{tab:loso} shows leave-one-signal-out deltas per negative
-regime.  Removing tempo costs $-0.96$\,pp on hard\_similar (where
-candidates sound alike and tempo becomes a distinguishing factor)
-but \emph{gains} $+0.68$\,pp on hard\_tempo\_key; removing key helps
-on both hard regimes ($+0.94$\,/\,$+1.21$\,pp).
+regime.  Removing tempo costs $-0.96$\,pp on hard\_similar but
+\emph{gains} $+0.68$\,pp on hard\_tempo\_key; removing key helps on
+both hard regimes ($+0.94$\,/\,$+1.21$\,pp).
 Both patterns replicate directionally on the held-out split (tempo
-$-1.48$\,/\,$+0.37$\,pp, key $+0.62$\,/\,$+0.97$\,pp, retrained on
-the train side).
-Part of this pattern is built in: the easy and hard\_tempo\_key
-regimes are themselves constructed from tempo and key, so a
-tempo/key signal is near-constant within them by design.
-Still, a single fused score averages over regimes in which
-individual signals switch sign, so its ranking cannot be uniformly
-trusted.
+$-1.48$\,/\,$+0.37$\,pp, key $+0.62$\,/\,$+0.97$\,pp).
+Part of this pattern is built in: easy and hard\_tempo\_key are
+constructed from tempo and key, so those signals are near-constant
+within them by design.
+Still, a fused score averages over regimes where signals switch
+sign, so its ranking cannot be uniformly trusted.
 
 \subsection{Held-Out Evaluation}\label{sec:heldout}
 
-The 121-source held-out split was evaluated exactly once, after all
-development; protocol and split were committed to version control
-first, so the freeze is verifiable in the repository history.
-Fusion was retrained on the 484-source train side with the same
-hyperparameters and 5 seeds.
+The held-out split was evaluated exactly once, after all
+development; protocol and split were committed first, making the
+freeze verifiable in repository history.
+Of its 121 sources, 54 form queries (323 examples); fusion was
+retrained on the train side with the same hyperparameters and 5
+seeds.
 The fusion$-$cosine difference on hard\_similar is $+1.5$\,pp with a
 source-grouped bootstrap 95\%~CI of $[-1.5, +4.7]$\,pp (joint
-resampling shared across seeds)---small and uncertain.
+resampling of the 54 example-bearing source clusters, shared across
+seeds)---small and uncertain.
 On hard\_tempo\_key, fusion performs significantly \emph{worse} than
 cosine ($-1.0$\,pp, CI entirely below zero); overall the difference
 is $+0.4$\,pp with a CI crossing zero.
 
-We note residual limitations: the signal set and hyperparameters were
-designed on the earlier mixed-label corpus, and the pack-only corpus
-is a subset of data inspected during that development.  This run is a
-sensitivity re-analysis under a committed split, not de novo
-confirmatory evidence.
+Residual limitations: the signal set and hyperparameters were
+designed on the earlier mixed-label corpus, which subsumes this one;
+the run is a sensitivity re-analysis under a committed split, not de
+novo confirmatory evidence.
 
 \subsection{Exploratory Pilot}\label{sec:pilot}
 
 Nine external raters labeled 20 blind A/B pairs (Fleiss'
-$\kappa = 0.294$; 9 consensus pairs at $\geq$7/9 majority).
+$\kappa = 0.294$).
+One pair whose majority chose ``neither'' was excluded; 9 of the
+remaining 19 preference pairs reached $\geq$7/9 consensus.
 On these 9 pairs, harmonic compatibility---a signal with no
 measurable weak-label contribution in our ablations---matches the
 human majority in 7/9 cases, while tempo, the strongest
 hard\_similar contributor in Table~\ref{tab:loso}, matches in
-3/9---a descriptive reversal of the weak-label ranking.
-The comparison remains exploratory: the pilot is post-hoc, small,
-and uses a different corpus and pair construction than the weak-label
-evaluation.  It raises the possibility of misalignment between proxy
-rankings and human judgment but does not confirm it.
+3/9---a descriptive divergence from the weak-label ranking.
+The comparison is exploratory---post-hoc, small, and on a different
+corpus and pair construction---raising the possibility of
+misalignment with human judgment without confirming it.
 
 % ==================================================================
 \section{Conclusion}\label{sec:conclusion}
 % ==================================================================
 
-Pocket Producer demonstrates that session-conditioned retrieval can
-be operationalized in a DAW while keeping creative judgment with the
-musician.
-The deployed weak-label fusion is an \emph{operational} cold-start
-candidate generator: on the held-out split it performs comparably to
-frozen cosine overall ($+0.4$\,pp, CI crossing zero), trading a
-positive but uncertain point estimate on hard\_similar ($+1.5$\,pp,
-4/5 seeds) against a significant deficit on hard\_tempo\_key---and,
-unlike a single opaque cosine score, it surfaces per-signal evidence
-with each proposal.
-Because its signal contributions switch sign across regimes and its
-rankings may not reflect human preference, the proxy never decides
-alone: every recommendation is previewable and reversible.
-Feedback logging provides the data foundation for future
-personalization, which is not yet trained or evaluated.
+Pocket Producer operationalizes session-conditioned retrieval in a
+DAW\@.
+The weak-label fusion is an \emph{operational} cold-start candidate
+generator---comparable to frozen cosine on held-out data
+($+0.4$\,pp overall, CI crossing zero; $+1.5$\,pp on hard\_similar,
+uncertain; worse on hard\_tempo\_key)---that, unlike a bare cosine
+score, surfaces per-signal evidence with each proposal.
+Since its contributions switch sign across regimes and may not
+reflect human preference, it never decides alone: every
+recommendation is previewable and reversible.
+Whether preview and undo improve creative outcomes is untested;
+evaluating that interaction and personalization from logged feedback
+is future work.
 
 % --- Page 3: references only ---
 

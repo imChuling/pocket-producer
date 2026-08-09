@@ -10,45 +10,43 @@ Deadline: 2026-08-09
 - [x] No page numbers in header (ismir.sty handles this)
 
 ## Content integrity
-- [x] Number consistency check passes (34/34, `check_paper_numbers.py`)
-- [x] All table numbers match artifact JSONs
+- [x] Number consistency check passes (84/84, `check_paper_numbers.py`)
+  - Artifact-vs-hardcoded checks + tex-presence checks + tex-absence checks
+  - Limitations: substring presence, not semantic context; manual review still required
+- [x] All table numbers match artifact JSONs (LAION + MS-CLAP sections)
 - [x] All prose statistics match artifact JSONs
-- [x] Claim-evidence ledger reviewed — C1a/C1b/C1d/C1e verified, C4 verified
+- [x] MS-CLAP `cosine+harmonic` row footnoted (role-gap untested in this space)
+- [x] Claim-evidence ledger reviewed and synced 2026-08-08
+  - C1a/C1b/C1d/C1e verified; removed claims documented
 - [ ] C2/C3 real-account capture (partial — offline tests done, screencast pending)
 - [x] C1d explicitly labeled "post-hoc exploratory (NOT preregistered)"
-- [x] C1e explicitly labels role_gap as "UNTESTED" not "null"
-- [x] Hard_similar selection effect self-disclosed
+- [x] Role-gap 2/9 clarified: fired on 2, matched both, tied on 7
 - [x] All 5 signals reported in alignment (no selective omission)
-- [x] Tempo 3/9 included (initially omitted, added back)
+- [x] Domain-shift caveat added (corpus + pair-construction differences)
+- [x] Source-grouped splits explained (prevent pack leakage)
+- [x] Invalid bootstrap CI error bars removed from Figure 2(a)
+- [x] Figure 1 marks role/chroma as offline (grey italic annotation)
+- [x] Role/chroma signals described as offline-only in Sections 2.1 and 2.2
+- [x] Bootstrap CI and sign test p=0.031 removed from text (pseudoreplication)
+- [x] "linear-probe" corrected to "zero-shot"
 
 ## AI Usage Statement
-- [x] Present in manuscript (ISMIR 2026 policy requires it)
-- [ ] User decision pending on scope of disclosure
+- [x] Present in manuscript — scope: engineering, scripting, collation, drafting
+- [x] All research claims, design, analysis verified by author
 
 ## Build pipeline
 - [x] `build.sh` produces PDF from clean /tmp directory
 - [x] iCloud-resilient (falls back to ~/dev/ismir-backup/)
-- [x] System figure auto-regenerated if corrupt
+- [ ] build.sh does not assert PDF page count (manual verification)
 
 ## Artifacts
 - [x] `artifacts/fusion/fusion.json` — 5-signal LAION-CLAP
 - [x] `artifacts/fusion-7sig/fusion.json` — 7-signal LAION-CLAP
 - [x] `artifacts/fusion-msclap/fusion.json` — MS-CLAP replication
 - [x] `artifacts/human-signal-alignment/alignment.json` — signal-human alignment
-- [x] `research/protocol-v2.md` — preregistered replication protocol (frozen)
-- [x] `research/recruitment-plan.md` — Prolific recruitment logistics
-
-## Tests
-- [x] test_features.py — tempo, key, track_gap, intent, novelty, recency
-- [x] test_harmonic.py — transpose invariance, session chroma, shift labels
-- [x] test_role_probe.py — classify, session_roles, gap_score
-- [x] test_fusion.py — BPR convergence, weight direction, complementary signals
-
-## Backup
-- [x] ~/dev/ismir-backup/ contains all content files outside iCloud
-- [x] git bundle ~/dev/pocket-producer.bundle (799KB, verified @ 7ae5f94)
+- [x] `artifacts/eval-pack/eval_summary.json` — 9-rater vote data
 
 ## Before submission (8/9)
-- [x] Full text proofread (no issues found)
+- [x] Full text proofread
 - [ ] Compile final PDF with `build.sh` (number check enabled)
 - [ ] Upload to ISMIR submission system

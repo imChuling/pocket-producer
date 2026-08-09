@@ -47,17 +47,17 @@
 \node[sysbox={cfusion}{3}, right=of F]   (Fu) {\textbf{Multi-Signal}\\\textbf{Ranking}};
 
 % Row 2 (bottom): user control
-\node[sysbox={cpreview}{4}, below=0.9cm of Fu]  (P) {\textbf{Preview}};
+\node[sysbox={cpreview}{4}, below=0.95cm of Fu]  (P) {\textbf{Preview}};
 \node[sysbox={caction}{5}, left=of P]       (A)  {\textbf{Insert / Undo}};
 \node[sysbox={csession!30}{6}, left=of A]         (Fb)  {\textbf{Feedback Log}};
 
 % Sublabels
-\node[sub, below=1pt of S.south]  {Audiotool Nexus};
-\node[sub, below=1pt of F.south]  {tempo, key, embeddings};
-\node[sub, below=1pt of Fu.south]  {cold-start BPR fusion};
-\node[sub, above=1pt of P.north] {audition before commit};
-\node[sub, above=1pt of A.north]  {single-transaction};
-\node[sub, above=1pt of Fb.north]  {accept / reject / undo};
+\node[sub, below=2pt of S.south]  {Audiotool Nexus};
+\node[sub, below=2pt of F.south]  {tempo, session audio};
+\node[sub, below=2pt of Fu.south]  {cold-start BPR fusion};
+\node[sub, below=2pt of P.south] {audition before commit};
+\node[sub, below=2pt of A.south]  {single-transaction};
+\node[sub, below=2pt of Fb.south]  {accept / reject / undo};
 
 % Forward arrows
 \draw[arr] (S.east)  -- (F.west);
@@ -72,10 +72,12 @@
 \node[font=\tiny, text=cfeedback, rotate=90, anchor=south]
     at ([xshift=-0.22cm]fb) {\textit{future personalization}};
 
-% Brace: proposer vs decider
-\draw[brace] ([yshift=-0.35cm]S.south west) -- ([yshift=-0.35cm]Fu.south east)
-    node[midway, below=5pt, font=\tiny\itshape, text=csub] {system proposes};
-\draw[brace] ([yshift=0.35cm]Fb.north west) -- ([yshift=0.35cm]P.north east)
-    node[midway, above=5pt, font=\tiny\itshape, text=csub] {musician decides};
+% Braces on the outer edges: proposer above row 1, decider below row 2
+% (keeps the inter-row gap free for sublabels and arrows).
+\draw[decorate, decoration={brace, amplitude=4pt}, line width=0.4pt, color=csub]
+    ([yshift=0.3cm]S.north west) -- ([yshift=0.3cm]Fu.north east)
+    node[midway, above=4pt, font=\tiny\itshape, text=csub] {system proposes};
+\draw[brace] ([yshift=-0.42cm]Fb.south west) -- ([yshift=-0.42cm]P.south east)
+    node[midway, below=4pt, font=\tiny\itshape, text=csub] {musician decides};
 
 \end{tikzpicture}
