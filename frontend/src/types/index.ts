@@ -4,6 +4,12 @@ export interface EditHistoryEntry {
   edited_at: string;
 }
 
+export interface FragmentComment {
+  id: string;
+  text: string;
+  created_at: string;
+}
+
 export interface Fragment {
   _id: string;
   user_id: string;
@@ -29,6 +35,7 @@ export interface Fragment {
   connection_types?: string[];
   agent_narrative?: string;
   notes?: string;
+  comments?: FragmentComment[];
   user_edited_fields?: string[];
   agent_result?: string;
   edit_history?: EditHistoryEntry[];

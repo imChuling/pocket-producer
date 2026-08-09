@@ -208,10 +208,7 @@ export default function ProjectDetailPage({
                 <NextActionCard
                   projectId={project._id}
                   action={project.next_action}
-                  onUpdate={(a, score) => {
-                    project.next_action = a ?? undefined;
-                    if (score !== undefined) project.rescue_score = score;
-                  }}
+                  onUpdate={() => refresh()}
                 />
               )}
 

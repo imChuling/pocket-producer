@@ -248,44 +248,6 @@ function EmotionFlow({ emotions }: { emotions: Record<string, number> }) {
 }
 
 /* ═══════════════════════════════════════════
-   Style Cloud — bubble layout
-   ═══════════════════════════════════════════ */
-function StyleCloud({ styles }: { styles: { _id: string; count: number }[] }) {
-  const max = Math.max(...styles.map(s => s.count), 1);
-  const gradients = [
-    "linear-gradient(135deg, rgba(160,181,235,0.22), rgba(123,143,204,0.12))",
-    "linear-gradient(135deg, rgba(212,160,106,0.2), rgba(180,130,80,0.1))",
-    "linear-gradient(135deg, rgba(196,164,78,0.2), rgba(170,140,60,0.1))",
-    "linear-gradient(135deg, rgba(143,163,208,0.2), rgba(120,140,180,0.1))",
-    "linear-gradient(135deg, rgba(184,200,232,0.2), rgba(150,168,200,0.1))",
-    "linear-gradient(135deg, rgba(240,196,144,0.2), rgba(200,160,110,0.1))",
-  ];
-  return (
-    <div className="flex flex-wrap gap-2.5 justify-center">
-      {styles.map((s, i) => {
-        const intensity = s.count / max;
-        const size = 0.78 + intensity * 0.28;
-        return (
-          <span
-            key={s._id}
-            className="px-4 py-2 rounded-full animate-tag-pop font-medium border border-white/50 backdrop-blur-sm"
-            style={{
-              fontSize: `${size}rem`,
-              animationDelay: `${i * 70}ms`,
-              background: gradients[i % gradients.length],
-              color: intensity > 0.5 ? "#000000" : "#777169",
-              boxShadow: intensity > 0.5 ? "0 2px 12px rgba(160,181,235,0.15)" : "none",
-            }}
-          >
-            {s._id}
-          </span>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════
    Structure Donut — Canvas with animation
    ═══════════════════════════════════════════ */
 function StructureDonut({ structures }: { structures: { _id: string; count: number }[] }) {

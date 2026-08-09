@@ -78,7 +78,6 @@ export function StyleBubbles({ styles }: StyleBubblesProps) {
 
     function excite(b: Bubble, angle: number, strength: number) {
       for (let m = 0; m < NUM_MODES; m++) {
-        const modeN = m + 2;
         const contribution = strength * (m === 0 ? 1 : 0.6 / m);
         b.modes[m].vel += contribution;
         b.modes[m].phase = angle;
