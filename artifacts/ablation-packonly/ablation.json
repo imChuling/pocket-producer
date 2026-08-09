@@ -1,5 +1,5 @@
 {
-  "experiment": "ablation + error analysis + bootstrap CIs",
+  "experiment": "ablation + error analysis + per-seed source-grouped CIs",
   "signals": [
     "audio_cos_mean",
     "audio_cos_max",
@@ -1281,73 +1281,408 @@
       ]
     }
   },
-  "bootstrap_ci": {
-    "full-fusion": {
-      "easy": {
-        "mean": 0.9759,
-        "ci_lo": 0.9635,
-        "ci_hi": 0.9868
+  "bootstrap_ci_per_seed": {
+    "20260725": {
+      "full-fusion": {
+        "easy": {
+          "mean": 0.9784,
+          "ci_lo": 0.964,
+          "ci_hi": 0.9912,
+          "n_sources": 50
+        },
+        "hard_similar": {
+          "mean": 0.814,
+          "ci_lo": 0.7551,
+          "ci_hi": 0.8713,
+          "n_sources": 50
+        },
+        "hard_tempo_key": {
+          "mean": 0.9664,
+          "ci_lo": 0.9417,
+          "ci_hi": 0.9865,
+          "n_sources": 50
+        },
+        "overall": {
+          "mean": 0.9342,
+          "ci_lo": 0.9135,
+          "ci_hi": 0.9542,
+          "n_sources": 50
+        }
       },
-      "hard_similar": {
-        "mean": 0.8133,
-        "ci_lo": 0.7689,
-        "ci_hi": 0.8545
+      "cosine-only": {
+        "easy": {
+          "mean": 0.9834,
+          "ci_lo": 0.9701,
+          "ci_hi": 0.994,
+          "n_sources": 50
+        },
+        "hard_similar": {
+          "mean": 0.8073,
+          "ci_lo": 0.7417,
+          "ci_hi": 0.8656,
+          "n_sources": 50
+        },
+        "hard_tempo_key": {
+          "mean": 0.9799,
+          "ci_lo": 0.9591,
+          "ci_hi": 0.9963,
+          "n_sources": 50
+        },
+        "overall": {
+          "mean": 0.9384,
+          "ci_lo": 0.9196,
+          "ci_hi": 0.9553,
+          "n_sources": 50
+        }
       },
-      "hard_tempo_key": {
-        "mean": 0.9345,
-        "ci_lo": 0.906,
-        "ci_hi": 0.9592
-      },
-      "overall": {
-        "mean": 0.9249,
-        "ci_lo": 0.9101,
-        "ci_hi": 0.9391
+      "paired-diff": {
+        "easy": {
+          "mean_diff": -0.005,
+          "ci_lo": -0.0137,
+          "ci_hi": 0.0,
+          "n_sources": 50
+        },
+        "hard_similar": {
+          "mean_diff": 0.0066,
+          "ci_lo": -0.0163,
+          "ci_hi": 0.0329,
+          "n_sources": 50
+        },
+        "hard_tempo_key": {
+          "mean_diff": -0.0134,
+          "ci_lo": -0.0297,
+          "ci_hi": 0.0,
+          "n_sources": 50
+        },
+        "overall": {
+          "mean_diff": -0.0042,
+          "ci_lo": -0.0125,
+          "ci_hi": 0.0046,
+          "n_sources": 50
+        }
       }
     },
-    "cosine-only": {
-      "easy": {
-        "mean": 0.9741,
-        "ci_lo": 0.9611,
-        "ci_hi": 0.9855
+    "20260801": {
+      "full-fusion": {
+        "easy": {
+          "mean": 0.9838,
+          "ci_lo": 0.9689,
+          "ci_hi": 0.9945,
+          "n_sources": 60
+        },
+        "hard_similar": {
+          "mean": 0.8275,
+          "ci_lo": 0.7727,
+          "ci_hi": 0.8781,
+          "n_sources": 60
+        },
+        "hard_tempo_key": {
+          "mean": 0.9051,
+          "ci_lo": 0.8605,
+          "ci_hi": 0.9421,
+          "n_sources": 60
+        },
+        "overall": {
+          "mean": 0.9251,
+          "ci_lo": 0.8994,
+          "ci_hi": 0.9474,
+          "n_sources": 60
+        }
       },
-      "hard_similar": {
-        "mean": 0.8136,
-        "ci_lo": 0.7697,
-        "ci_hi": 0.8555
+      "cosine-only": {
+        "easy": {
+          "mean": 0.9784,
+          "ci_lo": 0.9606,
+          "ci_hi": 0.992,
+          "n_sources": 60
+        },
+        "hard_similar": {
+          "mean": 0.8329,
+          "ci_lo": 0.7813,
+          "ci_hi": 0.8802,
+          "n_sources": 60
+        },
+        "hard_tempo_key": {
+          "mean": 0.9539,
+          "ci_lo": 0.9216,
+          "ci_hi": 0.9799,
+          "n_sources": 60
+        },
+        "overall": {
+          "mean": 0.9359,
+          "ci_lo": 0.9106,
+          "ci_hi": 0.9567,
+          "n_sources": 60
+        }
       },
-      "hard_tempo_key": {
-        "mean": 0.9557,
-        "ci_lo": 0.9321,
-        "ci_hi": 0.9761
-      },
-      "overall": {
-        "mean": 0.9293,
-        "ci_lo": 0.9148,
-        "ci_hi": 0.9433
+      "paired-diff": {
+        "easy": {
+          "mean_diff": 0.0054,
+          "ci_lo": -0.0015,
+          "ci_hi": 0.0138,
+          "n_sources": 60
+        },
+        "hard_similar": {
+          "mean_diff": -0.0054,
+          "ci_lo": -0.0435,
+          "ci_hi": 0.0365,
+          "n_sources": 60
+        },
+        "hard_tempo_key": {
+          "mean_diff": -0.0488,
+          "ci_lo": -0.0798,
+          "ci_hi": -0.0208,
+          "n_sources": 60
+        },
+        "overall": {
+          "mean_diff": -0.0108,
+          "ci_lo": -0.0258,
+          "ci_hi": 0.0039,
+          "n_sources": 60
+        }
       }
     },
-    "paired-diff": {
-      "easy": {
-        "mean_diff": 0.0019,
-        "ci_lo": -0.0052,
-        "ci_hi": 0.0095
+    "20260802": {
+      "full-fusion": {
+        "easy": {
+          "mean": 0.984,
+          "ci_lo": 0.9673,
+          "ci_hi": 0.9968,
+          "n_sources": 53
+        },
+        "hard_similar": {
+          "mean": 0.8211,
+          "ci_lo": 0.7643,
+          "ci_hi": 0.8794,
+          "n_sources": 53
+        },
+        "hard_tempo_key": {
+          "mean": 0.9241,
+          "ci_lo": 0.8812,
+          "ci_hi": 0.9605,
+          "n_sources": 52
+        },
+        "overall": {
+          "mean": 0.9283,
+          "ci_lo": 0.9027,
+          "ci_hi": 0.952,
+          "n_sources": 53
+        }
       },
-      "hard_similar": {
-        "mean_diff": -0.0003,
-        "ci_lo": -0.0337,
-        "ci_hi": 0.0325
+      "cosine-only": {
+        "easy": {
+          "mean": 0.9728,
+          "ci_lo": 0.9489,
+          "ci_hi": 0.9916,
+          "n_sources": 53
+        },
+        "hard_similar": {
+          "mean": 0.8051,
+          "ci_lo": 0.7409,
+          "ci_hi": 0.8608,
+          "n_sources": 53
+        },
+        "hard_tempo_key": {
+          "mean": 0.9505,
+          "ci_lo": 0.9189,
+          "ci_hi": 0.9757,
+          "n_sources": 52
+        },
+        "overall": {
+          "mean": 0.9251,
+          "ci_lo": 0.8964,
+          "ci_hi": 0.9478,
+          "n_sources": 53
+        }
       },
-      "hard_tempo_key": {
-        "mean_diff": -0.0212,
-        "ci_lo": -0.0394,
-        "ci_hi": -0.0056
+      "paired-diff": {
+        "easy": {
+          "mean_diff": 0.0112,
+          "ci_lo": 0.0,
+          "ci_hi": 0.0277,
+          "n_sources": 53
+        },
+        "hard_similar": {
+          "mean_diff": 0.016,
+          "ci_lo": -0.0223,
+          "ci_hi": 0.0532,
+          "n_sources": 53
+        },
+        "hard_tempo_key": {
+          "mean_diff": -0.0264,
+          "ci_lo": -0.05,
+          "ci_hi": -0.0069,
+          "n_sources": 52
+        },
+        "overall": {
+          "mean_diff": 0.0032,
+          "ci_lo": -0.0113,
+          "ci_hi": 0.0202,
+          "n_sources": 53
+        }
+      }
+    },
+    "20260803": {
+      "full-fusion": {
+        "easy": {
+          "mean": 0.968,
+          "ci_lo": 0.9469,
+          "ci_hi": 0.9852,
+          "n_sources": 51
+        },
+        "hard_similar": {
+          "mean": 0.7794,
+          "ci_lo": 0.7083,
+          "ci_hi": 0.8464,
+          "n_sources": 51
+        },
+        "hard_tempo_key": {
+          "mean": 0.9429,
+          "ci_lo": 0.9041,
+          "ci_hi": 0.9737,
+          "n_sources": 51
+        },
+        "overall": {
+          "mean": 0.9145,
+          "ci_lo": 0.8905,
+          "ci_hi": 0.9386,
+          "n_sources": 51
+        }
       },
-      "overall": {
-        "mean_diff": -0.0044,
-        "ci_lo": -0.0146,
-        "ci_hi": 0.0059
+      "cosine-only": {
+        "easy": {
+          "mean": 0.9733,
+          "ci_lo": 0.953,
+          "ci_hi": 0.9903,
+          "n_sources": 51
+        },
+        "hard_similar": {
+          "mean": 0.8043,
+          "ci_lo": 0.7356,
+          "ci_hi": 0.8636,
+          "n_sources": 51
+        },
+        "hard_tempo_key": {
+          "mean": 0.9571,
+          "ci_lo": 0.9308,
+          "ci_hi": 0.9778,
+          "n_sources": 51
+        },
+        "overall": {
+          "mean": 0.927,
+          "ci_lo": 0.9032,
+          "ci_hi": 0.9485,
+          "n_sources": 51
+        }
+      },
+      "paired-diff": {
+        "easy": {
+          "mean_diff": -0.0053,
+          "ci_lo": -0.0163,
+          "ci_hi": 0.0049,
+          "n_sources": 51
+        },
+        "hard_similar": {
+          "mean_diff": -0.0249,
+          "ci_lo": -0.0726,
+          "ci_hi": 0.0224,
+          "n_sources": 51
+        },
+        "hard_tempo_key": {
+          "mean_diff": -0.0143,
+          "ci_lo": -0.0366,
+          "ci_hi": 0.0035,
+          "n_sources": 51
+        },
+        "overall": {
+          "mean_diff": -0.0125,
+          "ci_lo": -0.0271,
+          "ci_hi": 0.0018,
+          "n_sources": 51
+        }
+      }
+    },
+    "20260804": {
+      "full-fusion": {
+        "easy": {
+          "mean": 0.9655,
+          "ci_lo": 0.9434,
+          "ci_hi": 0.984,
+          "n_sources": 56
+        },
+        "hard_similar": {
+          "mean": 0.8245,
+          "ci_lo": 0.766,
+          "ci_hi": 0.8734,
+          "n_sources": 56
+        },
+        "hard_tempo_key": {
+          "mean": 0.934,
+          "ci_lo": 0.8957,
+          "ci_hi": 0.9668,
+          "n_sources": 56
+        },
+        "overall": {
+          "mean": 0.9224,
+          "ci_lo": 0.8967,
+          "ci_hi": 0.9447,
+          "n_sources": 56
+        }
+      },
+      "cosine-only": {
+        "easy": {
+          "mean": 0.9624,
+          "ci_lo": 0.9396,
+          "ci_hi": 0.9815,
+          "n_sources": 56
+        },
+        "hard_similar": {
+          "mean": 0.8182,
+          "ci_lo": 0.7687,
+          "ci_hi": 0.8617,
+          "n_sources": 56
+        },
+        "hard_tempo_key": {
+          "mean": 0.9371,
+          "ci_lo": 0.9022,
+          "ci_hi": 0.9676,
+          "n_sources": 56
+        },
+        "overall": {
+          "mean": 0.92,
+          "ci_lo": 0.8959,
+          "ci_hi": 0.9417,
+          "n_sources": 56
+        }
+      },
+      "paired-diff": {
+        "easy": {
+          "mean_diff": 0.0031,
+          "ci_lo": 0.0,
+          "ci_hi": 0.0084,
+          "n_sources": 56
+        },
+        "hard_similar": {
+          "mean_diff": 0.0063,
+          "ci_lo": -0.0231,
+          "ci_hi": 0.0308,
+          "n_sources": 56
+        },
+        "hard_tempo_key": {
+          "mean_diff": -0.0031,
+          "ci_lo": -0.0139,
+          "ci_hi": 0.0069,
+          "n_sources": 56
+        },
+        "overall": {
+          "mean_diff": 0.0024,
+          "ci_lo": -0.0055,
+          "ci_hi": 0.0092,
+          "n_sources": 56
+        }
       }
     }
   },
+  "bootstrap_note": "Source-grouped resampling within each seed's validation split. No cross-seed pooling: seeds use different validation splits, and averaging CI endpoints is not a valid pooled bootstrap.",
   "bootstrap_n": 2000
 }

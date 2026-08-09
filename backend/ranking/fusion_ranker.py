@@ -108,27 +108,26 @@ class FusionRanker:
             contributions = self._w * signals
             score = round(1.0 / (1.0 + math.exp(-float(contributions.sum()))), 6)
 
+            # Zero-contribution signals carry no evidence: a missing input
+            # (e.g. key, which Audiotool never provides) must not surface
+            # as a reason for the recommendation.
             evidence = [
-                RankEvidence(
-                    code="model_signal",
-                    label="Sounds close to your session regions",
-                    contribution=round(float(contributions[0] + contributions[1]), 6),
-                ),
-                RankEvidence(
-                    code="tempo_match",
-                    label="Tempo fits the session",
-                    contribution=round(float(contributions[2]), 6),
-                ),
-                RankEvidence(
-                    code="key_match",
-                    label="Key compatibility",
-                    contribution=round(float(contributions[3]), 6),
-                ),
-                RankEvidence(
-                    code="model_signal",
-                    label="Shares tags with recent fragments",
-                    contribution=round(float(contributions[4]), 6),
-                ),
+                RankEvidence(code=code, label=label, contribution=round(c, 6))
+                for code, label, c in [
+                    (
+                        "model_signal",
+                        "Sounds close to your session regions",
+                        float(contributions[0] + contributions[1]),
+                    ),
+                    ("tempo_match", "Tempo fits the session", float(contributions[2])),
+                    ("key_match", "Key compatibility", float(contributions[3])),
+                    (
+                        "model_signal",
+                        "Shares tags with recent fragments",
+                        float(contributions[4]),
+                    ),
+                ]
+                if c != 0.0
             ]
             ranked.append(
                 RankedCandidate(

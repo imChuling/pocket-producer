@@ -164,55 +164,71 @@ def aggregate(pairs):
     return result
 
 
+def _grouped_boot(values_by_source, n_boot, alpha):
+    """Source-grouped bootstrap of a mean: resample SOURCES with replacement.
+
+    Pairs within a source are correlated (shared context and positives),
+    so the source is the exchangeable unit, not the pair.
+    """
+    sources = sorted(values_by_source)
+    sums = np.array([sum(values_by_source[s]) for s in sources])
+    counts = np.array([len(values_by_source[s]) for s in sources])
+    n = len(sources)
+
+    boot_means = []
+    for seed in BOOTSTRAP_SEEDS[:n_boot]:
+        rng = np.random.default_rng(seed)
+        idx = rng.integers(0, n, size=n)
+        total = counts[idx].sum()
+        if total == 0:
+            continue
+        boot_means.append(float(sums[idx].sum() / total))
+    lo = float(np.percentile(boot_means, 100 * alpha / 2))
+    hi = float(np.percentile(boot_means, 100 * (1 - alpha / 2)))
+    return float(sums.sum() / counts.sum()), lo, hi, n
+
+
 def bootstrap_ci(pairs, n_boot=2000, alpha=0.05):
-    """Stratified bootstrap: resample within each neg_type."""
-    by_type = {}
+    """Source-grouped bootstrap per neg_type (and overall)."""
+    grouped = {}
     for p in pairs:
-        by_type.setdefault(p["neg_type"], []).append(p["win"])
-    by_type["overall"] = [p["win"] for p in pairs]
+        grouped.setdefault(p["neg_type"], {}).setdefault(p["source_id"], []).append(
+            p["win"]
+        )
+        grouped.setdefault("overall", {}).setdefault(p["source_id"], []).append(
+            p["win"]
+        )
 
     cis = {}
-    for ntype, wins in sorted(by_type.items()):
-        wins = np.array(wins)
-        boot_means = []
-        for seed in BOOTSTRAP_SEEDS[:n_boot]:
-            rng = np.random.default_rng(seed)
-            sample = rng.choice(wins, size=len(wins), replace=True)
-            boot_means.append(float(sample.mean()))
-        lo = float(np.percentile(boot_means, 100 * alpha / 2))
-        hi = float(np.percentile(boot_means, 100 * (1 - alpha / 2)))
+    for ntype, by_source in sorted(grouped.items()):
+        mean, lo, hi, n_src = _grouped_boot(by_source, n_boot, alpha)
         cis[ntype] = {
-            "mean": round(float(wins.mean()), 4),
+            "mean": round(mean, 4),
             "ci_lo": round(lo, 4),
             "ci_hi": round(hi, 4),
-            "n": len(wins),
+            "n_sources": n_src,
         }
     return cis
 
 
 def bootstrap_paired_diff_ci(pairs_a, pairs_b, n_boot=2000, alpha=0.05):
-    """Bootstrap CI on paired difference (a - b) per pair, stratified by neg_type."""
-    by_type = {}
+    """Source-grouped bootstrap CI on the paired per-pair difference (a - b)."""
+    grouped = {}
     for pa, pb in zip(pairs_a, pairs_b):
-        nt = pa["neg_type"]
-        by_type.setdefault(nt, []).append(pa["win"] - pb["win"])
-    by_type["overall"] = [pa["win"] - pb["win"] for pa, pb in zip(pairs_a, pairs_b)]
+        d = pa["win"] - pb["win"]
+        grouped.setdefault(pa["neg_type"], {}).setdefault(
+            pa["source_id"], []
+        ).append(d)
+        grouped.setdefault("overall", {}).setdefault(pa["source_id"], []).append(d)
 
     cis = {}
-    for ntype, diffs in sorted(by_type.items()):
-        diffs = np.array(diffs)
-        boot_means = []
-        for seed in BOOTSTRAP_SEEDS[:n_boot]:
-            rng = np.random.default_rng(seed)
-            sample = rng.choice(diffs, size=len(diffs), replace=True)
-            boot_means.append(float(sample.mean()))
-        lo = float(np.percentile(boot_means, 100 * alpha / 2))
-        hi = float(np.percentile(boot_means, 100 * (1 - alpha / 2)))
+    for ntype, by_source in sorted(grouped.items()):
+        mean, lo, hi, n_src = _grouped_boot(by_source, n_boot, alpha)
         cis[ntype] = {
-            "mean_diff": round(float(diffs.mean()), 4),
+            "mean_diff": round(mean, 4),
             "ci_lo": round(lo, 4),
             "ci_hi": round(hi, 4),
-            "n": len(diffs),
+            "n_sources": n_src,
         }
     return cis
 
@@ -370,46 +386,35 @@ def main():
               f"cosine_wins={err_summary[f'{nt}_cosine_wins']}, "
               f"net={err_summary[f'{nt}_net']}", flush=True)
 
-    # --- Aggregate bootstrap CIs ---
-    print("\n=== Bootstrap CIs (pooled across seeds) ===\n", flush=True)
-    ci_summary = {}
-    for cond in ["full-fusion", "cosine-only"]:
-        ci_summary[cond] = {}
-        for nt in sorted(all_cis[SEEDS[0]][cond].keys()):
-            means = [all_cis[s][cond][nt]["mean"] for s in SEEDS]
-            los = [all_cis[s][cond][nt]["ci_lo"] for s in SEEDS]
-            his = [all_cis[s][cond][nt]["ci_hi"] for s in SEEDS]
-            ci_summary[cond][nt] = {
-                "mean": round(statistics.mean(means), 4),
-                "ci_lo": round(statistics.mean(los), 4),
-                "ci_hi": round(statistics.mean(his), 4),
-            }
-            c = ci_summary[cond][nt]
-            print(f"  {cond:15s} {nt:16s} {c['mean']:.4f} [{c['ci_lo']:.4f}, {c['ci_hi']:.4f}]", flush=True)
-
-    # --- Aggregate paired-difference CIs ---
-    print("\n=== Paired-difference CIs (fusion − cosine, pooled) ===\n", flush=True)
-    ci_summary["paired-diff"] = {}
-    for nt in sorted(all_cis[SEEDS[0]]["paired-diff"].keys()):
-        mean_diffs = [all_cis[s]["paired-diff"][nt]["mean_diff"] for s in SEEDS]
-        los = [all_cis[s]["paired-diff"][nt]["ci_lo"] for s in SEEDS]
-        his = [all_cis[s]["paired-diff"][nt]["ci_hi"] for s in SEEDS]
-        ci_summary["paired-diff"][nt] = {
-            "mean_diff": round(statistics.mean(mean_diffs), 4),
-            "ci_lo": round(statistics.mean(los), 4),
-            "ci_hi": round(statistics.mean(his), 4),
-        }
-        d = ci_summary["paired-diff"][nt]
-        print(f"  diff {nt:16s} {d['mean_diff']:+.4f} [{d['ci_lo']:+.4f}, {d['ci_hi']:+.4f}]", flush=True)
+    # --- Per-seed bootstrap CIs (NOT pooled) ---
+    # Each seed has a different validation split, so seeds are separate
+    # experiments here. Averaging CI endpoints across seeds is not a valid
+    # pooled bootstrap and was removed; inference across seeds is reserved
+    # for the held-out evaluation (joint source resampling in
+    # bootstrap_heldout.py).
+    print("\n=== Per-seed source-grouped CIs (no cross-seed pooling) ===\n",
+          flush=True)
+    for s in SEEDS:
+        d = all_cis[s]["paired-diff"]
+        line = "  ".join(
+            f"{nt}={v['mean_diff']:+.4f}[{v['ci_lo']:+.3f},{v['ci_hi']:+.3f}]"
+            for nt, v in sorted(d.items())
+        )
+        print(f"  seed {s}: {line}", flush=True)
 
     report = {
-        "experiment": "ablation + error analysis + bootstrap CIs",
+        "experiment": "ablation + error analysis + per-seed source-grouped CIs",
         "signals": SIGNALS,
         "seeds": SEEDS,
         "ablation": abl_summary,
         "error_analysis": err_summary,
         "error_analysis_per_seed": {str(s): all_errors[s] for s in SEEDS},
-        "bootstrap_ci": ci_summary,
+        "bootstrap_ci_per_seed": {str(s): all_cis[s] for s in SEEDS},
+        "bootstrap_note": (
+            "Source-grouped resampling within each seed's validation split. "
+            "No cross-seed pooling: seeds use different validation splits, "
+            "and averaging CI endpoints is not a valid pooled bootstrap."
+        ),
         "bootstrap_n": 2000,
     }
     out = pathlib.Path(args.output)

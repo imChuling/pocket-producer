@@ -156,8 +156,11 @@ def main():
     per_seed_weights = []
 
     for seed in SEEDS:
-        # Internal train/val split WITHIN train sources for early stopping
-        # (protocol: same source-grouped splits within train only)
+        # Internal train/val split WITHIN train sources, mirroring the dev
+        # CV so each seed's weights come from the same training recipe.
+        # NOTE: there is no early stopping — train_logistic runs a fixed
+        # 300 epochs; the internal val split only shapes which examples
+        # each seed trains on.
         train_source_ids = [e["source_id"] for e in train_examples]
         int_train_src, int_val_src = split_sources(
             train_source_ids, seed=seed, val_fraction=0.25
