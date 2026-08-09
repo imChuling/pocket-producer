@@ -13,6 +13,7 @@ import { AudioPlayer } from "./audio-player";
 import { TextContent } from "./text-content";
 import { TagEditor } from "./tag-editor";
 import { NotesEditor } from "./notes-editor";
+import { CommentsEditor } from "./comments-editor";
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -37,6 +38,11 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
   const [editTitle, setEditTitle] = useState("");
   const [pipelineStep, setPipelineStep] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  // Latest onUpdated without retriggering the status-stream effect.
+  const onUpdatedRef = useRef(onUpdated);
+  useEffect(() => {
+    onUpdatedRef.current = onUpdated;
+  });
 
   const isStuckProcessing = fragment.status === "processing" && fragment.tags && fragment.tags.length > 0;
   const isProcessing = reanalyzing || (fragment.status === "processing" && !isStuckProcessing);
@@ -44,11 +50,16 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
   const isAudio = fragment.type === "audio";
   const displayTitle = fragment.title || "Audio fragment";
 
+  // Reset the pipeline indicator when processing stops — adjusted during
+  // render (the React-docs pattern) instead of via setState in an effect.
+  const [prevProcessing, setPrevProcessing] = useState(isProcessing);
+  if (prevProcessing !== isProcessing) {
+    setPrevProcessing(isProcessing);
+    if (!isProcessing) setPipelineStep(null);
+  }
+
   useEffect(() => {
-    if (!isProcessing) {
-      setPipelineStep(null);
-      return;
-    }
+    if (!isProcessing) return;
     let cancelled = false;
     (async () => {
       try {
@@ -73,7 +84,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
               if (msg.step && msg.step !== "done") setPipelineStep(msg.step);
               if (msg.status === "ready" || msg.step === "done") {
                 setPipelineStep(null);
-                onUpdated?.();
+                onUpdatedRef.current?.();
               }
             } catch {}
           }
@@ -243,6 +254,9 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
 
       {/* Creator notes */}
       <NotesEditor fragmentId={fragment._id} notes={fragment.notes} onUpdated={onUpdated} />
+
+      {/* Creator comments — timestamped thoughts over time */}
+      <CommentsEditor fragmentId={fragment._id} comments={fragment.comments} onUpdated={onUpdated} />
 
       {/* AI suggestion */}
       {fragment.suggestion && (

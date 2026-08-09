@@ -36,7 +36,7 @@ export function FragmentNetwork() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [data, setData] = useState<NetworkData | null>(null);
-  const [hovered, setHovered] = useState<string | null>(null);
+  const [, setHovered] = useState<string | null>(null);
   const hoveredRef = useRef<string | null>(null);
 
   useEffect(() => {

@@ -6,12 +6,13 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useNotifications } from "@/hooks/use-notifications";
 import { signOut, signInWithGoogle } from "@/lib/firebase";
-import { Mic, Layers, Dna, LogOut, Bell, Sparkles, Check } from "lucide-react";
+import { Mic, Layers, Dna, LogOut, Bell, Sparkles, Check, Cable } from "lucide-react";
 
 const navLinks = [
   { href: "/", icon: Mic, label: "Capture" },
   { href: "/projects", icon: Layers, label: "Projects" },
   { href: "/dna", icon: Dna, label: "DNA" },
+  { href: "/audiotool", icon: Cable, label: "Audiotool" },
 ] as const;
 
 function timeAgo(dateStr: string): string {

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { signInWithGoogle } from "@/lib/firebase";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const { user, loading } = useAuth();
@@ -19,7 +19,14 @@ export default function LoginPage() {
     router.replace("/");
   }
 
-  if (loading) return null;
+  // A blank page while auth resolves reads as a broken app; show progress.
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-slate" />
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-[calc(100vh-56px)]">

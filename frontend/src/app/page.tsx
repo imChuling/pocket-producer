@@ -10,6 +10,7 @@ import { signInWithGoogle } from "@/lib/firebase";
 import { AudioRecorder } from "@/components/audio-recorder";
 import { FileDropzone } from "@/components/file-dropzone";
 import { FragmentCard } from "@/components/fragment-card";
+import { MatchModeSelector } from "@/components/match-mode-selector";
 
 /* ═══════════════════════════════════════════════════════════════════════
    NOISE TEXTURE — film grain for editorial feel
@@ -715,12 +716,26 @@ function CaptureDashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
-  const stuckCount = fragments.filter((f) => {
-    if (f.status !== "processing") return false;
-    if (f.tags && f.tags.length > 0) return true;
-    const age = Date.now() - new Date(f.created_at).getTime();
-    return age > 2 * 60 * 1000;
-  }).length;
+  // Recomputed in an effect (not during render) because the age check
+  // reads the clock; re-runs whenever the fragment list changes.
+  const [stuckCount, setStuckCount] = useState(0);
+  useEffect(() => {
+    const compute = () =>
+      setStuckCount(
+        fragments.filter((f) => {
+          if (f.status !== "processing") return false;
+          if (f.tags && f.tags.length > 0) return true;
+          const age = Date.now() - new Date(f.created_at).getTime();
+          return age > 2 * 60 * 1000;
+        }).length,
+      );
+    const timer = setTimeout(compute, 0);
+    const interval = setInterval(compute, 30_000);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, [fragments]);
 
   const handleFixStuck = useCallback(async () => {
     try {
@@ -888,6 +903,7 @@ function CaptureDashboard() {
                     Your fragments
                   </span>
                   <div className="flex-1 h-px bg-gradient-to-r from-chalk to-transparent" />
+                  <MatchModeSelector />
                   <span
                     className="font-mono text-[11px] text-gravel px-2.5 py-0.5 rounded-full"
                     style={{ background: "linear-gradient(135deg, rgba(160,181,235,0.15), rgba(226,193,97,0.1))" }}
