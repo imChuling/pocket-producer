@@ -141,7 +141,9 @@ def format_neighbors_for_prompt(neighbors):
     return "\n".join(lines)
 
 
-def test_classification(gemini, db, vc, query, index):
+# Manual evaluation script (needs live Gemini/Mongo/Voyage), run via
+# __main__ — named check_* so pytest does not collect it as a test.
+def check_classification(gemini, db, vc, query, index):
     print(f"\n{'='*60}")
     print(f"Test {index + 1}: {query['input'][:55]}...")
     print(f"Expect: {query['description']}")
@@ -233,7 +235,7 @@ def main():
     results = []
     for i, q in enumerate(QUERIES):
         try:
-            passed = test_classification(gemini, db, vc, q, i)
+            passed = check_classification(gemini, db, vc, q, i)
             results.append(passed)
         except Exception as e:
             print(f"ERROR: {type(e).__name__}: {str(e)[:100]}")

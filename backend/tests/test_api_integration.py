@@ -87,7 +87,13 @@ class StubCollection:
     def _matches(self, doc, filter):
         for k, v in filter.items():
             if k == "$and":
-                return all(self._matches(doc, sub) for sub in v)
+                if not all(self._matches(doc, sub) for sub in v):
+                    return False
+                continue
+            if k == "$or":
+                if not any(self._matches(doc, sub) for sub in v):
+                    return False
+                continue
             val = doc.get(k)
             if isinstance(v, dict):
                 for op, operand in v.items():
@@ -101,6 +107,18 @@ class StubCollection:
                             return False
                     elif op == "$in":
                         if val not in operand:
+                            return False
+                    elif op == "$lt":
+                        if val is None or not val < operand:
+                            return False
+                    elif op == "$lte":
+                        if val is None or not val <= operand:
+                            return False
+                    elif op == "$gt":
+                        if val is None or not val > operand:
+                            return False
+                    elif op == "$gte":
+                        if val is None or not val >= operand:
                             return False
             else:
                 if val != v:
