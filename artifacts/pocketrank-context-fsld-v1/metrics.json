@@ -1,0 +1,37 @@
+{
+  "dataset": "research/data/weak_pairs_fsld.jsonl",
+  "dataset_hash": "sha256:5422993b3b48ec275d3d20b32ef219cfd84d33ebf031b263920ddee60acf5ff6",
+  "seed": 20260725,
+  "epochs": 15,
+  "lr": 0.001,
+  "label_layer": "weak-pretraining-only",
+  "models": {
+    "linear-v1": {
+      "model_id": "linear-v1",
+      "val_pairwise_accuracy": 0.8795,
+      "train_examples": 1236,
+      "val_examples": 519,
+      "epochs": 15,
+      "final_train_loss": 0.3223,
+      "trainable_parameters": 2
+    },
+    "deepsets-v1": {
+      "model_id": "deepsets-v1",
+      "val_pairwise_accuracy": 0.7203,
+      "train_examples": 1236,
+      "val_examples": 519,
+      "epochs": 15,
+      "final_train_loss": 0.1547,
+      "trainable_parameters": 295425
+    },
+    "pocketrank-context-v1": {
+      "model_id": "pocketrank-context-v1",
+      "val_pairwise_accuracy": 0.7425,
+      "train_examples": 1236,
+      "val_examples": 519,
+      "epochs": 15,
+      "final_train_loss": 0.2219,
+      "trainable_parameters": 400449
+    }
+  }
+}

@@ -1,0 +1,418 @@
+{
+  "median_seed": 20260801,
+  "fusion_weights": [
+    6.53014235467004,
+    4.330073222445,
+    2.0157302010833265,
+    -0.2345632919531844,
+    2.358960973638615
+  ],
+  "disagreement_pairs": [
+    {
+      "example_id": "http://freesound.org/apiv2/packs/10153/",
+      "source_id": "http://freesound.org/apiv2/packs/10153/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 2.456354338793469,
+      "cosine_margin": -0.024060957590965715
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/10153/",
+      "source_id": "http://freesound.org/apiv2/packs/10153/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 3.0452273444001854,
+      "cosine_margin": -0.005659309494856601
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/10153/",
+      "source_id": "http://freesound.org/apiv2/packs/10153/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 1.0850806161659534,
+      "cosine_margin": -0.09481320462431742
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/1103/",
+      "source_id": "http://freesound.org/apiv2/packs/1103/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 1.4600331072783916,
+      "cosine_margin": -0.012791947683345906
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/12718/",
+      "source_id": "http://freesound.org/apiv2/packs/12718/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.2766372456265156,
+      "cosine_margin": 0.017390777214089548
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/12718/",
+      "source_id": "http://freesound.org/apiv2/packs/12718/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.6141059126537058,
+      "cosine_margin": -0.022370900449126374
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/12718/",
+      "source_id": "http://freesound.org/apiv2/packs/12718/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.11838948979009523,
+      "cosine_margin": 0.008887829406886927
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/13742/",
+      "source_id": "http://freesound.org/apiv2/packs/13742/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.7905898526763835,
+      "cosine_margin": 0.08916287295347514
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/16701/",
+      "source_id": "http://freesound.org/apiv2/packs/16701/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.11753929913631644,
+      "cosine_margin": 0.04432362484670549
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/16701/",
+      "source_id": "http://freesound.org/apiv2/packs/16701/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.5071880151466654,
+      "cosine_margin": 0.04354934596850901
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/16701/",
+      "source_id": "http://freesound.org/apiv2/packs/16701/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -1.1564662821835139,
+      "cosine_margin": 0.08428737102948092
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/17069/",
+      "source_id": "http://freesound.org/apiv2/packs/17069/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.278978946999068,
+      "cosine_margin": 0.006049179562826135
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/20057/",
+      "source_id": "http://freesound.org/apiv2/packs/20057/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.4400025855134677,
+      "cosine_margin": -0.02274232452186714
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/2013/",
+      "source_id": "http://freesound.org/apiv2/packs/2013/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 1.5888155846052454,
+      "cosine_margin": -0.01153997423911196
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/24427/",
+      "source_id": "http://freesound.org/apiv2/packs/24427/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.18114893106130392,
+      "cosine_margin": 0.04494269855322308
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/2729/",
+      "source_id": "http://freesound.org/apiv2/packs/2729/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.5221505086914693,
+      "cosine_margin": -0.06702684020464311
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/3798/",
+      "source_id": "http://freesound.org/apiv2/packs/3798/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.8471920217579569,
+      "cosine_margin": 0.08449048522564684
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/4369/",
+      "source_id": "http://freesound.org/apiv2/packs/4369/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 2.13577278284942,
+      "cosine_margin": -0.006999080384297862
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/4828/",
+      "source_id": "http://freesound.org/apiv2/packs/4828/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.5481765815806963,
+      "cosine_margin": -0.048430165825533944
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/6517/",
+      "source_id": "http://freesound.org/apiv2/packs/6517/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.2669797330568535,
+      "cosine_margin": 0.05817558344363738
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/6517/",
+      "source_id": "http://freesound.org/apiv2/packs/6517/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -1.122842936834786,
+      "cosine_margin": 0.005905831142776763
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/6517/",
+      "source_id": "http://freesound.org/apiv2/packs/6517/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.2983872807889778,
+      "cosine_margin": -0.027346964690232456
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/6517/",
+      "source_id": "http://freesound.org/apiv2/packs/6517/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.854886803399614,
+      "cosine_margin": -0.020163089705913295
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/6520/",
+      "source_id": "http://freesound.org/apiv2/packs/6520/",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.8906385820387861,
+      "cosine_margin": -0.025528812479710394
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/6520/",
+      "source_id": "http://freesound.org/apiv2/packs/6520/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.15042104207485352,
+      "cosine_margin": 0.012427849183150319
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/6520/",
+      "source_id": "http://freesound.org/apiv2/packs/6520/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.7266345280753246,
+      "cosine_margin": 0.003140674490229811
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/6788/",
+      "source_id": "http://freesound.org/apiv2/packs/6788/",
+      "neg_index": 2,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.27051520239064786,
+      "cosine_margin": -0.019931658532980734
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/7868/",
+      "source_id": "http://freesound.org/apiv2/packs/7868/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.007552214438952376,
+      "cosine_margin": 0.05221168134001708
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/7868/",
+      "source_id": "http://freesound.org/apiv2/packs/7868/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.38795855883997454,
+      "cosine_margin": 0.08089388960563948
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/7868/",
+      "source_id": "http://freesound.org/apiv2/packs/7868/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.28511198807577287,
+      "cosine_margin": 0.08089832362997218
+    },
+    {
+      "example_id": "http://freesound.org/apiv2/packs/9902/",
+      "source_id": "http://freesound.org/apiv2/packs/9902/",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.8410184148976256,
+      "cosine_margin": 0.050433393715845654
+    },
+    {
+      "example_id": "user:24thelement",
+      "source_id": "user:24thelement",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.3155857357575087,
+      "cosine_margin": -0.03605226877641199
+    },
+    {
+      "example_id": "user:DodgyLoops",
+      "source_id": "user:DodgyLoops",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 1.219952590342988,
+      "cosine_margin": -0.01102917844397222
+    },
+    {
+      "example_id": "user:DodgyLoops",
+      "source_id": "user:DodgyLoops",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.3662913240706267,
+      "cosine_margin": -0.02452707046082847
+    },
+    {
+      "example_id": "user:copyc4t",
+      "source_id": "user:copyc4t",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.051905545318299495,
+      "cosine_margin": 0.03893454500544852
+    },
+    {
+      "example_id": "user:copyc4t",
+      "source_id": "user:copyc4t",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.3655976081215142,
+      "cosine_margin": 0.041138773273554086
+    },
+    {
+      "example_id": "user:deleted_user_984625",
+      "source_id": "user:deleted_user_984625",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.956549772164262,
+      "cosine_margin": -0.0041706137372303775
+    },
+    {
+      "example_id": "user:djfroyd",
+      "source_id": "user:djfroyd",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.164501850845844,
+      "cosine_margin": 0.03907761816340505
+    },
+    {
+      "example_id": "user:djfroyd",
+      "source_id": "user:djfroyd",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.9220051883154783,
+      "cosine_margin": -0.008660805801459032
+    },
+    {
+      "example_id": "user:gis_sweden",
+      "source_id": "user:gis_sweden",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.09321575139472671,
+      "cosine_margin": -0.09508603600761734
+    },
+    {
+      "example_id": "user:gis_sweden",
+      "source_id": "user:gis_sweden",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 1.0447468976169683,
+      "cosine_margin": -0.033332469894064076
+    },
+    {
+      "example_id": "user:shiftyfour",
+      "source_id": "user:shiftyfour",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 1.1687373646057821,
+      "cosine_margin": -0.01332955052322271
+    },
+    {
+      "example_id": "user:tichec",
+      "source_id": "user:tichec",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 0.28733443450950524,
+      "cosine_margin": -0.02881074166644515
+    },
+    {
+      "example_id": "user:tichec",
+      "source_id": "user:tichec",
+      "neg_index": 3,
+      "fusion_correct": false,
+      "cosine_correct": true,
+      "fusion_margin": -0.07198129892975658,
+      "cosine_margin": 0.04249054009636821
+    },
+    {
+      "example_id": "user:tichec",
+      "source_id": "user:tichec",
+      "neg_index": 3,
+      "fusion_correct": true,
+      "cosine_correct": false,
+      "fusion_margin": 1.0397775808392553,
+      "cosine_margin": -0.05235508983827414
+    }
+  ],
+  "supplement_concordant": []
+}

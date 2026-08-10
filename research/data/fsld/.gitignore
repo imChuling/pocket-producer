@@ -1,0 +1,7 @@
+annotations/
+annotations.zip
+metadata.json
+audio/
+FSL10K.zip
+items.jsonl
+items_*.jsonl

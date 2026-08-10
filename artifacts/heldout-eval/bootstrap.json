@@ -1,0 +1,179 @@
+{
+  "method": "source-grouped bootstrap (pooled: joint source resampling shared across seeds)",
+  "n_bootstrap": 10000,
+  "alpha": 0.05,
+  "neg_types": [
+    "hard_similar",
+    "hard_tempo_key",
+    "easy",
+    "overall"
+  ],
+  "preregistered_wording": {
+    "entirely_positive": "small but positive held-out gain",
+    "crosses_zero": "the held-out difference was small and uncertain",
+    "entirely_negative": "did not replicate"
+  },
+  "per_seed": [
+    {
+      "seed": 20260725,
+      "hard_similar": {
+        "point_delta": -0.005556,
+        "ci_lo": -0.048633,
+        "ci_hi": 0.039775,
+        "wording": "the held-out difference was small and uncertain"
+      },
+      "hard_tempo_key": {
+        "point_delta": -0.036254,
+        "ci_lo": -0.074586,
+        "ci_hi": -0.003125,
+        "wording": "did not replicate"
+      },
+      "easy": {
+        "point_delta": 0.006944,
+        "ci_lo": -0.00532,
+        "ci_hi": 0.021412,
+        "wording": "the held-out difference was small and uncertain"
+      },
+      "overall": {
+        "point_delta": -0.006378,
+        "ci_lo": -0.02312,
+        "ci_hi": 0.009811,
+        "wording": "the held-out difference was small and uncertain"
+      }
+    },
+    {
+      "seed": 20260801,
+      "hard_similar": {
+        "point_delta": 0.008333,
+        "ci_lo": -0.032421,
+        "ci_hi": 0.05094,
+        "wording": "the held-out difference was small and uncertain"
+      },
+      "hard_tempo_key": {
+        "point_delta": -0.066465,
+        "ci_lo": -0.120825,
+        "ci_hi": -0.019046,
+        "wording": "did not replicate"
+      },
+      "easy": {
+        "point_delta": 0.009722,
+        "ci_lo": -0.002311,
+        "ci_hi": 0.023324,
+        "wording": "the held-out difference was small and uncertain"
+      },
+      "overall": {
+        "point_delta": -0.008505,
+        "ci_lo": -0.027137,
+        "ci_hi": 0.008425,
+        "wording": "the held-out difference was small and uncertain"
+      }
+    },
+    {
+      "seed": 20260802,
+      "hard_similar": {
+        "point_delta": 0.016667,
+        "ci_lo": -0.025862,
+        "ci_hi": 0.060242,
+        "wording": "the held-out difference was small and uncertain"
+      },
+      "hard_tempo_key": {
+        "point_delta": -0.042296,
+        "ci_lo": -0.079619,
+        "ci_hi": -0.010169,
+        "wording": "did not replicate"
+      },
+      "easy": {
+        "point_delta": 0.011111,
+        "ci_lo": 0.001305,
+        "ci_hi": 0.023098,
+        "wording": "small but positive held-out gain"
+      },
+      "overall": {
+        "point_delta": 0.0,
+        "ci_lo": -0.017293,
+        "ci_hi": 0.017164,
+        "wording": "the held-out difference was small and uncertain"
+      }
+    },
+    {
+      "seed": 20260803,
+      "hard_similar": {
+        "point_delta": 0.016667,
+        "ci_lo": -0.005988,
+        "ci_hi": 0.043243,
+        "wording": "the held-out difference was small and uncertain"
+      },
+      "hard_tempo_key": {
+        "point_delta": -0.009063,
+        "ci_lo": -0.036364,
+        "ci_hi": 0.013625,
+        "wording": "the held-out difference was small and uncertain"
+      },
+      "easy": {
+        "point_delta": 0.002778,
+        "ci_lo": -0.004587,
+        "ci_hi": 0.010836,
+        "wording": "the held-out difference was small and uncertain"
+      },
+      "overall": {
+        "point_delta": 0.003544,
+        "ci_lo": -0.006663,
+        "ci_hi": 0.013492,
+        "wording": "the held-out difference was small and uncertain"
+      }
+    },
+    {
+      "seed": 20260804,
+      "hard_similar": {
+        "point_delta": 0.005556,
+        "ci_lo": -0.03161,
+        "ci_hi": 0.044119,
+        "wording": "the held-out difference was small and uncertain"
+      },
+      "hard_tempo_key": {
+        "point_delta": -0.069486,
+        "ci_lo": -0.122926,
+        "ci_hi": -0.024475,
+        "wording": "did not replicate"
+      },
+      "easy": {
+        "point_delta": 0.011111,
+        "ci_lo": 0.0,
+        "ci_hi": 0.025724,
+        "wording": "the held-out difference was small and uncertain"
+      },
+      "overall": {
+        "point_delta": -0.009213,
+        "ci_lo": -0.029086,
+        "ci_hi": 0.009486,
+        "wording": "the held-out difference was small and uncertain"
+      }
+    }
+  ],
+  "pooled": {
+    "hard_similar": {
+      "point_delta": 0.008333,
+      "ci_lo": -0.023762,
+      "ci_hi": 0.041667,
+      "wording": "the held-out difference was small and uncertain"
+    },
+    "hard_tempo_key": {
+      "point_delta": -0.044713,
+      "ci_lo": -0.083042,
+      "ci_hi": -0.012631,
+      "wording": "did not replicate"
+    },
+    "easy": {
+      "point_delta": 0.008333,
+      "ci_lo": -0.000487,
+      "ci_hi": 0.018883,
+      "wording": "the held-out difference was small and uncertain"
+    },
+    "overall": {
+      "point_delta": -0.004111,
+      "ci_lo": -0.018805,
+      "ci_hi": 0.009662,
+      "wording": "the held-out difference was small and uncertain"
+    }
+  }
+}

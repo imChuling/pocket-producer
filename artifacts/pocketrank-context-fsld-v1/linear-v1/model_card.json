@@ -1,0 +1,5 @@
+{
+  "id": "linear-v1",
+  "trainable_parameters": 2,
+  "parameter_budget": 500000
+}
