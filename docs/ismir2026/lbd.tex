@@ -127,7 +127,7 @@ proxy must not substitute its ranking for the musician's judgment.
 From the FSLD~\cite{ramires2020fsld} we kept only sounds with a
 true Freesound pack (1,797 items, 605 packs), discarding items
 grouped only by uploader.
-Each multi-item pack yields one leave-one-out query per item, with
+Each eligible pack with at least three items yields one leave-one-out query per item, with
 same-pack siblings as positives and cross-pack items as negatives in
 three difficulty tiers (\emph{easy}: tempo/key mismatch;
 \emph{hard\_tempo\_key}: compatible tempo and key;
@@ -209,8 +209,8 @@ The fusion$-$cosine difference on hard\_similar is $+1.5$\,pp with a
 source-grouped bootstrap 95\%~CI of $[-1.5, +4.7]$\,pp (joint
 resampling of the 54 example-bearing source clusters, shared across
 seeds)---small and uncertain.
-On hard\_tempo\_key, fusion performs significantly \emph{worse} than
-cosine ($-1.0$\,pp, CI entirely below zero); overall the difference
+On hard\_tempo\_key the CI is entirely below zero in this secondary
+analysis ($-1.0$\,pp); overall the difference
 is $+0.4$\,pp with a CI crossing zero.
 
 Residual limitations: the signal set and hyperparameters come from

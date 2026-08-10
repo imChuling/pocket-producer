@@ -1,6 +1,6 @@
 # ISMIR 2026 LBD Submission Checklist
 
-Deadline: 2026-08-09
+Deadline: 2026-09-25 AoE (rolling review; internal freeze 2026-08-11)
 
 ## Format
 - [x] 2 pages scientific content + 1 page references only
@@ -10,7 +10,7 @@ Deadline: 2026-08-09
 - [x] No page numbers in header (ismir.sty handles this)
 
 ## Content integrity
-- [x] Number consistency check passes (84/84, `check_paper_numbers.py`)
+- [x] Number consistency check passes (126/126, `check_paper_numbers.py`)
   - Artifact-vs-hardcoded checks + tex-presence checks + tex-absence checks
   - Limitations: substring presence, not semantic context; manual review still required
 - [x] All table numbers match artifact JSONs (LAION + MS-CLAP sections)
@@ -30,6 +30,14 @@ Deadline: 2026-08-09
 - [x] Bootstrap CI and sign test p=0.031 removed from text (pseudoreplication)
 - [x] "linear-probe" corrected to "zero-shot"
 
+## Provenance integrity
+- [x] Held-out eval artifact points to protocol-heldout-v2 (pack-only, 484/121)
+- [x] run_heldout_eval.py derives protocol ref from --protocol arg (no hardcoded v1)
+- [x] Numerical payload SHA unchanged across metadata migration
+- [x] v1 artifacts (759/190) preserved in `artifacts/heldout-eval/` for audit trail
+- [x] "≥3 items" query eligibility stated in lbd.tex line 130
+- [x] "significantly worse" replaced with CI-based language (line 212)
+
 ## AI Usage Statement
 - [x] Present in manuscript — scope: engineering, scripting, collation, drafting
 - [x] All research claims, design, analysis verified by author
@@ -37,7 +45,7 @@ Deadline: 2026-08-09
 ## Build pipeline
 - [x] `build.sh` produces PDF from clean /tmp directory
 - [x] iCloud-resilient (falls back to ~/dev/ismir-backup/)
-- [ ] build.sh does not assert PDF page count (manual verification)
+- [x] PDF page count: 3 pages (2 scientific + 1 references), verified 2026-08-10
 
 ## Artifacts
 - [x] `artifacts/fusion/fusion.json` — 5-signal LAION-CLAP
@@ -45,8 +53,11 @@ Deadline: 2026-08-09
 - [x] `artifacts/fusion-msclap/fusion.json` — MS-CLAP replication
 - [x] `artifacts/human-signal-alignment/alignment.json` — signal-human alignment
 - [x] `artifacts/eval-pack/eval_summary.json` — 9-rater vote data
+- [x] `artifacts/heldout-eval-packonly/eval.json` — pack-only held-out (protocol-v2)
+- [x] `artifacts/heldout-split-packonly/split.json` — pack-only split (484/121)
 
-## Before submission (8/9)
+## Before submission
 - [x] Full text proofread
 - [ ] Compile final PDF with `build.sh` (number check enabled)
+- [ ] Real Audiotool E2E demo recording (≥5 projects)
 - [ ] Upload to ISMIR submission system
