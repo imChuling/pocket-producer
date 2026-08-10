@@ -1,0 +1,121 @@
+{
+  "experiment": "held-out dual-track evaluation (protocol-heldout-v1)",
+  "protocol": "research/protocol-heldout-v1.md",
+  "split_file": "artifacts/heldout-split/split.json",
+  "split_sha256": "82a6191c6e53b3c20dc94a085ab51560d0679173f56353785b2e8ee7bb8beaed",
+  "items_file": "research/data/fsld/items_laion-clap-music.jsonl",
+  "pair_seed": 20260725,
+  "seeds": [
+    20260725,
+    20260801,
+    20260802,
+    20260803,
+    20260804
+  ],
+  "signals_used": [
+    "audio_cos_mean",
+    "audio_cos_max",
+    "tempo",
+    "key",
+    "tag_jaccard"
+  ],
+  "train_sources": 759,
+  "heldout_sources": 190,
+  "train_examples": 1395,
+  "heldout_examples": 360,
+  "track1_summary": {
+    "cosine-only": {
+      "mean_overall": 0.9135,
+      "std_overall": 0.0,
+      "values_overall": [
+        0.9135,
+        0.9135,
+        0.9135,
+        0.9135,
+        0.9135
+      ],
+      "mean_easy": 0.9542,
+      "values_easy": [
+        0.9542,
+        0.9542,
+        0.9542,
+        0.9542,
+        0.9542
+      ],
+      "mean_hard_similar": 0.8056,
+      "values_hard_similar": [
+        0.8056,
+        0.8056,
+        0.8056,
+        0.8056,
+        0.8056
+      ],
+      "mean_hard_tempo_key": 0.9426,
+      "values_hard_tempo_key": [
+        0.9426,
+        0.9426,
+        0.9426,
+        0.9426,
+        0.9426
+      ]
+    },
+    "fusion-5sig": {
+      "mean_overall": 0.9094,
+      "std_overall": 0.0056,
+      "values_overall": [
+        0.9072,
+        0.905,
+        0.9135,
+        0.9171,
+        0.9043
+      ],
+      "mean_easy": 0.9625,
+      "values_easy": [
+        0.9611,
+        0.9639,
+        0.9653,
+        0.9569,
+        0.9653
+      ],
+      "mean_hard_similar": 0.8139,
+      "values_hard_similar": [
+        0.8,
+        0.8139,
+        0.8222,
+        0.8222,
+        0.8111
+      ],
+      "mean_hard_tempo_key": 0.8979,
+      "values_hard_tempo_key": [
+        0.9063,
+        0.8761,
+        0.9003,
+        0.9335,
+        0.8731
+      ]
+    }
+  },
+  "track1_delta": {
+    "overall": -0.0041,
+    "hard_similar": 0.0083,
+    "n_positive_seeds_hs": 4
+  },
+  "track2_prep": {
+    "median_seed": 20260801,
+    "median_seed_idx": 1,
+    "n_disagreement_pairs": 45,
+    "n_fusion_correct": 24,
+    "n_cosine_correct": 21,
+    "n_concordant": 315,
+    "n_supplement": 0
+  },
+  "caveats": [
+    "Held-out negative pool is 513 items (vs 2045 train) \u2014 hard_similar negatives mined from a smaller pool are less similar on average, which likely explains the higher held-out baseline (cosine 0.9135 vs internal-val ~0.88). Absolute accuracies are not comparable across pools; only the fusion-cosine delta within the held-out pool is meaningful.",
+    "This is the single confirmatory run specified by protocol-heldout-v1; no re-runs permitted."
+  ],
+  "superseded_by": {
+    "artifact": "artifacts/heldout-eval-packonly/eval.json",
+    "reason": "v1 used mixed pack+uploader labels; v2 restricts to pack-only (protocol-heldout-v2.md)",
+    "status": "retained for audit trail; paper reports v2 numbers only"
+  }
+}

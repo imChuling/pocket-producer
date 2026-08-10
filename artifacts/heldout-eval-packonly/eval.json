@@ -1,6 +1,6 @@
 {
-  "experiment": "held-out dual-track evaluation (protocol-heldout-v1)",
-  "protocol": "research/protocol-heldout-v1.md",
+  "experiment": "held-out dual-track evaluation (protocol-heldout-v2, pack-only)",
+  "protocol": "research/protocol-heldout-v2.md",
   "split_file": "artifacts/heldout-split-packonly/split.json",
   "split_sha256": "3f4967ca916ac5a985388836f9fb60e44bef93c3f73d2df7ee1c37ee4f36384c",
   "items_file": "research/data/fsld/items_laion-clap-music_packonly.jsonl",
@@ -108,5 +108,11 @@
     "n_cosine_correct": 9,
     "n_concordant": 302,
     "n_supplement": 0
+  },
+  "provenance_migration": {
+    "reason": "metadata-only: correct protocol reference from v1 to v2",
+    "original_sha256": "14e2d80c01f0b09a381864bba11d2d2c126dc486af3bc91f3dbf72945d0f20d6",
+    "numerical_payload_unchanged": true,
+    "payload_sha256": "fd8a24db4ebc72c7c32539b095f1a259a1a9c467fd3075cad6948b960c7e35d4"
   }
 }

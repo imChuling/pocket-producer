@@ -1,18 +1,19 @@
-"""Held-out dual-track evaluation (protocol-heldout-v1).
+"""Held-out dual-track evaluation.
 
-Track 1: retrain 5-signal fusion on the 759-source TRAIN split, evaluate
-pairwise accuracy on the 190-source HELD-OUT split.  Negative pools for
-pair construction are restricted to items within each split — no leakage.
+Track 1: retrain 5-signal fusion on the TRAIN split, evaluate pairwise
+accuracy on the HELD-OUT split.  Negative pools for pair construction are
+restricted to items within each split — no leakage.
 
 Track 2 prep: identify disagreement pairs (fusion correct + cosine wrong,
 or vice versa) on hard_similar negatives from the held-out evaluation.
 These pairs feed the human A/B study.
 
-Usage:
+Usage (pack-only, protocol-heldout-v2):
   python research/run_heldout_eval.py \
-    --items research/data/fsld/items_laion-clap-music.jsonl \
-    --split artifacts/heldout-split/split.json \
-    --output artifacts/heldout-eval
+    --items research/data/fsld/items_laion-clap-music_packonly.jsonl \
+    --split artifacts/heldout-split-packonly/split.json \
+    --protocol research/protocol-heldout-v2.md \
+    --output artifacts/heldout-eval-packonly
 """
 
 import argparse
@@ -117,6 +118,7 @@ def main():
     parser.add_argument("--split", default="artifacts/heldout-split/split.json")
     parser.add_argument("--chroma", default="research/data/fsld/chroma.jsonl")
     parser.add_argument("--role-prompts", default="research/data/fsld/role_prompts.json")
+    parser.add_argument("--protocol", default="research/protocol-heldout-v2.md")
     parser.add_argument("--output", default="artifacts/heldout-eval")
     args = parser.parse_args()
 
@@ -269,8 +271,8 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
 
     report = {
-        "experiment": "held-out dual-track evaluation (protocol-heldout-v1)",
-        "protocol": "research/protocol-heldout-v1.md",
+        "experiment": f"held-out dual-track evaluation ({pathlib.Path(args.protocol).stem})",
+        "protocol": args.protocol,
         "split_file": args.split,
         "split_sha256": split_data["sha256_heldout_ids"],
         "items_file": str(args.items),
