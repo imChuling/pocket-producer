@@ -66,4 +66,4 @@ v1 遗留(`artifacts/heldout-eval/`)保留原样作为撤回记录;其 bootstrap
 | 2026-08-01/06 | Claude Code | baseline/fusion/7-signal 实验脚本、结果整理、论文修订;实验设计与所有结论由作者核验并负责 |
 | 2026-08-08 | Claude Code | 外部审稿修订: CI/p-value 删除、zero-shot 更正、MS-CLAP 表格补充、role-gap 分母澄清、domain-shift caveat、source-grouped splits 说明、ledger/checker 同步 |
 | 2026-08-09 | Claude Code | 审稿硬伤修复: v1 预注册撤回、bootstrap 合并修正、pack-only 全链路重跑(fusion/LOSO/held-out)、fusion-5sig-v1 线上部署、论文叙事更新;所有实验设计与分析计划由作者核验并负责 |
-| 2026-08-10 | Claude Code | MS-CLAP sensitivity re-analysis: source-weighted BPR 训练+三基线评测、部署权重重导出、论文双空间对比更新、number checker 扩展(151 checks)、claim-evidence ledger 同步;所有实验设计与结论由作者核验并负责 |
+| 2026-08-10 | Claude Code | MS-CLAP sensitivity re-analysis: source-weighted BPR 训练+三基线评测、部署权重重导出、论文双空间对比更新、number checker 扩展(151 checks)、claim-evidence ledger 同步;2×2 factorial 实验脚本+运行(representation×training, dev-set 5-fold CV)、confound caveat 替换为 factorial 分解(+1.9/+0.5/+0.3pp)、checker 扩展至 161 checks;所有实验设计与结论由作者核验并负责 |
