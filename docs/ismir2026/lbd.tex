@@ -40,8 +40,9 @@ move it forward.  Pocket Producer operationalizes this distinction
 inside the Audiotool DAW\@: it fingerprints the live session via the
 Nexus SDK (tempo, CLAP embeddings of session audio) and ranks
 Freesound Loop Dataset candidates with a five-signal fusion trained
-on pack co-membership weak labels---the only supervision available
-cold-start.  Offline evaluation shows the apparent ranking gain
+on pack co-membership weak labels---proxy supervision available
+before any interaction data exists---selectable alongside a
+transparent rules default.  Offline evaluation shows the apparent ranking gain
 changes substantially with weak-label construction, negative regime,
 and embedding representation.  Since the proxy does not encode the
 creative objective, every recommendation is an inspectable,
@@ -109,9 +110,9 @@ audio fragments.
 A logistic fusion trained with BPR loss~\cite{rendle2009bpr} on
 Freesound pack co-membership weak labels
 (Section~\ref{sec:fusion}) combines these into a single score.
-A hand-tuned \emph{rules} baseline using only tempo, key, and tag
-signals serves as the default ranker; the fusion is selectable and
-falls back to rules when no session audio is available.
+A hand-tuned \emph{rules} baseline over non-audio session signals
+serves as the default ranker; the fusion is selectable and falls
+back to rules when no session audio is available.
 
 \subsection{Proposal Interface}\label{sec:proposal}
 
@@ -126,15 +127,17 @@ the interface answers by keeping the musician in the loop at every
 step.
 
 Each candidate is surfaced for in-context preview with per-signal
-evidence---cosine score, tempo delta, key match, and overlapping
-tags---so the musician can assess \emph{why} the system ranks it
-highly and judge whether those reasons apply to their current goal.
+evidence: reason chips naming the signals that favored it (timbral
+closeness to session regions, tempo fit, shared tags), so the
+musician can assess \emph{why} the system ranks it highly and judge
+whether those reasons apply to their current goal; signals that
+contribute nothing emit no evidence.
 An accepted candidate is inserted via a single Nexus transaction;
 \emph{undo} reverts the insertion and retracts the candidate's tags
 from the ranking context, so subsequent recommendations are not
 biased by the undone choice.
-Acceptance, rejection, and undo events are logged with session context
-for future personalization (not yet evaluated).
+Acceptance, rejection, and undo events are logged for future
+personalization (not yet evaluated).
 
 \subsection{Deployed Model}\label{sec:deployed}
 
@@ -208,8 +211,9 @@ $[+4.3, +14.3]$)---a $7.7$\,pp swing evidencing representation
 sensitivity.
 %
 \textbf{Pilot divergence.}\enspace Nine raters on 20 blind A/B pairs
-(Fleiss' $\kappa = 0.294$) show a descriptive divergence between
-weak-label signal rankings and human consensus.
+(Fleiss' $\kappa = 0.294$; one pair excluded for a ``neither''
+majority) show a descriptive divergence between weak-label signal
+rankings and human consensus.
 
 % ==================================================================
 \section{Conclusion}\label{sec:conclusion}
@@ -227,15 +231,15 @@ selectable alternative.  Evaluating whether preview and undo improve
 creative outcomes, and personalization from logged feedback, is
 future work.
 
-% --- Page 3: references only ---
-
-\newpage
+\vspace{0.5em}
 
 \noindent\textbf{Acknowledgements.}
 The author thanks the Audiotool team for the Nexus SDK and the FSLD
 creators~\cite{ramires2020fsld}.
 
-\vspace{0.5em}
+% --- Page 3: references only ---
+
+\newpage
 
 \bibliography{references}
 
