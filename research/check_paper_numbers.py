@@ -39,6 +39,7 @@ ALIGNMENT = ROOT / "artifacts" / "human-signal-alignment" / "alignment.json"
 SPLIT = ROOT / "artifacts" / "heldout-split-packonly" / "split.json"
 DEPLOY_WEIGHTS = ROOT / "artifacts" / "fusion-deploy" / "weights.json"
 MSCLAP_SENSITIVITY = ROOT / "artifacts" / "msclap-sensitivity" / "sensitivity.json"
+FACTORIAL = ROOT / "artifacts" / "factorial" / "factorial.json"
 
 failures = []
 passes = []
@@ -362,6 +363,28 @@ def check_msclap_sensitivity(tex: str, sens: dict):
     check_in_tex("has_source_weighted_bpr", "source-weighted BPR", tex)
 
 
+def check_factorial(tex: str, factorial: dict):
+    """§4.3: 2x2 factorial decomposition of fusion-cosine delta on hard_similar."""
+    deltas = factorial["fusion_cosine_deltas_pp"]
+    a = deltas["A_laion_uniform"]["hard_similar"]
+    b = deltas["B_laion_sourceweighted"]["hard_similar"]
+    c = deltas["C_msclap_uniform"]["hard_similar"]
+    d = deltas["D_msclap_sourceweighted"]["hard_similar"]
+
+    repr_eff = round((c + d) / 2 - (a + b) / 2, 1)
+    train_eff = round((b + d) / 2 - (a + c) / 2, 1)
+    interaction = round(d - c - b + a, 1)
+
+    check("§4.3/factorial_repr_+1.9", 1.9, repr_eff, tol=0.05)
+    check("§4.3/factorial_train_+0.5", 0.5, train_eff, tol=0.05)
+    check("§4.3/factorial_interaction_+0.3", 0.3, interaction, tol=0.05)
+
+    check_in_tex("has_factorial", "factorial", tex)
+    check_in_tex("has_repr_+1.9", "+1.9", tex)
+    check_in_tex("has_repr_driven", "representation-driven", tex)
+    check_not_in_tex("no_confounding", "confounding", tex)
+
+
 def check_removed_claims(tex: str):
     """Deleted claims that must NOT reappear in prose."""
     check_not_in_tex("no_v1_cosine_0.883", "0.883", tex)
@@ -419,6 +442,7 @@ def main() -> int:
     split = load_json(SPLIT)
     deploy_weights = load_json(DEPLOY_WEIGHTS)
     msclap_sens = load_json(MSCLAP_SENSITIVITY)
+    factorial = load_json(FACTORIAL)
 
     if fusion is None or ablation is None or split is None:
         print("\n".join(failures))
@@ -441,6 +465,8 @@ def main() -> int:
         check_deployment(tex_text, deploy_weights)
     if msclap_sens:
         check_msclap_sensitivity(tex_text, msclap_sens)
+    if factorial:
+        check_factorial(tex_text, factorial)
     check_removed_claims(tex_text)
     check_ledger_consistency()
 
