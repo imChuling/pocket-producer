@@ -221,6 +221,7 @@ def check_pilot(tex, alignment):
 
     check_in_tex("has_kappa_0.294", "0.294", tex)
     check_in_tex("has_20_pairs", "20", tex)
+    check_in_tex("has_neither_exclusion", "neither", tex)
 
 
 def check_deployment(tex, weights):
