@@ -1,0 +1,702 @@
+{
+  "experiment": "2x2 factorial: representation x training",
+  "protocol": "research/protocol-factorial-v1.md",
+  "status": "dev-set analysis, no held-out sources touched",
+  "laion_items": "research/data/fsld/items_laion-clap-music_packonly_train.jsonl",
+  "msclap_items": "research/data/fsld/items_msclap_packonly_train.jsonl",
+  "pair_seed": 20260725,
+  "seeds": [
+    20260725,
+    20260801,
+    20260802,
+    20260803,
+    20260804
+  ],
+  "conditions": {
+    "A_laion_uniform": {
+      "embedding": "laion-clap-music",
+      "training": "uniform_bpr"
+    },
+    "B_laion_sourceweighted": {
+      "embedding": "laion-clap-music",
+      "training": "source_weighted_bpr_hs2.0"
+    },
+    "C_msclap_uniform": {
+      "embedding": "msclap-2023",
+      "training": "uniform_bpr"
+    },
+    "D_msclap_sourceweighted": {
+      "embedding": "msclap-2023",
+      "training": "source_weighted_bpr_hs2.0"
+    }
+  },
+  "baselines": {
+    "rules": {
+      "signals": [
+        "tempo",
+        "key",
+        "tag_jaccard"
+      ],
+      "weights": [
+        0.353,
+        0.235,
+        0.412
+      ]
+    },
+    "cosine": {
+      "signals": [
+        "audio_cos_mean"
+      ],
+      "weights": [
+        1.0
+      ]
+    }
+  },
+  "summaries": {
+    "A_laion_uniform": {
+      "rules": {
+        "easy": {
+          "mean": 0.9263,
+          "std": 0.0108,
+          "values": [
+            0.9128,
+            0.9171,
+            0.9313,
+            0.9324,
+            0.9381
+          ]
+        },
+        "hard_similar": {
+          "mean": 0.7293,
+          "std": 0.0136,
+          "values": [
+            0.7226,
+            0.7426,
+            0.73,
+            0.71,
+            0.7414
+          ]
+        },
+        "hard_tempo_key": {
+          "mean": 0.4179,
+          "std": 0.0323,
+          "values": [
+            0.4077,
+            0.3659,
+            0.4406,
+            0.4321,
+            0.4434
+          ]
+        },
+        "overall": {
+          "mean": 0.7509,
+          "std": 0.0128,
+          "values": [
+            0.7398,
+            0.7362,
+            0.7609,
+            0.752,
+            0.7655
+          ]
+        }
+      },
+      "cosine": {
+        "easy": {
+          "mean": 0.9741,
+          "std": 0.0078,
+          "values": [
+            0.9834,
+            0.9784,
+            0.9728,
+            0.9733,
+            0.9624
+          ]
+        },
+        "hard_similar": {
+          "mean": 0.8136,
+          "std": 0.0122,
+          "values": [
+            0.8073,
+            0.8329,
+            0.8051,
+            0.8043,
+            0.8182
+          ]
+        },
+        "hard_tempo_key": {
+          "mean": 0.9557,
+          "std": 0.0155,
+          "values": [
+            0.9799,
+            0.9539,
+            0.9505,
+            0.9571,
+            0.9371
+          ]
+        },
+        "overall": {
+          "mean": 0.9293,
+          "std": 0.0077,
+          "values": [
+            0.9384,
+            0.9359,
+            0.9251,
+            0.927,
+            0.92
+          ]
+        }
+      },
+      "fusion": {
+        "easy": {
+          "mean": 0.9759,
+          "std": 0.0087,
+          "values": [
+            0.9784,
+            0.9838,
+            0.984,
+            0.968,
+            0.9655
+          ]
+        },
+        "hard_similar": {
+          "mean": 0.8133,
+          "std": 0.0196,
+          "values": [
+            0.814,
+            0.8275,
+            0.8211,
+            0.7794,
+            0.8245
+          ]
+        },
+        "hard_tempo_key": {
+          "mean": 0.9345,
+          "std": 0.0227,
+          "values": [
+            0.9664,
+            0.9051,
+            0.9241,
+            0.9429,
+            0.934
+          ]
+        },
+        "overall": {
+          "mean": 0.9249,
+          "std": 0.0073,
+          "values": [
+            0.9342,
+            0.9251,
+            0.9283,
+            0.9145,
+            0.9224
+          ]
+        }
+      }
+    },
+    "B_laion_sourceweighted": {
+      "rules": {
+        "easy": {
+          "mean": 0.9263,
+          "std": 0.0108,
+          "values": [
+            0.9128,
+            0.9171,
+            0.9313,
+            0.9324,
+            0.9381
+          ]
+        },
+        "hard_similar": {
+          "mean": 0.7293,
+          "std": 0.0136,
+          "values": [
+            0.7226,
+            0.7426,
+            0.73,
+            0.71,
+            0.7414
+          ]
+        },
+        "hard_tempo_key": {
+          "mean": 0.4179,
+          "std": 0.0323,
+          "values": [
+            0.4077,
+            0.3659,
+            0.4406,
+            0.4321,
+            0.4434
+          ]
+        },
+        "overall": {
+          "mean": 0.7509,
+          "std": 0.0128,
+          "values": [
+            0.7398,
+            0.7362,
+            0.7609,
+            0.752,
+            0.7655
+          ]
+        }
+      },
+      "cosine": {
+        "easy": {
+          "mean": 0.9741,
+          "std": 0.0078,
+          "values": [
+            0.9834,
+            0.9784,
+            0.9728,
+            0.9733,
+            0.9624
+          ]
+        },
+        "hard_similar": {
+          "mean": 0.8136,
+          "std": 0.0122,
+          "values": [
+            0.8073,
+            0.8329,
+            0.8051,
+            0.8043,
+            0.8182
+          ]
+        },
+        "hard_tempo_key": {
+          "mean": 0.9557,
+          "std": 0.0155,
+          "values": [
+            0.9799,
+            0.9539,
+            0.9505,
+            0.9571,
+            0.9371
+          ]
+        },
+        "overall": {
+          "mean": 0.9293,
+          "std": 0.0077,
+          "values": [
+            0.9384,
+            0.9359,
+            0.9251,
+            0.927,
+            0.92
+          ]
+        }
+      },
+      "fusion": {
+        "easy": {
+          "mean": 0.9791,
+          "std": 0.0068,
+          "values": [
+            0.9784,
+            0.9825,
+            0.9872,
+            0.9786,
+            0.9687
+          ]
+        },
+        "hard_similar": {
+          "mean": 0.8167,
+          "std": 0.0174,
+          "values": [
+            0.8206,
+            0.8248,
+            0.8211,
+            0.7865,
+            0.8307
+          ]
+        },
+        "hard_tempo_key": {
+          "mean": 0.9282,
+          "std": 0.0243,
+          "values": [
+            0.9631,
+            0.897,
+            0.9175,
+            0.9357,
+            0.9277
+          ]
+        },
+        "overall": {
+          "mean": 0.9258,
+          "std": 0.0061,
+          "values": [
+            0.9351,
+            0.9217,
+            0.9283,
+            0.9199,
+            0.9239
+          ]
+        }
+      }
+    },
+    "C_msclap_uniform": {
+      "rules": {
+        "easy": {
+          "mean": 0.9263,
+          "std": 0.0108,
+          "values": [
+            0.9128,
+            0.9171,
+            0.9313,
+            0.9324,
+            0.9381
+          ]
+        },
+        "hard_similar": {
+          "mean": 0.7358,
+          "std": 0.0218,
+          "values": [
+            0.7243,
+            0.7305,
+            0.7588,
+            0.7082,
+            0.7571
+          ]
+        },
+        "hard_tempo_key": {
+          "mean": 0.4179,
+          "std": 0.0323,
+          "values": [
+            0.4077,
+            0.3659,
+            0.4406,
+            0.4321,
+            0.4434
+          ]
+        },
+        "overall": {
+          "mean": 0.7525,
+          "std": 0.0163,
+          "values": [
+            0.7402,
+            0.7331,
+            0.7681,
+            0.7516,
+            0.7694
+          ]
+        }
+      },
+      "cosine": {
+        "easy": {
+          "mean": 0.9524,
+          "std": 0.0111,
+          "values": [
+            0.9635,
+            0.9434,
+            0.9537,
+            0.9626,
+            0.9389
+          ]
+        },
+        "hard_similar": {
+          "mean": 0.7818,
+          "std": 0.0286,
+          "values": [
+            0.8173,
+            0.7925,
+            0.7412,
+            0.79,
+            0.768
+          ]
+        },
+        "hard_tempo_key": {
+          "mean": 0.9295,
+          "std": 0.0068,
+          "values": [
+            0.9396,
+            0.9268,
+            0.9274,
+            0.9321,
+            0.9214
+          ]
+        },
+        "overall": {
+          "mean": 0.9039,
+          "std": 0.0123,
+          "values": [
+            0.9209,
+            0.9015,
+            0.8937,
+            0.9118,
+            0.8918
+          ]
+        }
+      },
+      "fusion": {
+        "easy": {
+          "mean": 0.9678,
+          "std": 0.0069,
+          "values": [
+            0.9718,
+            0.9636,
+            0.9744,
+            0.9715,
+            0.9577
+          ]
+        },
+        "hard_similar": {
+          "mean": 0.7989,
+          "std": 0.0248,
+          "values": [
+            0.8007,
+            0.8113,
+            0.8307,
+            0.7651,
+            0.7868
+          ]
+        },
+        "hard_tempo_key": {
+          "mean": 0.8946,
+          "std": 0.0205,
+          "values": [
+            0.9094,
+            0.8618,
+            0.8944,
+            0.9143,
+            0.8931
+          ]
+        },
+        "overall": {
+          "mean": 0.9073,
+          "std": 0.0086,
+          "values": [
+            0.9134,
+            0.9001,
+            0.9187,
+            0.9056,
+            0.8988
+          ]
+        }
+      }
+    },
+    "D_msclap_sourceweighted": {
+      "rules": {
+        "easy": {
+          "mean": 0.9263,
+          "std": 0.0108,
+          "values": [
+            0.9128,
+            0.9171,
+            0.9313,
+            0.9324,
+            0.9381
+          ]
+        },
+        "hard_similar": {
+          "mean": 0.7358,
+          "std": 0.0218,
+          "values": [
+            0.7243,
+            0.7305,
+            0.7588,
+            0.7082,
+            0.7571
+          ]
+        },
+        "hard_tempo_key": {
+          "mean": 0.4179,
+          "std": 0.0323,
+          "values": [
+            0.4077,
+            0.3659,
+            0.4406,
+            0.4321,
+            0.4434
+          ]
+        },
+        "overall": {
+          "mean": 0.7525,
+          "std": 0.0163,
+          "values": [
+            0.7402,
+            0.7331,
+            0.7681,
+            0.7516,
+            0.7694
+          ]
+        }
+      },
+      "cosine": {
+        "easy": {
+          "mean": 0.9524,
+          "std": 0.0111,
+          "values": [
+            0.9635,
+            0.9434,
+            0.9537,
+            0.9626,
+            0.9389
+          ]
+        },
+        "hard_similar": {
+          "mean": 0.7818,
+          "std": 0.0286,
+          "values": [
+            0.8173,
+            0.7925,
+            0.7412,
+            0.79,
+            0.768
+          ]
+        },
+        "hard_tempo_key": {
+          "mean": 0.9295,
+          "std": 0.0068,
+          "values": [
+            0.9396,
+            0.9268,
+            0.9274,
+            0.9321,
+            0.9214
+          ]
+        },
+        "overall": {
+          "mean": 0.9039,
+          "std": 0.0123,
+          "values": [
+            0.9209,
+            0.9015,
+            0.8937,
+            0.9118,
+            0.8918
+          ]
+        }
+      },
+      "fusion": {
+        "easy": {
+          "mean": 0.9706,
+          "std": 0.0058,
+          "values": [
+            0.9718,
+            0.9677,
+            0.9776,
+            0.9733,
+            0.9624
+          ]
+        },
+        "hard_similar": {
+          "mean": 0.8056,
+          "std": 0.0242,
+          "values": [
+            0.814,
+            0.8032,
+            0.8179,
+            0.7651,
+            0.8276
+          ]
+        },
+        "hard_tempo_key": {
+          "mean": 0.8872,
+          "std": 0.0258,
+          "values": [
+            0.9161,
+            0.8482,
+            0.8878,
+            0.9036,
+            0.8805
+          ]
+        },
+        "overall": {
+          "mean": 0.9085,
+          "std": 0.0087,
+          "values": [
+            0.9184,
+            0.8968,
+            0.9155,
+            0.9038,
+            0.9082
+          ]
+        }
+      }
+    }
+  },
+  "fusion_cosine_deltas_pp": {
+    "A_laion_uniform": {
+      "easy": 0.18,
+      "hard_similar": -0.03,
+      "hard_tempo_key": -2.12,
+      "overall": -0.44
+    },
+    "B_laion_sourceweighted": {
+      "easy": 0.5,
+      "hard_similar": 0.31,
+      "hard_tempo_key": -2.75,
+      "overall": -0.35
+    },
+    "C_msclap_uniform": {
+      "easy": 1.54,
+      "hard_similar": 1.71,
+      "hard_tempo_key": -3.49,
+      "overall": 0.34
+    },
+    "D_msclap_sourceweighted": {
+      "easy": 1.82,
+      "hard_similar": 2.38,
+      "hard_tempo_key": -4.23,
+      "overall": 0.46
+    }
+  },
+  "mean_weights": {
+    "A_laion_uniform": [
+      9.3722,
+      4.3795,
+      0.6793,
+      0.6796,
+      0.8131
+    ],
+    "B_laion_sourceweighted": [
+      8.7972,
+      5.7367,
+      1.0374,
+      0.9913,
+      0.7434
+    ],
+    "C_msclap_uniform": [
+      5.304,
+      8.3331,
+      1.0967,
+      0.5834,
+      0.7364
+    ],
+    "D_msclap_sourceweighted": [
+      6.3253,
+      7.5436,
+      1.2113,
+      0.8974,
+      0.5428
+    ]
+  },
+  "factorial_effects": {
+    "overall": {
+      "A_laion_uniform": 0.9249,
+      "B_laion_sourceweighted": 0.9258,
+      "C_msclap_uniform": 0.9073,
+      "D_msclap_sourceweighted": 0.9085,
+      "representation_effect_pp": -1.75,
+      "training_effect_pp": 0.1,
+      "interaction_pp": 0.03
+    },
+    "hard_similar": {
+      "A_laion_uniform": 0.8133,
+      "B_laion_sourceweighted": 0.8167,
+      "C_msclap_uniform": 0.7989,
+      "D_msclap_sourceweighted": 0.8056,
+      "representation_effect_pp": -1.27,
+      "training_effect_pp": 0.5,
+      "interaction_pp": 0.33
+    },
+    "hard_tempo_key": {
+      "A_laion_uniform": 0.9345,
+      "B_laion_sourceweighted": 0.9282,
+      "C_msclap_uniform": 0.8946,
+      "D_msclap_sourceweighted": 0.8872,
+      "representation_effect_pp": -4.04,
+      "training_effect_pp": -0.69,
+      "interaction_pp": -0.11
+    }
+  }
+}
