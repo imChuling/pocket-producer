@@ -145,10 +145,24 @@ def build_feature_examples(items, seed, aux):
     return examples
 
 
-def train_logistic(train, feature_idx, seed, epochs=300, lr=0.05):
+def compute_source_weights(examples):
+    """1/n_examples per source, so each source contributes equally."""
+    from collections import Counter
+    counts = Counter(ex["source_id"] for ex in examples)
+    return {sid: 1.0 / c for sid, c in counts.items()}
+
+
+def train_logistic(train, feature_idx, seed, epochs=300, lr=0.05,
+                   source_weights=None, neg_type_weights=None):
+    """BPR logistic trainer with optional per-source and per-neg-type weighting.
+
+    source_weights: dict[source_id, float] — gradient multiplier per source;
+        typically 1/n_examples_from_source so large packs don't dominate.
+    neg_type_weights: dict[neg_type, float] — gradient multiplier per negative
+        type (e.g. {"hard_similar": 2.0}).
+    """
     rng = np.random.default_rng(seed)
     dim = len(feature_idx)
-    # No bias term: it cancels in the BPR pairwise difference.
     w = np.zeros(dim)
     m_w = np.zeros(dim); v_w = np.zeros(dim)
     beta1, beta2, eps = 0.9, 0.999, 1e-8
@@ -158,12 +172,14 @@ def train_logistic(train, feature_idx, seed, epochs=300, lr=0.05):
         for idx in order:
             ex = train[int(idx)]
             fp = ex["pos"][feature_idx]
-            for neg in ex["negs"]:
+            sw = source_weights.get(ex["source_id"], 1.0) if source_weights else 1.0
+            for neg, ntype in zip(ex["negs"], ex["neg_types"]):
                 fn = neg[feature_idx]
                 diff = fp - fn
                 z = w @ diff
                 sig = 1.0 / (1.0 + np.exp(-z))
-                grad = -(1.0 - sig) * diff  # d(-log sigmoid(z))/dw
+                nw = neg_type_weights.get(ntype, 1.0) if neg_type_weights else 1.0
+                grad = -(1.0 - sig) * diff * sw * nw
                 t += 1
                 m_w = beta1 * m_w + (1 - beta1) * grad
                 v_w = beta2 * v_w + (1 - beta2) * grad**2
