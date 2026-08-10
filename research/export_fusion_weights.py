@@ -29,6 +29,7 @@ from run_fusion import (
     PAIR_SEED,
     SEEDS,
     build_feature_examples,
+    compute_source_weights,
     evaluate,
     load_items,
     train_logistic,
@@ -36,6 +37,7 @@ from run_fusion import (
 
 FUSION_5SIG_IDX = np.array([0, 1, 2, 3, 4])
 SIGNAL_NAMES = ["audio_cos_mean", "audio_cos_max", "tempo", "key", "tag_jaccard"]
+NEG_TYPE_WEIGHTS = {"hard_similar": 2.0}
 
 
 def main() -> int:
@@ -56,9 +58,12 @@ def main() -> int:
     examples = build_feature_examples(items, seed=PAIR_SEED, aux={})
     print(f"{len(examples)} examples")
 
+    sw = compute_source_weights(examples)
     per_seed = []
     for seed in SEEDS:
-        w = train_logistic(examples, FUSION_5SIG_IDX, seed)
+        w = train_logistic(examples, FUSION_5SIG_IDX, seed,
+                           source_weights=sw,
+                           neg_type_weights=NEG_TYPE_WEIGHTS)
         ev = evaluate(examples, w, FUSION_5SIG_IDX)
         per_seed.append(w)
         print(f"  seed {seed}: train-fit overall={ev['overall']:.4f} "
@@ -80,7 +85,8 @@ def main() -> int:
         "representation_model": sorted(model_ids),
         "trained_on": (
             "pack-only train split (protocol-heldout-v2), "
-            "pack co-membership weak labels, BPR, mean over 5 seeds"
+            "pack co-membership weak labels, source-weighted BPR "
+            "(hard_similar×2.0), mean over 5 seeds"
         ),
         "items_file": args.items,
     }, indent=2))
