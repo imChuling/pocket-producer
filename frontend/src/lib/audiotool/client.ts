@@ -305,7 +305,7 @@ export function createRedirectAuthorize(config: {
     const result = await audiotool({
       clientId: config.clientId,
       redirectUrl: config.redirectUrl,
-      scope: config.scope ?? "project:write",
+      scope: config.scope ?? "project:write sample:write",
     });
     if (result.status !== "authenticated") {
       // Navigates away; the promise below never settles in practice.
@@ -334,7 +334,7 @@ export function createPopupAuthorize(config: {
   return async () => {
     const result = await audiotoolPopup({
       clientId: config.clientId,
-      scope: config.scope ?? "project:write",
+      scope: config.scope ?? "project:write sample:write",
     });
     if (result.status !== "authenticated") {
       return { status: "unauthenticated", error: result.error };
