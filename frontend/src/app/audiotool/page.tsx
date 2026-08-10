@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FolderOpen, Loader2, Unplug } from "lucide-react";
 
@@ -42,7 +42,14 @@ export default function AudiotoolPage() {
   } | null>(null);
   const [undoing, setUndoing] = useState(false);
   const [availableModels, setAvailableModels] = useState<string[]>();
-  const [sessionTags, setSessionTags] = useState<string[]>([]);
+  // Tag sets of fragments inserted this session, in insert order.
+  // Kept as a list (not a flat set) so undoing an insert also retracts
+  // its tags from the fusion ranker's context.
+  const [insertedTagSets, setInsertedTagSets] = useState<string[][]>([]);
+  const sessionTags = useMemo(
+    () => [...new Set(insertedTagSets.flat())],
+    [insertedTagSets],
+  );
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -139,8 +146,9 @@ export default function AudiotoolPage() {
         feedback: null,
         title: fragment.title ?? "Fragment",
       });
-      setSessionTags((previous) => [
-        ...new Set([...previous, ...fragment.tags.map((t) => t.toLowerCase())]),
+      setInsertedTagSets((previous) => [
+        ...previous,
+        fragment.tags.map((t) => t.toLowerCase()),
       ]);
     },
     [audiotool, fingerprint],
@@ -171,6 +179,8 @@ export default function AudiotoolPage() {
         sendFeedbackQueued({ ...lastInsert.feedback, event: "undo" });
       }
       setLastInsert(null);
+      // The undone insert's tags must leave the ranking context too.
+      setInsertedTagSets((previous) => previous.slice(0, -1));
     } finally {
       setUndoing(false);
     }

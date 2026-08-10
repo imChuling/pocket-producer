@@ -297,6 +297,10 @@ def check_deployment(tex: str, weights: dict):
     check_in_tex("has_msclap_delta", "MS-CLAP", tex)
     check_in_tex("has_key_zero_online", "constant zero online", tex)
     check_in_tex("has_fallback", "falls back", tex)
+    # Gate C: rules is the default; fusion is selectable, never default.
+    check_in_tex("has_rules_default", "default} ranker is the", tex)
+    check_in_tex("has_fusion_selectable", "selectable", tex)
+    check_not_in_tex("no_fusion_default", "is the default when session audio", tex)
     # The deployed model is NOT the offline-evaluated model (different
     # backbone, weights, and training data); the paper must not say so.
     check_not_in_tex("no_same_fusion_model", "same fusion model", tex)

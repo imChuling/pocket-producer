@@ -86,10 +86,10 @@ export function ContinuationPanel({
     availableModels && availableModels.length > 0
       ? availableModels
       : ["rules-v1"];
-  // Preferred default: the deployed fusion ranker when the server offers it.
-  const defaultModel = modelOptions.includes("fusion-5sig-v1")
-    ? "fusion-5sig-v1"
-    : "rules-v1";
+  // Default: the transparent rules baseline. The held-out evaluation
+  // showed no stable fusion advantage over simpler rankers, so fusion
+  // stays selectable but does not rank by default (Gate C decision).
+  const defaultModel = "rules-v1";
   // If the server's model list no longer contains the selection (e.g. a
   // checkpoint was unloaded), requests go out as the guaranteed fallback.
   const selectedModel =
