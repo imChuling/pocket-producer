@@ -1,83 +1,98 @@
-% TikZ system pipeline — Pocket Producer (revised: user-control emphasis)
-\definecolor{csession}{HTML}{9BCAE7}
-\definecolor{cfingerprint}{HTML}{D4E6A9}
-\definecolor{cfusion}{HTML}{D4BFDC}
-\definecolor{cpreview}{HTML}{F9D8A0}
-\definecolor{caction}{HTML}{F9D1D2}
-\definecolor{cbadge}{HTML}{477DC0}
-\definecolor{cfeedback}{HTML}{477DC0}
-\definecolor{cedge}{HTML}{3A3A3A}
-\definecolor{ctext}{HTML}{1A1A1A}
-\definecolor{csub}{HTML}{555555}
+% TikZ system pipeline — Pocket Producer
+% Two-lane design: cool lane = system proposes, warm lane = musician decides.
+% Requires tikz libraries: arrows.meta, positioning, fit, backgrounds.
+\definecolor{csysline}{HTML}{4A7FB5}
+\definecolor{csysfill}{HTML}{EDF3FA}
+\definecolor{cusrline}{HTML}{C0863C}
+\definecolor{cusrfill}{HTML}{FBF3E4}
+\definecolor{cpanelsys}{HTML}{F7FAFD}
+\definecolor{cpanelusr}{HTML}{FEFBF5}
+\definecolor{cedge}{HTML}{44484D}
+\definecolor{ctext}{HTML}{20242A}
+\definecolor{csub}{HTML}{6B7077}
 
 \begin{tikzpicture}[
-    node distance=0.4cm and 0.45cm,
-    every node/.style={font=\footnotesize},
-    sysbox/.style 2 args={
-        rectangle, rounded corners=2.5pt,
-        minimum width=2.1cm, minimum height=0.85cm,
-        draw=cedge, line width=0.5pt,
-        fill=#1, text=ctext, align=center,
-        inner sep=3pt,
-        append after command={
-            node [circle, fill=cbadge, text=white,
-                  font=\sffamily\tiny\bfseries,
-                  inner sep=0pt, minimum size=10pt]
-            at ([shift={(-0.10cm,0.10cm)}]\tikzlastnode.north west) {#2}
-        },
+    node distance=0.42cm and 0.5cm,
+    box/.style 2 args={
+        rectangle, rounded corners=3pt,
+        minimum width=2.4cm, minimum height=0.95cm,
+        draw=#1, line width=0.7pt, fill=#2,
+        text=ctext, align=center, inner sep=3pt,
+        font=\sffamily\footnotesize,
     },
-    sub/.style={font=\tiny, text=csub},
+    badge/.style={
+        circle, fill=#1, text=white,
+        font=\sffamily\tiny\bfseries,
+        inner sep=0pt, minimum size=10.5pt,
+    },
     arr/.style={
-        -{Stealth[length=4pt, width=3.5pt]},
-        line width=0.55pt, color=cedge,
+        -{Stealth[length=4.5pt, width=4pt]},
+        line width=0.6pt, color=cedge,
     },
     fbarr/.style={
-        -{Stealth[length=4pt, width=3.5pt]},
-        line width=0.55pt, color=cfeedback, dashed,
-    },
-    brace/.style={
-        decorate, decoration={brace, amplitude=4pt, mirror},
-        line width=0.4pt, color=csub,
+        -{Stealth[length=4.5pt, width=4pt]},
+        line width=0.6pt, color=csysline,
+        dash pattern=on 2.6pt off 2pt,
     },
 ]
 
-% Row 1 (top): candidate generation
-\node[sysbox={csession}{1}]   (S) {\textbf{DAW Session}};
-\node[sysbox={cfingerprint}{2}, right=of S] (F) {\textbf{Fingerprint}};
-\node[sysbox={cfusion}{3}, right=of F]   (Fu) {\textbf{Multi-Signal}\\\textbf{Ranking}};
+% ---- Lane 1: system proposes ----
+\node[box={csysline}{csysfill}] (S)
+    {\textbf{DAW Session}\\[-1pt]
+     {\tiny\color{csub}Audiotool Nexus SDK}};
+\node[box={csysline}{csysfill}, right=of S] (F)
+    {\textbf{Fingerprint}\\[-1pt]
+     {\tiny\color{csub}tempo $\cdot$ CLAP embeddings}};
+\node[box={csysline}{csysfill}, right=of F] (R)
+    {\textbf{Ranking}\\[-1pt]
+     {\tiny\color{csub}5 signals $\cdot$ BPR fusion}};
 
-% Row 2 (bottom): user control
-\node[sysbox={cpreview}{4}, below=0.95cm of Fu]  (P) {\textbf{Preview}};
-\node[sysbox={caction}{5}, left=of P]       (A)  {\textbf{Insert / Undo}};
-\node[sysbox={csession!30}{6}, left=of A]         (Fb)  {\textbf{Feedback Log}};
+% ---- Lane 2: musician decides ----
+\node[box={cusrline}{cusrfill}, below=1.05cm of R] (P)
+    {\textbf{Preview}\\[-1pt]
+     {\tiny\color{csub}per-signal evidence}};
+\node[box={cusrline}{cusrfill}, left=of P] (A)
+    {\textbf{Insert / Undo}\\[-1pt]
+     {\tiny\color{csub}one Nexus transaction}};
+\node[box={cusrline}{cusrfill}, left=of A] (L)
+    {\textbf{Feedback Log}\\[-1pt]
+     {\tiny\color{csub}accept $\cdot$ reject $\cdot$ undo}};
 
-% Sublabels
-\node[sub, below=2pt of S.south]  {Audiotool Nexus};
-\node[sub, below=2pt of F.south]  {tempo, session audio};
-\node[sub, below=2pt of Fu.south]  {cold-start BPR fusion};
-\node[sub, below=2pt of P.south] {audition before commit};
-\node[sub, below=2pt of A.south]  {single-transaction};
-\node[sub, below=2pt of Fb.south]  {accept / reject / undo};
+% ---- Lane panels (background) ----
+\begin{scope}[on background layer]
+\node[rectangle, rounded corners=4.5pt, fill=cpanelsys,
+      draw=csysline!30, line width=0.4pt,
+      fit=(S)(R), inner sep=7pt] (PSYS) {};
+\node[rectangle, rounded corners=4.5pt, fill=cpanelusr,
+      draw=cusrline!35, line width=0.4pt,
+      fit=(P)(L), inner sep=7pt] (PUSR) {};
+\end{scope}
 
-% Forward arrows
-\draw[arr] (S.east)  -- (F.west);
-\draw[arr] (F.east)  -- (Fu.west);
-\draw[arr] (Fu.south) -- (P.north);
-\draw[arr] (P.west) -- (A.east);
-\draw[arr] (A.west) -- (Fb.east);
+% ---- Lane labels ----
+\node[font=\sffamily\tiny\bfseries, text=csysline, anchor=south west]
+    at ([yshift=1.5pt]PSYS.north west) {SYSTEM PROPOSES};
+\node[font=\sffamily\tiny\bfseries, text=cusrline, anchor=north west]
+    at ([yshift=-1.5pt]PUSR.south west) {MUSICIAN DECIDES};
 
-% Feedback loop
-\coordinate (fb) at ([xshift=-0.5cm]Fb.west);
-\draw[fbarr] (Fb.west) -- (fb) |- (S.west);
-\node[font=\tiny, text=cfeedback, rotate=90, anchor=south]
-    at ([xshift=-0.22cm]fb) {\textit{future personalization}};
+% ---- Step badges ----
+\node[badge=csysline] at (S.north west) {1};
+\node[badge=csysline] at (F.north west) {2};
+\node[badge=csysline] at (R.north west) {3};
+\node[badge=cusrline] at (P.north west) {4};
+\node[badge=cusrline] at (A.north west) {5};
+\node[badge=cusrline] at (L.north west) {6};
 
-% Braces on the outer edges: proposer above row 1, decider below row 2
-% (keeps the inter-row gap free for sublabels and arrows).
-\draw[decorate, decoration={brace, amplitude=4pt}, line width=0.4pt, color=csub]
-    ([yshift=0.3cm]S.north west) -- ([yshift=0.3cm]Fu.north east)
-    node[midway, above=4pt, font=\tiny\itshape, text=csub] {system proposes};
-\draw[brace] ([yshift=-0.42cm]Fb.south west) -- ([yshift=-0.42cm]P.south east)
-    node[midway, below=4pt, font=\tiny\itshape, text=csub] {musician decides};
+% ---- Forward flow ----
+\draw[arr] (S) -- (F);
+\draw[arr] (F) -- (R);
+\draw[arr] (R.south) -- (P.north);
+\draw[arr] (P) -- (A);
+\draw[arr] (A) -- (L);
+
+% ---- Feedback loop ----
+\coordinate (fb) at ([xshift=-0.6cm]L.west);
+\draw[fbarr] (L.west) -- (fb) |- (S.west);
+\node[font=\sffamily\tiny\itshape, text=csysline, rotate=90, anchor=south]
+    at ([shift={(-0.08,1.0)}]fb) {future personalization};
 
 \end{tikzpicture}

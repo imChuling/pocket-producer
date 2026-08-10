@@ -30,7 +30,8 @@ Deadline: 2026-09-25 AoE (rolling review; internal freeze 2026-08-11)
 - [x] 7.7pp swing framed as representation sensitivity, not as fusion superiority
 
 ## AI Usage Statement
-- [x] Present in manuscript — scope: engineering, scripting, collation, drafting
+- [x] Not in manuscript (author decision 2026-08-10); usage logged in claim-evidence ledger
+- [ ] Declare via submission form if the platform requires it — verify at upload
 - [x] All research claims, design, analysis verified by author
 
 ## Build pipeline

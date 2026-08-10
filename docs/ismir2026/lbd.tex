@@ -16,7 +16,7 @@
 \usepackage{color}
 \usepackage{booktabs}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning,decorations.pathreplacing}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds}
 \def\lbd{}
 
 \title{Pocket Producer: Session-Conditioned Retrieval\\
@@ -34,19 +34,20 @@ as User-Controlled Proposal}
 \maketitle
 
 \begin{abstract}
-We present Pocket Producer, a prototype that operationalizes
-\emph{session-conditioned continuation retrieval} inside the Audiotool
-DAW\@.  The system reads a live session via the Nexus SDK, computes a
-session fingerprint from tempo and CLAP embeddings of up to eight
-region-referenced samples, and ranks Freesound Loop Dataset candidates
-with a five-signal logistic fusion.  Candidates are surfaced for
-preview with per-signal evidence; insertion is a single reversible
-Nexus transaction; feedback is logged for future personalization.
-Offline evaluation on pack co-membership weak labels shows the fusion
-advantage is sensitive to label construction, representation space,
-and negative regime---motivating the design choice to default to a
-transparent rules baseline and treat the learned ranker as a
-selectable \emph{proposal}, not an autonomous decision.
+Music continuation is not a similarity problem: the loop that best
+matches a session is not necessarily the one that helps a musician
+move it forward.  Pocket Producer operationalizes this distinction
+inside the Audiotool DAW\@: it fingerprints the live session via the
+Nexus SDK (tempo, CLAP embeddings of session audio) and ranks
+Freesound Loop Dataset candidates with a five-signal fusion trained
+on pack co-membership weak labels---the only supervision available
+cold-start.  Offline evaluation shows the apparent ranking gain
+changes substantially with weak-label construction, negative regime,
+and embedding representation.  Since the proxy does not encode the
+creative objective, every recommendation is an inspectable,
+reversible \emph{proposal}---previewed with per-signal evidence,
+inserted in a single undoable transaction, logged for future
+personalization---rather than an autonomous creative decision.
 \end{abstract}
 
 % ==================================================================
@@ -64,13 +65,13 @@ We define \textbf{continuation utility} as the property that a
 candidate helps the musician make progress in the current session;
 unlike similarity it is asymmetric and context-dependent.
 
-We contribute: (1)~a DAW-integrated prototype with session
-fingerprinting, multi-signal ranking, and a proposal-based interaction
-model where every recommendation is previewable and reversible;
-(2)~a cold-start ranking recipe using Freesound pack co-membership as
-weak supervision; (3)~empirical observations showing the proxy is
-too sensitive to label construction, embedding space, and negative
-regime to serve as an autonomous ranker.
+We contribute: (1)~a problem formulation that separates continuation
+utility from similarity and compatibility; (2)~empirical evidence
+that ranking conclusions drawn from a weak proxy shift with label
+construction, negative regime, and embedding representation;
+(3)~a deployed system that turns this finding into interaction
+design: proposal-based retrieval with per-signal evidence, preview,
+reversible insertion, and feedback logging.
 
 % ==================================================================
 \section{System}\label{sec:system}
@@ -118,8 +119,11 @@ The title's ``user-controlled proposal'' is a deliberate design
 choice, not a fallback from poor accuracy.  Pack co-membership is a
 proxy for timbral compatibility, not continuation utility; even a
 perfect ranker under this label would not capture arrangement
-context, creative intent, or genre conventions.  The interface
-therefore keeps the musician in the loop at every step.
+context, creative intent, or genre conventions.
+The design question is not whether the ranker can optimize the
+proxy, but whether the proxy should hold final creative authority;
+the interface answers by keeping the musician in the loop at every
+step.
 
 Each candidate is surfaced for in-context preview with per-signal
 evidence---cosine score, tempo delta, key match, and overlapping
@@ -176,6 +180,11 @@ for the held-out analysis (Section~\ref{sec:observations}).
 \section{Observations}\label{sec:observations}
 % ==================================================================
 
+The weak label measures pack co-membership, not continuation
+utility; the observations below chart where the proxy breaks
+down---and the feedback log of Section~\ref{sec:proposal} is
+designed to eventually ground ranking in in-session evidence
+instead.
 Four lines of evidence jointly motivate treating the fusion as a
 proposal rather than a decision.
 %
