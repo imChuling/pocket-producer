@@ -38,6 +38,7 @@ HELDOUT_LOSO = ROOT / "artifacts" / "heldout-eval-packonly" / "loso.json"
 ALIGNMENT = ROOT / "artifacts" / "human-signal-alignment" / "alignment.json"
 SPLIT = ROOT / "artifacts" / "heldout-split-packonly" / "split.json"
 DEPLOY_WEIGHTS = ROOT / "artifacts" / "fusion-deploy" / "weights.json"
+MSCLAP_SENSITIVITY = ROOT / "artifacts" / "msclap-sensitivity" / "sensitivity.json"
 
 failures = []
 passes = []
@@ -292,6 +293,8 @@ def check_deployment(tex: str, weights: dict):
     check("§2/deploy_space_msclap", ["msclap-2023"], weights["representation_model"])
     check("§2/deploy_trained_packonly", True,
           "pack-only train split" in weights.get("trained_on", ""))
+    check("§2/deploy_source_weighted", True,
+          "source-weighted BPR" in weights.get("trained_on", ""))
 
     check_in_tex("has_separate_production_model", "separate production model", tex)
     check_in_tex("has_msclap_delta", "MS-CLAP", tex)
@@ -305,6 +308,58 @@ def check_deployment(tex: str, weights: dict):
     # backbone, weights, and training data); the paper must not say so.
     check_not_in_tex("no_same_fusion_model", "same fusion model", tex)
     check_not_in_tex("no_active_regions", "active regions", tex)
+
+
+def check_msclap_sensitivity(tex: str, sens: dict):
+    """§4.2+§4.3: MS-CLAP sensitivity re-analysis numbers."""
+    bs = sens["bootstrap"]["fusion_vs_cosine"]
+
+    hs = bs["hard_similar"]
+    check("§4.3/msclap_hs_+9.2pp", 9.2,
+          round(hs["point_delta"] * 100, 1), tol=0.05)
+    check("§4.3/msclap_hs_ci_lo_+4.3", 4.3,
+          round(hs["ci_lo"] * 100, 1), tol=0.05)
+    check("§4.3/msclap_hs_ci_hi_+14.3", 14.3,
+          round(hs["ci_hi"] * 100, 1), tol=0.05)
+    check("§4.3/msclap_hs_ci_above_zero", True, hs["ci_lo"] > 0)
+
+    htk = bs["hard_tempo_key"]
+    check("§4.3/msclap_htk_-1.8pp", -1.8,
+          round(htk["point_delta"] * 100, 1), tol=0.05)
+    check("§4.3/msclap_htk_ci_lo_-4.5", -4.5,
+          round(htk["ci_lo"] * 100, 1), tol=0.05)
+    check("§4.3/msclap_htk_ci_hi_+0.6", 0.6,
+          round(htk["ci_hi"] * 100, 1), tol=0.05)
+
+    overall = bs["overall"]
+    check("§4.3/msclap_overall_+2.0pp", 2.0,
+          round(overall["point_delta"] * 100, 1), tol=0.05)
+    check("§4.3/msclap_overall_ci_lo_+0.6", 0.6,
+          round(overall["ci_lo"] * 100, 1), tol=0.05)
+    check("§4.3/msclap_overall_ci_hi_+3.5", 3.5,
+          round(overall["ci_hi"] * 100, 1), tol=0.05)
+
+    loso = sens["loso"]
+    full_hs = loso["full-5sig"]["mean_hard_similar"]
+    full_htk = loso["full-5sig"]["mean_hard_tempo_key"]
+    tempo_hs = round((loso["minus-tempo"]["mean_hard_similar"] - full_hs) * 100, 1)
+    tempo_htk = round((loso["minus-tempo"]["mean_hard_tempo_key"] - full_htk) * 100, 1)
+    key_hs = round((loso["minus-key"]["mean_hard_similar"] - full_hs) * 100, 1)
+    check("§4.2/msclap_tempo_hs_-6.9", -6.9, tempo_hs, tol=0.05)
+    check("§4.2/msclap_tempo_htk_+0.7", 0.7, tempo_htk, tol=0.05)
+    check("§4.2/msclap_key_hs_-0.4", -0.4, key_hs, tol=0.05)
+
+    check_in_tex("has_msclap_+9.2", "+9.2", tex)
+    check_in_tex("has_msclap_hs_ci", "[+4.3, +14.3]", tex)
+    check_in_tex("has_msclap_htk_-1.8", "-1.8", tex)
+    check_in_tex("has_msclap_htk_ci", "[-4.5, +0.6]", tex)
+    check_in_tex("has_msclap_overall_+2.0", "+2.0", tex)
+    check_in_tex("has_msclap_overall_ci", "[+0.6, +3.5]", tex)
+    check_in_tex("has_7.7pp_swing", "7.7", tex)
+    check_in_tex("has_msclap_tempo_-6.9", "-6.9", tex)
+    check_in_tex("has_msclap_key_reversal", "-0.4", tex)
+    check_in_tex("has_representation_sensitive", "representation-sensitive", tex)
+    check_in_tex("has_source_weighted_bpr", "source-weighted BPR", tex)
 
 
 def check_removed_claims(tex: str):
@@ -340,6 +395,9 @@ def check_ledger_consistency():
     check_in_tex("ledger/has_-0.96", "0.96", text)
     check_in_tex("ledger/has_deploy", "fusion-5sig-v1", text)
     check_in_tex("ledger/has_7/9", "7/9", text)
+    check_in_tex("ledger/has_msclap_sensitivity", "MS-CLAP sensitivity", text)
+    check_in_tex("ledger/has_+9.2pp", "+9.2pp", text)
+    check_in_tex("ledger/has_source_weighted", "source-weighted BPR", text)
 
     active = text.split("## Removed claims")[0]
     check_not_in_tex("ledger/no_v1_heldout_active", "[−0.85, +2.67]", active)
@@ -360,6 +418,7 @@ def main() -> int:
     alignment = load_json(ALIGNMENT)
     split = load_json(SPLIT)
     deploy_weights = load_json(DEPLOY_WEIGHTS)
+    msclap_sens = load_json(MSCLAP_SENSITIVITY)
 
     if fusion is None or ablation is None or split is None:
         print("\n".join(failures))
@@ -380,6 +439,8 @@ def main() -> int:
         check_pilot(tex_text, alignment)
     if deploy_weights:
         check_deployment(tex_text, deploy_weights)
+    if msclap_sens:
+        check_msclap_sensitivity(tex_text, msclap_sens)
     check_removed_claims(tex_text)
     check_ledger_consistency()
 

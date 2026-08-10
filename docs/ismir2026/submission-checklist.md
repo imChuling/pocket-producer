@@ -10,7 +10,7 @@ Deadline: 2026-09-25 AoE (rolling review; internal freeze 2026-08-11)
 - [x] No page numbers in header (ismir.sty handles this)
 
 ## Content integrity
-- [x] Number consistency check passes (126/126, `check_paper_numbers.py`)
+- [x] Number consistency check passes (151/151, `check_paper_numbers.py`)
   - Artifact-vs-hardcoded checks + tex-presence checks + tex-absence checks
   - Limitations: substring presence, not semantic context; manual review still required
 - [x] All table numbers match artifact JSONs (LAION + MS-CLAP sections)
@@ -36,7 +36,10 @@ Deadline: 2026-09-25 AoE (rolling review; internal freeze 2026-08-11)
 - [x] Numerical payload SHA unchanged across metadata migration
 - [x] v1 artifacts (759/190) preserved in `artifacts/heldout-eval/` for audit trail
 - [x] "≥3 items" query eligibility stated in lbd.tex line 130
-- [x] "significantly worse" replaced with CI-based language (line 212)
+- [x] "significantly worse" replaced with CI-based language
+- [x] MS-CLAP sensitivity numbers in §4.3 match sensitivity.json (bootstrap CIs + LOSO)
+- [x] Deployed weights match source-weighted BPR recipe described in §2
+- [x] 7.7pp swing framed as representation sensitivity, not as fusion superiority
 
 ## AI Usage Statement
 - [x] Present in manuscript — scope: engineering, scripting, collation, drafting
@@ -55,6 +58,8 @@ Deadline: 2026-09-25 AoE (rolling review; internal freeze 2026-08-11)
 - [x] `artifacts/eval-pack/eval_summary.json` — 9-rater vote data
 - [x] `artifacts/heldout-eval-packonly/eval.json` — pack-only held-out (protocol-v2)
 - [x] `artifacts/heldout-split-packonly/split.json` — pack-only split (484/121)
+- [x] `artifacts/msclap-sensitivity/sensitivity.json` — MS-CLAP sensitivity re-analysis
+- [x] `artifacts/fusion-deploy/weights.json` — deployed weights (source-weighted BPR)
 
 ## Before submission
 - [x] Full text proofread

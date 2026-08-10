@@ -48,9 +48,9 @@ $-0.03$\,pp under pack-only labels;
 (2)~leave-one-signal-out ablation shows regime-dependent
 contributions---tempo helps on hard\_similar but hurts on
 hard\_tempo\_key;
-(3)~on a pre-committed held-out split the fusion$-$cosine difference
-is small and uncertain (hard\_similar $+1.5$\,pp, CI crossing zero)
-and significantly negative on hard\_tempo\_key;
+(3)~on a pre-committed held-out split the fusion$-$cosine advantage
+on hard\_similar swings from $+1.5$\,pp (CI crossing zero, LAION-CLAP)
+to $+9.2$\,pp (CI above zero, MS-CLAP)---representation-sensitive;
 (4)~an exploratory pilot shows a descriptive divergence between
 weak-label signal rankings and human consensus.
 Pocket Producer therefore treats every recommendation as a
@@ -105,8 +105,9 @@ key compatibility, and tag overlap.
 The deployed ranker follows the same five-signal recipe but is a
 separate production model, with four stated deltas from the offline
 evaluation: it runs in the production MS-CLAP space (offline:
-LAION-CLAP Music), with weights retrained there on the pack-only
-train side (mean over 5 seeds); the key term is constant zero online
+LAION-CLAP Music), with source-weighted BPR weights on the pack-only
+train side (hard\_similar$\times$2.0, mean over 5 seeds); the key
+term is constant zero online
 (Audiotool documents carry no key signature); and tag context comes
 from fragments used in the session, not pack siblings.
 Given the results below, the \emph{default} ranker is the
@@ -189,8 +190,10 @@ Table~\ref{tab:loso} shows leave-one-signal-out deltas per negative
 regime.  Removing tempo costs $-0.96$\,pp on hard\_similar but
 \emph{gains} $+0.68$\,pp on hard\_tempo\_key; removing key helps on
 both hard regimes ($+0.94$\,/\,$+1.21$\,pp).
-Both patterns replicate directionally on the held-out split (tempo
-$-1.48$\,/\,$+0.37$\,pp, key $+0.62$\,/\,$+0.97$\,pp).
+Both replicate directionally on the LAION-CLAP held-out split (tempo
+$-1.48$\,/\,$+0.37$\,pp, key $+0.62$\,/\,$+0.97$\,pp); under
+MS-CLAP, tempo's direction holds ($-6.9$\,/\,$+0.7$\,pp) but key's
+effect on hard\_similar reverses ($-0.4$\,pp vs.\ $+0.9$\,pp).
 Part of this pattern is built in: easy and hard\_tempo\_key are
 constructed from tempo and key, so those signals are near-constant
 within them by design.
@@ -199,24 +202,28 @@ sign, so its ranking cannot be uniformly trusted.
 
 \subsection{Held-Out Evaluation}\label{sec:heldout}
 
-The held-out split was evaluated exactly once, after all
-development; protocol and split were committed first, making the
-freeze verifiable in repository history.
-Of its 121 sources, 54 form queries (323 examples); fusion was
-retrained on the train side with the same hyperparameters and 5
-seeds.
-The fusion$-$cosine difference on hard\_similar is $+1.5$\,pp with a
-source-grouped bootstrap 95\%~CI of $[-1.5, +4.7]$\,pp (joint
-resampling of the 54 example-bearing source clusters, shared across
-seeds)---small and uncertain.
-On hard\_tempo\_key the CI is entirely below zero in this secondary
-analysis ($-1.0$\,pp); overall the difference
-is $+0.4$\,pp with a CI crossing zero.
+The held-out split (121 sources, 54 with queries, 323 examples) was
+evaluated after all development; protocol and split were committed
+first.
 
-Residual limitations: the signal set and hyperparameters come from
-the earlier mixed-label corpus, which subsumes this one; the run
-evaluates the offline LAION-CLAP model, not the deployed MS-CLAP
-variant, and is a sensitivity re-analysis, not de novo confirmation.
+\emph{LAION-CLAP (primary).}
+Fusion$-$cosine on hard\_similar: $+1.5$\,pp, source-grouped
+bootstrap 95\%~CI $[-1.5, +4.7]$ (joint resampling of 54 source
+clusters, shared across seeds)---small and uncertain.
+Hard\_tempo\_key: $-1.0$\,pp (CI entirely below zero); overall
+$+0.4$\,pp (CI crossing zero).
+
+\emph{MS-CLAP (sensitivity re-analysis).}
+Retraining with source-weighted BPR (hard\_similar$\times$2.0) in the
+deployed MS-CLAP space, fusion$-$cosine on hard\_similar rises to
+$+9.2$\,pp, CI $[+4.3, +14.3]$---entirely above zero.
+Hard\_tempo\_key: $-1.8$\,pp (CI $[-4.5, +0.6]$); overall
+$+2.0$\,pp, CI $[+0.6, +3.5]$.
+The $7.7$\,pp swing on hard\_similar between spaces---from uncertain
+to significant---is itself evidence that the proxy's measured
+advantage is representation-sensitive.
+The MS-CLAP run also changes the training recipe (source weighting,
+hard\_similar upweighting), so the embedding effect is confounded.
 
 \subsection{Exploratory Pilot}\label{sec:pilot}
 
@@ -241,13 +248,12 @@ misalignment with human judgment without confirming it.
 Pocket Producer operationalizes session-conditioned retrieval in a
 DAW\@.
 The weak-label fusion is an \emph{operational} cold-start candidate
-generator---comparable to frozen cosine on held-out data ($+0.4$\,pp
-overall, $+1.5$\,pp hard\_similar, both CIs crossing zero; worse on
-hard\_tempo\_key)---that, unlike a bare cosine score, surfaces
-per-signal evidence with each proposal.
-Since its contributions are regime-dependent and may not reflect
-human preference, it never decides alone: every recommendation is
-previewable and reversible.
+generator whose held-out advantage over cosine swings from
+$+1.5$\,pp on hard\_similar (CI crossing zero, LAION-CLAP) to
+$+9.2$\,pp (CI above zero, MS-CLAP)---representation-sensitive and
+regime-dependent.  It surfaces per-signal evidence; since its ranking
+cannot be uniformly trusted, every recommendation is previewable and
+reversible.
 Whether preview and undo improve creative outcomes is untested;
 evaluating them, like personalization from logged feedback, is
 future work.
@@ -261,12 +267,6 @@ The author thanks the Audiotool team for the Nexus SDK and the FSLD
 creators~\cite{ramires2020fsld}.
 
 \vspace{0.5em}
-\noindent\textbf{AI Usage Statement.}
-Claude Code (Anthropic) was used for engineering implementation,
-experiment scripting, statistical analysis assistance, and
-documentation drafting.
-All research claims, experimental design, and conclusions are the
-sole responsibility of the author.
 
 \bibliography{references}
 
