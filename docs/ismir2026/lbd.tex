@@ -102,24 +102,21 @@ A five-signal logistic fusion trained with BPR
 loss~\cite{rendle2009bpr} ranks candidates across timbral similarity
 (CLAP cosine to session regions, mean- and max-pooled), tempo match,
 key compatibility, and tag overlap.
-The deployed ranker follows the same five-signal recipe but is a
-separate production model, with four stated deltas from the offline
-evaluation: it runs in the production MS-CLAP space (offline:
-LAION-CLAP Music), with source-weighted BPR weights on the pack-only
-train side (hard\_similar$\times$2.0, mean over 5 seeds); the key
-term is constant zero online
-(Audiotool documents carry no key signature); and tag context comes
-from fragments used in the session, not pack siblings.
+The deployed ranker follows the same recipe but is a separate
+production model with four stated deltas: MS-CLAP space (offline:
+LAION-CLAP Music); source-weighted BPR weights on the pack-only
+train side (hard\_similar$\times$2.0, mean over 5 seeds); key
+constant zero online (no key signature in Audiotool documents); tag
+context from session fragments, not pack siblings.
 Given the results below, the \emph{default} ranker is the
 transparent rules baseline; fusion remains selectable and falls back
 to rules without session audio.
-Candidates are surfaced for preview---with per-signal evidence
-(audio similarity, tempo fit, tag overlap)---before any session
-state changes.
-Accepted candidates are inserted in a single Nexus transaction with
-undo; rejected or undone events are logged.
-This design responds to Section~\ref{sec:evidence}'s findings: the
-proxy must not substitute its ranking for the musician's judgment.
+Candidates are surfaced for preview---with per-signal evidence---before
+any session state changes; accepted candidates are inserted in a
+single Nexus transaction with undo, and rejected or undone events are
+logged.
+This responds to Section~\ref{sec:evidence}'s findings: the proxy
+must not substitute its ranking for the musician's judgment.
 
 % ==================================================================
 \section{Weak-Label Fusion}\label{sec:fusion}
@@ -190,10 +187,10 @@ Table~\ref{tab:loso} shows leave-one-signal-out deltas per negative
 regime.  Removing tempo costs $-0.96$\,pp on hard\_similar but
 \emph{gains} $+0.68$\,pp on hard\_tempo\_key; removing key helps on
 both hard regimes ($+0.94$\,/\,$+1.21$\,pp).
-Both replicate directionally on the LAION-CLAP held-out split (tempo
+Both replicate on the LAION-CLAP held-out split (tempo
 $-1.48$\,/\,$+0.37$\,pp, key $+0.62$\,/\,$+0.97$\,pp); under
-MS-CLAP, tempo's direction holds ($-6.9$\,/\,$+0.7$\,pp) but key's
-effect on hard\_similar reverses ($-0.4$\,pp vs.\ $+0.9$\,pp).
+MS-CLAP, tempo holds ($-6.9$\,/\,$+0.7$\,pp) but key's hard\_similar
+effect reverses ($-0.4$\,pp vs.\ $+0.9$\,pp).
 Part of this pattern is built in: easy and hard\_tempo\_key are
 constructed from tempo and key, so those signals are near-constant
 within them by design.
@@ -203,27 +200,19 @@ sign, so its ranking cannot be uniformly trusted.
 \subsection{Held-Out Evaluation}\label{sec:heldout}
 
 The held-out split (121 sources, 54 with queries, 323 examples) was
-evaluated after all development; protocol and split were committed
-first.
-
-\emph{LAION-CLAP (primary).}
-Fusion$-$cosine on hard\_similar: $+1.5$\,pp, source-grouped
-bootstrap 95\%~CI $[-1.5, +4.7]$ (joint resampling of 54 source
-clusters, shared across seeds)---small and uncertain.
-Hard\_tempo\_key: $-1.0$\,pp (CI entirely below zero); overall
-$+0.4$\,pp (CI crossing zero).
-
-\emph{MS-CLAP (sensitivity re-analysis).}
-Retraining with source-weighted BPR (hard\_similar$\times$2.0) in the
-deployed MS-CLAP space, fusion$-$cosine on hard\_similar rises to
-$+9.2$\,pp, CI $[+4.3, +14.3]$---entirely above zero.
-Hard\_tempo\_key: $-1.8$\,pp (CI $[-4.5, +0.6]$); overall
-$+2.0$\,pp, CI $[+0.6, +3.5]$.
-The $7.7$\,pp swing on hard\_similar between spaces---from uncertain
-to significant---is itself evidence that the proxy's measured
-advantage is representation-sensitive.
-The MS-CLAP run also changes the training recipe (source weighting,
-hard\_similar upweighting), so the embedding effect is confounded.
+evaluated after development; protocol and split were committed first.
+Under LAION-CLAP (primary), fusion$-$cosine on hard\_similar is
+$+1.5$\,pp with bootstrap 95\%~CI $[-1.5, +4.7]$ (joint resampling
+of 54 source clusters)---small and uncertain; hard\_tempo\_key
+$-1.0$\,pp (CI below zero); overall $+0.4$\,pp (CI crossing zero).
+A sensitivity re-analysis in the deployed MS-CLAP space, retraining
+with source-weighted BPR (hard\_similar$\times$2.0), shows
+hard\_similar $+9.2$\,pp, CI $[+4.3, +14.3]$---entirely above zero;
+hard\_tempo\_key $-1.8$\,pp (CI $[-4.5, +0.6]$); overall $+2.0$\,pp,
+CI $[+0.6, +3.5]$.
+The $7.7$\,pp swing on hard\_similar between spaces evidences
+representation sensitivity; the MS-CLAP run also changes the training
+recipe, confounding the embedding effect.
 
 \subsection{Exploratory Pilot}\label{sec:pilot}
 
@@ -246,17 +235,14 @@ misalignment with human judgment without confirming it.
 % ==================================================================
 
 Pocket Producer operationalizes session-conditioned retrieval in a
-DAW\@.
-The weak-label fusion is an \emph{operational} cold-start candidate
-generator whose held-out advantage over cosine swings from
-$+1.5$\,pp on hard\_similar (CI crossing zero, LAION-CLAP) to
-$+9.2$\,pp (CI above zero, MS-CLAP)---representation-sensitive and
-regime-dependent.  It surfaces per-signal evidence; since its ranking
-cannot be uniformly trusted, every recommendation is previewable and
-reversible.
-Whether preview and undo improve creative outcomes is untested;
-evaluating them, like personalization from logged feedback, is
-future work.
+DAW\@.  The fusion is an \emph{operational} cold-start candidate
+generator whose held-out advantage swings from $+1.5$\,pp on
+hard\_similar (CI crossing zero, LAION-CLAP) to $+9.2$\,pp (CI above
+zero, MS-CLAP)---representation-sensitive and regime-dependent.
+It surfaces per-signal evidence; since its ranking cannot be uniformly
+trusted, every recommendation is previewable and reversible.
+Evaluating whether preview and undo improve creative outcomes, and
+personalization from logged feedback, is future work.
 
 % --- Page 3: references only ---
 
