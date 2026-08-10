@@ -23,7 +23,8 @@ export function ConnectionPanel({
       <p className="text-sm text-slate">
         Pocket Producer reads your open project&apos;s tempo and tracks to
         suggest fragments from your own library. It asks for{" "}
-        <code className="text-gravel">project:write</code> so it can insert a
+        <code className="text-gravel">project:write</code> and{" "}
+        <code className="text-gravel">sample:write</code> so it can insert a
         fragment you choose — every insert is undoable, and you can disconnect
         at any time. Your Audiotool login never leaves this browser.
       </p>
