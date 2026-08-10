@@ -1,0 +1,5 @@
+{
+  "id": "pocketrank-context-v1",
+  "trainable_parameters": 400449,
+  "parameter_budget": 500000
+}

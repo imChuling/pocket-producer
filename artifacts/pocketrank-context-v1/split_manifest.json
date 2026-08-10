@@ -1,0 +1,13 @@
+{
+  "grouping": "source_id",
+  "val_fraction": 0.25,
+  "train_sources": [
+    "project:6a24b5312ffa04f61751e6f0",
+    "project:6a28687c5c272fdf26909491"
+  ],
+  "val_sources": [
+    "project:6a289e86348a510f0b81ab24",
+    "project:6a28c78d2815ecd78ecb62c4",
+    "project:6a28e0cc66366dd80b96af46"
+  ]
+}

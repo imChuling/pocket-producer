@@ -1,0 +1,5 @@
+{
+  "id": "deepsets-v1",
+  "trainable_parameters": 295425,
+  "parameter_budget": 500000
+}
