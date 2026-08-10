@@ -45,7 +45,7 @@ autonomously:
 (1)~the apparent fusion gain is label-sensitive---+4.0\,pp over
 frozen cosine on hard\_similar under mixed uploader/pack labels, but
 $-0.03$\,pp under pack-only labels;
-(2)~leave-one-signal-out ablation reveals regime-dependent signal
+(2)~leave-one-signal-out ablation shows regime-dependent
 contributions---tempo helps on hard\_similar but hurts on
 hard\_tempo\_key;
 (3)~on a pre-committed held-out split the fusion$-$cosine difference
@@ -74,8 +74,8 @@ We define \textbf{continuation utility} as the property that a
 candidate helps the musician make progress in the current session;
 unlike similarity it is asymmetric and context-dependent.
 
-We contribute: (1)~a DAW-integrated prototype whose deployed ranker
-shares the five-signal fusion recipe evaluated here, treating
+We contribute: (1)~a DAW-integrated prototype that deploys the
+evaluated five-signal fusion as a selectable ranker and treats
 retrieval as user-controlled proposal, not automatic decision;
 (2)~empirical evidence that weak-label proxy scores are sensitive to
 label construction, regime-dependent, uncertain on held-out data,
@@ -96,8 +96,8 @@ creative authority with the musician.
 
 The live Audiotool session (Figure~\ref{fig:system}) is read via
 the Nexus SDK and mapped to a session fingerprint (tempo, and CLAP
-embeddings~\cite{elizalde2023clap} of up to eight unique samples
-referenced by the session's regions).
+embeddings~\cite{elizalde2023clap} of up to eight unique
+region-referenced samples).
 A five-signal logistic fusion trained with BPR
 loss~\cite{rendle2009bpr} ranks candidates across timbral similarity
 (CLAP cosine to session regions, mean- and max-pooled), tempo match,
@@ -108,9 +108,10 @@ evaluation: it runs in the production MS-CLAP space (offline:
 LAION-CLAP Music), with weights retrained there on the pack-only
 train side (mean over 5 seeds); the key term is constant zero online
 (Audiotool documents carry no key signature); and tag context comes
-from fragments used in the session rather than pack siblings.
-It is the default when session audio is available; otherwise the
-service falls back to a transparent rules baseline.
+from fragments used in the session, not pack siblings.
+Given the results below, the \emph{default} ranker is the
+transparent rules baseline; fusion remains selectable and falls back
+to rules without session audio.
 Candidates are surfaced for preview---with per-signal evidence
 (audio similarity, tempo fit, tag overlap)---before any session
 state changes.
@@ -123,9 +124,9 @@ proxy must not substitute its ranking for the musician's judgment.
 \section{Weak-Label Fusion}\label{sec:fusion}
 % ==================================================================
 
-From the FSLD~\cite{ramires2020fsld} we kept only sounds with a true
-Freesound pack (1,797 items, 605 packs), discarding items whose only
-grouping is a shared uploader.
+From the FSLD~\cite{ramires2020fsld} we kept only sounds with a
+true Freesound pack (1,797 items, 605 packs), discarding items
+grouped only by uploader.
 Each multi-item pack yields one leave-one-out query per item, with
 same-pack siblings as positives and cross-pack items as negatives in
 three difficulty tiers (\emph{easy}: tempo/key mismatch;
@@ -212,11 +213,10 @@ On hard\_tempo\_key, fusion performs significantly \emph{worse} than
 cosine ($-1.0$\,pp, CI entirely below zero); overall the difference
 is $+0.4$\,pp with a CI crossing zero.
 
-Residual limitations: the signal set and hyperparameters were
-designed on the earlier mixed-label corpus, which subsumes this one;
-the run evaluates the offline LAION-CLAP model (not the deployed
-MS-CLAP variant) and is a sensitivity re-analysis, not de novo
-confirmatory evidence.
+Residual limitations: the signal set and hyperparameters come from
+the earlier mixed-label corpus, which subsumes this one; the run
+evaluates the offline LAION-CLAP model, not the deployed MS-CLAP
+variant, and is a sensitivity re-analysis, not de novo confirmation.
 
 \subsection{Exploratory Pilot}\label{sec:pilot}
 
@@ -241,10 +241,10 @@ misalignment with human judgment without confirming it.
 Pocket Producer operationalizes session-conditioned retrieval in a
 DAW\@.
 The weak-label fusion is an \emph{operational} cold-start candidate
-generator---comparable to frozen cosine on held-out data
-($+0.4$\,pp overall, CI crossing zero; $+1.5$\,pp on hard\_similar,
-uncertain; worse on hard\_tempo\_key)---that, unlike a bare cosine
-score, surfaces per-signal evidence with each proposal.
+generator---comparable to frozen cosine on held-out data ($+0.4$\,pp
+overall, $+1.5$\,pp hard\_similar, both CIs crossing zero; worse on
+hard\_tempo\_key)---that, unlike a bare cosine score, surfaces
+per-signal evidence with each proposal.
 Since its contributions are regime-dependent and may not reflect
 human preference, it never decides alone: every recommendation is
 previewable and reversible.
