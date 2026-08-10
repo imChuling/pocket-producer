@@ -1,0 +1,544 @@
+{
+  "experiment": "MS-CLAP sensitivity re-analysis (protocol-msclap-sensitivity-v1)",
+  "protocol": "research/protocol-msclap-sensitivity-v1.md",
+  "status": "sensitivity re-analysis, NOT confirmatory",
+  "items_file": "research/data/fsld/items_msclap_packonly.jsonl",
+  "split_file": "artifacts/heldout-split-packonly/split.json",
+  "split_sha256": "3f4967ca916ac5a985388836f9fb60e44bef93c3f73d2df7ee1c37ee4f36384c",
+  "embedding_model": "msclap-2023",
+  "embedding_dim": 1024,
+  "pair_seed": 20260725,
+  "seeds": [
+    20260725,
+    20260801,
+    20260802,
+    20260803,
+    20260804
+  ],
+  "baselines": {
+    "rules": {
+      "signals": [
+        "tempo",
+        "key",
+        "tag_jaccard"
+      ],
+      "weights": [
+        0.35294117647058826,
+        0.23529411764705885,
+        0.4117647058823529
+      ],
+      "trained": false
+    },
+    "cosine": {
+      "signals": [
+        "audio_cos_mean"
+      ],
+      "weights": [
+        1.0
+      ],
+      "trained": false
+    },
+    "fusion-5sig": {
+      "signals": [
+        "audio_cos_mean",
+        "audio_cos_max",
+        "tempo",
+        "key",
+        "tag_jaccard"
+      ],
+      "trained": true,
+      "source_weighted": true,
+      "hard_similar_weight": 2.0
+    }
+  },
+  "train_sources": 484,
+  "heldout_sources": 121,
+  "dev_summary": {
+    "rules": {
+      "mean_overall": 0.7516,
+      "std_overall": 0.0159,
+      "values_overall": [
+        0.7402,
+        0.7318,
+        0.7661,
+        0.7516,
+        0.7682
+      ],
+      "mean_easy": 0.9263,
+      "values_easy": [
+        0.9128,
+        0.9171,
+        0.9313,
+        0.9324,
+        0.9381
+      ],
+      "mean_hard_similar": 0.734,
+      "values_hard_similar": [
+        0.7243,
+        0.7278,
+        0.7556,
+        0.7082,
+        0.7539
+      ],
+      "mean_hard_tempo_key": 0.4161,
+      "values_hard_tempo_key": [
+        0.4077,
+        0.3631,
+        0.4356,
+        0.4321,
+        0.4418
+      ]
+    },
+    "cosine": {
+      "mean_overall": 0.9039,
+      "std_overall": 0.0123,
+      "values_overall": [
+        0.9209,
+        0.9015,
+        0.8937,
+        0.9118,
+        0.8918
+      ],
+      "mean_easy": 0.9524,
+      "values_easy": [
+        0.9635,
+        0.9434,
+        0.9537,
+        0.9626,
+        0.9389
+      ],
+      "mean_hard_similar": 0.7818,
+      "values_hard_similar": [
+        0.8173,
+        0.7925,
+        0.7412,
+        0.79,
+        0.768
+      ],
+      "mean_hard_tempo_key": 0.9295,
+      "values_hard_tempo_key": [
+        0.9396,
+        0.9268,
+        0.9274,
+        0.9321,
+        0.9214
+      ]
+    },
+    "fusion-5sig": {
+      "mean_overall": 0.9085,
+      "std_overall": 0.0087,
+      "values_overall": [
+        0.9184,
+        0.8968,
+        0.9155,
+        0.9038,
+        0.9082
+      ],
+      "mean_easy": 0.9706,
+      "values_easy": [
+        0.9718,
+        0.9677,
+        0.9776,
+        0.9733,
+        0.9624
+      ],
+      "mean_hard_similar": 0.8056,
+      "values_hard_similar": [
+        0.814,
+        0.8032,
+        0.8179,
+        0.7651,
+        0.8276
+      ],
+      "mean_hard_tempo_key": 0.8872,
+      "values_hard_tempo_key": [
+        0.9161,
+        0.8482,
+        0.8878,
+        0.9036,
+        0.8805
+      ]
+    }
+  },
+  "heldout_summary": {
+    "rules": {
+      "mean_overall": 0.7868,
+      "std_overall": 0.0,
+      "values_overall": [
+        0.7868,
+        0.7868,
+        0.7868,
+        0.7868,
+        0.7868
+      ],
+      "mean_easy": 0.9025,
+      "values_easy": [
+        0.9025,
+        0.9025,
+        0.9025,
+        0.9025,
+        0.9025
+      ],
+      "mean_hard_similar": 0.8576,
+      "values_hard_similar": [
+        0.8576,
+        0.8576,
+        0.8576,
+        0.8576,
+        0.8576
+      ],
+      "mean_hard_tempo_key": 0.4238,
+      "values_hard_tempo_key": [
+        0.4238,
+        0.4238,
+        0.4238,
+        0.4238,
+        0.4238
+      ]
+    },
+    "cosine": {
+      "mean_overall": 0.9208,
+      "std_overall": 0.0,
+      "values_overall": [
+        0.9208,
+        0.9208,
+        0.9208,
+        0.9208,
+        0.9208
+      ],
+      "mean_easy": 0.969,
+      "values_easy": [
+        0.969,
+        0.969,
+        0.969,
+        0.969,
+        0.969
+      ],
+      "mean_hard_similar": 0.8142,
+      "values_hard_similar": [
+        0.8142,
+        0.8142,
+        0.8142,
+        0.8142,
+        0.8142
+      ],
+      "mean_hard_tempo_key": 0.9331,
+      "values_hard_tempo_key": [
+        0.9331,
+        0.9331,
+        0.9331,
+        0.9331,
+        0.9331
+      ]
+    },
+    "fusion-5sig": {
+      "mean_overall": 0.9407,
+      "std_overall": 0.0051,
+      "values_overall": [
+        0.9435,
+        0.9346,
+        0.9467,
+        0.9362,
+        0.9426
+      ],
+      "mean_easy": 0.9687,
+      "values_easy": [
+        0.969,
+        0.9675,
+        0.9706,
+        0.9675,
+        0.969
+      ],
+      "mean_hard_similar": 0.9059,
+      "values_hard_similar": [
+        0.9071,
+        0.904,
+        0.9226,
+        0.8916,
+        0.904
+      ],
+      "mean_hard_tempo_key": 0.9153,
+      "values_hard_tempo_key": [
+        0.9257,
+        0.8922,
+        0.9182,
+        0.9145,
+        0.9257
+      ]
+    }
+  },
+  "bootstrap": {
+    "fusion_vs_cosine": {
+      "easy": {
+        "point_delta": -0.00031,
+        "ci_lo": -0.011782,
+        "ci_hi": 0.010335
+      },
+      "hard_similar": {
+        "point_delta": 0.091641,
+        "ci_lo": 0.042549,
+        "ci_hi": 0.14311
+      },
+      "hard_tempo_key": {
+        "point_delta": -0.017844,
+        "ci_lo": -0.045187,
+        "ci_hi": 0.005882
+      },
+      "overall": {
+        "point_delta": 0.019871,
+        "ci_lo": 0.005737,
+        "ci_hi": 0.034728
+      }
+    },
+    "fusion_vs_rules": {
+      "easy": {
+        "point_delta": 0.066254,
+        "ci_lo": 0.03245,
+        "ci_hi": 0.104001
+      },
+      "hard_similar": {
+        "point_delta": 0.048297,
+        "ci_lo": 0.003407,
+        "ci_hi": 0.094276
+      },
+      "hard_tempo_key": {
+        "point_delta": 0.49145,
+        "ci_lo": 0.401374,
+        "ci_hi": 0.58587
+      },
+      "overall": {
+        "point_delta": 0.153958,
+        "ci_lo": 0.114187,
+        "ci_hi": 0.195148
+      }
+    },
+    "cosine_vs_rules": {
+      "easy": {
+        "point_delta": 0.066563,
+        "ci_lo": 0.026547,
+        "ci_hi": 0.108696
+      },
+      "hard_similar": {
+        "point_delta": -0.043344,
+        "ci_lo": -0.124629,
+        "ci_hi": 0.037671
+      },
+      "hard_tempo_key": {
+        "point_delta": 0.509294,
+        "ci_lo": 0.41587,
+        "ci_hi": 0.609273
+      },
+      "overall": {
+        "point_delta": 0.134087,
+        "ci_lo": 0.08931,
+        "ci_hi": 0.181657
+      }
+    }
+  },
+  "loso": {
+    "full-5sig": {
+      "mean_easy": 0.9687,
+      "values_easy": [
+        0.969,
+        0.9675,
+        0.9706,
+        0.9675,
+        0.969
+      ],
+      "mean_hard_similar": 0.9059,
+      "values_hard_similar": [
+        0.9071,
+        0.904,
+        0.9226,
+        0.8916,
+        0.904
+      ],
+      "mean_hard_tempo_key": 0.9153,
+      "values_hard_tempo_key": [
+        0.9257,
+        0.8922,
+        0.9182,
+        0.9145,
+        0.9257
+      ],
+      "mean_overall": 0.9407,
+      "values_overall": [
+        0.9435,
+        0.9346,
+        0.9467,
+        0.9362,
+        0.9426
+      ]
+    },
+    "minus-audio_cos_mean": {
+      "mean_easy": 0.9678,
+      "values_easy": [
+        0.9706,
+        0.9628,
+        0.9706,
+        0.9644,
+        0.9706
+      ],
+      "mean_hard_similar": 0.8997,
+      "values_hard_similar": [
+        0.9133,
+        0.8731,
+        0.9133,
+        0.8824,
+        0.9164
+      ],
+      "mean_hard_tempo_key": 0.8721,
+      "values_hard_tempo_key": [
+        0.9219,
+        0.7844,
+        0.8773,
+        0.8587,
+        0.9182
+      ],
+      "mean_overall": 0.9292,
+      "values_overall": [
+        0.9451,
+        0.9006,
+        0.9354,
+        0.92,
+        0.9451
+      ]
+    },
+    "minus-audio_cos_max": {
+      "mean_easy": 0.9693,
+      "values_easy": [
+        0.969,
+        0.9675,
+        0.9752,
+        0.969,
+        0.9659
+      ],
+      "mean_hard_similar": 0.8954,
+      "values_hard_similar": [
+        0.9133,
+        0.87,
+        0.9133,
+        0.87,
+        0.9102
+      ],
+      "mean_hard_tempo_key": 0.8625,
+      "values_hard_tempo_key": [
+        0.9071,
+        0.8253,
+        0.8216,
+        0.8476,
+        0.9108
+      ],
+      "mean_overall": 0.9268,
+      "values_overall": [
+        0.941,
+        0.9111,
+        0.9257,
+        0.9168,
+        0.9394
+      ]
+    },
+    "minus-tempo": {
+      "mean_easy": 0.9644,
+      "values_easy": [
+        0.9628,
+        0.9628,
+        0.9644,
+        0.9659,
+        0.9659
+      ],
+      "mean_hard_similar": 0.8365,
+      "values_hard_similar": [
+        0.8297,
+        0.8235,
+        0.8452,
+        0.8483,
+        0.8359
+      ],
+      "mean_hard_tempo_key": 0.9227,
+      "values_hard_tempo_key": [
+        0.9368,
+        0.8996,
+        0.9219,
+        0.9145,
+        0.9405
+      ],
+      "mean_overall": 0.922,
+      "values_overall": [
+        0.9225,
+        0.9128,
+        0.9241,
+        0.9241,
+        0.9265
+      ]
+    },
+    "minus-key": {
+      "mean_easy": 0.9696,
+      "values_easy": [
+        0.969,
+        0.969,
+        0.969,
+        0.9721,
+        0.969
+      ],
+      "mean_hard_similar": 0.9015,
+      "values_hard_similar": [
+        0.9071,
+        0.904,
+        0.9102,
+        0.8854,
+        0.9009
+      ],
+      "mean_hard_tempo_key": 0.939,
+      "values_hard_tempo_key": [
+        0.9368,
+        0.9368,
+        0.9405,
+        0.9442,
+        0.9368
+      ],
+      "mean_overall": 0.9453,
+      "values_overall": [
+        0.9459,
+        0.9451,
+        0.9475,
+        0.9435,
+        0.9443
+      ]
+    },
+    "minus-tag_jaccard": {
+      "mean_easy": 0.9678,
+      "values_easy": [
+        0.969,
+        0.9644,
+        0.9721,
+        0.9659,
+        0.9675
+      ],
+      "mean_hard_similar": 0.9065,
+      "values_hard_similar": [
+        0.9071,
+        0.904,
+        0.9226,
+        0.8885,
+        0.9102
+      ],
+      "mean_hard_tempo_key": 0.913,
+      "values_hard_tempo_key": [
+        0.9219,
+        0.8959,
+        0.9182,
+        0.9071,
+        0.9219
+      ],
+      "mean_overall": 0.9399,
+      "values_overall": [
+        0.9426,
+        0.9338,
+        0.9475,
+        0.933,
+        0.9426
+      ]
+    }
+  }
+}
