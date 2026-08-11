@@ -200,6 +200,48 @@ async def set_sensitivity(request: Request, user_id: str = Depends(verify_fireba
     return {"threshold": threshold, "level": level}
 
 
+# Match mode: how eagerly the pipeline connects fragments into projects.
+# strict  — only high-confidence same-song connections (high vector floor)
+# balanced — default behavior
+# loose   — surface more speculative connections (low vector floor)
+MATCH_MODES = {
+    "strict": 0.70,
+    "balanced": 0.55,
+    "loose": 0.45,
+}
+
+
+@router.get("/api/settings/match-mode")
+@limiter.limit("10/minute")
+async def get_match_mode(request: Request, user_id: str = Depends(verify_firebase_token)):
+    db = get_db()
+    doc = db["user_settings"].find_one({"user_id": user_id}, {"match_mode": 1})
+    mode = doc.get("match_mode", "balanced") if doc else "balanced"
+    return {"mode": mode, "threshold": MATCH_MODES.get(mode, 0.55)}
+
+
+@router.post("/api/settings/match-mode")
+@limiter.limit("5/minute")
+async def set_match_mode(request: Request, user_id: str = Depends(verify_firebase_token)):
+    db = get_db()
+    body = await request.json()
+    mode = body.get("mode", "balanced")
+    if mode not in MATCH_MODES:
+        raise HTTPException(status_code=400, detail=f"mode must be one of {sorted(MATCH_MODES)}")
+    threshold = MATCH_MODES[mode]
+    # sensitivity.threshold is what vector search reads — keep them in sync.
+    level = "low" if mode == "strict" else "medium" if mode == "balanced" else "high"
+    db["user_settings"].update_one(
+        {"user_id": user_id},
+        {"$set": {
+            "match_mode": mode,
+            "sensitivity": {"threshold": threshold, "level": level},
+        }},
+        upsert=True,
+    )
+    return {"mode": mode, "threshold": threshold}
+
+
 @router.delete("/api/account")
 @limiter.limit("1/minute")
 async def delete_account(request: Request, user_id: str = Depends(verify_firebase_token)):

@@ -55,6 +55,10 @@ neighbors from Vector Search:
     "fragment_id": "string",
     "text": "string | null",
     "raw_text": "string | null",
+    "notes": "string | null",
+    "comments": [
+      { "text": "string", "created_at": "ISODate" }
+    ],
     "emotions": ["melancholy", "acceptance"],
     "themes": ["self-identity", "mental-health"],
     "structure_hint": "hook_candidate",
@@ -138,7 +142,11 @@ candidates remain, keep only the top 5 by similarity.
 
 ### Step 2: Evaluate signals per candidate
 
-For each remaining candidate, evaluate the four signals independently
+First check Signal 0 (creator intent): read `notes` and `comments` on
+both fragments for explicit connection or separation statements — these
+override the inferred signals below.
+
+Then evaluate the four inference signals independently
 (see "The four signals" below):
 1. Emotional alignment
 2. Thematic alignment
@@ -330,6 +338,37 @@ For deeper musical knowledge, consult the `musical-knowledge` skill's
 - One is double or half the other → compatible (often same idea at "double
   time" or "half time" feel)
 - Otherwise → not compatible
+
+### Signal 0: Creator intent (override signal)
+
+Before evaluating the four inference signals, check `notes` and `comments`
+on both fragments. These are the creator's own words — the only signal
+that is **stated rather than inferred** — so it overrides the others when
+explicit.
+
+**Explicit connection**: A note/comment names another fragment, song idea,
+or project that matches the candidate (e.g., "this is the bridge for the
+rain song", "same vibe as my hometown demo"). Treat as strong evidence
+toward `same_song_candidate` even if similarity is below 0.85, provided
+no signal is `conflicting`. Mention the quoted intent in `reasoning`.
+
+**Explicit separation**: A note/comment states the fragment is its own
+thing or distinct from something matching the candidate (e.g., "new idea,
+not related to anything", "different from the ballad version"). Cap the
+relationship at `related_theme` regardless of similarity, and lower
+confidence one level.
+
+**Directional intent**: Comments describing intended use ("want strings
+here", "chorus for something upbeat") are thematic/musical evidence —
+fold them into thematic alignment and musical compatibility rather than
+treating them as connection statements.
+
+**Timestamps matter**: Comments are ordered. When comments disagree, the
+most recent one reflects current thinking; earlier comments are context,
+not commitments.
+
+**Absent**: Most fragments have no notes or comments — then this signal
+simply does not apply. Never infer intent from silence.
 
 ### Signal 4: Temporal pattern
 

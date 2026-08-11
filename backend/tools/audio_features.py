@@ -2,9 +2,26 @@ import asyncio
 import os
 import tempfile
 from typing import Any
+from urllib.parse import urlparse
 
 import requests
 from google.cloud import storage
+
+_MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024
+
+_ALLOWED_AUDIO_HOSTS = frozenset({
+    "cdn.audiotool.com",
+    "api.audiotool.com",
+    "storage.googleapis.com",
+})
+
+
+def _validate_audio_url(url: str) -> None:
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        raise ValueError(f"Only HTTPS audio URLs are accepted, got {parsed.scheme!r}")
+    if parsed.hostname not in _ALLOWED_AUDIO_HOSTS:
+        raise ValueError(f"Audio host {parsed.hostname!r} is not in the allowlist")
 
 
 def _extract_sync(audio_url: str) -> dict[str, Any]:
@@ -28,9 +45,15 @@ def _extract_sync(audio_url: str) -> dict[str, Any]:
             client = storage.Client()
             client.bucket(bucket_name).blob(blob_name).download_to_filename(tmp.name)
         else:
-            r = requests.get(audio_url, timeout=30)
+            _validate_audio_url(audio_url)
+            r = requests.get(audio_url, timeout=30, stream=True)
             r.raise_for_status()
-            tmp.write(r.content)
+            total = 0
+            for chunk in r.iter_content(chunk_size=1024 * 1024):
+                total += len(chunk)
+                if total > _MAX_DOWNLOAD_BYTES:
+                    raise ValueError("Remote audio exceeds 50 MB download cap")
+                tmp.write(chunk)
         tmp.flush()
         tmp_path = tmp.name
 
