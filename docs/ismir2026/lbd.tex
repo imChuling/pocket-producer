@@ -34,9 +34,9 @@ as User-Controlled Proposal}
 \maketitle
 
 \begin{abstract}
-Music continuation is not a similarity problem: the loop that best
-matches a session is not necessarily the one that helps a musician
-move it forward.  Pocket Producer operationalizes this distinction
+Music continuation is not reducible to similarity: the loop that
+best matches a session is not necessarily the one that helps a
+musician move it forward.  Pocket Producer operationalizes this distinction
 inside the Audiotool DAW\@: it fingerprints the live session via the
 Nexus SDK (tempo, CLAP embeddings of session audio) and ranks
 Freesound Loop Dataset candidates with a five-signal fusion trained
@@ -44,11 +44,11 @@ on pack co-membership weak labels---proxy supervision available
 before any interaction data exists---selectable alongside a
 transparent rules default.  Offline evaluation shows the apparent ranking gain
 changes substantially with weak-label construction, negative regime,
-and embedding representation.  Since the proxy does not encode the
-creative objective, every recommendation is an inspectable,
-reversible \emph{proposal}---previewed with per-signal evidence,
-inserted in a single undoable transaction, logged for future
-personalization---rather than an autonomous creative decision.
+and embedding representation.  The system therefore delivers each recommendation as an
+inspectable, reversible \emph{proposal}, backed by purpose-built
+interaction machinery: in-context preview with per-signal evidence
+chips, insertion as a single undoable transaction, and an undo that
+also retracts the candidate's influence on subsequent ranking.
 \end{abstract}
 
 % ==================================================================
@@ -67,12 +67,15 @@ candidate helps the musician make progress in the current session;
 unlike similarity it is asymmetric and context-dependent.
 
 We contribute: (1)~a problem formulation that separates continuation
-utility from similarity and compatibility; (2)~empirical evidence
-that ranking conclusions drawn from a weak proxy shift with label
-construction, negative regime, and embedding representation;
-(3)~a deployed system that turns this finding into interaction
-design: proposal-based retrieval with per-signal evidence, preview,
-reversible insertion, and feedback logging.
+utility from similarity and compatibility; (2)~a tiered
+negative-regime evaluation protocol with a pre-committed held-out
+split, yielding evidence that ranking conclusions drawn from a weak
+proxy shift with label construction, negative regime, and embedding
+representation; (3)~a production DAW integration engineered for
+revisability: live session fingerprinting over the Nexus SDK,
+per-signal evidence, single-transaction insertion whose undo also
+retracts the candidate from the ranking context, and feedback
+logging.
 
 % ==================================================================
 \section{System}\label{sec:system}
@@ -116,15 +119,13 @@ back to rules when no session audio is available.
 
 \subsection{Proposal Interface}\label{sec:proposal}
 
-The title's ``user-controlled proposal'' is a deliberate design
-choice, not a fallback from poor accuracy.  Pack co-membership is a
-proxy for timbral compatibility, not continuation utility; even a
-perfect ranker under this label would not capture arrangement
-context, creative intent, or genre conventions.
-The design question is not whether the ranker can optimize the
-proxy, but whether the proxy should hold final creative authority;
-the interface answers by keeping the musician in the loop at every
-step.
+Pack co-membership is a proxy for timbral compatibility, not
+continuation utility; arrangement context, creative intent, and
+genre conventions live outside any offline label.  The interface is
+engineered so that this gap costs the musician nothing: every
+recommendation arrives as a proposal that can be auditioned,
+interrogated, and revoked, with the musician holding final creative
+authority at every step.
 
 Each candidate is surfaced for in-context preview with per-signal
 evidence: reason chips naming the signals that favored it (timbral
@@ -206,9 +207,12 @@ cannot be uniformly trusted.
 \textbf{Held-out uncertainty.}\enspace On a pre-committed 121-source
 split, the fusion$-$cosine advantage on hard\_similar is $+1.5$\,pp
 (bootstrap 95\%~CI $[-1.5, +4.7]$, crossing zero) under LAION-CLAP;
-under MS-CLAP with source-weighted BPR it is $+9.2$\,pp (CI
-$[+4.3, +14.3]$)---a $7.7$\,pp swing evidencing representation
-sensitivity.
+under MS-CLAP with source-weighted BPR (a sensitivity
+re-analysis on the same split) it is $+9.2$\,pp (CI
+$[+4.3, +14.3]$)---a $7.7$\,pp cross-configuration swing.
+A dev-set 2$\times$2 factorial attributes most of the
+fusion$-$cosine delta shift to the embedding space
+($+1.9$\,pp) rather than the training recipe ($+0.5$\,pp).
 %
 \textbf{Pilot divergence.}\enspace Nine raters on 20 blind A/B pairs
 (Fleiss' $\kappa = 0.294$; one pair excluded for a ``neither''
@@ -236,6 +240,14 @@ future work.
 \noindent\textbf{Acknowledgements.}
 The author thanks the Audiotool team for the Nexus SDK and the FSLD
 creators~\cite{ramires2020fsld}.
+
+\vspace{0.3em}
+
+\noindent\textbf{AI Usage Statement.}
+Claude Code (Anthropic) was used for engineering implementation,
+test scaffolding, statistical scripting, and prose editing.
+All experimental design, analysis decisions, and final manuscript
+content are the sole responsibility of the author.
 
 % --- Page 3: references only ---
 

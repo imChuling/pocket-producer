@@ -212,6 +212,11 @@ def check_msclap_sensitivity(tex, sens):
     check_in_tex("has_msclap_+9.2", "+9.2", tex)
     check_in_tex("has_msclap_hs_ci", "[+4.3, +14.3]", tex)
     check_in_tex("has_7.7pp_swing", "7.7", tex)
+    check_in_tex("has_cross_config_swing", "cross-configuration swing", tex)
+    check_not_in_tex("no_representation_sensitivity",
+                     "representation sensitivity", tex)
+    check_in_tex("has_factorial_repr_1.9", "+1.9", tex)
+    check_in_tex("has_factorial_train_0.5", "+0.5", tex)
     check_in_tex("has_source_weighted_bpr", "source-weighted BPR", tex)
 
 
@@ -264,6 +269,10 @@ def check_removed_claims(tex):
     check_not_in_tex("no_sign_test", "sign test", tex)
     check_not_in_tex("no_proper_generalization", "proper generalization", tex)
     check_not_in_tex("no_confounding", "confounding", tex)
+    check_in_tex("has_ai_usage_statement", "AI Usage Statement", tex)
+    check_in_tex("has_not_reducible", "not reducible to similarity", tex)
+    check_not_in_tex("no_not_a_similarity_problem",
+                     "not a similarity problem", tex)
 
 
 def check_ledger_consistency():
