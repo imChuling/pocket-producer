@@ -1,8 +1,7 @@
 """Generate the system figure for the ISMIR LBD paper.
 
-Color palette: soft academic pastels from user's reference image.
-Layout: 2x3 grid with feedback loop. Column-width figure.
-Output: docs/ismir2026/assets/system-figure.pdf
+Color palette: soft academic pastels.
+Layout: 2x3 grid, U-shaped flow, feedback loop on the left.
 """
 
 import matplotlib
@@ -25,15 +24,16 @@ COLORS = {
     "feedback":    "#477dc0",
     "edge":        "#3a3a3a",
     "text":        "#1a1a1a",
-    "subtext":     "#444444",
-    "num":         "#ffffff",
-    "num_bg":      "#555555",
+    "subtext":     "#555555",
+    "badge_bg":    "#4a4a4a",
+    "badge_text":  "#ffffff",
 }
 
-BOX_W = 2.1
-BOX_H = 0.82
-GAP_X = 0.32
-GAP_Y = 0.45
+BOX_W = 2.0
+BOX_H = 0.9
+GAP_X = 0.45
+GAP_Y = 0.5
+BADGE_R = 0.13
 
 
 def draw_box(ax, cx, cy, num, label, sublabel, color):
@@ -41,169 +41,125 @@ def draw_box(ax, cx, cy, num, label, sublabel, color):
     y0 = cy - BOX_H / 2
 
     shadow = FancyBboxPatch(
-        (x0 + 0.02, y0 - 0.02), BOX_W, BOX_H,
-        boxstyle="round,pad=0.08",
-        facecolor="#00000012",
-        edgecolor="none",
-        zorder=1,
+        (x0 + 0.025, y0 - 0.025), BOX_W, BOX_H,
+        boxstyle="round,pad=0.1",
+        facecolor="#00000010", edgecolor="none", zorder=1,
     )
     ax.add_patch(shadow)
 
     box = FancyBboxPatch(
         (x0, y0), BOX_W, BOX_H,
-        boxstyle="round,pad=0.08",
-        facecolor=color,
-        edgecolor=COLORS["edge"],
-        linewidth=0.9,
-        zorder=2,
+        boxstyle="round,pad=0.1",
+        facecolor=color, edgecolor=COLORS["edge"], linewidth=0.9, zorder=2,
     )
     ax.add_patch(box)
 
-    circle = plt.Circle((x0 + 0.22, y0 + BOX_H - 0.18), 0.12,
-                         facecolor=COLORS["num_bg"], edgecolor="none", zorder=3)
+    badge_x = x0 - 0.05
+    badge_y = y0 + BOX_H + 0.05
+    circle = plt.Circle((badge_x, badge_y), BADGE_R,
+                         facecolor=COLORS["badge_bg"], edgecolor="none", zorder=5)
     ax.add_patch(circle)
-    ax.text(x0 + 0.22, y0 + BOX_H - 0.18, str(num),
-            ha="center", va="center", fontsize=6.5,
-            fontweight="bold", color=COLORS["num"], zorder=4)
+    ax.text(badge_x, badge_y, str(num),
+            ha="center", va="center", fontsize=7,
+            fontweight="bold", color=COLORS["badge_text"], zorder=6)
 
-    ax.text(cx + 0.08, cy + 0.1, label, ha="center", va="center",
+    ax.text(cx, cy + 0.12, label, ha="center", va="center",
             fontsize=8.5, fontweight="semibold", color=COLORS["text"], zorder=3)
     if sublabel:
-        ax.text(cx + 0.08, cy - 0.16, sublabel, ha="center", va="center",
+        ax.text(cx, cy - 0.16, sublabel, ha="center", va="center",
                 fontsize=6, color=COLORS["subtext"], style="italic", zorder=3)
 
 
-def draw_arrow(ax, x1, y1, x2, y2, color=None, lw=1.2, ls="-"):
+def draw_arrow_simple(ax, x1, y1, x2, y2, color=None, lw=1.2, ls="-",
+                      shrinkA=0, shrinkB=0):
     color = color or COLORS["arrow"]
     arrow = FancyArrowPatch(
         (x1, y1), (x2, y2),
-        arrowstyle="-|>",
-        color=color,
-        linewidth=lw,
-        linestyle=ls,
-        mutation_scale=12,
-        zorder=5,
+        arrowstyle="-|>", color=color, linewidth=lw, linestyle=ls,
+        mutation_scale=12, zorder=4, shrinkA=shrinkA, shrinkB=shrinkB,
     )
     ax.add_patch(arrow)
 
 
-def main():
-    fig_w = 7.5
-    fig_h = 2.5
+def render(out_pdf, out_png=None):
+    fig_w, fig_h = 7.2, 3.4
     fig, ax = plt.subplots(figsize=(fig_w, fig_h), dpi=DPI)
     ax.set_aspect("equal")
     ax.axis("off")
 
-    row1_y = 1.7
+    row1_y = 2.1
     row2_y = 0.5
+    xs = [1.3, 1.3 + BOX_W + GAP_X, 1.3 + 2 * (BOX_W + GAP_X)]
 
-    xs = [
-        1.2,
-        1.2 + BOX_W + GAP_X,
-        1.2 + 2 * (BOX_W + GAP_X),
+    top = [
+        (1, "Audiotool Session",     "live Nexus document",               "session"),
+        (2, "Session Fingerprint",   "tempo, roles, chroma, intent",      "fingerprint"),
+        (3, "Multi-Space Retrieval", "cosine, tempo, key, tag, role",     "retrieval"),
+    ]
+    bot = [
+        (6, "Reversible Insertion",  "single-transaction undo",           "action"),
+        (5, "Ladder Ranking",        "rules → fusion → reranker", "ranking"),
+        (4, "BPR Fusion",            "5-param logistic, +4.0 pp",         "fusion"),
     ]
 
-    boxes_top = [
-        (1, "Audiotool Session", "live Nexus document", "session"),
-        (2, "Session Fingerprint", "tempo, roles, chroma, intent", "fingerprint"),
-        (3, "Multi-Space Retrieval", "cosine, tempo, key, tag, role", "retrieval"),
-    ]
-    boxes_bottom = [
-        (6, "Reversible Insertion", "single-transaction undo", "action"),
-        (5, "Ladder Ranking", "rules → fusion → reranker", "ranking"),
-        (4, "BPR Fusion", "5-param logistic, +4.0pp", "fusion"),
-    ]
-
-    for i, (num, label, sub, key) in enumerate(boxes_top):
-        draw_box(ax, xs[i], row1_y, num, label, sub, COLORS[key])
-
-    for i, (num, label, sub, key) in enumerate(boxes_bottom):
-        draw_box(ax, xs[i], row2_y, num, label, sub, COLORS[key])
+    for i, (n, lbl, sub, key) in enumerate(top):
+        draw_box(ax, xs[i], row1_y, n, lbl, sub, COLORS[key])
+    for i, (n, lbl, sub, key) in enumerate(bot):
+        draw_box(ax, xs[i], row2_y, n, lbl, sub, COLORS[key])
 
     # Top row arrows (right)
     for i in range(2):
-        draw_arrow(ax,
-                   xs[i] + BOX_W / 2 + 0.03, row1_y,
-                   xs[i + 1] - BOX_W / 2 - 0.03, row1_y)
+        draw_arrow_simple(ax,
+            xs[i] + BOX_W / 2 + 0.04, row1_y,
+            xs[i+1] - BOX_W / 2 - 0.04, row1_y)
 
     # Right side: down
-    draw_arrow(ax,
-               xs[2], row1_y - BOX_H / 2 - 0.03,
-               xs[2], row2_y + BOX_H / 2 + 0.03)
+    draw_arrow_simple(ax,
+        xs[2], row1_y - BOX_H / 2 - 0.04,
+        xs[2], row2_y + BOX_H / 2 + 0.04)
 
     # Bottom row arrows (left)
     for i in range(2, 0, -1):
-        draw_arrow(ax,
-                   xs[i] - BOX_W / 2 - 0.03, row2_y,
-                   xs[i - 1] + BOX_W / 2 + 0.03, row2_y)
+        draw_arrow_simple(ax,
+            xs[i] - BOX_W / 2 - 0.04, row2_y,
+            xs[i-1] + BOX_W / 2 + 0.04, row2_y)
 
-    # Feedback loop: left side, dashed blue
-    fb_x = xs[0] - BOX_W / 2 - 0.35
-    for (x1, y1), (x2, y2), style in [
-        ((xs[0] - BOX_W / 2 - 0.03, row2_y), (fb_x, row2_y), "-"),
+    # Feedback loop (dashed blue, left side)
+    fb_x = xs[0] - BOX_W / 2 - 0.4
+    segments = [
+        ((xs[0] - BOX_W / 2 - 0.04, row2_y), (fb_x, row2_y), "-"),
         ((fb_x, row2_y), (fb_x, row1_y), "-"),
-        ((fb_x, row1_y), (xs[0] - BOX_W / 2 - 0.03, row1_y), "-|>"),
-    ]:
-        arrow = FancyArrowPatch(
+        ((fb_x, row1_y), (xs[0] - BOX_W / 2 - 0.04, row1_y), "-|>"),
+    ]
+    for (x1, y1), (x2, y2), style in segments:
+        a = FancyArrowPatch(
             (x1, y1), (x2, y2),
-            arrowstyle=style,
-            color=COLORS["feedback"],
-            linewidth=1.0,
-            linestyle="--",
-            mutation_scale=11,
-            zorder=4,
+            arrowstyle=style, color=COLORS["feedback"],
+            linewidth=1.0, linestyle="--", mutation_scale=11, zorder=4,
         )
-        ax.add_patch(arrow)
+        ax.add_patch(a)
 
-    ax.text(fb_x - 0.12, (row1_y + row2_y) / 2, "preference\nfeedback",
+    ax.text(fb_x - 0.15, (row1_y + row2_y) / 2, "preference\nfeedback",
             ha="center", va="center", fontsize=6,
-            color=COLORS["feedback"], rotation=90, style="italic",
-            fontweight="medium")
+            color=COLORS["feedback"], rotation=90, style="italic")
 
-    ax.set_xlim(-0.15, xs[2] + BOX_W / 2 + 0.25)
-    ax.set_ylim(-0.15, row1_y + BOX_H / 2 + 0.2)
+    margin = 0.3
+    ax.set_xlim(fb_x - 0.5, xs[2] + BOX_W / 2 + margin)
+    ax.set_ylim(row2_y - BOX_H / 2 - margin, row1_y + BOX_H / 2 + BADGE_R + 0.25)
 
-    out = pathlib.Path(__file__).resolve().parent.parent / "docs" / "ismir2026" / "assets" / "system-figure.pdf"
-    fig.savefig(out, metadata=PDF_METADATA, bbox_inches="tight", pad_inches=0.05)
+    fig.savefig(out_pdf, metadata=PDF_METADATA, bbox_inches="tight", pad_inches=0.05)
+    if out_png:
+        fig.savefig(out_png, bbox_inches="tight", pad_inches=0.05, dpi=DPI)
     plt.close(fig)
 
-    # Also save PNG preview
-    fig2, ax2 = plt.subplots(figsize=(fig_w, fig_h), dpi=DPI)
-    ax2.set_aspect("equal")
-    ax2.axis("off")
-    for i, (num, label, sub, key) in enumerate(boxes_top):
-        draw_box(ax2, xs[i], row1_y, num, label, sub, COLORS[key])
-    for i, (num, label, sub, key) in enumerate(boxes_bottom):
-        draw_box(ax2, xs[i], row2_y, num, label, sub, COLORS[key])
-    for i in range(2):
-        draw_arrow(ax2, xs[i] + BOX_W / 2 + 0.03, row1_y,
-                   xs[i + 1] - BOX_W / 2 - 0.03, row1_y)
-    draw_arrow(ax2, xs[2], row1_y - BOX_H / 2 - 0.03,
-               xs[2], row2_y + BOX_H / 2 + 0.03)
-    for i in range(2, 0, -1):
-        draw_arrow(ax2, xs[i] - BOX_W / 2 - 0.03, row2_y,
-                   xs[i - 1] + BOX_W / 2 + 0.03, row2_y)
-    for (x1, y1), (x2, y2), style in [
-        ((xs[0] - BOX_W / 2 - 0.03, row2_y), (fb_x, row2_y), "-"),
-        ((fb_x, row2_y), (fb_x, row1_y), "-"),
-        ((fb_x, row1_y), (xs[0] - BOX_W / 2 - 0.03, row1_y), "-|>"),
-    ]:
-        arrow = FancyArrowPatch(
-            (x1, y1), (x2, y2), arrowstyle=style,
-            color=COLORS["feedback"], linewidth=1.0, linestyle="--",
-            mutation_scale=11, zorder=4,
-        )
-        ax2.add_patch(arrow)
-    ax2.text(fb_x - 0.12, (row1_y + row2_y) / 2, "preference\nfeedback",
-             ha="center", va="center", fontsize=6,
-             color=COLORS["feedback"], rotation=90, style="italic", fontweight="medium")
-    ax2.set_xlim(-0.15, xs[2] + BOX_W / 2 + 0.25)
-    ax2.set_ylim(-0.15, row1_y + BOX_H / 2 + 0.2)
-    preview = "/tmp/system-figure-preview.png"
-    fig2.savefig(preview, bbox_inches="tight", pad_inches=0.05)
-    plt.close(fig2)
-    print(f"→ {out}")
-    print(f"→ {preview}")
+
+def main():
+    base = pathlib.Path(__file__).resolve().parent.parent
+    out_pdf = base / "docs" / "ismir2026" / "assets" / "system-figure.pdf"
+    out_png = "/tmp/system-figure-preview.png"
+    render(out_pdf, out_png)
+    print(f"→ {out_pdf}")
+    print(f"→ {out_png}")
 
 
 if __name__ == "__main__":
