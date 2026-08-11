@@ -1,0 +1,44 @@
+{
+  "method": "COCOLA coherence (max-pooled pairwise score vs context)",
+  "model": "COCOLA_HP_v1",
+  "mode": "harmonic",
+  "n_examples": 289,
+  "n_items_with_embeddings": 372,
+  "n_items_missing_audio": 36,
+  "hit_rates": {
+    "easy": {
+      "rate": 0.0173,
+      "n": 289
+    },
+    "hard_tempo_key": {
+      "rate": 0.25,
+      "n": 288
+    },
+    "hard_similar": {
+      "rate": 0.1494,
+      "n": 241
+    },
+    "overall": {
+      "rate": 0.0104,
+      "n": 289
+    }
+  },
+  "clap_cosine_baseline": {
+    "easy": {
+      "rate": 0.7093,
+      "n": 289
+    },
+    "hard_tempo_key": {
+      "rate": 0.8576,
+      "n": 288
+    },
+    "hard_similar": {
+      "rate": 0.9087,
+      "n": 241
+    },
+    "overall": {
+      "rate": 0.7059,
+      "n": 289
+    }
+  }
+}
