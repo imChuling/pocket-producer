@@ -309,10 +309,21 @@ export default function AudiotoolPage() {
                   });
                   if (result.embeddings.length > 0) {
                     fresh.region_audio_embeddings = result.embeddings;
+                  } else {
+                    console.info(
+                      "[session-audio] no embeddings: " +
+                        `samples=${result.sampleCount} failed=${result.failedCount}`,
+                    );
                   }
-                } catch {
-                  // Session audio is best-effort; rules-v1 ranks without it.
+                } catch (cause) {
+                  // Session audio is best-effort; rules-v1 ranks without it —
+                  // but the reason must be visible, not swallowed.
+                  console.warn("[session-audio] extraction failed:", cause);
                 }
+              } else {
+                console.info(
+                  `[session-audio] unavailable: doc=${!!doc} samples=${!!samplesApi}`,
+                );
               }
               return requestRecommendations(fresh, fragments, { limit, modelId });
             }}
