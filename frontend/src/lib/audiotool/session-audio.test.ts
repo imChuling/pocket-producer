@@ -4,7 +4,7 @@ import { extractSessionAudio } from "./session-audio";
 import type { NexusDocumentPort } from "@/types/audiotool";
 
 function fakeDocument(
-  regions: { id: string; sampleRef: string }[],
+  regions: { id: string; sampleRef: string | { entityId: string } }[],
   samples: { id: string; sampleName: string }[],
 ): NexusDocumentPort {
   const entities = [
@@ -48,6 +48,29 @@ describe("extractSessionAudio", () => {
       authToken: "tok",
     });
     expect(result.embeddings).toEqual([]);
+  });
+
+  it("resolves object-shaped entity references from the live SDK", async () => {
+    const doc = fakeDocument(
+      [{ id: "r1", sampleRef: { entityId: "s1" } }],
+      [{ id: "s1", sampleName: "samples/uuid-1" }],
+    );
+    const download = vi.fn(async () => new Blob(["wav"]));
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ embeddings: [[0.1, 0.2]] }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const result = await extractSessionAudio(doc, { download }, {
+        backendUrl: "/embed",
+        authToken: "tok",
+      });
+      expect(download).toHaveBeenCalledWith("samples/uuid-1", { format: "wav" });
+      expect(result.embeddings).toEqual([[0.1, 0.2]]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("deduplicates samples referenced by multiple regions", async () => {

@@ -37,10 +37,16 @@ export async function extractSessionAudio(
   },
 ): Promise<SessionAudioResult> {
   const query = document.queryEntities as QueryPort | undefined;
-  if (!query) return { embeddings: [], sampleCount: 0, failedCount: 0 };
+  if (!query) {
+    console.info("[session-audio] document has no queryEntities port");
+    return { embeddings: [], sampleCount: 0, failedCount: 0 };
+  }
 
   const regions = query.ofTypes("audioRegion").get();
-  if (regions.length === 0) return { embeddings: [], sampleCount: 0, failedCount: 0 };
+  if (regions.length === 0) {
+    console.info("[session-audio] no audioRegion entities in document");
+    return { embeddings: [], sampleCount: 0, failedCount: 0 };
+  }
 
   // Each audioRegion references a sample entity via the `sample` field.
   // The sample entity's `sampleName` field is the `samples/{uuid}` resource name.
@@ -57,8 +63,16 @@ export async function extractSessionAudio(
   const seen = new Set<string>();
   const uniqueSampleNames: string[] = [];
   for (const region of regions) {
-    const sampleRef = region.fields.sample?.value;
-    if (typeof sampleRef !== "string") continue;
+    // The live Nexus SDK returns entity references as objects
+    // ({ entityId, entityType }); older fixtures use plain string ids.
+    const raw = region.fields.sample?.value;
+    const sampleRef =
+      typeof raw === "string"
+        ? raw
+        : typeof (raw as { entityId?: unknown })?.entityId === "string"
+          ? (raw as { entityId: string }).entityId
+          : null;
+    if (!sampleRef) continue;
     const sampleName = sampleNameById.get(sampleRef);
     if (!sampleName || seen.has(sampleName)) continue;
     seen.add(sampleName);
@@ -67,6 +81,19 @@ export async function extractSessionAudio(
   }
 
   if (uniqueSampleNames.length === 0) {
+    console.info(
+      "[session-audio] no resolvable sample refs: " +
+        `regions=${regions.length} sampleEntities=${sampleEntities.length} ` +
+        `named=${sampleNameById.size}`,
+    );
+    console.info(
+      "[session-audio] shapes: regionSampleField=",
+      regions[0]?.fields.sample?.value,
+      "sampleEntityId=",
+      sampleEntities[0]?.id,
+      "regionFieldKeys=",
+      Object.keys(regions[0]?.fields ?? {}),
+    );
     return { embeddings: [], sampleCount: 0, failedCount: 0 };
   }
 
