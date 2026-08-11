@@ -172,6 +172,106 @@ async def update_fragment_notes(
     return {"updated": True}
 
 
+class CommentRequest(BaseModel):
+    text: str
+
+
+MAX_COMMENTS_PER_FRAGMENT = 50
+
+
+def _schedule_project_reeval(db, user_id: str, oid: ObjectId, fragment_id: str) -> None:
+    """Re-run memory/project grouping in the background after intent changed."""
+    frag = db["fragments"].find_one(
+        {"_id": oid, "user_id": user_id},
+        {"embedding": 1, "emotions": 1, "themes": 1, "tags": 1},
+    )
+    if not frag or not frag.get("embedding"):
+        return
+    import time
+
+    from ..pipeline import memory_and_project
+
+    tag_for_project = {
+        "emotions": frag.get("emotions", []),
+        "themes": frag.get("themes", []),
+        "tags": frag.get("tags", []),
+    }
+
+    async def _reeval():
+        try:
+            await memory_and_project(
+                db, user_id, fragment_id, frag["embedding"], tag_for_project, time.monotonic(),
+            )
+            await debounced_dna_update()
+        except Exception:
+            logger.exception("Project re-evaluation after comment failed for %s", fragment_id)
+
+    task = asyncio.create_task(_reeval())
+    _background_tasks.add(task)
+    task.add_done_callback(lambda t: _background_tasks.discard(t))
+
+
+@router.post("/{fragment_id}/comments")
+@limiter.limit("30/minute")
+async def add_fragment_comment(
+    request: Request,
+    fragment_id: str,
+    body: CommentRequest,
+    user_id: str = Depends(verify_firebase_token),
+):
+    db = get_db()
+    oid = parse_object_id(fragment_id, "fragment_id")
+    trimmed = body.text.strip()
+    if not trimmed:
+        raise HTTPException(status_code=400, detail="Comment text is empty")
+    if len(trimmed) > 2000:
+        raise HTTPException(status_code=400, detail="Comment too long (max 2000 chars)")
+
+    fragment = db["fragments"].find_one(
+        {"_id": oid, "user_id": user_id}, {"comments": 1}
+    )
+    if not fragment:
+        raise HTTPException(status_code=404, detail="Fragment not found")
+    if len(fragment.get("comments", [])) >= MAX_COMMENTS_PER_FRAGMENT:
+        raise HTTPException(status_code=400, detail="Comment limit reached")
+
+    cleaned_text, _ = sanitize_creator_text(trimmed)
+    comment = {
+        "id": uuid.uuid4().hex,
+        "text": cleaned_text,
+        "created_at": datetime.now(UTC),
+    }
+    db["fragments"].update_one(
+        {"_id": oid, "user_id": user_id},
+        {"$push": {"comments": comment}},
+    )
+
+    # Comments capture creator intent — re-evaluate project grouping with them.
+    _schedule_project_reeval(db, user_id, oid, str(oid))
+
+    comment["created_at"] = comment["created_at"].isoformat()
+    return {"added": True, "comment": comment}
+
+
+@router.post("/{fragment_id}/comments/{comment_id}/delete")
+@limiter.limit("30/minute")
+async def delete_fragment_comment(
+    request: Request,
+    fragment_id: str,
+    comment_id: str,
+    user_id: str = Depends(verify_firebase_token),
+):
+    db = get_db()
+    oid = parse_object_id(fragment_id, "fragment_id")
+    result = db["fragments"].update_one(
+        {"_id": oid, "user_id": user_id},
+        {"$pull": {"comments": {"id": comment_id}}},
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Fragment not found")
+    return {"deleted": result.modified_count > 0}
+
+
 class TagUpdateRequest(BaseModel):
     tags: list[str] | None = None
     emotions: list[str] | None = None

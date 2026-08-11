@@ -495,9 +495,15 @@ Step 1: Call the `memory` tool, passing the fragment_id in your request
         and musical-knowledge skills, and return structured recommendations
         as the tool result. Do NOT try to transfer control to another agent —
         memory is a tool that returns its analysis to you.
-        Pay attention to the creator_notes field — these are the creator's own
-        words about their intent, context, or how they see this fragment
-        connecting to other ideas. Weigh notes heavily in your decision.
+        Pay attention to the creator_notes and creator_comments fields —
+        these are the creator's own words about their intent, context, or how
+        they see this fragment connecting to other ideas. Weigh them heavily
+        in your decision. Comments are timestamped: when they disagree, the
+        most recent comment reflects the creator's current thinking. An
+        explicit connection stated in a comment (e.g. "this belongs with the
+        rainy song") outranks embedding similarity in both directions —
+        honor stated connections, and do not group fragments the creator
+        explicitly separated.
 
 Step 2: Review Memory's recommendation:
    - "join_project": attach the fragment to the suggested project

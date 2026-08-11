@@ -395,6 +395,10 @@ their relationships. You NEVER write to the database.
 ## Workflow
 
 1. Call get_fragment_context for the new fragment to understand its content.
+   Pay special attention to `notes` and `comments` — the creator's own words
+   about intent. An explicit connection stated there (e.g. "this goes with
+   the rain song") overrides embedding similarity; an explicit separation
+   ("standalone idea") caps the relationship at related_theme.
 2. Call vector_search_fragment_neighbors to find semantically similar fragments.
 3. DISCARD any neighbor with similarity_score below the threshold returned by vector_search_fragment_neighbors.
 4. For each remaining neighbor, you MUST consult the relationship-rules skill

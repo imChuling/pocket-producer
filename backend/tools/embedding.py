@@ -23,9 +23,12 @@ def _embed_sync(text: str, input_type: str) -> list[float]:
             result = _get_client().embed([text], model="voyage-3", input_type=input_type)
             return result.embeddings[0]
         except Exception as e:
-            if attempt < 2 and ("rate" in str(e).lower() or "429" in str(e)):
-                delay = 20 * (attempt + 1)
-                logger.warning("Voyage rate limited, waiting %ds... (%s)", delay, e)
+            err = str(e)
+            rate_limited = "rate" in err.lower() or "429" in err
+            transient = any(code in err for code in ("500", "502", "503", "504", "timeout", "Timeout"))
+            if attempt < 2 and (rate_limited or transient):
+                delay = (20 if rate_limited else 5) * (attempt + 1)
+                logger.warning("Voyage %s, waiting %ds... (%s)", "rate limited" if rate_limited else "transient error", delay, e)
                 time.sleep(delay)
             else:
                 raise

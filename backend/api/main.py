@@ -10,13 +10,26 @@ from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Upload
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import storage
 from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
 from slowapi.extension import _rate_limit_exceeded_handler
+from slowapi.middleware import SlowAPIMiddleware
 
 from .auth import verify_firebase_token
-from .deps import acquire_pipeline_slot, debounced_dna_update, get_db, limiter, release_pipeline_slot, sanitize_creator_text
+from .deps import (
+    acquire_pipeline_slot,
+    debounced_dna_update,
+    get_db,
+    limiter,
+    release_pipeline_slot,
+    sanitize_creator_text,
+)
 from .pipeline import get_genai_client, process_fragment_background, validate_audio_upload
-from .routes import admin_router, fragments_router, notifications_router, projects_router
+from .routes import (
+    admin_router,
+    fragments_router,
+    notifications_router,
+    projects_router,
+    ranking_router,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 logger = logging.getLogger(__name__)
@@ -63,7 +76,7 @@ _cors_origins = (
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
 
@@ -72,6 +85,7 @@ app.include_router(fragments_router)
 app.include_router(projects_router)
 app.include_router(notifications_router)
 app.include_router(admin_router)
+app.include_router(ranking_router)
 
 
 # ---------------------------------------------------------------------------
@@ -100,7 +114,7 @@ async def ingest_fragment(
 ):
     sanitized_text, prompt_injection_flag = sanitize_creator_text(text)
     if prompt_injection_flag:
-        logger.warning("Prompt injection pattern detected user=%s text=%s", user_id, (sanitized_text or "")[:100])
+        logger.warning("Prompt injection pattern detected user=%s", user_id)
     if not file and not text:
         raise HTTPException(status_code=400, detail="Either file or text required")
     if text is not None and not sanitized_text:

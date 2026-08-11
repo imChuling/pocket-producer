@@ -445,6 +445,27 @@ def _build_fallback_tags(features: dict, text: str | None = None) -> dict:
 # Background processing
 # ---------------------------------------------------------------------------
 
+_clap_tasks: set[asyncio.Task] = set()
+
+
+def _spawn_clap_encoding(db, user_id: str, fragment_id: str, gcs_uri: str) -> None:
+    """Fire-and-forget CLAP encoding so new fragments become rank-ready
+    without delaying the tagging pipeline."""
+
+    async def _run():
+        try:
+            from ranking.ingest import encode_audio_representation
+
+            outcome = await encode_audio_representation(db, user_id, fragment_id, gcs_uri)
+            logger.info("CLAP encoding for %s: %s", fragment_id, outcome)
+        except Exception:
+            logger.warning("CLAP encoding failed for %s", fragment_id, exc_info=True)
+
+    task = asyncio.create_task(_run())
+    _clap_tasks.add(task)
+    task.add_done_callback(lambda t: _clap_tasks.discard(t))
+
+
 def _set_step(db, fragment_id: str, user_id: str, step: str):
     db["fragments"].update_one(
         {"_id": ObjectId(fragment_id), "user_id": user_id},
@@ -463,15 +484,26 @@ async def process_fragment_background(
     t0 = time.monotonic()
     try:
         features_task = None
+        features = None
         if audio_url:
             from tools.audio_features import extract_audio_features
             _set_step(db, fragment_id, user_id, "Listening to your audio...")
             features_task = asyncio.create_task(extract_audio_features(audio_url))
+            # Librosa features materially improve Gemini's tagging (energy arc,
+            # brightness, mode). Wait briefly for them; don't stall if slow.
+            try:
+                features = await asyncio.wait_for(asyncio.shield(features_task), timeout=25)
+                logger.info("Audio features ready before tagging (%.1fs)", time.monotonic() - t0)
+            except asyncio.TimeoutError:
+                logger.info("Audio features not ready after 25s — tagging without them")
+            except Exception as e:
+                logger.warning("Audio features extraction failed: %s", e)
+                features_task = None
 
         _set_step(db, fragment_id, user_id, "Analyzing emotions and themes...")
         tag_task = tag_fragment_direct(
             text=text or "",
-            audio_features=None,
+            audio_features=features,
             audio_gcs_uri=audio_url,
         )
 
@@ -485,8 +517,7 @@ async def process_fragment_background(
 
         logger.info("Gemini tagging done in %.1fs (result=%s)", time.monotonic() - t0, "yes" if tag_result else "none")
 
-        features = None
-        if features_task:
+        if features is None and features_task:
             try:
                 features = await features_task
                 logger.info("Audio features done in %.1fs", time.monotonic() - t0)
@@ -551,9 +582,13 @@ async def process_fragment_background(
                 if tag_result.get(key):
                     final_update[key] = tag_result[key]
         if features:
+            # BPM: librosa's beat tracker is objective — it wins.
             if features.get("bpm"):
                 final_update["bpm"] = features["bpm"]
-            if features.get("estimated_key"):
+            # Key: Gemini's hearing wins (its prompt says so); librosa's
+            # single-template chroma estimate only fills the gap when
+            # Gemini returned null.
+            if not final_update.get("key") and features.get("estimated_key"):
                 mode = features.get("estimated_mode", "")
                 fkey = features["estimated_key"]
                 final_update["key"] = f"{fkey}m" if mode == "minor" else fkey
@@ -562,6 +597,16 @@ async def process_fragment_background(
             {"_id": ObjectId(fragment_id), "user_id": user_id},
             {"$set": final_update},
         )
+
+        # Make the new fragment rank-ready: encode its CLAP audio embedding
+        # in the background (the /rank path reads representations.audio_semantic).
+        if (
+            audio_url
+            and audio_url.startswith("gs://")
+            and os.environ.get("POCKET_ENABLE_CLAP") == "1"
+        ):
+            _spawn_clap_encoding(db, user_id, fragment_id, audio_url)
+
         logger.info(
             "Fragment %s tagged in %.1fs — update=%s",
             fragment_id, time.monotonic() - t0,

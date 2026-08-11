@@ -90,7 +90,7 @@ async def group_fragment_with_agents(
         frag_doc = await asyncio.to_thread(
             db["fragments"].find_one,
             {"_id": ObjectId(fragment_id), "user_id": user_id},
-            {"title": 1, "text": 1, "notes": 1, "tags": 1, "emotions": 1, "themes": 1, "key": 1, "bpm": 1},
+            {"title": 1, "text": 1, "notes": 1, "comments": 1, "tags": 1, "emotions": 1, "themes": 1, "key": 1, "bpm": 1},
         )
         context_parts = [f"fragment_id={fragment_id}"]
         if frag_doc:
@@ -100,17 +100,48 @@ async def group_fragment_with_agents(
                 context_parts.append(f"text: {frag_doc['text']}")
             if frag_doc.get("notes"):
                 context_parts.append(f"creator_notes: {frag_doc['notes']}")
+            if frag_doc.get("comments"):
+                lines = []
+                for c in frag_doc["comments"]:
+                    stamp = c.get("created_at")
+                    stamp_str = stamp.strftime("%Y-%m-%d") if hasattr(stamp, "strftime") else str(stamp)[:10]
+                    lines.append(f"  [{stamp_str}] {c.get('text', '')}")
+                context_parts.append("creator_comments (thoughts over time, newest last):\n" + "\n".join(lines))
             if frag_doc.get("tags"):
                 context_parts.append(f"tags: {', '.join(frag_doc['tags'])}")
             if frag_doc.get("emotions"):
                 context_parts.append(f"emotions: {', '.join(frag_doc['emotions'])}")
+
+        settings_doc = await asyncio.to_thread(
+            db["user_settings"].find_one,
+            {"user_id": user_id},
+            {"match_mode": 1},
+        )
+        match_mode = (settings_doc or {}).get("match_mode", "balanced")
+        match_mode_hints = {
+            "strict": (
+                "Match mode: STRICT. Only group fragments on high-confidence "
+                "same_song_candidate evidence. When uncertain, prefer no_group "
+                "over speculative connections."
+            ),
+            "balanced": "Match mode: BALANCED. Apply the default grouping guidance.",
+            "loose": (
+                "Match mode: LOOSE. The creator wants to see more speculative "
+                "connections — related_theme or similar_emotion with medium "
+                "confidence may justify grouping. Still never group against "
+                "explicit creator intent."
+            ),
+        }
 
         prompt = (
             f"Process this newly tagged fragment.\n"
             f"{chr(10).join(context_parts)}\n\n"
             "Call the memory tool for relationship discovery, "
             "then decide on project grouping. "
-            "If the creator left notes, weigh them heavily — they express intent."
+            "If the creator left notes or comments, weigh them heavily — they "
+            "express intent. Comments are timestamped thoughts; later comments "
+            "reflect the creator's most current thinking.\n"
+            f"{match_mode_hints.get(match_mode, match_mode_hints['balanced'])}"
         )
 
         message = types.Content(
