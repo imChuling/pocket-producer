@@ -234,7 +234,7 @@ def check_msclap_sensitivity(tex, msclap_corr):
     check_in_tex("has_msclap_htk_ci", "[-2.2, +2.0]", tex)
     check_in_tex("has_msclap_overall_ci", "[+1.0, +4.2]", tex)
     check_in_tex("has_7.8pp_swing", "7.8", tex)
-    check_in_tex("has_cross_config_swing", "cross-configuration swing", tex)
+    check_in_tex("has_config_sensitivity", "configuration sensitivity", tex)
     check_not_in_tex("no_representation_sensitivity",
                      "representation sensitivity", tex)
     check_in_tex("has_source_weighted_bpr", "source-weighted BPR", tex)
