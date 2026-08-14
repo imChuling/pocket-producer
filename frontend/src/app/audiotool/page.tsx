@@ -19,6 +19,7 @@ import {
 } from "@/lib/audiotool/insert-fragment";
 import { extractSessionAudio } from "@/lib/audiotool/session-audio";
 import { fingerprintFromDocument } from "@/lib/audiotool/session-fingerprint";
+import { linkAudiotoolInsert, unlinkAudiotoolInsert } from "@/lib/api";
 import { getIdToken } from "@/lib/firebase";
 import {
   fetchModelCards,
@@ -150,6 +151,22 @@ export default function AudiotoolPage() {
         ...previous,
         fragment.tags.map((t) => t.toLowerCase()),
       ]);
+      // Mirror the insertion into the Projects view so the Audiotool
+      // session shows up alongside capture-pipeline projects. Best-effort:
+      // a failure must not break the insert the musician just made.
+      const projectName = audiotool.openProjectName;
+      if (projectName) {
+        const display =
+          audiotool.projects.find((p) => p.name === projectName)
+            ?.displayName ?? "";
+        linkAudiotoolInsert({
+          audiotool_project_id: projectName,
+          display_name: display,
+          fragment_id: fragment._id,
+        }).catch((cause) => {
+          console.warn("[audiotool-project] link failed:", cause);
+        });
+      }
     },
     [audiotool, fingerprint],
   );
@@ -177,6 +194,15 @@ export default function AudiotoolPage() {
       );
       if (lastInsert.feedback) {
         sendFeedbackQueued({ ...lastInsert.feedback, event: "undo" });
+      }
+      // The undone insert must also leave the Projects view (best-effort).
+      if (audiotool.openProjectName) {
+        unlinkAudiotoolInsert({
+          audiotool_project_id: audiotool.openProjectName,
+          fragment_id: lastInsert.receipt.fragmentId,
+        }).catch((cause) => {
+          console.warn("[audiotool-project] unlink failed:", cause);
+        });
       }
       setLastInsert(null);
       // The undone insert's tags must leave the ranking context too.
