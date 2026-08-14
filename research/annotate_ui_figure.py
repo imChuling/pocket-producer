@@ -28,7 +28,7 @@ CALLOUTS = [
     ("b", 396),   # text intent field
     ("c", 535),   # intensity + ranker controls
     ("d", 772),   # evidence chips
-    ("e", 852),   # audition / insert / skip actions
+    ("e", 908),   # audition / insert / skip actions
 ]
 
 
