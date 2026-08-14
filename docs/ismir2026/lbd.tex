@@ -41,9 +41,9 @@ integrated into the Audiotool DAW and designed around this
 distinction.  It fingerprints the live session, ranks candidate
 loops using pack co-membership as cold-start weak supervision, and
 presents the results through an inspectable and reversible proposal
-workflow.  Offline studies on a fixed held-out split show that the apparent advantage of the learned ranker
-is sensitive to label construction, negative regime, and embedding
-representation.  These observations motivate a design stance in
+workflow.  Offline studies show that the apparent advantage of the
+learned ranker is sensitive to label construction, negative regime,
+and embedding representation.  These observations motivate a design stance in
 which retrieval scores generate \emph{proposals} that musicians can
 inspect, audition, insert, and undo, rather than final judgments
 about what should come next.
@@ -146,7 +146,7 @@ personalization (not yet evaluated).
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.92\columnwidth]{assets/ui-panel}
+  \includegraphics[width=0.88\columnwidth]{assets/ui-panel}
   \caption{Continuation panel (screenshot).  (a)~Session
   fingerprint via the Nexus SDK; (b)~text intent; (c)~intensity
   and ranker; (d)~evidence chips; (e)~audition, insert, skip.
@@ -160,8 +160,9 @@ The deployed ranker follows the same five-signal recipe but is a
 separate production model with four stated deltas: MS-CLAP embedding
 space (offline evaluation uses LAION-CLAP Music); source-weighted BPR
 (hard\_similar$\times$2.0, mean over 5 seeds); key constant zero
-online (Audiotool documents lack key-signature metadata); tag context
-drawn from session fragments rather than pack siblings.
+online (Audiotool documents lack key-signature metadata); candidates
+and tag context come from the musician's fragment library, not
+FSLD\@.
 
 % ==================================================================
 \section{Cold-Start Weak Supervision}\label{sec:fusion}
@@ -263,8 +264,7 @@ evidence, reversible insertion, and feedback logging.
 The default ranker is a transparent rules baseline requiring no
 session audio; the fusion is selectable.  Future work includes evaluating whether
 the proposal workflow improves creative outcomes, personalization
-from logged feedback, and ranking objectives that are more robust
-across negative regimes.
+from logged feedback, and regime-robust ranking objectives.
 
 % --- Page 3: acknowledgements + references (optional page per CfLBD) ---
 
