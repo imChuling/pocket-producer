@@ -16,6 +16,8 @@ const EVIDENCE_STYLE: Record<string, string> = {
   novelty: "bg-[#f0e4c8]/60 text-[#8a7a3e]",
   recency: "bg-[#f0e4c8]/60 text-[#8a7a3e]",
   model_signal: "bg-obsidian/5 text-slate",
+  timbral_match: "bg-[#f0d8cc]/60 text-[#8a5a42]",
+  tag_overlap: "bg-[#cce4e8]/60 text-[#3e6e78]",
 };
 
 function evidenceClass(code: RankEvidence["code"]): string {
@@ -67,9 +69,9 @@ export function CandidateCard({
             Why this now
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {evidence.map((item) => (
+            {evidence.map((item, index) => (
               <span
-                key={item.code}
+                key={`${item.code}-${index}`}
                 className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium leading-tight ${evidenceClass(item.code)}`}
               >
                 {item.label}
