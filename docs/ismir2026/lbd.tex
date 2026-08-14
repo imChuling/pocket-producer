@@ -70,7 +70,7 @@ We contribute: (1)~a problem formulation that separates continuation
 utility from similarity and compatibility; (2)~a working prototype
 in a production DAW, engineered for revisability: live session
 fingerprinting, per-signal evidence, single-transaction insertion
-whose undo also retracts the candidate from the ranking context,
+whose undo also retracts the candidate's tags from the ranking context,
 and feedback logging; (3)~a tiered negative-regime evaluation
 that characterizes the sensitivity of weakly supervised ranking to
 label construction, negative regime, and embedding representation.
@@ -137,9 +137,10 @@ Events are logged for future personalization (not yet evaluated).
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.88\columnwidth]{assets/ui-panel}
-  \caption{Continuation panel (screenshot).  (a)~Session
-  fingerprint via the Nexus SDK; (b)~text intent; (c)~intensity
-  and ranker; (d)~evidence chips; (e)~audition, insert, skip.
+  \caption{Continuation panel (interface rendering with illustrative
+  data).  (a)~Session fingerprint via the Nexus SDK; (b)~text
+  intent; (c)~intensity and ranker; (d)~evidence chips;
+  (e)~audition, insert, skip.
   Candidates come from the musician's captured fragments.}
   \label{fig:ui}
 \end{figure}
@@ -205,9 +206,9 @@ training mixture over regimes $\mathcal{D}_r$ rather than defining
 a regime-invariant ranking.
 %
 \textbf{Held-out uncertainty.}\enspace After correcting an initial
-training-protocol mismatch, Table~\ref{tab:heldout} reports
-re-evaluation on all 484 train sources; we therefore treat the
-held-out analysis as exploratory.
+training-protocol mismatch, we retrained on all 484 train sources
+and re-evaluated on the held-out split; we therefore treat
+Table~\ref{tab:heldout} as exploratory.
 Under LAION-CLAP the hard\_similar advantage is
 $+2.1$\,pp with a bootstrap 95\%~CI crossing zero; under MS-CLAP
 with source-weighted BPR (a sensitivity re-analysis on the same
@@ -257,6 +258,7 @@ creators~\cite{ramires2020fsld}.
 
 Claude Code (Anthropic) assisted with engineering, scripting,
 literature search, result auditing, and manuscript editing.
+OpenAI Codex assisted with claim auditing and prose review.
 All experimental design, analysis decisions, claims, and final
 content are the author's responsibility.
 
