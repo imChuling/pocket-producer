@@ -10,7 +10,7 @@ Deadline: 2026-09-25 AoE (rolling review; internal freeze 2026-08-11)
 - [x] No page numbers in header (ismir.sty handles this)
 
 ## Content integrity
-- [x] Number consistency check passes (97/97, `check_paper_numbers.py`)
+- [x] Number consistency check passes (128/128, `check_paper_numbers.py`)
   - Artifact-vs-hardcoded checks + tex-presence checks + tex-absence checks
   - Limitations: substring presence, not semantic context; manual review still required
 - [x] All prose statistics match artifact JSONs
@@ -27,10 +27,10 @@ Deadline: 2026-09-25 AoE (rolling review; internal freeze 2026-08-11)
 - [x] "≥3 items" query eligibility stated in lbd.tex
 - [x] MS-CLAP sensitivity numbers match sensitivity.json (headline +9.2pp and CI)
 - [x] Deployed weights match source-weighted BPR recipe described in §2.4
-- [x] 7.7pp swing framed as representation sensitivity, not as fusion superiority
+- [x] 7.7pp swing framed as cross-configuration swing (per ledger E4), not as fusion superiority
 
 ## AI Usage Statement
-- [x] Not in manuscript (author decision 2026-08-10); usage logged in claim-evidence ledger
+- [x] AI Usage Statement in manuscript §page 3 (added 2026-08-13)
 - [ ] Declare via submission form if the platform requires it — verify at upload
 - [x] All research claims, design, analysis verified by author
 
@@ -48,7 +48,7 @@ Deadline: 2026-09-25 AoE (rolling review; internal freeze 2026-08-11)
 - [x] `artifacts/msclap-sensitivity/sensitivity.json` — MS-CLAP sensitivity re-analysis
 - [x] `artifacts/fusion-deploy/weights.json` — deployed weights (source-weighted BPR)
 - [x] `artifacts/ablation-packonly/ablation.json` — LOSO ablation (pack-only dev set)
-- [x] `artifacts/factorial/factorial.json` — 2×2 factorial (kept as supporting artifact, not in paper)
+- [x] `artifacts/factorial/factorial.json` — 2×2 factorial (marginal shifts reported in §4)
 
 ## Before submission
 - [x] Full text proofread
