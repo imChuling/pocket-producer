@@ -57,3 +57,20 @@ export async function apiPost<T>(
     body: isFormData ? body : JSON.stringify(body),
   });
 }
+
+/** Record an Audiotool insertion in the Projects view (best-effort). */
+export function linkAudiotoolInsert(body: {
+  audiotool_project_id: string;
+  display_name: string;
+  fragment_id: string;
+}): Promise<{ project_id: string; title: string }> {
+  return apiPost("/projects/audiotool-session", body);
+}
+
+/** Undo the project-side record of an Audiotool insertion (best-effort). */
+export function unlinkAudiotoolInsert(body: {
+  audiotool_project_id: string;
+  fragment_id: string;
+}): Promise<{ unlinked: boolean }> {
+  return apiPost("/projects/audiotool-session/unlink", body);
+}

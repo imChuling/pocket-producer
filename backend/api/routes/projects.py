@@ -16,6 +16,18 @@ logger = logging.getLogger(__name__)
 class CompleteActionRequest(BaseModel):
     note: str = ""  # optional: what the creator did
 
+
+class AudiotoolLinkRequest(BaseModel):
+    audiotool_project_id: str
+    display_name: str = ""
+    fragment_id: str
+
+
+class AudiotoolUnlinkRequest(BaseModel):
+    audiotool_project_id: str
+    fragment_id: str
+
+
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
 
@@ -29,6 +41,94 @@ async def list_projects(request: Request, user_id: str = Depends(verify_firebase
     for p in projects:
         p["_id"] = str(p["_id"])
     return {"projects": projects}
+
+
+@router.post("/audiotool-session")
+@limiter.limit("30/minute")
+async def link_audiotool_fragment(
+    request: Request,
+    body: AudiotoolLinkRequest,
+    user_id: str = Depends(verify_firebase_token),
+):
+    """Record an Audiotool insertion in the Projects view.
+
+    Finds or creates the project mirroring this Audiotool session and adds
+    the inserted fragment to its fragment_ids.  The fragment document is
+    left untouched: stamping project_id on it would make the capture
+    pipeline's duplicate-group guard reuse the session project for
+    thematic grouping.
+    """
+    db = get_db()
+    frag_oid = parse_object_id(body.fragment_id, "fragment_id")
+    fragment = db["fragments"].find_one({"_id": frag_oid, "user_id": user_id})
+    if not fragment:
+        raise HTTPException(status_code=404, detail="Fragment not found")
+
+    now = datetime.now(UTC)
+    display = body.display_name.strip() or body.audiotool_project_id
+    title = f"Audiotool: {display}"[:80]
+
+    project = db["projects"].find_one(
+        {"user_id": user_id, "audiotool_project_id": body.audiotool_project_id}
+    )
+    if project:
+        db["projects"].update_one(
+            {"_id": project["_id"], "user_id": user_id},
+            {
+                "$addToSet": {"fragment_ids": body.fragment_id},
+                "$set": {"last_activity_at": now},
+            },
+        )
+        project_id = str(project["_id"])
+        title = project.get("title", title)
+    else:
+        result = db["projects"].insert_one(
+            {
+                "user_id": user_id,
+                "title": title,
+                "audiotool_project_id": body.audiotool_project_id,
+                "fragment_ids": [body.fragment_id],
+                "connection_reasons": ["Inserted into this Audiotool session"],
+                "connection_types": ["audiotool_session"],
+                "sections": [],
+                "rescue_score": None,
+                "last_activity_at": now,
+                "created_at": now,
+            }
+        )
+        project_id = str(result.inserted_id)
+
+    return {"project_id": project_id, "title": title}
+
+
+@router.post("/audiotool-session/unlink")
+@limiter.limit("30/minute")
+async def unlink_audiotool_fragment(
+    request: Request,
+    body: AudiotoolUnlinkRequest,
+    user_id: str = Depends(verify_firebase_token),
+):
+    """Undo the project-side record of an Audiotool insertion.
+
+    Removes the fragment from the session project, deleting the project if
+    it becomes empty.
+    """
+    db = get_db()
+    project = db["projects"].find_one(
+        {"user_id": user_id, "audiotool_project_id": body.audiotool_project_id}
+    )
+    if not project:
+        return {"unlinked": False}
+
+    db["projects"].update_one(
+        {"_id": project["_id"], "user_id": user_id},
+        {"$pull": {"fragment_ids": body.fragment_id}},
+    )
+    remaining = [f for f in project.get("fragment_ids", []) if f != body.fragment_id]
+    if not remaining:
+        db["projects"].delete_one({"_id": project["_id"], "user_id": user_id})
+
+    return {"unlinked": True, "project_deleted": not remaining}
 
 
 @router.get("/{project_id}")
