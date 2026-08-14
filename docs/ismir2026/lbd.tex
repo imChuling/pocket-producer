@@ -156,13 +156,13 @@ personalization (not yet evaluated).
 
 \subsection{Deployed Model}\label{sec:deployed}
 
-The deployed ranker follows the same five-signal recipe but is a
-separate production model with four stated deltas: MS-CLAP embedding
-space (offline evaluation uses LAION-CLAP Music); source-weighted BPR
+The deployed ranker transfers the same five-signal recipe to the
+musician's fragment library and is a separate production model with
+four stated deltas: MS-CLAP embedding space (offline evaluation uses
+LAION-CLAP Music); source-weighted BPR
 (hard\_similar$\times$2.0, mean over 5 seeds); key constant zero
-online (Audiotool documents lack key-signature metadata); candidates
-and tag context come from the musician's fragment library, not
-FSLD\@.
+online (Audiotool documents lack key-signature metadata); tag
+context drawn from session fragments rather than FSLD pack siblings.
 
 % ==================================================================
 \section{Cold-Start Weak Supervision}\label{sec:fusion}
