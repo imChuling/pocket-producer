@@ -114,9 +114,9 @@ def check_devset(tex, fusion, ablation):
     f5_neg = fusion["per_negative_type"]["fusion-5sig"]
 
     check("§3/cosine_overall_0.929", 0.929, round3(cos["mean"]))
-    check("§3/cosine_hard_sim_0.814", 0.814, round3(cos_neg["hard_similar"]))
+    check("§3/cosine_hard_sim_0.8136", 0.8136, round(cos_neg["hard_similar"], 4))
     check("§3/fusion_overall_0.925", 0.925, round3(f5["mean"]))
-    check("§3/fusion_hard_sim_0.813", 0.813, round3(f5_neg["hard_similar"]))
+    check("§3/fusion_hard_sim_0.8133", 0.8133, round(f5_neg["hard_similar"], 4))
 
     gain = round((f5_neg["hard_similar"] - cos_neg["hard_similar"]) * 100, 2)
     check("§3/hard_sim_delta_-0.03pp", -0.03, gain, tol=0.005)
@@ -136,12 +136,15 @@ def check_devset(tex, fusion, ablation):
         check("§3/hard_tk_negative_in_all_5_splits", 5, n_neg)
 
     check_in_tex("has_0.929", "0.929", tex)
-    check_in_tex("has_0.814", "0.814", tex)
+    check_in_tex("has_0.8136", "0.8136", tex)
     check_in_tex("has_0.925", "0.925", tex)
-    check_in_tex("has_0.813", "0.813", tex)
+    check_in_tex("has_0.8133", "0.8133", tex)
     check_in_tex("has_-0.03pp", "-0.03", tex)
     check_in_tex("has_2.1pp", "2.1", tex)
     check_in_tex("has_exploratory", "exploratory", tex)
+    check_in_tex("has_metric_definition", "pairwise ranking accuracy", tex)
+    check_in_tex("has_bootstrap_unit", "source-level resamples", tex)
+    check_in_tex("has_source_definition", "grouping unit for all splits", tex)
     check_not_in_tex("no_invalid_dev_ci", "[-3.9, -0.6]", tex)
     check_not_in_tex("no_dev_significance",
                      "significantly \\emph{worse} than\ncosine ($-2.1$", tex)

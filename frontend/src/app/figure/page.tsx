@@ -17,7 +17,7 @@ const FINGERPRINT: SessionFingerprint = {
   key: null,
   playhead_seconds: 34.5,
   track_count: 4,
-  active_track_types: ["sampler", "sampler", "drumSequencer"],
+  active_track_types: ["audio", "note", "pattern"],
   recent_entity_ids: [],
   text_intent: "dark bass, slower bridge",
 };
@@ -64,25 +64,45 @@ const RESPONSE: RankResponse = {
       fragment_id: "f1",
       score: 0.91,
       evidence: [
-        { code: "timbral_match", label: "Timbral closeness 0.83", contribution: 0.4 },
-        { code: "tempo_match", label: "Tempo fit 128 BPM", contribution: 0.3 },
+        {
+          code: "timbral_match",
+          label: "Sounds close to your session regions",
+          contribution: 0.4,
+        },
+        { code: "tempo_match", label: "Tempo fits the session", contribution: 0.3 },
       ],
     },
     {
       fragment_id: "f2",
       score: 0.84,
       evidence: [
-        { code: "timbral_match", label: "Timbral closeness 0.79", contribution: 0.35 },
-        { code: "tag_overlap", label: "Shared tags: house, loop", contribution: 0.2 },
+        {
+          code: "timbral_match",
+          label: "Sounds close to your session regions",
+          contribution: 0.35,
+        },
+        {
+          code: "tag_overlap",
+          label: "Shares tags with recent fragments",
+          contribution: 0.2,
+        },
       ],
     },
     {
       fragment_id: "f3",
       score: 0.78,
       evidence: [
-        { code: "timbral_match", label: "Timbral closeness 0.76", contribution: 0.3 },
-        { code: "tag_overlap", label: "Shared tags: pad", contribution: 0.15 },
-        { code: "tempo_match", label: "Tempo fit 126 BPM", contribution: 0.1 },
+        {
+          code: "timbral_match",
+          label: "Sounds close to your session regions",
+          contribution: 0.3,
+        },
+        {
+          code: "tag_overlap",
+          label: "Shares tags with recent fragments",
+          contribution: 0.15,
+        },
+        { code: "tempo_match", label: "Tempo fits the session", contribution: 0.1 },
       ],
     },
   ],

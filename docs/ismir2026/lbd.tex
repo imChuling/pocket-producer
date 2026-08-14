@@ -56,7 +56,8 @@ about what should come next.
 When a musician returns to an unfinished loop-based project, the
 question is not ``what sounds similar?''\ but ``what would be useful
 as the next step?''
-Loop compatibility~\cite{chen2020neuralloop,lattner2022samplematch},
+Loop compatibility and sample
+retrieval~\cite{chen2020neuralloop,lattner2022samplematch},
 stem coherence~\cite{ciranni2025cocola,riou2025stemretrieval},
 session-conditioned generation~\cite{he2025tomi,nistal2024diffariff},
 and human-in-the-loop co-creation~\cite{elkins2025dawzy} all address
@@ -111,7 +112,8 @@ Jaccard overlap between candidate tags and tags from the session's
 audio fragments.
 Writing $\phi(s,x)\in\mathbb{R}^5$ for these signals given session
 $s$ and candidate $x$, the fusion scores each candidate as
-$\sigma(w^\top\phi(s,x))$, with $w$ trained by BPR~\cite{rendle2009bpr}
+$\sigma(w^\top\phi(s,x))$ ($\sigma$ is monotone, so ranking follows
+$w^\top\phi$), with $w$ trained by BPR~\cite{rendle2009bpr}
 on pack co-membership weak labels (Section~\ref{sec:fusion}):
 \begin{equation}
 \mathcal{L}_r(w) = -\,\mathbb{E}_{\mathcal{D}_r}
@@ -130,27 +132,28 @@ The proposal workflow keeps creative authority with the musician.
 Each candidate carries per-signal evidence chips (e.g., timbral
 closeness, tempo fit, shared tags) so the musician can judge whether
 those reasons apply.  Candidates can be previewed, inserted via a
-single Nexus transaction, and undone; undo also retracts the
-candidate's tags from the ranking context.
+single Nexus transaction, and undone, restoring the arrangement;
+undo also retracts the candidate's tags from the ranking context.
 Events are logged for future personalization (not yet evaluated).
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.88\columnwidth]{assets/ui-panel}
   \caption{Continuation panel (interface rendering with illustrative
-  data).  (a)~Session fingerprint via the Nexus SDK; (b)~text
-  intent; (c)~intensity and ranker; (d)~evidence chips;
+  data).  (a)~session fingerprint summary; (b)~text intent;
+  (c)~intensity and ranker; (d)~evidence chips;
   (e)~audition, insert, skip.
   Candidates come from the musician's captured fragments.}
   \label{fig:ui}
 \end{figure}
 
-\subsection{Deployed Model}\label{sec:deployed}
+\subsection{Deployment Configuration}\label{sec:deployed}
 
 For deployment, we adapt the same five-signal ranker to the
 musician's fragment library with four differences: MS-CLAP embedding
-space (offline evaluation uses LAION-CLAP Music); source-weighted
-BPR (hard\_similar$\times$2.0, mean over 5 seeds); key constant
+space, chosen for licensing and CPU inference (offline evaluation
+uses LAION-CLAP Music); source-weighted BPR
+(hard\_similar$\times$2.0, mean over 5 seeds); key constant
 zero online (Audiotool documents lack key-signature metadata); tag
 context drawn from session fragments rather than FSLD pack siblings.
 
@@ -162,7 +165,8 @@ At launch no interaction data exists, so the fusion is trained on
 proxy supervision that predates any user: pack co-membership.
 From the FSLD~\cite{ramires2020fsld} we kept only sounds with a
 true Freesound pack (1,797 items, 605 packs), discarding items
-grouped only by uploader.
+grouped only by uploader; each pack is one \emph{source}, the
+grouping unit for all splits.
 Each eligible pack with at least three items yields one leave-one-out query per item, with
 same-pack siblings as positives and cross-pack items as negatives in
 three difficulty tiers (\emph{easy}: tempo/key mismatch;
@@ -176,10 +180,13 @@ only.
 LAION-CLAP Music~\cite{wu2023laionclap} (512-dim) provides the
 embedding backbone.
 
+We report pairwise ranking accuracy: the fraction of
+positive--negative pairs in which the positive scores higher
+(ties count 0.5).
 On the train side (mean over 5 source-grouped splits, each training
 on ${\sim}75\%$ of train sources for 300 epochs, no early stopping),
-frozen cosine reaches 0.929 overall and 0.814 on hard\_similar;
-five-signal fusion reaches 0.925 and 0.813.
+frozen cosine reaches 0.929 overall and 0.8136 on hard\_similar;
+five-signal fusion reaches 0.925 and 0.8133.
 Under pack-only labels the fusion advantage is gone: $-0.03$\,pp on
 hard\_similar, and fusion trails cosine on hard\_tempo\_key by
 2.1\,pp on average (negative in all 5 splits).
@@ -213,6 +220,8 @@ Under LAION-CLAP the hard\_similar advantage is
 $+2.1$\,pp with a bootstrap 95\%~CI crossing zero; under MS-CLAP
 with source-weighted BPR (a sensitivity re-analysis on the same
 split) it is $+9.9$\,pp, a $7.8$\,pp cross-configuration swing.
+We read the swing as configuration sensitivity, not as evidence
+that the deployed configuration is superior.
 
 \begin{table}[t]
   \centering
@@ -228,11 +237,12 @@ split) it is $+9.9$\,pp, a $7.8$\,pp cross-configuration swing.
     overall         & $+0.6$ $[-0.4, +1.6]$ & $+2.6$ $[+1.0, +4.2]$ \\
     \bottomrule
   \end{tabular}
-  \caption{Held-out fusion$-$cosine delta (pp) with bootstrap
-  95\%~CIs, per negative regime and embedding/training
-  configuration.  The apparent gain concentrates in hard\_similar;
-  the $7.8$\,pp cross-configuration swing shows sensitivity to
-  embedding and training choices.}
+  \caption{Held-out fusion$-$cosine delta (pp, mean over 5 seeds)
+  with bootstrap 95\%~CIs (10{,}000 source-level resamples), per
+  negative regime and embedding/training configuration (sw-BPR:
+  source-weighted BPR).  The apparent gain concentrates in
+  hard\_similar; the $7.8$\,pp cross-configuration swing shows
+  sensitivity to embedding and training choices.}
   \label{tab:heldout}
 \end{table}
 
@@ -241,9 +251,13 @@ split) it is $+9.9$\,pp, a $7.8$\,pp cross-configuration swing.
 % ==================================================================
 
 Pocket Producer operationalizes session-conditioned retrieval as
-user-controlled proposal in a production DAW.
+user-controlled proposal in the Audiotool DAW.
+Because conclusions drawn from the cold-start proxy shift with
+label, regime, and representation choices, ranking scores are
+surfaced as reversible proposals rather than final judgments.
 Future work includes evaluating creative outcomes, personalization
 from logged feedback, and regime-robust ranking objectives.
+A demonstration video accompanies this submission.
 
 % --- Page 3: acknowledgements + references (optional page per CfLBD) ---
 
