@@ -34,21 +34,19 @@ as User-Controlled Proposal}
 \maketitle
 
 \begin{abstract}
-Music continuation is not reducible to similarity: the loop that
-best matches a session is not necessarily the one that helps a
-musician move it forward.  Pocket Producer operationalizes this distinction
-inside the Audiotool DAW\@: it fingerprints the live session via the
-Nexus SDK (tempo, CLAP embeddings of session audio) and ranks
-Freesound Loop Dataset candidates with a five-signal fusion trained
-on pack co-membership weak labels---proxy supervision available
-before any interaction data exists---selectable alongside a
-transparent rules default.  Offline evaluation shows the apparent ranking gain
-changes substantially with weak-label construction, negative regime,
-and embedding representation.  The system therefore delivers each recommendation as an
-inspectable, reversible \emph{proposal}, backed by purpose-built
-interaction machinery: in-context preview with per-signal evidence
-chips, insertion as a single undoable transaction, and an undo that
-also retracts the candidate's influence on subsequent ranking.
+Music continuation need not coincide with audio similarity: the
+loop that best matches a session is not necessarily the one that
+best moves it forward.  Pocket Producer is a working prototype
+integrated into the Audiotool DAW and designed around this
+distinction.  It fingerprints the live session, ranks candidate
+loops using pack co-membership as cold-start weak supervision, and
+presents the results through an inspectable and reversible proposal
+workflow.  Offline studies on a fixed held-out split show that the apparent advantage of the learned ranker
+is sensitive to label construction, negative regime, and embedding
+representation.  These observations motivate a design stance in
+which retrieval scores generate \emph{proposals} that musicians can
+inspect, audition, insert, and undo, rather than final judgments
+about what should come next.
 \end{abstract}
 
 % ==================================================================
@@ -67,15 +65,15 @@ candidate helps the musician make progress in the current session;
 unlike similarity it is asymmetric and context-dependent.
 
 We contribute: (1)~a problem formulation that separates continuation
-utility from similarity and compatibility; (2)~a tiered
-negative-regime evaluation protocol with a pre-committed held-out
-split, yielding evidence that ranking conclusions drawn from a weak
-proxy shift with label construction, negative regime, and embedding
-representation; (3)~a production DAW integration engineered for
-revisability: live session fingerprinting over the Nexus SDK,
-per-signal evidence, single-transaction insertion whose undo also
-retracts the candidate from the ranking context, and feedback
-logging.
+utility from similarity and compatibility; (2)~a working prototype
+in a production DAW, engineered for revisability: live session
+fingerprinting over the Nexus SDK, per-signal evidence,
+single-transaction insertion whose undo also retracts the candidate
+from the ranking context, and feedback logging; (3)~a tiered
+negative-regime evaluation protocol with a fixed held-out
+split that characterizes the sensitivity of weakly supervised
+ranking to label construction, negative regime, and embedding
+representation.
 
 % ==================================================================
 \section{System}\label{sec:system}
@@ -92,8 +90,8 @@ logging.
 \subsection{Session Fingerprinting}\label{sec:fingerprint}
 
 The live Audiotool session (Figure~\ref{fig:system}) is read via the
-Nexus SDK, which exposes the project's devices, regions, and
-referenced audio samples in real time.
+Nexus SDK, which exposes the project's tracks, regions, and
+referenced audio samples.
 The system extracts the project tempo from the document metadata and
 collects up to eight unique audio samples referenced by regions in the
 arrangement.  Each sample is embedded with
@@ -110,34 +108,39 @@ the session fingerprint:
 samples, (iii)~tempo proximity, (iv)~key compatibility, and (v)~tag
 Jaccard overlap between candidate tags and tags from the session's
 audio fragments.
-A logistic fusion trained with BPR loss~\cite{rendle2009bpr} on
-Freesound pack co-membership weak labels
-(Section~\ref{sec:fusion}) combines these into a single score.
+Writing $\phi(s,x)\in\mathbb{R}^5$ for these signals given session
+$s$ and candidate $x$, the fusion scores each candidate as
+$\sigma(w^\top\phi(s,x))$, with $w$ trained by BPR~\cite{rendle2009bpr}
+on pack co-membership weak labels (Section~\ref{sec:fusion}):
+\begin{equation}
+\mathcal{L}_r(w) = -\,\mathbb{E}_{\mathcal{D}_r}
+\big[\log\sigma\big(w^\top(\phi(s,x^+)-\phi(s,x^-))\big)\big],
+\label{eq:bpr}
+\end{equation}
+where the expectation is over triples $(s,x^+,x^-)$ and $r$ indexes
+the negative regime from which $x^-$ is drawn.
 A hand-tuned \emph{rules} baseline over non-audio session signals
 serves as the default ranker; the fusion is selectable and falls
 back to rules when no session audio is available.
 
-\subsection{Proposal Interface}\label{sec:proposal}
+\subsection{Proposal Workflow}\label{sec:proposal}
 
-Pack co-membership is a proxy for timbral compatibility, not
-continuation utility; arrangement context, creative intent, and
-genre conventions live outside any offline label.  The interface is
-engineered so that this gap costs the musician nothing: every
-recommendation arrives as a proposal that can be auditioned,
-interrogated, and revoked, with the musician holding final creative
-authority at every step.
-
-Each candidate is surfaced for in-context preview with per-signal
-evidence: reason chips naming the signals that favored it (timbral
-closeness to session regions, tempo fit, shared tags), so the
-musician can assess \emph{why} the system ranks it highly and judge
-whether those reasons apply to their current goal; signals that
+The proposal workflow keeps creative authority with the musician:
+every recommendation can be inspected, auditioned, inserted, and
+undone.
+\emph{Inspect}: each candidate carries per-signal evidence, reason
+chips naming the signals that favored it (e.g., timbral closeness
+to session regions, tempo fit, shared tags), so the musician can
+judge whether those reasons apply to the current goal; signals that
 contribute nothing emit no evidence.
-An accepted candidate is inserted via a single Nexus transaction;
-\emph{undo} reverts the insertion and retracts the candidate's tags
-from the ranking context, so subsequent recommendations are not
-biased by the undone choice.
-Acceptance, rejection, and undo events are logged for future
+\emph{Audition}: candidates can be previewed before insertion
+without modifying the document.
+\emph{Insert}: an accepted candidate enters the arrangement via a
+single Nexus transaction.
+\emph{Undo}: the most recent insertion can be reverted, which also
+retracts the candidate's tags from the ranking context, so
+subsequent recommendations are not biased by the undone choice.
+Preview, insertion, rejection, and undo events are logged for future
 personalization (not yet evaluated).
 
 \subsection{Deployed Model}\label{sec:deployed}
@@ -150,9 +153,11 @@ online (Audiotool documents lack key-signature metadata); tag context
 drawn from session fragments rather than pack siblings.
 
 % ==================================================================
-\section{Weak-Label Fusion}\label{sec:fusion}
+\section{Cold-Start Weak Supervision}\label{sec:fusion}
 % ==================================================================
 
+At launch no interaction data exists, so the fusion is trained on
+proxy supervision that predates any user: pack co-membership.
 From the FSLD~\cite{ramires2020fsld} we kept only sounds with a
 true Freesound pack (1,797 items, 605 packs), discarding items
 grouped only by uploader.
@@ -162,12 +167,12 @@ three difficulty tiers (\emph{easy}: tempo/key mismatch;
 \emph{hard\_tempo\_key}: compatible tempo and key;
 \emph{hard\_similar}: highest cosine to the positive from another
 pack).
-A 121-source held-out split (seed 20260810) was committed to version
-control together with the evaluation protocol \emph{before} any
-evaluation ran.
+A 121-source held-out split (seed 20260810) was fixed in version
+control before any evaluation ran.
 Development uses only the 484 train sources; the 171 with $\geq$3
 items form queries (981 examples), the rest contribute negatives
-only.
+only.  For each seed the fusion is trained on the full set of train
+examples (fixed 300 epochs, no early stopping).
 LAION-CLAP Music~\cite{wu2023laionclap} (512-dim) provides the
 embedding backbone.
 
@@ -184,13 +189,8 @@ for the held-out analysis (Section~\ref{sec:observations}).
 \section{Observations}\label{sec:observations}
 % ==================================================================
 
-The weak label measures pack co-membership, not continuation
-utility; the observations below chart where the proxy breaks
-down---and the feedback log of Section~\ref{sec:proposal} is
-designed to eventually ground ranking in in-session evidence
-instead.
-Four lines of evidence jointly motivate treating the fusion as a
-proposal rather than a decision.
+Three lines of evidence characterize the sensitivity of the
+cold-start proxy.
 %
 \textbf{Label sensitivity.}\enspace An earlier corpus treated
 same-uploader items as co-members (26\% of examples, 949 sources);
@@ -201,57 +201,79 @@ Restricting to true pack co-membership erases the gain
 \textbf{Regime dependence.}\enspace Leave-one-signal-out ablation
 on the dev set shows tempo helps on hard\_similar ($-0.96$\,pp when
 removed) but hurts on hard\_tempo\_key ($+0.68$\,pp); signals switch
-sign across negative regimes, so a fused score averaging over them
-cannot be uniformly trusted.
+sign across negative regimes.  In the terms of
+Eq.~\eqref{eq:bpr}, the minimizer $w^*$ depends on the mixture over
+regimes $\mathcal{D}_r$, so no single fused score can be uniformly
+trusted across them.
 %
-\textbf{Held-out uncertainty.}\enspace On a pre-committed 121-source
-split, the fusion$-$cosine advantage on hard\_similar is $+1.5$\,pp
-(bootstrap 95\%~CI $[-1.5, +4.7]$, crossing zero) under LAION-CLAP;
-under MS-CLAP with source-weighted BPR (a sensitivity
-re-analysis on the same split) it is $+9.2$\,pp (CI
-$[+4.3, +14.3]$)---a $7.7$\,pp cross-configuration swing.
-A dev-set 2$\times$2 factorial attributes most of the
-fusion$-$cosine delta shift to the embedding space
-($+1.9$\,pp) rather than the training recipe ($+0.5$\,pp).
-%
-\textbf{Pilot divergence.}\enspace Nine raters on 20 blind A/B pairs
-(Fleiss' $\kappa = 0.294$; one pair excluded for a ``neither''
-majority) show a descriptive divergence between weak-label signal
-rankings and human consensus.
+\textbf{Held-out uncertainty.}\enspace Table~\ref{tab:heldout}
+reports the full fusion$-$cosine delta vector on the fixed
+121-source split.  Under LAION-CLAP the hard\_similar advantage is
+$+2.1$\,pp with a bootstrap 95\%~CI crossing zero; under MS-CLAP
+with source-weighted BPR (a sensitivity re-analysis on the same
+split) it is $+9.9$\,pp, a $7.8$\,pp cross-configuration swing.
+Hard\_tempo\_key shows near-zero deltas in both configurations,
+with CIs crossing zero.
+On dev hard\_similar, a descriptive 2$\times$2 decomposition of the
+fusion$-$cosine gap gives average marginal shifts of $+1.9$\,pp for
+the embedding space and $+0.5$\,pp for the training recipe; the
+corresponding embedding shift in raw fusion accuracy is $-1.3$\,pp.
+
+\begin{table}[t]
+  \centering
+  \footnotesize
+  \begin{tabular}{lrr}
+    \toprule
+    Negative regime & LAION-CLAP & MS-CLAP, sw-BPR \\
+    \midrule
+    easy            & $+0.2$ $[-0.5, +0.9]$ & $+0.1$ $[-1.2, +1.4]$ \\
+    hard\_tempo\_key & $+0.0$ $[-0.8, +0.5]$ & $-0.1$ $[-2.2, +2.0]$ \\
+    hard\_similar   & $+2.1$ $[-1.0, +5.3]$ & $+9.9$ $[+4.4, +15.4]$ \\
+    \midrule
+    overall         & $+0.6$ $[-0.4, +1.6]$ & $+2.6$ $[+1.0, +4.2]$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{Held-out fusion$-$cosine delta (pp) with bootstrap
+  95\%~CIs, per negative regime and embedding/training
+  configuration.  The apparent gain concentrates in hard\_similar;
+  the $7.8$\,pp cross-configuration swing shows sensitivity to
+  embedding and training choices.}
+  \label{tab:heldout}
+\end{table}
 
 % ==================================================================
 \section{Conclusion}\label{sec:conclusion}
 % ==================================================================
 
-Pocket Producer operationalizes session-conditioned retrieval as a
-user-controlled proposal in a production DAW\@.  It reads the live
-session via the Nexus SDK, ranks candidates with a multi-signal
-fusion, and surfaces per-signal evidence for preview; every insertion
-is reversible and every interaction is logged.
-Since offline evaluation shows the fusion advantage is sensitive to
-label construction, embedding space, and negative regime, the default
-ranker is a transparent rules baseline; the fusion serves as a
-selectable alternative.  Evaluating whether preview and undo improve
-creative outcomes, and personalization from logged feedback, is
-future work.
+Pocket Producer is a working prototype that operationalizes
+session-conditioned retrieval as a user-controlled proposal
+workflow in a production DAW\@.  It reads the live session via the
+Nexus SDK, ranks candidates with a multi-signal fusion, and
+surfaces per-signal evidence for preview; the latest insertion can
+be undone, and preview, insert, reject, and undo events are
+logged.
+The default ranker is a transparent rules baseline that requires
+no session audio and whose behavior is predictable; the fusion is
+a selectable alternative.  Future work includes evaluating whether
+the proposal workflow improves creative outcomes, personalization
+from logged feedback, and ranking objectives that are more robust
+across negative regimes.
 
-\vspace{0.5em}
+% --- Page 3: acknowledgements + references (optional page per CfLBD) ---
 
-\noindent\textbf{Acknowledgements.}
+\newpage
+
+\section{Acknowledgements}
+
 The author thanks the Audiotool team for the Nexus SDK and the FSLD
 creators~\cite{ramires2020fsld}.
 
-\vspace{0.3em}
+\section{AI Usage Statement}
 
-\noindent\textbf{AI Usage Statement.}
 Claude Code (Anthropic) was used for engineering implementation,
 test scaffolding, statistical scripting, and prose editing.
 All experimental design, analysis decisions, and final manuscript
 content are the sole responsibility of the author.
-
-% --- Page 3: references only ---
-
-\newpage
 
 \bibliography{references}
 

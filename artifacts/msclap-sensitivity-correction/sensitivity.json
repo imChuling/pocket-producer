@@ -1,0 +1,457 @@
+{
+  "experiment": "corrective held-out eval (msclap)",
+  "protocol": "research/protocol-heldout-correction-v1.md",
+  "status": "post-hoc protocol correction, NOT confirmatory",
+  "correction_note": "Training on full 484 train sources per seed, fixing protocol mismatch where original scripts used val_fraction=0.25 internal split",
+  "items_file": "research/data/fsld/items_msclap_packonly.jsonl",
+  "split_file": "artifacts/heldout-split-packonly/split.json",
+  "split_sha256": "3f4967ca916ac5a985388836f9fb60e44bef93c3f73d2df7ee1c37ee4f36384c",
+  "embedding_model": "msclap-2023",
+  "embedding_dim": 1024,
+  "pair_seed": 20260725,
+  "seeds": [
+    20260725,
+    20260801,
+    20260802,
+    20260803,
+    20260804
+  ],
+  "source_weighted_bpr": true,
+  "neg_type_weights": {
+    "hard_similar": 2.0
+  },
+  "training_note": "full train side, no internal val split",
+  "heldout_summary": {
+    "rules": {
+      "mean_overall": 0.7868,
+      "std_overall": 0.0,
+      "values_overall": [
+        0.7868,
+        0.7868,
+        0.7868,
+        0.7868,
+        0.7868
+      ],
+      "mean_easy": 0.9025,
+      "values_easy": [
+        0.9025,
+        0.9025,
+        0.9025,
+        0.9025,
+        0.9025
+      ],
+      "mean_hard_similar": 0.8576,
+      "values_hard_similar": [
+        0.8576,
+        0.8576,
+        0.8576,
+        0.8576,
+        0.8576
+      ],
+      "mean_hard_tempo_key": 0.4238,
+      "values_hard_tempo_key": [
+        0.4238,
+        0.4238,
+        0.4238,
+        0.4238,
+        0.4238
+      ]
+    },
+    "cosine": {
+      "mean_overall": 0.9208,
+      "std_overall": 0.0,
+      "values_overall": [
+        0.9208,
+        0.9208,
+        0.9208,
+        0.9208,
+        0.9208
+      ],
+      "mean_easy": 0.969,
+      "values_easy": [
+        0.969,
+        0.969,
+        0.969,
+        0.969,
+        0.969
+      ],
+      "mean_hard_similar": 0.8142,
+      "values_hard_similar": [
+        0.8142,
+        0.8142,
+        0.8142,
+        0.8142,
+        0.8142
+      ],
+      "mean_hard_tempo_key": 0.9331,
+      "values_hard_tempo_key": [
+        0.9331,
+        0.9331,
+        0.9331,
+        0.9331,
+        0.9331
+      ]
+    },
+    "fusion-5sig": {
+      "mean_overall": 0.9469,
+      "std_overall": 0.0021,
+      "values_overall": [
+        0.9483,
+        0.9483,
+        0.9483,
+        0.9435,
+        0.9459
+      ],
+      "mean_easy": 0.97,
+      "values_easy": [
+        0.9721,
+        0.9737,
+        0.9706,
+        0.9644,
+        0.969
+      ],
+      "mean_hard_similar": 0.9133,
+      "values_hard_similar": [
+        0.9226,
+        0.9164,
+        0.9226,
+        0.8947,
+        0.9102
+      ],
+      "mean_hard_tempo_key": 0.9316,
+      "values_hard_tempo_key": [
+        0.9219,
+        0.9257,
+        0.9257,
+        0.9517,
+        0.9331
+      ]
+    }
+  },
+  "per_seed_weights": [
+    {
+      "seed": 20260725,
+      "fusion-5sig": [
+        7.91358243715691,
+        9.009721440546244,
+        2.1168866091307335,
+        1.1144314017612833,
+        1.4514221769865867
+      ]
+    },
+    {
+      "seed": 20260801,
+      "fusion-5sig": [
+        7.002965570445256,
+        8.315671384075578,
+        1.5310244404784112,
+        0.6706871799671672,
+        2.509100967643239
+      ]
+    },
+    {
+      "seed": 20260802,
+      "fusion-5sig": [
+        6.630439860172301,
+        8.499852760644892,
+        2.3772392402207085,
+        0.4124290779082798,
+        1.7784479521153296
+      ]
+    },
+    {
+      "seed": 20260803,
+      "fusion-5sig": [
+        5.741799483120008,
+        7.844745959286755,
+        2.4883026046359755,
+        -0.6628825055726736,
+        0.8711720344508896
+      ]
+    },
+    {
+      "seed": 20260804,
+      "fusion-5sig": [
+        6.926881038870687,
+        7.991420290609778,
+        1.387287999029058,
+        0.3021605467181272,
+        0.8752949772766585
+      ]
+    }
+  ],
+  "bootstrap": {
+    "fusion_vs_cosine": {
+      "easy": {
+        "point_delta": 0.000929,
+        "ci_lo": -0.012368,
+        "ci_hi": 0.014331
+      },
+      "hard_similar": {
+        "point_delta": 0.099071,
+        "ci_lo": 0.043794,
+        "ci_hi": 0.154376
+      },
+      "hard_tempo_key": {
+        "point_delta": -0.001487,
+        "ci_lo": -0.022134,
+        "ci_hi": 0.020377
+      },
+      "overall": {
+        "point_delta": 0.02601,
+        "ci_lo": 0.010023,
+        "ci_hi": 0.041791
+      }
+    },
+    "fusion_vs_rules": {
+      "easy": {
+        "point_delta": 0.067492,
+        "ci_lo": 0.033423,
+        "ci_hi": 0.105341
+      },
+      "hard_similar": {
+        "point_delta": 0.055728,
+        "ci_lo": 0.017266,
+        "ci_hi": 0.094737
+      },
+      "hard_tempo_key": {
+        "point_delta": 0.507807,
+        "ci_lo": 0.416812,
+        "ci_hi": 0.602016
+      },
+      "overall": {
+        "point_delta": 0.160097,
+        "ci_lo": 0.122925,
+        "ci_hi": 0.198982
+      }
+    },
+    "cosine_vs_rules": {
+      "easy": {
+        "point_delta": 0.066563,
+        "ci_lo": 0.026547,
+        "ci_hi": 0.108696
+      },
+      "hard_similar": {
+        "point_delta": -0.043344,
+        "ci_lo": -0.124629,
+        "ci_hi": 0.037671
+      },
+      "hard_tempo_key": {
+        "point_delta": 0.509294,
+        "ci_lo": 0.41587,
+        "ci_hi": 0.609273
+      },
+      "overall": {
+        "point_delta": 0.134087,
+        "ci_lo": 0.08931,
+        "ci_hi": 0.181657
+      }
+    }
+  },
+  "loso": {
+    "full-5sig": {
+      "mean_easy": 0.97,
+      "values_easy": [
+        0.9721,
+        0.9737,
+        0.9706,
+        0.9644,
+        0.969
+      ],
+      "mean_hard_similar": 0.9133,
+      "values_hard_similar": [
+        0.9226,
+        0.9164,
+        0.9226,
+        0.8947,
+        0.9102
+      ],
+      "mean_hard_tempo_key": 0.9316,
+      "values_hard_tempo_key": [
+        0.9219,
+        0.9257,
+        0.9257,
+        0.9517,
+        0.9331
+      ],
+      "mean_overall": 0.9469,
+      "values_overall": [
+        0.9483,
+        0.9483,
+        0.9483,
+        0.9435,
+        0.9459
+      ]
+    },
+    "minus-audio_cos_mean": {
+      "mean_easy": 0.9684,
+      "values_easy": [
+        0.969,
+        0.9706,
+        0.9706,
+        0.9613,
+        0.9706
+      ],
+      "mean_hard_similar": 0.9059,
+      "values_hard_similar": [
+        0.9133,
+        0.9133,
+        0.9133,
+        0.8762,
+        0.9133
+      ],
+      "mean_hard_tempo_key": 0.9026,
+      "values_hard_tempo_key": [
+        0.8625,
+        0.8959,
+        0.8922,
+        0.9405,
+        0.9219
+      ],
+      "mean_overall": 0.9378,
+      "values_overall": [
+        0.9313,
+        0.9394,
+        0.9386,
+        0.9346,
+        0.9451
+      ]
+    },
+    "minus-audio_cos_max": {
+      "mean_easy": 0.9672,
+      "values_easy": [
+        0.9737,
+        0.9752,
+        0.969,
+        0.952,
+        0.9659
+      ],
+      "mean_hard_similar": 0.9121,
+      "values_hard_similar": [
+        0.9226,
+        0.9195,
+        0.9257,
+        0.8793,
+        0.9133
+      ],
+      "mean_hard_tempo_key": 0.8862,
+      "values_hard_tempo_key": [
+        0.8587,
+        0.881,
+        0.8662,
+        0.9145,
+        0.9108
+      ],
+      "mean_overall": 0.9352,
+      "values_overall": [
+        0.9354,
+        0.9402,
+        0.9354,
+        0.9249,
+        0.9402
+      ]
+    },
+    "minus-tempo": {
+      "mean_easy": 0.9668,
+      "values_easy": [
+        0.9659,
+        0.9659,
+        0.9675,
+        0.969,
+        0.9659
+      ],
+      "mean_hard_similar": 0.8378,
+      "values_hard_similar": [
+        0.8545,
+        0.8452,
+        0.8514,
+        0.7988,
+        0.839
+      ],
+      "mean_hard_tempo_key": 0.942,
+      "values_hard_tempo_key": [
+        0.9257,
+        0.9405,
+        0.9405,
+        0.9628,
+        0.9405
+      ],
+      "mean_overall": 0.9278,
+      "values_overall": [
+        0.9281,
+        0.9289,
+        0.9313,
+        0.9233,
+        0.9273
+      ]
+    },
+    "minus-key": {
+      "mean_easy": 0.9687,
+      "values_easy": [
+        0.969,
+        0.9706,
+        0.9675,
+        0.9675,
+        0.969
+      ],
+      "mean_hard_similar": 0.9121,
+      "values_hard_similar": [
+        0.9195,
+        0.9195,
+        0.9133,
+        0.904,
+        0.904
+      ],
+      "mean_hard_tempo_key": 0.9398,
+      "values_hard_tempo_key": [
+        0.9405,
+        0.948,
+        0.9405,
+        0.9294,
+        0.9405
+      ],
+      "mean_overall": 0.9476,
+      "values_overall": [
+        0.9499,
+        0.9523,
+        0.9475,
+        0.9426,
+        0.9459
+      ]
+    },
+    "minus-tag_jaccard": {
+      "mean_easy": 0.9687,
+      "values_easy": [
+        0.9721,
+        0.969,
+        0.9706,
+        0.9644,
+        0.9675
+      ],
+      "mean_hard_similar": 0.9096,
+      "values_hard_similar": [
+        0.9195,
+        0.9164,
+        0.9102,
+        0.8916,
+        0.9102
+      ],
+      "mean_hard_tempo_key": 0.9249,
+      "values_hard_tempo_key": [
+        0.9145,
+        0.9182,
+        0.9219,
+        0.948,
+        0.9219
+      ],
+      "mean_overall": 0.9438,
+      "values_overall": [
+        0.9459,
+        0.9443,
+        0.9443,
+        0.9418,
+        0.9426
+      ]
+    }
+  }
+}

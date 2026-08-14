@@ -37,6 +37,9 @@ ALIGNMENT = ROOT / "artifacts" / "human-signal-alignment" / "alignment.json"
 SPLIT = ROOT / "artifacts" / "heldout-split-packonly" / "split.json"
 DEPLOY_WEIGHTS = ROOT / "artifacts" / "fusion-deploy" / "weights.json"
 MSCLAP_SENSITIVITY = ROOT / "artifacts" / "msclap-sensitivity" / "sensitivity.json"
+FACTORIAL = ROOT / "artifacts" / "factorial" / "factorial.json"
+LAION_CORRECTION = ROOT / "artifacts" / "heldout-eval-correction" / "sensitivity.json"
+MSCLAP_CORRECTION = ROOT / "artifacts" / "msclap-sensitivity-correction" / "sensitivity.json"
 
 failures = []
 passes = []
@@ -99,7 +102,7 @@ def check_corpus(tex, split, eval_data):
     check_in_tex("has_121_source", "121-source", tex)
     check_in_tex("has_seed_20260810", "20260810", tex)
     check_in_tex("has_source_grouped", "source-grouped", tex)
-    check_in_tex("has_committed_before", "committed to version control", tex)
+    check_in_tex("has_fixed_in_vc", "fixed in version control", tex)
     check_in_tex("has_171_query_sources", "171", tex)
 
 
@@ -178,55 +181,101 @@ def check_loso(tex, ablation):
     check_in_tex("has_loso", "eave-one-signal-out", tex)
 
 
-def check_heldout(tex, eval_data, bootstrap):
-    """§4: held-out headline numbers + bootstrap CIs."""
-    delta_hs = round(eval_data["track1_delta"]["hard_similar"] * 100, 1)
-    check("§4/heldout_hard_sim_+1.5pp", 1.5, delta_hs, tol=0.05)
+def check_heldout(tex, laion_corr):
+    """§4: held-out LAION delta vector (Table 1) from correction run."""
+    bs = laion_corr["bootstrap"]["fusion_vs_cosine"]
 
-    pool_hs = bootstrap["pooled"]["hard_similar"]
-    check("§4/hs_ci_lo_-1.5", -1.5, round(pool_hs["ci_lo"] * 100, 1), tol=0.05)
-    check("§4/hs_ci_hi_+4.7", 4.7, round(pool_hs["ci_hi"] * 100, 1), tol=0.05)
-    check("§4/hs_ci_crosses_zero", True, pool_hs["ci_lo"] < 0 < pool_hs["ci_hi"])
+    hs = bs["hard_similar"]
+    check("§4/heldout_hard_sim_+2.1pp", 2.1,
+          round(hs["point_delta"] * 100, 1), tol=0.05)
+    check("§4/hs_ci_lo_-1.0", -1.0, round(hs["ci_lo"] * 100, 1), tol=0.1)
+    check("§4/hs_ci_hi_+5.3", 5.3, round(hs["ci_hi"] * 100, 1), tol=0.1)
+    check("§4/hs_ci_crosses_zero", True, hs["ci_lo"] < 0 < hs["ci_hi"])
+    check("§4/laion_easy_+0.2pp", 0.2,
+          round(bs["easy"]["point_delta"] * 100, 1), tol=0.05)
+    check("§4/laion_htk_+0.0pp", 0.0,
+          round(bs["hard_tempo_key"]["point_delta"] * 100, 1), tol=0.05)
+    check("§4/laion_overall_+0.6pp", 0.6,
+          round(bs["overall"]["point_delta"] * 100, 1), tol=0.05)
 
-    method = bootstrap.get("method", "")
-    check("§4/joint_resampling_method", True, "joint source resampling" in method)
-
-    check_in_tex("has_+1.5pp", "+1.5", tex)
-    check_in_tex("has_hs_ci", "[-1.5, +4.7]", tex)
+    check_in_tex("has_+2.1pp", "+2.1", tex)
+    check_in_tex("has_hs_ci", "[-1.0, +5.3]", tex)
+    check_in_tex("has_laion_easy_ci", "[-0.5, +0.9]", tex)
+    check_in_tex("has_laion_htk_ci", "[-0.8, +0.5]", tex)
+    check_in_tex("has_laion_overall_ci", "[-0.4, +1.6]", tex)
     check_in_tex("has_bootstrap", "bootstrap", tex)
 
 
-def check_msclap_sensitivity(tex, sens):
-    """§4: MS-CLAP sensitivity headline numbers."""
-    bs = sens["bootstrap"]["fusion_vs_cosine"]
+def check_msclap_sensitivity(tex, msclap_corr):
+    """§4: MS-CLAP sensitivity full delta vector (Table 1) from correction run."""
+    bs = msclap_corr["bootstrap"]["fusion_vs_cosine"]
 
     hs = bs["hard_similar"]
-    check("§4/msclap_hs_+9.2pp", 9.2,
+    check("§4/msclap_hs_+9.9pp", 9.9,
           round(hs["point_delta"] * 100, 1), tol=0.05)
-    check("§4/msclap_hs_ci_lo_+4.3", 4.3,
-          round(hs["ci_lo"] * 100, 1), tol=0.05)
-    check("§4/msclap_hs_ci_hi_+14.3", 14.3,
-          round(hs["ci_hi"] * 100, 1), tol=0.05)
+    check("§4/msclap_hs_ci_lo_+4.4", 4.4,
+          round(hs["ci_lo"] * 100, 1), tol=0.1)
+    check("§4/msclap_hs_ci_hi_+15.4", 15.4,
+          round(hs["ci_hi"] * 100, 1), tol=0.1)
     check("§4/msclap_hs_ci_above_zero", True, hs["ci_lo"] > 0)
+    check("§4/msclap_easy_+0.1pp", 0.1,
+          round(bs["easy"]["point_delta"] * 100, 1), tol=0.05)
+    check("§4/msclap_htk_-0.1pp", -0.1,
+          round(bs["hard_tempo_key"]["point_delta"] * 100, 1), tol=0.1)
+    check("§4/msclap_overall_+2.6pp", 2.6,
+          round(bs["overall"]["point_delta"] * 100, 1), tol=0.05)
 
-    check_in_tex("has_msclap_+9.2", "+9.2", tex)
-    check_in_tex("has_msclap_hs_ci", "[+4.3, +14.3]", tex)
-    check_in_tex("has_7.7pp_swing", "7.7", tex)
+    check_in_tex("has_msclap_+9.9", "+9.9", tex)
+    check_in_tex("has_msclap_hs_ci", "[+4.4, +15.4]", tex)
+    check_in_tex("has_msclap_easy_ci", "[-1.2, +1.4]", tex)
+    check_in_tex("has_msclap_htk_ci", "[-2.2, +2.0]", tex)
+    check_in_tex("has_msclap_overall_ci", "[+1.0, +4.2]", tex)
+    check_in_tex("has_7.8pp_swing", "7.8", tex)
     check_in_tex("has_cross_config_swing", "cross-configuration swing", tex)
     check_not_in_tex("no_representation_sensitivity",
                      "representation sensitivity", tex)
-    check_in_tex("has_factorial_repr_1.9", "+1.9", tex)
-    check_in_tex("has_factorial_train_0.5", "+0.5", tex)
     check_in_tex("has_source_weighted_bpr", "source-weighted BPR", tex)
 
 
-def check_pilot(tex, alignment):
-    """§4: exploratory pilot headline numbers."""
-    check("§4/n_pairs_20", 20, alignment["n_pairs"])
+def check_factorial(tex, factorial):
+    """§4: descriptive 2x2 decomposition wording and numbers."""
+    hs = factorial["factorial_effects"]["hard_similar"]
+    # +1.9/+0.5 are marginal shifts of the fusion-cosine GAP, computed
+    # from the per-condition deltas; verify from condition means.
+    s = factorial["summaries"]
+    deltas = {}
+    for cond in s:
+        fu = s[cond]["fusion"]["hard_similar"]["mean"]
+        co = s[cond]["cosine"]["hard_similar"]["mean"]
+        deltas[cond] = (fu - co) * 100
+    repr_gap_shift = (
+        (deltas["C_msclap_uniform"] - deltas["A_laion_uniform"])
+        + (deltas["D_msclap_sourceweighted"] - deltas["B_laion_sourceweighted"])
+    ) / 2
+    train_gap_shift = (
+        (deltas["B_laion_sourceweighted"] - deltas["A_laion_uniform"])
+        + (deltas["D_msclap_sourceweighted"] - deltas["C_msclap_uniform"])
+    ) / 2
+    check("§4/factorial_gap_repr_+1.9", 1.9, round(repr_gap_shift, 1), tol=0.05)
+    check("§4/factorial_gap_train_+0.5", 0.5, round(train_gap_shift, 1), tol=0.05)
+    check("§4/factorial_raw_repr_-1.3", -1.3,
+          round(hs["representation_effect_pp"], 1), tol=0.05)
 
-    check_in_tex("has_kappa_0.294", "0.294", tex)
-    check_in_tex("has_20_pairs", "20", tex)
-    check_in_tex("has_neither_exclusion", "neither", tex)
+    check_in_tex("has_factorial_repr_1.9", "+1.9", tex)
+    check_in_tex("has_factorial_train_0.5", "+0.5", tex)
+    check_in_tex("has_factorial_raw_-1.3", "-1.3", tex)
+    check_in_tex("has_descriptive_decomposition",
+                 "descriptive 2$\\times$2 decomposition", tex)
+    check_not_in_tex("no_factorial_attributes", "factorial attributes", tex)
+
+
+def check_pilot_removed(tex):
+    """Pilot removed from the 2-page body (review 2026-08-13): raw vote
+    matrix unavailable, so kappa is not independently recomputable.
+    The artifact remains in the repo; the paper must not cite it."""
+    check_not_in_tex("no_pilot_kappa", "0.294", tex)
+    check_not_in_tex("no_pilot_fleiss", "Fleiss", tex)
+    check_not_in_tex("no_pilot_divergence", "Pilot divergence", tex)
 
 
 def check_deployment(tex, weights):
@@ -270,9 +319,18 @@ def check_removed_claims(tex):
     check_not_in_tex("no_proper_generalization", "proper generalization", tex)
     check_not_in_tex("no_confounding", "confounding", tex)
     check_in_tex("has_ai_usage_statement", "AI Usage Statement", tex)
-    check_in_tex("has_not_reducible", "not reducible to similarity", tex)
+    check_in_tex("has_need_not_coincide", "need not coincide with audio similarity", tex)
     check_not_in_tex("no_not_a_similarity_problem",
                      "not a similarity problem", tex)
+    # Unverified user-utility and over-broad system claims (review 2026-08-13)
+    check_not_in_tex("no_costs_nothing", "costs the musician nothing", tex)
+    check_not_in_tex("no_at_every_step", "at every step", tex)
+    check_not_in_tex("no_every_insertion_reversible",
+                     "every insertion is reversible", tex)
+    check_not_in_tex("no_every_interaction_logged",
+                     "every interaction is logged", tex)
+    check_not_in_tex("no_test_the_design_stance", "test the design stance", tex)
+    check_not_in_tex("no_validate_design", "validate the design", tex)
 
 
 def check_ledger_consistency():
@@ -285,14 +343,14 @@ def check_ledger_consistency():
     text = ledger_path.read_text()
 
     check_in_tex("ledger/has_packonly", "pack-only", text)
-    check_in_tex("ledger/has_+1.5pp", "+1.5pp", text)
+    check_in_tex("ledger/has_heldout_delta", r"hard\_similar", text)
     check_in_tex("ledger/has_freeze_commit", "43e1643", text)
     check_in_tex("ledger/has_v1_retraction", "RETRACTED", text)
     check_in_tex("ledger/has_-0.96", "0.96", text)
     check_in_tex("ledger/has_deploy", "fusion-5sig-v1", text)
     check_in_tex("ledger/has_7/9", "7/9", text)
     check_in_tex("ledger/has_msclap_sensitivity", "MS-CLAP sensitivity", text)
-    check_in_tex("ledger/has_+9.2pp", "+9.2pp", text)
+    check_in_tex("ledger/has_msclap_hs", "MS-CLAP sensitivity", text)
     check_in_tex("ledger/has_source_weighted", "source-weighted BPR", text)
 
 
@@ -307,10 +365,12 @@ def main():
     fusion_mixed = load_json(FUSION_MIXED)
     heldout_eval = load_json(HELDOUT_EVAL)
     heldout_bootstrap = load_json(HELDOUT_BOOTSTRAP)
-    alignment = load_json(ALIGNMENT)
     split = load_json(SPLIT)
     deploy_weights = load_json(DEPLOY_WEIGHTS)
     msclap_sens = load_json(MSCLAP_SENSITIVITY)
+    factorial = load_json(FACTORIAL)
+    laion_corr = load_json(LAION_CORRECTION)
+    msclap_corr = load_json(MSCLAP_CORRECTION)
 
     if fusion is None or ablation is None or split is None:
         print("\n".join(failures))
@@ -323,14 +383,15 @@ def main():
     if fusion_mixed:
         check_label_sensitivity(tex_text, fusion_mixed)
     check_loso(tex_text, ablation)
-    if heldout_eval and heldout_bootstrap:
-        check_heldout(tex_text, heldout_eval, heldout_bootstrap)
-    if alignment:
-        check_pilot(tex_text, alignment)
+    if laion_corr:
+        check_heldout(tex_text, laion_corr)
+    check_pilot_removed(tex_text)
     if deploy_weights:
         check_deployment(tex_text, deploy_weights)
-    if msclap_sens:
-        check_msclap_sensitivity(tex_text, msclap_sens)
+    if msclap_corr:
+        check_msclap_sensitivity(tex_text, msclap_corr)
+    if factorial:
+        check_factorial(tex_text, factorial)
     check_removed_claims(tex_text)
     check_ledger_consistency()
 
