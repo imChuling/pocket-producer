@@ -62,7 +62,8 @@ session-conditioned generation~\cite{he2025tomi}, and reversible
 co-creation~\cite{elkins2025dawzy} all address parts of this problem.
 We define \textbf{continuation utility} as the property that a
 candidate helps the musician make progress in the current session;
-unlike similarity it is asymmetric and context-dependent.
+unlike pairwise audio similarity, it is directional and conditioned
+on the evolving session context.
 
 We contribute: (1)~a problem formulation that separates continuation
 utility from similarity and compatibility; (2)~a working prototype
@@ -202,9 +203,9 @@ Restricting to true pack co-membership erases the gain
 on the dev set shows tempo helps on hard\_similar ($-0.96$\,pp when
 removed) but hurts on hard\_tempo\_key ($+0.68$\,pp); signals switch
 sign across negative regimes.  In the terms of
-Eq.~\eqref{eq:bpr}, the minimizer $w^*$ depends on the mixture over
-regimes $\mathcal{D}_r$, so no single fused score can be uniformly
-trusted across them.
+Eq.~\eqref{eq:bpr}, the learned optimum $w^*$ depends on the
+training mixture over regimes $\mathcal{D}_r$ rather than defining
+a regime-invariant ranking.
 %
 \textbf{Held-out uncertainty.}\enspace Table~\ref{tab:heldout}
 reports the full fusion$-$cosine delta vector on the fixed
