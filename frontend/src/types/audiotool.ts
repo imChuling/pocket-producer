@@ -33,7 +33,9 @@ export type RankEvidence = {
     | "recency"
     | "model_signal"
     | "role_gap_fill"
-    | "harmonic_fit";
+    | "harmonic_fit"
+    | "timbral_match"
+    | "tag_overlap";
   label: string;
   contribution: number;
 };

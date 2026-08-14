@@ -52,6 +52,7 @@ class RankEvidence(BaseModel):
     code: Literal[
         "tempo_match", "key_match", "track_gap", "intent_match",
         "novelty", "recency", "model_signal", "role_gap_fill", "harmonic_fit",
+        "timbral_match", "tag_overlap",
     ]
     label: str
     contribution: float

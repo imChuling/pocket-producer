@@ -125,7 +125,8 @@ class TestFusionRanker:
         )
         codes = [e.code for e in response.candidates[0].evidence]
         assert "tempo_match" in codes
-        assert "model_signal" in codes
+        assert "timbral_match" in codes
+        assert codes.count("model_signal") == 0
 
     def test_zero_contribution_signals_carry_no_evidence(self):
         # Session key is always None online; the key term must not appear

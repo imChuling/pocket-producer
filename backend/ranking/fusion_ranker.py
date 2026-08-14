@@ -115,14 +115,14 @@ class FusionRanker:
                 RankEvidence(code=code, label=label, contribution=round(c, 6))
                 for code, label, c in [
                     (
-                        "model_signal",
+                        "timbral_match",
                         "Sounds close to your session regions",
                         float(contributions[0] + contributions[1]),
                     ),
                     ("tempo_match", "Tempo fits the session", float(contributions[2])),
                     ("key_match", "Key compatibility", float(contributions[3])),
                     (
-                        "model_signal",
+                        "tag_overlap",
                         "Shares tags with recent fragments",
                         float(contributions[4]),
                     ),
