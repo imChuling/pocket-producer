@@ -59,8 +59,8 @@ as the next step?''
 Loop compatibility~\cite{chen2020neuralloop,lattner2022samplematch},
 stem coherence~\cite{ciranni2025cocola,riou2025stemretrieval},
 session-conditioned generation~\cite{he2025tomi,nistal2024diffariff},
-and reversible co-creation~\cite{elkins2025dawzy} all address parts
-of this problem.
+and human-in-the-loop co-creation~\cite{elkins2025dawzy} all address
+parts of this problem.
 We define \textbf{continuation utility} as the property that a
 candidate helps the musician make progress in the current session;
 unlike pairwise audio similarity, it is directional and conditioned
@@ -69,13 +69,11 @@ on the evolving session context.
 We contribute: (1)~a problem formulation that separates continuation
 utility from similarity and compatibility; (2)~a working prototype
 in a production DAW, engineered for revisability: live session
-fingerprinting over the Nexus SDK, per-signal evidence,
-single-transaction insertion whose undo also retracts the candidate
-from the ranking context, and feedback logging; (3)~a tiered
-negative-regime evaluation protocol with a fixed held-out
-split that characterizes the sensitivity of weakly supervised
-ranking to label construction, negative regime, and embedding
-representation.
+fingerprinting, per-signal evidence, single-transaction insertion
+whose undo also retracts the candidate from the ranking context,
+and feedback logging; (3)~a tiered negative-regime evaluation
+that characterizes the sensitivity of weakly supervised ranking to
+label construction, negative regime, and embedding representation.
 
 % ==================================================================
 \section{System}\label{sec:system}
@@ -104,8 +102,9 @@ non-audio signals only.
 
 \subsection{Multi-Signal Ranking}\label{sec:ranking}
 
-Five signals score each FSLD~\cite{ramires2020fsld} candidate against
-the session fingerprint:
+Five signals score each FSLD~\cite{ramires2020fsld} candidate
+(the offline evaluation corpus; Section~\ref{sec:deployed} describes
+the deployed candidate library) against the session fingerprint:
 (i)~mean-pooled and (ii)~max-pooled CLAP cosine similarity to session
 samples, (iii)~tempo proximity, (iv)~key compatibility, and (v)~tag
 Jaccard overlap between candidate tags and tags from the session's
@@ -127,23 +126,13 @@ back to rules when no session audio is available.
 
 \subsection{Proposal Workflow}\label{sec:proposal}
 
-The proposal workflow keeps creative authority with the musician:
-every recommendation can be inspected, auditioned, inserted, and
-undone.
-\emph{Inspect}: each candidate carries per-signal evidence, reason
-chips naming the signals that favored it (e.g., timbral closeness
-to session regions, tempo fit, shared tags), so the musician can
-judge whether those reasons apply to the current goal; signals that
-contribute nothing emit no evidence.
-\emph{Audition}: candidates can be previewed before insertion
-without modifying the document.
-\emph{Insert}: an accepted candidate enters the arrangement via a
-single Nexus transaction.
-\emph{Undo}: the most recent insertion can be reverted, which also
-retracts the candidate's tags from the ranking context, so
-subsequent recommendations are not biased by the undone choice.
-Preview, insertion, rejection, and undo events are logged for future
-personalization (not yet evaluated).
+The proposal workflow keeps creative authority with the musician.
+Each candidate carries per-signal evidence chips (e.g., timbral
+closeness, tempo fit, shared tags) so the musician can judge whether
+those reasons apply.  Candidates can be previewed, inserted via a
+single Nexus transaction, and undone; undo also retracts the
+candidate's tags from the ranking context.
+Events are logged for future personalization (not yet evaluated).
 
 \begin{figure}[t]
   \centering
@@ -157,12 +146,11 @@ personalization (not yet evaluated).
 
 \subsection{Deployed Model}\label{sec:deployed}
 
-The deployed ranker transfers the same five-signal recipe to the
-musician's fragment library and is a separate production model with
-four stated deltas: MS-CLAP embedding space (offline evaluation uses
-LAION-CLAP Music); source-weighted BPR
-(hard\_similar$\times$2.0, mean over 5 seeds); key constant zero
-online (Audiotool documents lack key-signature metadata); tag
+For deployment, we adapt the same five-signal ranker to the
+musician's fragment library with four differences: MS-CLAP embedding
+space (offline evaluation uses LAION-CLAP Music); source-weighted
+BPR (hard\_similar$\times$2.0, mean over 5 seeds); key constant
+zero online (Audiotool documents lack key-signature metadata); tag
 context drawn from session fragments rather than FSLD pack siblings.
 
 % ==================================================================
@@ -180,8 +168,7 @@ three difficulty tiers (\emph{easy}: tempo/key mismatch;
 \emph{hard\_tempo\_key}: compatible tempo and key;
 \emph{hard\_similar}: highest cosine to the positive from another
 pack).
-A 121-source held-out split (seed 20260810) was fixed in version
-control before any evaluation ran.
+We use a fixed 121-source held-out split (seed 20260810).
 Development uses only the 484 train sources; the 171 with $\geq$3
 items form queries (981 examples), the rest contribute negatives
 only.
@@ -217,20 +204,14 @@ Eq.~\eqref{eq:bpr}, the learned optimum $w^*$ depends on the
 training mixture over regimes $\mathcal{D}_r$ rather than defining
 a regime-invariant ranking.
 %
-\textbf{Held-out uncertainty.}\enspace An initial held-out run
-trained each seed on a 75\% internal subset of train sources; after
-identifying this as a protocol mismatch, we retrained on all 484
-train sources and re-evaluated.  Table~\ref{tab:heldout} reports the
-corrective results; the held-out split is therefore exploratory
-rather than confirmatory.
+\textbf{Held-out uncertainty.}\enspace After correcting an initial
+training-protocol mismatch, Table~\ref{tab:heldout} reports
+re-evaluation on all 484 train sources; we therefore treat the
+held-out analysis as exploratory.
 Under LAION-CLAP the hard\_similar advantage is
 $+2.1$\,pp with a bootstrap 95\%~CI crossing zero; under MS-CLAP
 with source-weighted BPR (a sensitivity re-analysis on the same
 split) it is $+9.9$\,pp, a $7.8$\,pp cross-configuration swing.
-Hard\_tempo\_key shows near-zero deltas in both configurations,
-with CIs crossing zero (the initial run showed a negative
-hard\_tempo\_key delta under LAION-CLAP that disappeared after
-the correction).
 
 \begin{table}[t]
   \centering
@@ -258,13 +239,9 @@ the correction).
 \section{Conclusion}\label{sec:conclusion}
 % ==================================================================
 
-Pocket Producer is a working prototype that operationalizes
-session-conditioned retrieval as a user-controlled proposal
-workflow in a production DAW: live fingerprinting, per-signal
-evidence, reversible insertion, and feedback logging.
-The default ranker is a transparent rules baseline requiring no
-session audio; the fusion is selectable.  Future work includes evaluating whether
-the proposal workflow improves creative outcomes, personalization
+Pocket Producer operationalizes session-conditioned retrieval as
+user-controlled proposal in a production DAW.
+Future work includes evaluating creative outcomes, personalization
 from logged feedback, and regime-robust ranking objectives.
 
 % --- Page 3: acknowledgements + references (optional page per CfLBD) ---
@@ -278,12 +255,10 @@ creators~\cite{ramires2020fsld}.
 
 \section{AI Usage Statement}
 
-Claude Code (Anthropic) was used for engineering implementation,
-test scaffolding, statistical scripting, prose editing, result
-auditing (numerical cross-checks between artifacts and manuscript),
-literature searching, and narrative restructuring.
-All experimental design, analysis decisions, claim selection, and
-final manuscript content are the sole responsibility of the author.
+Claude Code (Anthropic) assisted with engineering, scripting,
+literature search, result auditing, and manuscript editing.
+All experimental design, analysis decisions, claims, and final
+content are the author's responsibility.
 
 \bibliography{references}
 

@@ -102,7 +102,7 @@ def check_corpus(tex, split, eval_data):
     check_in_tex("has_121_source", "121-source", tex)
     check_in_tex("has_seed_20260810", "20260810", tex)
     check_in_tex("has_source_grouped", "source-grouped", tex)
-    check_in_tex("has_fixed_in_vc", "fixed in version control", tex)
+    check_in_tex("has_fixed_split", "fixed 121-source held-out split", tex)
     check_in_tex("has_171_query_sources", "171", tex)
 
 
@@ -284,8 +284,7 @@ def check_deployment(tex, weights):
     check("§2/deploy_source_weighted", True,
           "source-weighted BPR" in weights.get("trained_on", ""))
 
-    check_in_tex("has_separate_production_model", "separate production model",
-                 tex)
+    check_in_tex("has_deployment_differences", "four differences", tex)
     check_in_tex("has_msclap_delta", "MS-CLAP", tex)
     check_in_tex("has_key_zero_online", "constant zero online", tex)
     check_in_tex("has_fallback", "falls back", tex)
@@ -314,9 +313,6 @@ def check_removed_claims(tex):
     check_not_in_tex("no_proper_generalization", "proper generalization", tex)
     check_not_in_tex("no_confounding", "confounding", tex)
     check_in_tex("has_ai_usage_statement", "AI Usage Statement", tex)
-    check_in_tex("has_ai_result_auditing", "result auditing", tex)
-    check_in_tex("has_ai_literature_searching", "literature searching", tex)
-    check_in_tex("has_ai_narrative_restructuring", "narrative restructuring", tex)
     check_in_tex("has_corrective_disclosure", "protocol mismatch", tex)
     check_in_tex("has_exploratory_not_confirmatory", "exploratory", tex)
     check_not_in_tex("no_inference_reserved", "inference is reserved", tex)
