@@ -10,7 +10,7 @@
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[lbd,submission]{ismir}
-\usepackage{amsmath,cite,url}
+\usepackage{amsmath,amssymb,cite,url}
 \usepackage{microtype}
 \usepackage{graphicx}
 \usepackage{color}
@@ -144,6 +144,16 @@ subsequent recommendations are not biased by the undone choice.
 Preview, insertion, rejection, and undo events are logged for future
 personalization (not yet evaluated).
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.92\columnwidth]{assets/ui-panel}
+  \caption{Continuation panel (screenshot).  (a)~Session
+  fingerprint via the Nexus SDK; (b)~text intent; (c)~intensity
+  and ranker; (d)~evidence chips; (e)~audition, insert, skip.
+  Candidates come from the musician's captured fragments.}
+  \label{fig:ui}
+\end{figure}
+
 \subsection{Deployed Model}\label{sec:deployed}
 
 The deployed ranker follows the same five-signal recipe but is a
@@ -172,19 +182,17 @@ A 121-source held-out split (seed 20260810) was fixed in version
 control before any evaluation ran.
 Development uses only the 484 train sources; the 171 with $\geq$3
 items form queries (981 examples), the rest contribute negatives
-only.  For each seed the fusion is trained on the full set of train
-examples (fixed 300 epochs, no early stopping).
+only.
 LAION-CLAP Music~\cite{wu2023laionclap} (512-dim) provides the
 embedding backbone.
 
-On the train side (mean over 5 source-grouped splits), frozen cosine
-reaches 0.929 overall and 0.814 on hard\_similar; five-signal fusion
-reaches 0.925 and 0.813.
+On the train side (mean over 5 source-grouped splits, each training
+on ${\sim}75\%$ of train sources for 300 epochs, no early stopping),
+frozen cosine reaches 0.929 overall and 0.814 on hard\_similar;
+five-signal fusion reaches 0.925 and 0.813.
 Under pack-only labels the fusion advantage is gone: $-0.03$\,pp on
 hard\_similar, and fusion trails cosine on hard\_tempo\_key by
 2.1\,pp on average (negative in all 5 splits).
-These development-set numbers are descriptive; inference is reserved
-for the held-out analysis (Section~\ref{sec:observations}).
 
 % ==================================================================
 \section{Observations}\label{sec:observations}
@@ -207,18 +215,20 @@ Eq.~\eqref{eq:bpr}, the learned optimum $w^*$ depends on the
 training mixture over regimes $\mathcal{D}_r$ rather than defining
 a regime-invariant ranking.
 %
-\textbf{Held-out uncertainty.}\enspace Table~\ref{tab:heldout}
-reports the full fusion$-$cosine delta vector on the fixed
-121-source split.  Under LAION-CLAP the hard\_similar advantage is
+\textbf{Held-out uncertainty.}\enspace An initial held-out run
+trained each seed on a 75\% internal subset of train sources; after
+identifying this as a protocol mismatch, we retrained on all 484
+train sources and re-evaluated.  Table~\ref{tab:heldout} reports the
+corrective results; the held-out split is therefore exploratory
+rather than confirmatory.
+Under LAION-CLAP the hard\_similar advantage is
 $+2.1$\,pp with a bootstrap 95\%~CI crossing zero; under MS-CLAP
 with source-weighted BPR (a sensitivity re-analysis on the same
 split) it is $+9.9$\,pp, a $7.8$\,pp cross-configuration swing.
 Hard\_tempo\_key shows near-zero deltas in both configurations,
-with CIs crossing zero.
-On dev hard\_similar, a descriptive 2$\times$2 decomposition of the
-fusion$-$cosine gap gives average marginal shifts of $+1.9$\,pp for
-the embedding space and $+0.5$\,pp for the training recipe; the
-corresponding embedding shift in raw fusion accuracy is $-1.3$\,pp.
+with CIs crossing zero (the initial run showed a negative
+hard\_tempo\_key delta under LAION-CLAP that disappeared after
+the correction).
 
 \begin{table}[t]
   \centering
@@ -248,14 +258,10 @@ corresponding embedding shift in raw fusion accuracy is $-1.3$\,pp.
 
 Pocket Producer is a working prototype that operationalizes
 session-conditioned retrieval as a user-controlled proposal
-workflow in a production DAW\@.  It reads the live session via the
-Nexus SDK, ranks candidates with a multi-signal fusion, and
-surfaces per-signal evidence for preview; the latest insertion can
-be undone, and preview, insert, reject, and undo events are
-logged.
-The default ranker is a transparent rules baseline that requires
-no session audio and whose behavior is predictable; the fusion is
-a selectable alternative.  Future work includes evaluating whether
+workflow in a production DAW: live fingerprinting, per-signal
+evidence, reversible insertion, and feedback logging.
+The default ranker is a transparent rules baseline requiring no
+session audio; the fusion is selectable.  Future work includes evaluating whether
 the proposal workflow improves creative outcomes, personalization
 from logged feedback, and ranking objectives that are more robust
 across negative regimes.
@@ -272,9 +278,11 @@ creators~\cite{ramires2020fsld}.
 \section{AI Usage Statement}
 
 Claude Code (Anthropic) was used for engineering implementation,
-test scaffolding, statistical scripting, and prose editing.
-All experimental design, analysis decisions, and final manuscript
-content are the sole responsibility of the author.
+test scaffolding, statistical scripting, prose editing, result
+auditing (numerical cross-checks between artifacts and manuscript),
+literature searching, and narrative restructuring.
+All experimental design, analysis decisions, claim selection, and
+final manuscript content are the sole responsibility of the author.
 
 \bibliography{references}
 

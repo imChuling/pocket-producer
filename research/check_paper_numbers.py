@@ -141,7 +141,7 @@ def check_devset(tex, fusion, ablation):
     check_in_tex("has_0.813", "0.813", tex)
     check_in_tex("has_-0.03pp", "-0.03", tex)
     check_in_tex("has_2.1pp", "2.1", tex)
-    check_in_tex("has_descriptive", "descriptive", tex)
+    check_in_tex("has_exploratory", "exploratory", tex)
     check_not_in_tex("no_invalid_dev_ci", "[-3.9, -0.6]", tex)
     check_not_in_tex("no_dev_significance",
                      "significantly \\emph{worse} than\ncosine ($-2.1$", tex)
@@ -261,11 +261,6 @@ def check_factorial(tex, factorial):
     check("§4/factorial_raw_repr_-1.3", -1.3,
           round(hs["representation_effect_pp"], 1), tol=0.05)
 
-    check_in_tex("has_factorial_repr_1.9", "+1.9", tex)
-    check_in_tex("has_factorial_train_0.5", "+0.5", tex)
-    check_in_tex("has_factorial_raw_-1.3", "-1.3", tex)
-    check_in_tex("has_descriptive_decomposition",
-                 "descriptive 2$\\times$2 decomposition", tex)
     check_not_in_tex("no_factorial_attributes", "factorial attributes", tex)
 
 
@@ -319,6 +314,13 @@ def check_removed_claims(tex):
     check_not_in_tex("no_proper_generalization", "proper generalization", tex)
     check_not_in_tex("no_confounding", "confounding", tex)
     check_in_tex("has_ai_usage_statement", "AI Usage Statement", tex)
+    check_in_tex("has_ai_result_auditing", "result auditing", tex)
+    check_in_tex("has_ai_literature_searching", "literature searching", tex)
+    check_in_tex("has_ai_narrative_restructuring", "narrative restructuring", tex)
+    check_in_tex("has_corrective_disclosure", "protocol mismatch", tex)
+    check_in_tex("has_exploratory_not_confirmatory", "exploratory", tex)
+    check_not_in_tex("no_inference_reserved", "inference is reserved", tex)
+    check_in_tex("has_75pct_subset", r"75\%", tex)
     check_in_tex("has_need_not_coincide", "need not coincide with audio similarity", tex)
     check_not_in_tex("no_not_a_similarity_problem",
                      "not a similarity problem", tex)
