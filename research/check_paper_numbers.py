@@ -98,12 +98,14 @@ def check_corpus(tex, split, eval_data):
     check_in_tex("has_1797_items", "1,797", tex)
     check_in_tex("has_605_packs", "605 packs", tex)
     check_in_tex("has_484", "484", tex)
-    check_in_tex("has_981", "981", tex)
     check_in_tex("has_121_source", "121-source", tex)
     check_in_tex("has_seed_20260810", "20260810", tex)
     check_in_tex("has_source_grouped", "source-grouped", tex)
     check_in_tex("has_fixed_split", "fixed 121-source held-out split", tex)
-    check_in_tex("has_171_query_sources", "171", tex)
+    # Round-10 (page-budget pass): 171/981 query counts, 300 epochs, and the
+    # ~75% dev-split detail moved out of the 2-page body into research/README;
+    # they must NOT be asserted against lbd.tex anymore.
+    check_not_in_tex("no_981_in_body", "981", tex)
 
 
 def check_devset(tex, fusion, ablation):
@@ -113,9 +115,9 @@ def check_devset(tex, fusion, ablation):
     f5 = fusion["summary"]["fusion-5sig"]
     f5_neg = fusion["per_negative_type"]["fusion-5sig"]
 
-    check("§3/cosine_overall_0.929", 0.929, round3(cos["mean"]))
+    check("§3/cosine_overall_0.9293", 0.9293, round(cos["mean"], 4))
     check("§3/cosine_hard_sim_0.8136", 0.8136, round(cos_neg["hard_similar"], 4))
-    check("§3/fusion_overall_0.925", 0.925, round3(f5["mean"]))
+    check("§3/fusion_overall_0.9249", 0.9249, round(f5["mean"], 4))
     check("§3/fusion_hard_sim_0.8133", 0.8133, round(f5_neg["hard_similar"], 4))
 
     gain = round((f5_neg["hard_similar"] - cos_neg["hard_similar"]) * 100, 2)
@@ -126,24 +128,31 @@ def check_devset(tex, fusion, ablation):
     )
     check("§3/hard_tk_diff_-2.1pp_descriptive", -2.1, tk_diff, tol=0.05)
 
+    # Round-9: this backs the tex claim "(negative in all 5 splits)", so a
+    # missing key must fail rather than silently skip the assertion.
     per_seed = ablation.get("bootstrap_ci_per_seed", {})
-    if per_seed:
-        n_neg = sum(
-            1
-            for s in per_seed.values()
-            if s["paired-diff"]["hard_tempo_key"]["mean_diff"] < 0
-        )
-        check("§3/hard_tk_negative_in_all_5_splits", 5, n_neg)
+    check("§3/per_seed_ci_present", 5, len(per_seed))
+    n_neg = sum(
+        1
+        for s in per_seed.values()
+        if s["paired-diff"]["hard_tempo_key"]["mean_diff"] < 0
+    )
+    check("§3/hard_tk_negative_in_all_5_splits", 5, n_neg)
 
-    check_in_tex("has_0.929", "0.929", tex)
-    check_in_tex("has_0.8136", "0.8136", tex)
-    check_in_tex("has_0.925", "0.925", tex)
-    check_in_tex("has_0.8133", "0.8133", tex)
+    # Round-11 (micro-polish): the four absolute dev accuracies were
+    # compressed to the delta "+4.0 \to -0.03\,pp"; they must NOT
+    # reappear in the body (artifact checks above still verify them).
+    check_not_in_tex("no_abs_accuracy_0.9293", "0.9293", tex)
+    check_not_in_tex("no_abs_accuracy_0.9249", "0.9249", tex)
     check_in_tex("has_-0.03pp", "-0.03", tex)
-    check_in_tex("has_2.1pp", "2.1", tex)
+    check_in_tex("has_label_gain_arrow", "+4.0 \\to -0.03", tex)
+    # Round-9: bare "2.1" also matches the held-out LAION "+2.1", so this
+    # anchors on the dev-set sentence to stay attached to the right claim.
+    check_in_tex("has_dev_2.1pp", "by 2.1\\,pp", tex)
+    check_in_tex("has_dev_2.1_all_splits", "negative in all 5 splits", tex)
     check_in_tex("has_exploratory", "exploratory", tex)
     check_in_tex("has_metric_definition", "pairwise ranking accuracy", tex)
-    check_in_tex("has_bootstrap_unit", "source-level resamples", tex)
+    check_in_tex("has_bootstrap_unit", "source-level bootstrap", tex)
     check_in_tex("has_source_definition", "grouping unit for all splits", tex)
     check_not_in_tex("no_invalid_dev_ci", "[-3.9, -0.6]", tex)
     check_not_in_tex("no_dev_significance",
@@ -179,9 +188,27 @@ def check_loso(tex, ablation):
     check("§4/loso_tempo_hs_-0.96", -0.96, tempo_hs, tol=0.005)
     check("§4/loso_tempo_htk_+0.68", 0.68, tempo_htk, tol=0.005)
 
+    minus_key = abl["minus-key"]
+    key_hs = round(
+        (minus_key["hard_similar_mean"] - full["hard_similar_mean"]) * 100, 2
+    )
+    key_htk = round(
+        (minus_key["hard_tempo_key_mean"] - full["hard_tempo_key_mean"]) * 100,
+        2,
+    )
+    check("§4/loso_key_hs_+0.94", 0.94, key_hs, tol=0.005)
+    check("§4/loso_key_htk_+1.21", 1.21, key_htk, tol=0.005)
+
     check_in_tex("has_-0.96", "-0.96", tex)
     check_in_tex("has_+0.68", "+0.68", tex)
+    check_in_tex("has_key_loso", "$+0.94$/$+1.21$", tex)
+    check_in_tex("has_loso_descriptive", "no CIs, descriptive", tex)
     check_in_tex("has_loso", "eave-one-signal-out", tex)
+    # Key's dev-set LOSO must not be sold as significant or as the
+    # deployment rationale (round-7 audit): held-out MS-CLAP flips sign.
+    check_not_in_tex("no_key_net_harmful", "net harmful", tex)
+    check_not_in_tex("no_key_deploy_gloss",
+                     "consistent with the deployment decision", tex)
 
 
 def check_heldout(tex, laion_corr):
@@ -208,6 +235,12 @@ def check_heldout(tex, laion_corr):
     check_in_tex("has_laion_overall_ci", "[-0.4, +1.6]", tex)
     check_in_tex("has_bootstrap", "bootstrap", tex)
 
+    # Round-9: the "16--17 pp" claim is about the learned fusion only
+    # (cosine is frozen, not learned), so bound fusion_vs_rules alone.
+    fr = laion_corr["bootstrap"]["fusion_vs_rules"]["overall"]["point_delta"]
+    check("§2/laion_fusion_rules_gap_>=16pp", True, fr * 100 >= 16.0)
+    check("§2/laion_fusion_rules_gap_<=17.5pp", True, fr * 100 <= 17.5)
+
 
 def check_msclap_sensitivity(tex, msclap_corr):
     """§4: MS-CLAP sensitivity full delta vector (Table 1) from correction run."""
@@ -223,8 +256,10 @@ def check_msclap_sensitivity(tex, msclap_corr):
     check("§4/msclap_hs_ci_above_zero", True, hs["ci_lo"] > 0)
     check("§4/msclap_easy_+0.1pp", 0.1,
           round(bs["easy"]["point_delta"] * 100, 1), tol=0.05)
+    # tol=0.1 on a 1-decimal value accepted -0.2 and 0.0 too; tightened to
+    # match its siblings. Artifact point_delta is -0.1487 -> -0.1.
     check("§4/msclap_htk_-0.1pp", -0.1,
-          round(bs["hard_tempo_key"]["point_delta"] * 100, 1), tol=0.1)
+          round(bs["hard_tempo_key"]["point_delta"] * 100, 1), tol=0.05)
     check("§4/msclap_overall_+2.6pp", 2.6,
           round(bs["overall"]["point_delta"] * 100, 1), tol=0.05)
 
@@ -238,6 +273,36 @@ def check_msclap_sensitivity(tex, msclap_corr):
     check_not_in_tex("no_representation_sensitivity",
                      "representation sensitivity", tex)
     check_in_tex("has_source_weighted_bpr", "source-weighted BPR", tex)
+
+    # Round-8: key LOSO held-out non-replication (hard_similar sign flip)
+    loso = msclap_corr["loso"]
+    key_hs_heldout = round(
+        (loso["minus-key"]["mean_hard_similar"]
+         - loso["full-5sig"]["mean_hard_similar"]) * 100, 2
+    )
+    check("§4/key_heldout_hs_-0.12", -0.12, key_hs_heldout, tol=0.005)
+    check_in_tex("has_key_heldout_-0.12", "-0.12", tex)
+    check_in_tex("has_key_nonreplication", "key's", tex)
+
+    # Round-9: rules trails the learned fusion 16--17 pp across the two
+    # configurations of §3.2 (LAION 17.0, MS-CLAP 16.0). Bound fusion only:
+    # cosine is frozen, not learned, and its gap (13.4 pp here) is not the claim.
+    fr = msclap_corr["bootstrap"]["fusion_vs_rules"]["overall"]["point_delta"]
+    check("§2/msclap_fusion_rules_gap_>=16pp", True, fr * 100 >= 16.0)
+    check("§2/msclap_fusion_rules_gap_<=17.5pp", True, fr * 100 <= 17.5)
+    check_in_tex("has_rules_gap_16_17", "16--17", tex)
+    check_not_in_tex("no_stale_rules_gap_13_17", "13--17", tex)
+    # The rules default must not be justified by denying the measured gaps
+    check_not_in_tex("no_stable_advantage_denial",
+                     "no stable fusion advantage", tex)
+
+    rules = msclap_corr["heldout_summary"]["rules"]
+    check("§4/rules_heldout_overall_0.787", 0.787,
+          round3(rules["mean_overall"]))
+    check("§4/rules_heldout_htk_0.424", 0.424,
+          round3(rules["mean_hard_tempo_key"]))
+    check_in_tex("has_rules_0.787", "0.787", tex)
+    check_in_tex("has_rules_0.424", "0.424", tex)
 
 
 def check_factorial(tex, factorial):
@@ -287,11 +352,10 @@ def check_deployment(tex, weights):
     check("§2/deploy_source_weighted", True,
           "source-weighted BPR" in weights.get("trained_on", ""))
 
-    check_in_tex("has_deployment_differences", "four differences", tex)
+    check_in_tex("has_deployment_adapts", "adapts the five-signal ranker", tex)
     check_in_tex("has_msclap_delta", "MS-CLAP", tex)
-    check_in_tex("has_key_zero_online", "constant zero online", tex)
-    check_in_tex("has_fallback", "falls back", tex)
-    check_in_tex("has_default_ranker", "default ranker", tex)
+    check_in_tex("has_key_zero_online", "zeroed online", tex)
+    check_in_tex("has_default_ranker", "remains the default", tex)
     check_in_tex("has_fusion_selectable", "selectable", tex)
     check_not_in_tex("no_fusion_default", "is the default when session audio",
                      tex)
@@ -315,12 +379,12 @@ def check_removed_claims(tex):
     check_not_in_tex("no_sign_test", "sign test", tex)
     check_not_in_tex("no_proper_generalization", "proper generalization", tex)
     check_not_in_tex("no_confounding", "confounding", tex)
-    check_in_tex("has_ai_usage_statement", "AI Usage Statement", tex)
     check_in_tex("has_corrective_disclosure", "protocol mismatch", tex)
     check_in_tex("has_exploratory_not_confirmatory", "exploratory", tex)
     check_not_in_tex("no_inference_reserved", "inference is reserved", tex)
-    check_in_tex("has_75pct_subset", r"75\%", tex)
-    check_in_tex("has_need_not_coincide", "need not coincide with audio similarity", tex)
+    check_in_tex("has_missing_label_thesis", "missing-label problem", tex)
+    check_in_tex("has_proxy_interrogation",
+                 "how ranking conclusions change", tex)
     check_not_in_tex("no_not_a_similarity_problem",
                      "not a similarity problem", tex)
     # Unverified user-utility and over-broad system claims (review 2026-08-13)
@@ -332,6 +396,11 @@ def check_removed_claims(tex):
                      "every interaction is logged", tex)
     check_not_in_tex("no_test_the_design_stance", "test the design stance", tex)
     check_not_in_tex("no_validate_design", "validate the design", tex)
+    # Ledger rule: body may only assert status=verified claims; S2/S3 are
+    # partial (offline tests done, real-account capture pending)
+    check_not_in_tex("no_working_prototype", "working prototype", tex)
+    check_not_in_tex("no_live_session_read", "live Audiotool session", tex)
+    check_in_tex("has_offline_validation_hedge", "live-account capture", tex)
 
 
 def check_ledger_consistency():

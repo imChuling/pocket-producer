@@ -1,98 +1,109 @@
-% TikZ system pipeline — Pocket Producer
-% Two-lane design: cool lane = system proposes, warm lane = musician decides.
-% Requires tikz libraries: arrows.meta, positioning, fit, backgrounds.
-\definecolor{csysline}{HTML}{4A7FB5}
-\definecolor{csysfill}{HTML}{EDF3FA}
-\definecolor{cusrline}{HTML}{C0863C}
-\definecolor{cusrfill}{HTML}{FBF3E4}
-\definecolor{cpanelsys}{HTML}{F7FAFD}
-\definecolor{cpanelusr}{HTML}{FEFBF5}
-\definecolor{cedge}{HTML}{44484D}
-\definecolor{ctext}{HTML}{20242A}
-\definecolor{csub}{HTML}{6B7077}
+% Pocket Producer: dense but readable research architecture.
+% Live runtime is solid; offline cold-start supervision is dashed.
+\definecolor{ppblue}{HTML}{477DC0}
+\definecolor{ppbluefill}{HTML}{E7F0F8}
+\definecolor{ppviolet}{HTML}{65558F}
+\definecolor{ppvioletfill}{HTML}{F0EAF5}
+\definecolor{ppamber}{HTML}{C9676D}
+\definecolor{ppamberfill}{HTML}{FBECEE}
+\definecolor{ppgreen}{HTML}{789B55}
+\definecolor{ppgreenfill}{HTML}{EDF4E4}
+\definecolor{ppgray}{HTML}{6E747B}
+\definecolor{ppgrayfill}{HTML}{F1F3F4}
+\definecolor{pptext}{HTML}{20262B}
 
 \begin{tikzpicture}[
-    node distance=0.42cm and 0.5cm,
-    box/.style 2 args={
-        rectangle, rounded corners=3pt,
-        minimum width=2.4cm, minimum height=0.95cm,
-        draw=#1, line width=0.7pt, fill=#2,
-        text=ctext, align=center, inner sep=3pt,
-        font=\sffamily\footnotesize,
-    },
-    badge/.style={
-        circle, fill=#1, text=white,
-        font=\sffamily\tiny\bfseries,
-        inner sep=0pt, minimum size=10.5pt,
-    },
-    arr/.style={
-        -{Stealth[length=4.5pt, width=4pt]},
-        line width=0.6pt, color=cedge,
-    },
-    fbarr/.style={
-        -{Stealth[length=4.5pt, width=4pt]},
-        line width=0.6pt, color=csysline,
-        dash pattern=on 2.6pt off 2pt,
-    },
+  node distance=0.16cm and 0.18cm,
+  module/.style 2 args={rectangle, rounded corners=2pt, draw=#1, fill=#2,
+    line width=.55pt, text=pptext, align=center, inner sep=2pt,
+    minimum height=.58cm, font=\fontfamily{ptm}\selectfont\fontsize{5.8}{6.5}\selectfont},
+  frame/.style 2 args={rectangle, rounded corners=4pt, draw=#1!75, fill=#2,
+    line width=.55pt, inner sep=4pt},
+  section/.style={font=\fontfamily{ptm}\selectfont\fontsize{6}{7}\selectfont,
+    text=pptext, anchor=south west},
+  arrow/.style={-{Stealth[length=3.8pt,width=3pt]}, draw=ppgray, line width=.55pt},
+  dashedarrow/.style={-{Stealth[length=3.8pt,width=3pt]}, draw=ppgray, dashed, line width=.55pt},
+  tinylabel/.style={font=\fontfamily{ptm}\selectfont\fontsize{5}{6}\selectfont,
+    text=ppgray, align=center},
 ]
 
-% ---- Lane 1: system proposes ----
-\node[box={csysline}{csysfill}] (S)
-    {\textbf{DAW Session}\\[-1pt]
-     {\tiny\color{csub}Audiotool Nexus SDK}};
-\node[box={csysline}{csysfill}, right=of S] (F)
-    {\textbf{Fingerprint}\\[-1pt]
-     {\tiny\color{csub}tempo $\cdot$ CLAP embeddings}};
-\node[box={csysline}{csysfill}, right=of F] (R)
-    {\textbf{Ranking}\\[-1pt]
-     {\tiny\color{csub}5 signals $\cdot$ BPR fusion}};
+% A single outer frame gives the figure a paper-like hierarchy.
+\node[frame={ppgray}{white}, minimum width=10.55cm, minimum height=4.05cm]
+  (outer) at (4.05,0) {};
+% The paper caption carries the global claim; the frame labels below carry
+% the operational hierarchy without a second title competing for space.
 
-% ---- Lane 2: musician decides ----
-\node[box={cusrline}{cusrfill}, below=1.05cm of R] (P)
-    {\textbf{Preview}\\[-1pt]
-     {\tiny\color{csub}per-signal evidence}};
-\node[box={cusrline}{cusrfill}, left=of P] (A)
-    {\textbf{Insert / Undo}\\[-1pt]
-     {\tiny\color{csub}one Nexus transaction}};
-\node[box={cusrline}{cusrfill}, left=of A] (L)
-    {\textbf{Feedback Log}\\[-1pt]
-     {\tiny\color{csub}accept $\cdot$ reject $\cdot$ undo}};
+% Live context and representation.
+\node[frame={ppgray}{ppgrayfill}, minimum width=1.95cm, minimum height=2.88cm]
+  (whyframe) at (-1.05,.30) {};
+\node[section, text=ppgray] at (-1.98,1.56) {WHY NOT SIMILARITY?};
+\node[module={ppgray}{white}, minimum width=1.52cm] (why1) at (-1.05,1.00)
+  {Audio match\\[-1pt]{\fontsize{5}{6}\selectfont need not continue}};
+\node[module={ppgray}{white}, minimum width=1.52cm] (why2) at (-1.05,.28)
+  {Proxy labels\\[-1pt]{\fontsize{5}{6}\selectfont pack membership}};
+\node[module={ppgray}{white}, minimum width=1.52cm] (why3) at (-1.05,-.44)
+  {Design stance\\[-1pt]{\fontsize{5}{6}\selectfont inspect, preview, undo}};
+\draw[arrow] (why1) -- (why2); \draw[arrow] (why2) -- (why3);
 
-% ---- Lane panels (background) ----
-\begin{scope}[on background layer]
-\node[rectangle, rounded corners=4.5pt, fill=cpanelsys,
-      draw=csysline!30, line width=0.4pt,
-      fit=(S)(R), inner sep=7pt] (PSYS) {};
-\node[rectangle, rounded corners=4.5pt, fill=cpanelusr,
-      draw=cusrline!35, line width=0.4pt,
-      fit=(P)(L), inner sep=7pt] (PUSR) {};
-\end{scope}
+% Live context and representation.
+\node[frame={ppblue}{ppbluefill}, minimum width=2.24cm, minimum height=2.88cm]
+  (ctxframe) at (1.35,.30) {};
+\node[section, text=ppblue] at (.30,1.56) {LIVE SESSION};
+\node[module={ppblue}{white}, minimum width=1.78cm] (daw) at (1.35,1.12)
+  {Audiotool / Nexus\\[-1pt]{\fontsize{5}{6}\selectfont tracks, regions, intent}};
+\draw[arrow] (why3.east) -- (daw.west);
+\node[module={ppblue}{white}, minimum width=1.78cm] (finger) at (1.35,.40)
+  {Fingerprint\\[-1pt]{\fontsize{5}{6}\selectfont tempo, CLAP, tags}};
+\node[module={ppblue}{white}, minimum width=1.78cm] (fallback) at (1.35,-.33)
+  {Fallback\\[-1pt]{\fontsize{5}{6}\selectfont no-session-audio rules}};
+\draw[arrow] (daw) -- (finger); \draw[arrow] (finger) -- (fallback);
 
-% ---- Lane labels ----
-\node[font=\sffamily\tiny\bfseries, text=csysline, anchor=south west]
-    at ([yshift=1.5pt]PSYS.north west) {SYSTEM PROPOSES};
-\node[font=\sffamily\tiny\bfseries, text=cusrline, anchor=north west]
-    at ([yshift=-1.5pt]PUSR.south west) {MUSICIAN DECIDES};
+% Candidate scoring core.
+\node[frame={ppviolet}{ppvioletfill}, minimum width=3.22cm, minimum height=2.88cm]
+  (scoreframe) at (4.12,.30) {};
+\node[section, text=ppviolet] at (2.53,1.56) {PROPOSAL GENERATION};
+\node[module={ppviolet}{white}, minimum width=1.25cm] (cand) at (3.20,1.05)
+  {Candidate\\library};
+\node[module={ppviolet}{white}, minimum width=1.25cm] (phi) at (4.67,1.05)
+  {Signal vector\\[-1pt]{\fontsize{5}{6}\selectfont $\phi(s,x)\in\mathbb R^5$}};
+\node[module={ppviolet}{white}, minimum width=1.25cm] (rank) at (4.67,.13)
+  {Ranker\\[-1pt]{\fontsize{5}{6}\selectfont rules / fusion}};
+\node[module={ppviolet}{white}, minimum width=1.25cm] (evidence) at (3.20,.13)
+  {Evidence\\chips};
+\node[tinylabel] at (4.12,-.51) {mean-cos\; max-cos\; tempo\; key\; tags};
+\draw[arrow] (finger.east) -- (phi.west);
+\draw[arrow] (cand) -- (phi); \draw[arrow] (phi) -- (rank);
+\draw[arrow] (rank) -- (evidence);
 
-% ---- Step badges ----
-\node[badge=csysline] at (S.north west) {1};
-\node[badge=csysline] at (F.north west) {2};
-\node[badge=csysline] at (R.north west) {3};
-\node[badge=cusrline] at (P.north west) {4};
-\node[badge=cusrline] at (A.north west) {5};
-\node[badge=cusrline] at (L.north west) {6};
+% Human-in-the-loop boundary.
+\node[frame={ppamber}{ppamberfill}, minimum width=2.12cm, minimum height=2.88cm]
+  (userframe) at (6.83,.30) {};
+\node[section, text=ppamber] at (5.82,1.56) {MUSICIAN DECIDES};
+\node[module={ppamber}{white}, minimum width=1.68cm] (inspect) at (6.83,1.00)
+  {Inspect\\[-1pt]{\fontsize{5}{6}\selectfont per-signal rationale}};
+\node[module={ppamber}{white}, minimum width=1.68cm] (preview) at (6.83,.28)
+  {Preview\\[-1pt]{\fontsize{5}{6}\selectfont audition before commit}};
+\node[module={ppamber}{white}, minimum width=1.68cm] (txn) at (6.83,-.44)
+  {Insert / undo\\[-1pt]{\fontsize{5}{6}\selectfont reversible transaction}};
+\draw[arrow] (rank.east) -- (inspect.west);
+\draw[arrow] (inspect) -- (preview); \draw[arrow] (preview) -- (txn);
+\draw[arrow] (txn.east) .. controls (7.72,-.82) and (7.72,1.40) .. (inspect.east);
+\node[tinylabel, anchor=west] at (7.72,.20) {feedback\\logged};
 
-% ---- Forward flow ----
-\draw[arr] (S) -- (F);
-\draw[arr] (F) -- (R);
-\draw[arr] (R.south) -- (P.north);
-\draw[arr] (P) -- (A);
-\draw[arr] (A) -- (L);
-
-% ---- Feedback loop ----
-\coordinate (fb) at ([xshift=-0.6cm]L.west);
-\draw[fbarr] (L.west) -- (fb) |- (S.west);
-\node[font=\sffamily\tiny\itshape, text=csysline, rotate=90, anchor=south]
-    at ([shift={(-0.08,1.0)}]fb) {future personalization};
+% Offline lane: explicit epistemic boundary and exported weights.
+\node[frame={ppgreen}{ppgreenfill}, minimum width=7.54cm, minimum height=.72cm]
+  (offline) at (4.05,-1.43) {};
+\node[section, text=ppgreen] at (.30,-1.08) {OFFLINE COLD-START SUPERVISION};
+\node[module={ppgreen}{white}, minimum width=1.48cm, minimum height=.45cm]
+  (pack) at (1.38,-1.62) {pack co-membership};
+\node[module={ppgreen}{white}, minimum width=1.48cm, minimum height=.45cm]
+  (pairs) at (3.20,-1.62) {LOO pairs};
+\node[module={ppgreen}{white}, minimum width=1.48cm, minimum height=.45cm]
+  (bpr) at (5.02,-1.62) {source-grouped BPR};
+\node[module={ppgreen}{white}, minimum width=1.48cm, minimum height=.45cm]
+  (weights) at (6.84,-1.62) {export weights};
+\draw[arrow] (pack) -- (pairs); \draw[arrow] (pairs) -- (bpr); \draw[arrow] (bpr) -- (weights);
+\draw[dashedarrow] (weights.north) -- (rank.south);
+\node[tinylabel, anchor=west] at (7.38,-1.62) {not live};
 
 \end{tikzpicture}

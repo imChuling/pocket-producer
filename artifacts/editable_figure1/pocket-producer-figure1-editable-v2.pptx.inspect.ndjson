@@ -1,0 +1,52 @@
+{"kind":"deck","id":"pr/sjpskt","name":"Deck"}
+{"kind":"layout","layoutId":"f737392f-d051-45ab-b885-adc0abe9787e","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"23144bcc-6b4b-40d1-b9b3-a9661a4bc85f","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/6sel0p","slide":1,"title":"Pocket Producer: session-conditioned retrieval as a user-controlled proposal","textShapes":25}
+{"kind":"textbox","id":"sh/gbe5c3mt","slide":1,"text":"Pocket Producer: session-conditioned retrieval as a user-controlled proposal","textPreview":"Pocket Producer: session-conditioned retrieval as a user-controlled proposal","textChars":76,"textLines":1,"bbox":[70,34,1460,48]}
+{"kind":"textbox","id":"sh/falojyl8","slide":1,"text":"All boxes, labels, arrows, and panels are editable PowerPoint objects","textPreview":"All boxes, labels, arrows, and panels are editable PowerPoint objects","textChars":69,"textLines":1,"bbox":[70,82,920,28]}
+{"kind":"shape","id":"sh/e9cnat4n","slide":1,"bbox":[65,125,1470,690]}
+{"kind":"shape","id":"sh/t836ho32","slide":1,"bbox":[90,210,365,330]}
+{"kind":"shape","id":"sh/s7u58jmh","slide":1,"bbox":[470,210,610,330]}
+{"kind":"shape","id":"sh/r6l4felc","slide":1,"bbox":[1165,210,345,330]}
+{"kind":"shape","id":"sh/65cn6t4r","slide":1,"bbox":[90,575,1420,170]}
+{"kind":"textbox","id":"sh/5k3mdo36","slide":1,"text":"LIVE SESSION CONTEXT","textPreview":"LIVE SESSION CONTEXT","textChars":20,"textLines":1,"bbox":[110,225,325,28]}
+{"kind":"textbox","id":"sh/4ja54jml","slide":1,"text":"SYSTEM PROPOSES","textPreview":"SYSTEM PROPOSES","textChars":15,"textLines":1,"bbox":[495,225,565,28]}
+{"kind":"textbox","id":"sh/epori5cn","slide":1,"text":"MUSICIAN DECIDES","textPreview":"MUSICIAN DECIDES","textChars":16,"textLines":1,"bbox":[1190,225,300,28]}
+{"kind":"textbox","id":"sh/zqxsrad8","slide":1,"text":"OFFLINE COLD-START TRAINING","textPreview":"OFFLINE COLD-START TRAINING","textChars":27,"textLines":1,"bbox":[115,592,430,26]}
+{"kind":"textbox","id":"sh/0r69kfut","slide":1,"text":"TRAINING PROXY — never a live-session input","textPreview":"TRAINING PROXY — never a live-session input","textChars":43,"textLines":1,"bbox":[575,592,700,26]}
+{"kind":"shape","id":"sh/1sfatkve","slide":1,"bbox":[500,140,600,48]}
+{"kind":"textbox","id":"sh/qlore5cr","slide":1,"text":"Similarity proposes; the musician decides what comes next","textPreview":"Similarity proposes; the musician decides what comes next","textChars":57,"textLines":1,"bbox":[520,150,560,26]}
+{"kind":"shape","id":"sh/rmx8nadc","slide":1,"bbox":[790,188,20,20]}
+{"kind":"shape","id":"sh/cn69gfux","slide":1,"bbox":[252,370,30,20]}
+{"kind":"shape","id":"sh/dofapkv2","slide":1,"bbox":[432,370,30,20]}
+{"kind":"shape","id":"sh/2x4ralcf","slide":1,"bbox":[612,370,30,20]}
+{"kind":"shape","id":"sh/3yd8jqd0","slide":1,"bbox":[792,370,30,20]}
+{"kind":"shape","id":"sh/72tormts","slide":1,"bbox":[972,370,30,20]}
+{"kind":"shape","id":"sh/6107ihs7","slide":1,"bbox":[1152,370,30,20]}
+{"kind":"shape","id":"sh/t4b6twby","slide":1,"bbox":[1332,370,30,20]}
+{"kind":"shape","id":"sh/s32pkrad","slide":1,"bbox":[335,667,34,20]}
+{"kind":"shape","id":"sh/fqtov6t4","slide":1,"bbox":[555,667,34,20]}
+{"kind":"shape","id":"sh/u5k7m1sj","slide":1,"bbox":[775,667,34,20]}
+{"kind":"shape","id":"sh/hsb6xgbu","slide":1,"bbox":[890,520,20,50]}
+{"kind":"shape","id":"sh/gr2pobap","slide":1,"bbox":[1435,530,20,42]}
+{"kind":"textbox","id":"sh/ba9oj2tk","slide":1,"name":"audiotool","text":"Audiotool / Nexus\ntracks · regions · intent","textPreview":"Audiotool / Nexus | tracks · regions · intent","textChars":43,"textLines":2,"bbox":[110,325,140,110]}
+{"kind":"textbox","id":"sh/a9gnaxsf","slide":1,"name":"fingerprint","text":"Session fingerprint\ntempo · CLAP · tags","textPreview":"Session fingerprint | tempo · CLAP · tags","textChars":39,"textLines":2,"bbox":[290,325,140,110]}
+{"kind":"textbox","id":"sh/0felk3qx","slide":1,"name":"candidate-library","text":"Candidate library\naudio fragments","textPreview":"Candidate library | audio fragments","textChars":33,"textLines":2,"bbox":[470,325,140,110]}
+{"kind":"textbox","id":"sh/1gnmt8ri","slide":1,"name":"signal-vector","text":"Five-signal vector\nφ(s,x) ∈ R⁵","textPreview":"Five-signal vector | φ(s,x) ∈ R⁵","textChars":30,"textLines":2,"bbox":[650,325,140,110]}
+{"kind":"textbox","id":"sh/edw3id87","slide":1,"name":"ranker","text":"Ranker\nrules / selectable fusion","textPreview":"Ranker | rules / selectable fusion","textChars":32,"textLines":2,"bbox":[830,325,140,110]}
+{"kind":"textbox","id":"sh/ze54ry9c","slide":1,"name":"evidence","text":"Evidence\nper-signal rationale","textPreview":"Evidence | per-signal rationale","textChars":29,"textLines":2,"bbox":[1010,325,140,110]}
+{"kind":"textbox","id":"sh/cbelg3q1","slide":1,"name":"preview","text":"Preview\naudition before commit","textPreview":"Preview | audition before commit","textChars":30,"textLines":2,"bbox":[1190,325,140,110]}
+{"kind":"textbox","id":"sh/dcnmp8rm","slide":1,"name":"transaction","text":"Insert / undo\nreversible transaction","textPreview":"Insert / undo | reversible transaction","textChars":36,"textLines":2,"bbox":[1370,325,120,110]}
+{"kind":"shape","id":"sh/q9c3et8v","slide":1,"bbox":[1160,270,0,230]}
+{"kind":"textbox","id":"sh/ralkny9g","slide":1,"text":"proposal boundary","textPreview":"proposal boundary","textChars":17,"textLines":1,"bbox":[1090,492,150,22]}
+{"kind":"shape","id":"sh/w7ylsnq5","slide":1,"bbox":[112,458,320,34]}
+{"kind":"textbox","id":"sh/x87m1srq","slide":1,"text":"Fallback: no session audio → non-audio","textPreview":"Fallback: no session audio → non-audio","textChars":38,"textLines":1,"bbox":[122,462,300,24]}
+{"kind":"shape","id":"sh/t0zax03q","slide":1,"bbox":[645,458,380,34]}
+{"kind":"textbox","id":"sh/8fq94v2l","slide":1,"text":"Ranker signals: cosine · tempo · key · tags · role","textPreview":"Ranker signals: cosine · tempo · key · tags · role","textChars":50,"textLines":1,"bbox":[655,462,360,24]}
+{"kind":"textbox","id":"sh/7exsvql0","slide":1,"name":"pack","text":"Pack co-membership\npositive proxy","textPreview":"Pack co-membership | positive proxy","textChars":33,"textLines":2,"bbox":[150,635,180,72]}
+{"kind":"textbox","id":"sh/6dor2lkf","slide":1,"name":"loo","text":"Leave-one-out pairs\nthree negative regimes","textPreview":"Leave-one-out pairs | three negative regimes","textChars":42,"textLines":2,"bbox":[370,635,180,72]}
+{"kind":"textbox","id":"sh/h4za1032","slide":1,"name":"bpr","text":"Source-grouped BPR\nfive-signal weights","textPreview":"Source-grouped BPR | five-signal weights","textChars":38,"textLines":2,"bbox":[590,635,180,72]}
+{"kind":"textbox","id":"sh/g3q98v2h","slide":1,"name":"weights","text":"Export weights\nto selectable fusion","textPreview":"Export weights | to selectable fusion","textChars":35,"textLines":2,"bbox":[810,635,180,72]}
+{"kind":"textbox","id":"sh/v2hszqlw","slide":1,"name":"feedback","text":"Feedback log\naccept · reject · undo","textPreview":"Feedback log | accept · reject · undo","textChars":35,"textLines":2,"bbox":[1310,635,165,72]}
+{"kind":"textbox","id":"sh/u18r65kb","slide":1,"text":"future personalization\n(not evaluated)","textPreview":"future personalization | (not evaluated)","textChars":38,"textLines":2,"bbox":[1295,720,200,42]}
+{"kind":"notes","id":"nt/6sel0p","slide":1,"text":""}

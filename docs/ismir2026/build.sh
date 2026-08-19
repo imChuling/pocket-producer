@@ -96,7 +96,7 @@ done
 # IEEEtran.bst: let tectonic handle it (bundled)
 
 # Assets
-for f in "$SCRIPT_DIR/assets/"*.tex "$SCRIPT_DIR/assets/"*.pdf; do
+for f in "$SCRIPT_DIR/assets/"*.tex "$SCRIPT_DIR/assets/"*.pdf "$SCRIPT_DIR/assets/"*.png; do
     [ -f "$f" ] || continue
     name="$(basename "$f")"
     if ! run_timeout 3 cp "$f" "$BUILD_DIR/assets/$name" 2>/dev/null; then

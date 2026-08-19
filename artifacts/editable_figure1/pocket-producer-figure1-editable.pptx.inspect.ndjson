@@ -1,0 +1,57 @@
+{"kind":"deck","id":"pr/im2cqw","name":"Deck"}
+{"kind":"layout","layoutId":"fccc3346-5368-489c-9db3-9f015d7e2e4f","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"e1d21c39-0645-470d-baa8-e26e43a4341c","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/04bqvd","slide":1,"title":"Pocket Producer — editable Figure 1","textShapes":30}
+{"kind":"textbox","id":"sh/7up8ra5c","slide":1,"text":"Pocket Producer — editable Figure 1","textPreview":"Pocket Producer — editable Figure 1","textChars":35,"textLines":1,"bbox":[80,34,900,42]}
+{"kind":"textbox","id":"sh/svypkf6x","slide":1,"text":"Drag any box, label, or connector in PowerPoint","textPreview":"Drag any box, label, or connector in PowerPoint","textChars":47,"textLines":1,"bbox":[80,78,800,28]}
+{"kind":"shape","id":"sh/twrqtkni","slide":1,"name":"outer-frame","bbox":[70,130,1460,650]}
+{"kind":"shape","id":"sh/ypg7e5ov","slide":1,"name":"why-frame","bbox":[95,200,250,440]}
+{"kind":"shape","id":"sh/jqp8na5g","slide":1,"name":"live-frame","bbox":[370,200,300,440]}
+{"kind":"shape","id":"sh/krypgf61","slide":1,"name":"score-frame","bbox":[695,200,420,440]}
+{"kind":"shape","id":"sh/5s7qpkn6","slide":1,"name":"decide-frame","bbox":[1140,200,360,440]}
+{"kind":"shape","id":"sh/2l07qp4z","slide":1,"name":"offline-frame","bbox":[370,670,1130,82]}
+{"kind":"textbox","id":"sh/3m98zu5k","slide":1,"text":"WHY SIMILARITY FAILS","textPreview":"WHY SIMILARITY FAILS","textChars":20,"textLines":1,"bbox":[110,164,220,28]}
+{"kind":"textbox","id":"sh/viho72po","slide":1,"text":"LIVE SESSION","textPreview":"LIVE SESSION","textChars":12,"textLines":1,"bbox":[390,164,260,28]}
+{"kind":"textbox","id":"sh/ah8nyxo3","slide":1,"text":"PROPOSAL GENERATION","textPreview":"PROPOSAL GENERATION","textChars":19,"textLines":1,"bbox":[715,164,380,28]}
+{"kind":"textbox","id":"sh/x4j69c7u","slide":1,"text":"MUSICIAN DECIDES","textPreview":"MUSICIAN DECIDES","textChars":16,"textLines":1,"bbox":[1160,164,320,28]}
+{"kind":"textbox","id":"sh/w3q50769","slide":1,"text":"OFFLINE COLD-START SUPERVISION — not a live session signal","textPreview":"OFFLINE COLD-START SUPERVISION — not a live session signal","textChars":58,"textLines":1,"bbox":[395,682,600,25]}
+{"kind":"textbox","id":"sh/j61ob2pk","slide":1,"name":"why-audio","text":"Audio match\n≠ continuation","textPreview":"Audio match | ≠ continuation","textChars":26,"textLines":2,"bbox":[120,245,200,80]}
+{"kind":"textbox","id":"sh/i5sn2xof","slide":1,"name":"why-proxy","text":"Pack membership\nis only a proxy","textPreview":"Pack membership | is only a proxy","textChars":31,"textLines":2,"bbox":[120,355,200,80]}
+{"kind":"textbox","id":"sh/58j6dc7q","slide":1,"name":"why-design","text":"Therefore: inspect\npreview · undo","textPreview":"Therefore: inspect | preview · undo","textChars":33,"textLines":2,"bbox":[120,465,200,80]}
+{"kind":"textbox","id":"sh/k7a54765","slide":1,"name":"daw","text":"Audiotool / Nexus\ntracks · regions · intent","textPreview":"Audiotool / Nexus | tracks · regions · intent","textChars":43,"textLines":2,"bbox":[410,245,220,80]}
+{"kind":"textbox","id":"sh/7a1ofmpw","slide":1,"name":"fingerprint","text":"Session fingerprint\ntempo · CLAP · tags","textPreview":"Session fingerprint | tempo · CLAP · tags","textChars":39,"textLines":2,"bbox":[410,355,220,80]}
+{"kind":"textbox","id":"sh/69sn6hob","slide":1,"name":"fallback","text":"Fallback\nnon-audio rules","textPreview":"Fallback | non-audio rules","textChars":24,"textLines":2,"bbox":[410,465,220,80]}
+{"kind":"textbox","id":"sh/25wryl8j","slide":1,"name":"candidate-library","text":"Candidate\nlibrary","textPreview":"Candidate | library","textChars":17,"textLines":2,"bbox":[735,250,150,78]}
+{"kind":"textbox","id":"sh/36587q94","slide":1,"name":"signal-vector","text":"Five-signal vector\ncosine · tempo · key · tags · role","textPreview":"Five-signal vector | cosine · tempo · key · tags · role","textChars":53,"textLines":2,"bbox":[915,250,170,78]}
+{"kind":"textbox","id":"sh/47e90vqp","slide":1,"name":"evidence","text":"Evidence chips\nper-signal rationale","textPreview":"Evidence chips | per-signal rationale","textChars":35,"textLines":2,"bbox":[735,390,150,78]}
+{"kind":"textbox","id":"sh/p8nq90ra","slide":1,"name":"ranker","text":"Ranker\nrules / fusion","textPreview":"Ranker | rules / fusion","textChars":21,"textLines":2,"bbox":[915,390,170,78]}
+{"kind":"textbox","id":"sh/u1cru18n","slide":1,"text":"φ(s,x) ∈ R⁵","textPreview":"φ(s,x) ∈ R⁵","textChars":11,"textLines":1,"bbox":[780,505,290,30]}
+{"kind":"textbox","id":"sh/f2l8369s","slide":1,"name":"inspect","text":"Inspect\nper-signal rationale","textPreview":"Inspect | per-signal rationale","textChars":28,"textLines":2,"bbox":[1180,245,280,78]}
+{"kind":"textbox","id":"sh/g3u9wbqd","slide":1,"name":"preview","text":"Preview / audition\nbefore commit","textPreview":"Preview / audition | before commit","textChars":32,"textLines":2,"bbox":[1180,365,280,78]}
+{"kind":"textbox","id":"sh/h4nq5gry","slide":1,"name":"transaction","text":"Insert / undo\nreversible transaction","textPreview":"Insert / undo | reversible transaction","textChars":36,"textLines":2,"bbox":[1180,485,280,78]}
+{"kind":"textbox","id":"sh/exgr658r","slide":1,"text":"feedback logged","textPreview":"feedback logged","textChars":15,"textLines":1,"bbox":[1360,590,120,24]}
+{"kind":"textbox","id":"sh/zypsfa9c","slide":1,"name":"pack-membership","text":"Pack\nco-membership","textPreview":"Pack | co-membership","textChars":18,"textLines":2,"bbox":[430,705,190,42]}
+{"kind":"textbox","id":"sh/9sru54be","slide":1,"name":"loo-pairs","text":"LOO pairs","textPreview":"LOO pairs","textChars":9,"textLines":1,"bbox":[665,705,190,42]}
+{"kind":"textbox","id":"sh/oritwzat","slide":1,"name":"bpr","text":"Source-grouped BPR","textPreview":"Source-grouped BPR","textChars":18,"textLines":1,"bbox":[900,705,210,42]}
+{"kind":"textbox","id":"sh/nq9c3ut8","slide":1,"name":"weights","text":"Export weights","textPreview":"Export weights","textChars":14,"textLines":1,"bbox":[1155,705,190,42]}
+{"kind":"shape","id":"sh/mp0bupsn","slide":1,"bbox":[120,285,200,110]}
+{"kind":"shape","id":"sh/1oru1kbi","slide":1,"bbox":[120,395,200,110]}
+{"kind":"shape","id":"sh/0nitszax","slide":1,"bbox":[320,285,90,220]}
+{"kind":"shape","id":"sh/z2pczutc","slide":1,"bbox":[410,285,220,110]}
+{"kind":"shape","id":"sh/e1gbqpsr","slide":1,"bbox":[410,395,220,110]}
+{"kind":"shape","id":"sh/lkbudorm","slide":1,"bbox":[630,289,285,106]}
+{"kind":"shape","id":"sh/kj2t4ja1","slide":1,"bbox":[885,289,30,0]}
+{"kind":"shape","id":"sh/s3q14jax","slide":1,"bbox":[915,289,170,140]}
+{"kind":"shape","id":"sh/d4z2xob2","slide":1,"bbox":[735,429,350,0]}
+{"kind":"shape","id":"sh/q18j29sr","slide":1,"bbox":[1085,284,95,145]}
+{"kind":"shape","id":"sh/r2hkvetc","slide":1,"bbox":[1180,284,280,120]}
+{"kind":"shape","id":"sh/0ral83at","slide":1,"bbox":[1180,404,280,120]}
+{"kind":"shape","id":"sh/1sj218re","slide":1,"bbox":[430,726,425,0]}
+{"kind":"shape","id":"sh/e58j6tsn","slide":1,"bbox":[665,726,445,0]}
+{"kind":"shape","id":"sh/fq1kzyt8","slide":1,"bbox":[900,726,445,0]}
+{"kind":"textbox","id":"sh/ovalc3a5","slide":1,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[625,711,34,25]}
+{"kind":"textbox","id":"sh/pwj258ra","slide":1,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[860,711,34,25]}
+{"kind":"textbox","id":"sh/jq54b2ts","slide":1,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[1120,711,34,25]}
+{"kind":"shape","id":"sh/ypwn2xc7","slide":1,"bbox":[915,429,430,297]}
+{"kind":"textbox","id":"sh/lsnmdcbi","slide":1,"text":"All elements on this slide are editable PowerPoint shapes.","textPreview":"All elements on this slide are editable PowerPoint shapes.","textChars":58,"textLines":1,"bbox":[80,825,700,28]}
+{"kind":"notes","id":"nt/04bqvd","slide":1,"text":""}

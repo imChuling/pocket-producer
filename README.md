@@ -1,16 +1,21 @@
 # Pocket Producer
 
 > **A session-aware retrieval instrument for unfinished music.** It reads the
-> Audiotool project you have open, ranks your own audio fragments by how useful
-> they are for your *next* move — and lets you preview, insert, and undo.
+> Audiotool project you have open, ranks your own audio fragments by whether
+> they *could grow into a piece of music* with what's already there, and
+> lets you preview, insert, and undo.
 
 Not a generator. Not a collaborator. A tool you steer.
 
-**Status (2026-08-01):** research prototype under active development for
+**Status (2026-08-18):** research prototype built for
 [Audiotool Let's Build 2026](https://www.audiotool.com/LetsBuild/) and an
 [ISMIR 2026 Late-Breaking/Demo](https://ismir2026.ismir.net/call-for-late-breaking-demo)
-submission. Nexus read/write is implemented and offline-tested against the
-official SDK's document validator; real-account screen capture is pending.
+submission. The offline evaluation is frozen: every number in the paper maps
+to a versioned artifact via a 152-assertion consistency check
+([reproduction guide](research/README.md)). Nexus read/write is implemented
+and offline-tested against the official SDK's document validator. Some
+result tables below predate the pack-only evaluation reboot —
+`research/README.md` is authoritative for the paper's numbers.
 
 ---
 
@@ -19,13 +24,17 @@ official SDK's document validator; real-account screen capture is pending.
 Most music retrieval ranks by **similarity**. But when you re-open a half-finished
 project at 1am, the question isn't "what sounds like this" — it's:
 
-> **Which of my own fragments is worth trying next?**
+> **Which of my own fragments could grow into a piece of music with what's already here?**
 
-We call this **continuation utility**, and it is deliberately not the same
-objective as acoustic similarity. A fragment that fills a missing role can be
-more useful than one that blends in perfectly. Whether a model can learn this
-distinction — and whether it beats simple baselines — is an empirical question
-this repo is set up to answer honestly, including when the answer is *no*.
+We call this **session compatibility**: whether a candidate is promising
+material for the same piece of music as the fragments already in the open
+project (the *session*).
+Audio similarity is one observable signal for it, but does not define it; a
+fragment that fills a missing role can belong better than one that blends in
+perfectly. Direct labels for this target
+do not exist at cold start, so the repo trains on a proxy (pack co-membership)
+and interrogates its reliability rather than assuming it — including when the
+answer is *no*.
 
 `utility` is a named metric in the co-creative systems evaluation literature
 (Karimi et al., ICCC 2018), which also observes that most co-creative systems
@@ -40,7 +49,7 @@ contributes. That gap is what the evaluation protocol here targets.
 Audiotool project (live, via Nexus SDK)
   → session fingerprint      tempo · track roles · playhead · your stated intent
   → retrieval                per-representation-space search, fused by RRF
-  → continuation ranking     rules → linear → DeepSets → 401K attention reranker
+  → compatibility ranking    rules → linear → DeepSets → 401K attention reranker
   → three grounded suggestions
   → preview · insert at playhead · exact undo
   → preference feedback      (research signal, propensity-aware)
@@ -52,48 +61,55 @@ ranker's own features — never generated prose.
 
 ---
 
-## Preliminary findings (all numbers from versioned artifacts)
+## Findings (ISMIR 2026 LBD — all numbers from versioned artifacts)
 
-### Backbone bake-off — [`artifacts/backbone-bakeoff.json`](artifacts/backbone-bakeoff.json)
+The paper's evaluation runs on the **pack-only FSLD corpus**: 1,797 loops in
+605 true Freesound packs, one pack = one *source*, with a frozen 121-source
+held-out split (seed 20260810; the split's SHA-256 was committed before any
+evaluation touched it). A five-signal linear fusion (mean/max CLAP cosine,
+tempo, key, tag Jaccard) is trained with BPR on pack co-membership weak
+labels and compared against frozen cosine. Full commands:
+[`research/README.md`](research/README.md).
 
-Frozen audio-text backbones compared on 2,558 licensed FSLD loops:
+### Dev set: the fusion advantage disappears under clean labels
 
-| Backbone | Same-source Recall@10 | Genre zero-shot | Role zero-shot | Vector size |
-|---|---:|---:|---:|---:|
-| MS-CLAP 2023 | 0.692 | 0.384 | 0.533 | 4 KB |
-| LAION-CLAP music | **0.713** | **0.415** | **0.556** | **2 KB** |
+Mean over 5 source-grouped splits
+([`artifacts/fusion-packonly/fusion.json`](artifacts/fusion-packonly/fusion.json)):
 
-LAION-CLAP wins every probe at half the storage — but its training-data
-provenance audit is not complete, so **MS-CLAP remains the deployment default**.
-Representation quality and deployment eligibility are separate decisions.
-
-### Capacity ladder — [`artifacts/model-capacity.json`](artifacts/model-capacity.json)
-
-| Rung | Trainable params | CPU p95 (batch 32 × 32 tokens) |
+| | overall | hard_similar |
 |---|---:|---:|
-| `linear-v1` | 20 | 0.7 ms |
-| `deepsets-v1` | 297,729 | 1.3 ms |
-| `pocketrank-context-v1` | **401,025** (hard gate: < 500K) | 5.3 ms |
+| frozen cosine | **0.929** | **0.8136** |
+| five-signal fusion | 0.925 | 0.8133 |
 
-### An honest negative result
+An earlier corpus that also grouped items by uploader showed fusion +4.0 pp
+over cosine on hard_similar; restricting to true pack co-membership erases
+the gain (−0.03 pp). Label construction, not the ranker, produced the
+apparent advantage.
 
-On **weak** supervision (1,755 leave-one-out pairs from same-pack FSLD loops,
-split by source):
+### Held-out: the delta depends on the configuration
 
-| | MS-CLAP space | LAION space |
+Fusion−cosine on the 121 held-out sources, bootstrap 95% CIs over 10,000
+source-level resamples, mean over 5 seeds — treated as **exploratory** after
+a corrected training protocol
+([`artifacts/heldout-eval-correction/`](artifacts/heldout-eval-correction/sensitivity.json),
+[`artifacts/msclap-sensitivity-correction/`](artifacts/msclap-sensitivity-correction/sensitivity.json)):
+
+| Negative regime | LAION-CLAP | MS-CLAP, source-weighted BPR |
 |---|---:|---:|
-| `linear-v1` (20 params) | **0.880** | **0.897** |
-| `pocketrank-context-v1` (401K params) | 0.743 | 0.762 |
+| hard_similar | +2.1 pp [−1.0, +5.3] | +9.9 pp [+4.4, +15.4] |
+| overall | +0.6 pp [−0.4, +1.6] | +2.6 pp [+1.0, +4.2] |
 
-**The 20-parameter model wins.** This is not a bug — it is the point. Weak
-labels define "positive" as *came from the same pack*, and same-pack loops are
-already close in CLAP space, so cosine similarity is near-optimal **for that
-proxy task**. It is direct evidence that *similar ≠ useful*, and that the
-research question can only be settled with human judgments of continuation
-utility — which is exactly what the annotation protocol collects.
+The same split, the same signals — and a 7.8 pp swing on hard_similar from
+embedding and training choices alone.
 
-Per the preregistered gate, the contest build therefore ships `rules-v1` /
-`audio-cosine-v1`, not the learned reranker.
+### Why this shapes the product
+
+Conclusions drawn from the cold-start proxy shift with label, regime, and
+representation choices. So the deployed system treats ranking scores as
+**proposals, not judgments**: the rules baseline is the default ranker, the
+fusion is selectable, every candidate carries per-signal evidence, and every
+insertion is a single reversible transaction. The fusion is a cold-start
+first-pass filter, not a final decision-maker.
 
 ---
 

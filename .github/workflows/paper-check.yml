@@ -1,0 +1,25 @@
+name: paper-check
+
+on:
+  push:
+    paths:
+      - "docs/ismir2026/**"
+      - "artifacts/**"
+      - "research/check_paper_numbers.py"
+      - ".github/workflows/paper-check.yml"
+  pull_request:
+    paths:
+      - "docs/ismir2026/**"
+      - "artifacts/**"
+      - "research/check_paper_numbers.py"
+
+jobs:
+  check-paper-numbers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Cross-check paper numbers against artifacts
+        run: python research/check_paper_numbers.py
