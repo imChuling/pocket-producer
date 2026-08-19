@@ -1,0 +1,29 @@
+{
+  "artifact": "sensitivity.json",
+  "artifact_sha256": "54fc1104fb001fbd0daf14937e305be254894fdb024630074f6141431f0c53e0",
+  "generated_by": "research/run_heldout_correction.py --mode msclap",
+  "repo_commit": "bd6cbc75e87aa8c99cbf1b04f8718bb8c92d3f5a",
+  "split_file": "artifacts/heldout-split-packonly/split.json",
+  "split_file_sha256": "94f5f2d34d7af17f75d5f68f125f4e6235c63723ca3dd4e7874b2a49baa30913",
+  "split_heldout_ids_sha256": "3f4967ca916ac5a985388836f9fb60e44bef93c3f73d2df7ee1c37ee4f36384c",
+  "bootstrap": {
+    "n_bootstrap": 10000,
+    "alpha": 0.05,
+    "interval": "percentile",
+    "resampling_unit": "source (pack), joint across seeds",
+    "point_estimate": "mean over 5 seeds"
+  },
+  "training": {
+    "seeds": [20260725, 20260801, 20260802, 20260803, 20260804],
+    "pair_seed": 20260725,
+    "epochs": 300,
+    "early_stopping": false,
+    "train_sources": 484,
+    "source_weighted_bpr": true,
+    "neg_type_weights": {"hard_similar": 2.0},
+    "modifications_prespecified_in": "research/protocol-msclap-sensitivity-v1.md (frozen before the run)"
+  },
+  "correction_reason": "Original held-out run trained with a val_fraction=0.25 internal split (~75% of train sources) instead of the full 484; corrected run retrains on all 484 per seed with no internal val split. The held-out split was therefore evaluated both before and after the correction, and had previously been evaluated once under LAION-CLAP.",
+  "evidence_status": "exploratory / sensitivity re-analysis on a reused split, NOT confirmatory",
+  "paper_reference": "docs/ismir2026/lbd.tex Table 1 (MS-CLAP sw-BPR column), Figure 2a, Section 4 held-out LOSO sentence"
+}

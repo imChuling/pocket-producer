@@ -1,0 +1,26 @@
+{
+  "artifact": "sensitivity.json",
+  "artifact_sha256": "35ea471f620b9598d52a855da72f86ce1ba561429c8ae5f77a7652de92e97a54",
+  "generated_by": "research/run_heldout_correction.py --mode laion",
+  "repo_commit": "bd6cbc75e87aa8c99cbf1b04f8718bb8c92d3f5a",
+  "split_file": "artifacts/heldout-split-packonly/split.json",
+  "split_file_sha256": "94f5f2d34d7af17f75d5f68f125f4e6235c63723ca3dd4e7874b2a49baa30913",
+  "split_heldout_ids_sha256": "3f4967ca916ac5a985388836f9fb60e44bef93c3f73d2df7ee1c37ee4f36384c",
+  "bootstrap": {
+    "n_bootstrap": 10000,
+    "alpha": 0.05,
+    "interval": "percentile",
+    "resampling_unit": "source (pack), joint across seeds",
+    "point_estimate": "mean over 5 seeds"
+  },
+  "training": {
+    "seeds": [20260725, 20260801, 20260802, 20260803, 20260804],
+    "pair_seed": 20260725,
+    "epochs": 300,
+    "early_stopping": false,
+    "train_sources": 484
+  },
+  "correction_reason": "Original held-out run trained with a val_fraction=0.25 internal split (~75% of train sources) instead of the full 484; corrected run retrains on all 484 per seed with no internal val split. The held-out split was therefore evaluated both before and after the correction.",
+  "evidence_status": "exploratory / sensitivity analysis, NOT confirmatory",
+  "paper_reference": "docs/ismir2026/lbd.tex Table 1 (LAION-CLAP column), Figure 2a"
+}

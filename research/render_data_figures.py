@@ -1,154 +1,189 @@
-"""Generate data figures for the ISMIR LBD paper using SciencePlots.
+"""Render the held-out sensitivity figure for the ISMIR LBD.
 
-Panel (a): Pairwise accuracy by negative type (cosine vs fusion), no error bars
-Panel (b): Signal ranking reversal — weak-label ablation delta vs human alignment
+The figure is a dot-and-whisker plot of the held-out fusion-minus-cosine
+delta, using the versioned corrective artifacts.  This is the most direct
+visualization of the paper's bounded empirical claim: the apparent gain is
+configuration- and negative-regime-dependent.
+
+The plot deliberately does not show bars or connect categorical regimes with
+lines.  Points show the estimate in percentage points and whiskers show the
+source-level bootstrap 95% CI recorded in each artifact.
 """
 
-import matplotlib
-matplotlib.use("Agg")
-# Embed TrueType (Type 42) fonts, not Type 3 — some conference format
-# checkers reject Type 3.
-matplotlib.rcParams["pdf.fonttype"] = 42
-matplotlib.rcParams["ps.fonttype"] = 42
-import matplotlib.pyplot as plt
-import scienceplots  # noqa: F401
+from __future__ import annotations
+
 import json
 import pathlib
+
+import matplotlib
+
+matplotlib.use("Agg")
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
+matplotlib.rcParams["svg.fonttype"] = "none"
+
+import matplotlib.pyplot as plt
 import numpy as np
 
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-ABLATION7 = ROOT / "artifacts" / "ablation-7sig" / "ablation.json"
-FUSION7 = ROOT / "artifacts" / "fusion-7sig" / "fusion.json"
-ALIGNMENT = ROOT / "artifacts" / "human-signal-alignment" / "alignment.json"
-OUT_PDF = ROOT / "docs" / "ismir2026" / "assets" / "data-figures.pdf"
+LAION = ROOT / "artifacts" / "heldout-eval-correction" / "sensitivity.json"
+MSCLAP = ROOT / "artifacts" / "msclap-sensitivity-correction" / "sensitivity.json"
+FACTORIAL = ROOT / "artifacts" / "factorial" / "factorial.json"
+OUT_PDF = ROOT / "docs" / "ismir2026" / "assets" / "heldout-sensitivity.pdf"
+OUT_SVG = ROOT / "docs" / "ismir2026" / "assets" / "heldout-sensitivity.svg"
+OUT_PNG = ROOT / "docs" / "ismir2026" / "assets" / "heldout-sensitivity.png"
+OUT_GRAY = ROOT / "docs" / "ismir2026" / "assets" / "heldout-sensitivity-gray.png"
 
 PDF_METADATA = {"CreationDate": None, "Producer": None, "Creator": None}
-
-PAL = {
-    "blue":      "#477DC0",
-    "orange":    "#ED9B69",
-    "rose":      "#C9676D",
-    "lightblue": "#9BCAE7",
-    "edge":      "#3A3A3A",
-    "text":      "#1A1A1A",
-    "sub":       "#555555",
-    "green":     "#5A9E6F",
-    "purple":    "#A3AAD5",
-}
+SVG_METADATA = {"Creator": "SciPilot figure renderer"}
+REGIMES = ["easy", "hard_tempo_key", "hard_similar"]
+LABELS = ["easy", "tempo-key", "similar"]
+COLORS = {"LAION-CLAP": "#477DC0", "MS-CLAP + sw-BPR": "#ED9B69"}
+MARKERS = {"LAION-CLAP": "o", "MS-CLAP + sw-BPR": "s"}
 
 
-def render():
-    ablation7 = json.loads(ABLATION7.read_text())
-    fusion7 = json.loads(FUSION7.read_text())
-    alignment = json.loads(ALIGNMENT.read_text())
+def load_delta(path: pathlib.Path) -> dict[str, dict[str, float]]:
+    payload = json.loads(path.read_text())
+    return payload["bootstrap"]["fusion_vs_cosine"]
 
-    plt.style.use(["science", "ieee", "no-latex"])
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 2.1), dpi=300)
+def load_factorial() -> dict[str, dict[str, float]]:
+    payload = json.loads(FACTORIAL.read_text())
+    return payload["fusion_cosine_deltas_pp"]
 
-    # ── (a) Accuracy by negative type ──
-    neg_keys = ["hard_similar", "hard_tempo_key"]
-    display = ["Hard-sim", "Hard-tk"]
 
-    cos_vals = [fusion7["per_negative_type"]["cosine-only"][k] for k in neg_keys]
-    fus_vals = [fusion7["per_negative_type"]["fusion-5sig"][k] for k in neg_keys]
+def render() -> None:
+    deltas = {
+        "LAION-CLAP": load_delta(LAION),
+        "MS-CLAP + sw-BPR": load_delta(MSCLAP),
+    }
+    factorial = load_factorial()
 
-    x = np.arange(len(neg_keys))
-    w = 0.30
+    # Editorial two-panel layout: a forest plot for the held-out comparison
+    # and a small factorial map for the development-only configuration check.
+    # Both panels are data-derived; pastel blocks are only an encoding aid.
+    # Stack the panels vertically.  In the two-column paper layout a side-by-
+    # side heatmap makes the configuration labels unreadably small; stacking
+    # gives both panels the full column width while preserving the same data.
+    fig, (ax, hx) = plt.subplots(
+        2, 1, figsize=(3.48, 2.95), dpi=300,
+        gridspec_kw={"height_ratios": [1.35, 0.9], "hspace": 0.72},
+    )
+    y = np.arange(len(REGIMES), dtype=float)
+    offsets = {"LAION-CLAP": 0.105, "MS-CLAP + sw-BPR": -0.105}
 
-    ax1.bar(x - w / 2, cos_vals, w,
-            label="Cosine", color=PAL["lightblue"], edgecolor=PAL["edge"],
-            linewidth=0.4)
-    ax1.bar(x + w / 2, fus_vals, w,
-            label="Fusion", color=PAL["orange"], edgecolor=PAL["edge"],
-            linewidth=0.4)
+    for label in ("LAION-CLAP", "MS-CLAP + sw-BPR"):
+        values = np.array([100 * deltas[label][r]["point_delta"] for r in REGIMES])
+        lows = np.array([100 * deltas[label][r]["ci_lo"] for r in REGIMES])
+        highs = np.array([100 * deltas[label][r]["ci_hi"] for r in REGIMES])
+        yerr = np.vstack((values - lows, highs - values))
+        ax.errorbar(
+            values,
+            y + offsets[label],
+            xerr=yerr,
+            fmt=MARKERS[label],
+            color=COLORS[label],
+            markerfacecolor="white",
+            markeredgewidth=0.9,
+            markersize=4.6,
+            linewidth=1.0,
+            capsize=2.4,
+            capthick=0.8,
+            label=label,
+            zorder=3,
+        )
 
-    for i, (cv, fv) in enumerate(zip(cos_vals, fus_vals)):
-        ax1.text(i - w / 2, cv + 0.018, f".{int(cv*1000)}", ha="center", va="bottom",
-                 fontsize=5.5, color=PAL["text"])
-        ax1.text(i + w / 2, fv + 0.018, f".{int(fv*1000)}", ha="center", va="bottom",
-                 fontsize=5.5, color=PAL["text"])
+    ax.axvline(0, color="#555555", linewidth=0.65, zorder=1)
+    ax.set_xlim(-5.5, 17.8)
+    ax.set_ylim(-0.55, len(REGIMES) - 0.45)
+    ax.set_yticks(y)
+    ax.set_yticklabels(LABELS, fontsize=6.8)
+    ax.set_xlabel("Fusion − cosine (pp)", fontsize=7.0)
+    ax.tick_params(axis="y", labelsize=6.8, width=0.55, length=0, pad=2)
+    ax.tick_params(axis="x", labelsize=6.2, width=0.55, length=2.5)
+    ax.grid(axis="x", color="#D9DDE2", linewidth=0.45, zorder=0)
+    ax.set_axisbelow(True)
+    ax.legend(
+        fontsize=5.6,
+        loc="lower right",
+        frameon=False,
+        handletextpad=0.35,
+        columnspacing=0.8,
+        ncols=1,
+        bbox_to_anchor=(0.995, 0.02),
+        borderaxespad=0,
+    )
+    ax.text(
+        0.995,
+        1.02,
+        "95% CI · source bootstrap",
+        transform=ax.transAxes,
+        ha="right",
+        va="bottom",
+        fontsize=5.2,
+        color="#555555",
+    )
+    for spine in ("top", "right"):
+        ax.spines[spine].set_visible(False)
+    for spine in ("left", "bottom"):
+        ax.spines[spine].set_linewidth(0.55)
+        ax.spines[spine].set_color("#4A4A4A")
 
-    ax1.set_ylabel("Pairwise accuracy", fontsize=7, color=PAL["text"])
-    ax1.set_xticks(x)
-    ax1.set_xticklabels(display, fontsize=6.5)
-    ax1.set_ylim(0.68, 0.98)
-    ax1.legend(fontsize=6, loc="upper left", frameon=True, fancybox=False,
-               edgecolor=PAL["edge"], framealpha=0.95, handlelength=1.0)
-    ax1.tick_params(axis="both", labelsize=6.5, colors=PAL["text"], width=0.4)
-    ax1.text(0.02, 0.97, "(a)", transform=ax1.transAxes, fontsize=8,
-             fontweight="bold", va="top", color=PAL["text"])
-    for spine in ax1.spines.values():
-        spine.set_linewidth(0.4)
-        spine.set_color(PAL["edge"])
+    ax.text(-0.02, 1.16, "(a)  Held-out", transform=ax.transAxes,
+            fontsize=7.2, fontweight="bold", va="top")
 
-    # ── (b) Signal--preference comparison ──
-    # All left-side deltas come from ONE experiment: the 7-signal
-    # leave-one-signal-out ablation (artifacts/ablation-7sig), so every
-    # plotted signal has a measured weak-label contribution.
-    # Role-gap is still omitted: it fired on only 2/9 consensus pairs.
-    paired_signals = ["tempo", "cos mean", "cos max", "harmonic"]
-    paired_weak_keys = ["minus-tempo", "minus-audio_cos_mean",
-                        "minus-audio_cos_max", "minus-harmonic"]
-    paired_human_keys = ["tempo", "cos_mean", "cos_max", "harmonic"]
+    # Panel (b): a compact 2x2 configuration map.  This is more informative
+    # than another bar chart because it exposes the full representation x
+    # training interaction behind the held-out cross-configuration swing.
+    config_keys = [
+        "A_laion_uniform",
+        "B_laion_sourceweighted",
+        "C_msclap_uniform",
+        "D_msclap_sourceweighted",
+    ]
+    config_labels = ["L/U", "L/S", "M/U", "M/S"]
+    heat_rows = ["easy", "tempo–key", "similar"]
+    heat_keys = ["easy", "hard_tempo_key", "hard_similar"]
+    matrix = np.array([[factorial[c][r] for c in config_keys] for r in heat_keys])
+    cmap = matplotlib.colors.LinearSegmentedColormap.from_list(
+        "pp_diverging", ["#9BCAE7", "#D4BFDC", "#F9D1D2", "#ED9B69"]
+    )
+    norm = matplotlib.colors.TwoSlopeNorm(vmin=-4.5, vcenter=0.0, vmax=2.6)
+    hx.imshow(matrix, cmap=cmap, norm=norm, aspect="auto")
+    hx.set_xticks(np.arange(len(config_labels)))
+    hx.set_xticklabels(config_labels, fontsize=6.8)
+    hx.set_yticks(np.arange(len(heat_rows)))
+    hx.set_yticklabels(heat_rows, fontsize=6.8)
+    hx.tick_params(length=0, pad=2)
+    for spine in hx.spines.values():
+        spine.set_visible(False)
+    for i in range(matrix.shape[0]):
+        for j in range(matrix.shape[1]):
+            value = matrix[i, j]
+            hx.text(j, i, f"{value:+.1f}", ha="center", va="center",
+                    fontsize=7.0, color="#20262B", fontweight="bold")
+    hx.set_xlabel("representation / training", fontsize=6.5, labelpad=6)
+    hx.text(-0.02, 1.24, "(b)  Dev factorial", transform=hx.transAxes,
+            fontsize=7.2, fontweight="bold", va="top")
+    hx.text(1.0, 1.24, "L: LAION  M: MS-CLAP  U: uniform  S: source-weighted",
+            transform=hx.transAxes, ha="right", va="top", fontsize=5.0,
+            color="#555555")
 
-    abl7 = ablation7["ablation"]
-    full_hs7 = abl7["full-7sig"]["hard_similar_mean"]
+    fig.subplots_adjust(left=0.16, right=0.995, bottom=0.22, top=0.91)
+    fig.savefig(OUT_PDF, metadata=PDF_METADATA, bbox_inches="tight", pad_inches=0.025)
+    fig.savefig(OUT_SVG, metadata=SVG_METADATA, bbox_inches="tight", pad_inches=0.025)
+    fig.savefig(OUT_PNG, dpi=600, bbox_inches="tight", pad_inches=0.025)
 
-    weak_deltas = [round((full_hs7 - abl7[sk]["hard_similar_mean"]) * 100, 1)
-                   for sk in paired_weak_keys]
+    # A grayscale preview is part of the publication QA loop.
+    from PIL import Image, ImageOps
 
-    sigs = alignment["signals"]
-    human_rates = [sigs[hk]["consensus"][0] / sigs[hk]["consensus"][1]
-                   for hk in paired_human_keys]
-
-    weak_rank = np.argsort(np.argsort([-d for d in weak_deltas])) + 1
-    human_rank_paired = np.argsort(np.argsort([-r for r in human_rates])) + 1
-
-    y_left = [5 - r for r in weak_rank]
-    y_right = [5 - r for r in human_rank_paired]
-
-    colors = [PAL["orange"], PAL["blue"], PAL["purple"], PAL["green"]]
-
-    ax2.set_xlim(-0.3, 1.3)
-    ax2.set_ylim(0.2, 5.0)
-
-    for i, (yl, yr) in enumerate(zip(y_left, y_right)):
-        ax2.plot([0, 1], [yl, yr], color=colors[i], linewidth=1.3, zorder=3)
-        ax2.scatter([0], [yl], color=colors[i], s=20, zorder=4,
-                    edgecolors=PAL["edge"], linewidths=0.3)
-        ax2.scatter([1], [yr], color=colors[i], s=20, zorder=4,
-                    edgecolors=PAL["edge"], linewidths=0.3)
-
-        ax2.text(-0.05, yl, f"{paired_signals[i]}", ha="right", va="center",
-                 fontsize=6, color=colors[i], fontweight="bold")
-        ax2.text(-0.05, yl - 0.28, f"{weak_deltas[i]:+.1f}pp", ha="right",
-                 va="center", fontsize=5, color=PAL["sub"])
-
-        ax2.text(1.05, yr, f"{paired_signals[i]}", ha="left", va="center",
-                 fontsize=6, color=colors[i], fontweight="bold")
-        ax2.text(1.05, yr - 0.28, f"{int(round(human_rates[i]*9))}/9", ha="left",
-                 va="center", fontsize=5, color=PAL["sub"])
-
-    ax2.text(0, 4.9, "Weak-label\nLOSO ablation", ha="center", va="top",
-             fontsize=6, color=PAL["text"], fontweight="bold")
-    ax2.text(1, 4.9, "Human\nalignment", ha="center", va="top",
-             fontsize=6, color=PAL["text"], fontweight="bold")
-
-    ax2.set_yticks([])
-    ax2.set_xticks([])
-    ax2.spines["top"].set_visible(False)
-    ax2.spines["right"].set_visible(False)
-    ax2.spines["bottom"].set_visible(False)
-    ax2.spines["left"].set_visible(False)
-
-    ax2.text(0.02, 0.97, "(b)", transform=ax2.transAxes, fontsize=8,
-             fontweight="bold", va="top", color=PAL["text"])
-
-    fig.tight_layout(pad=0.3, w_pad=0.8)
-    fig.savefig(OUT_PDF, metadata=PDF_METADATA, bbox_inches="tight", pad_inches=0.03)
-    print(f"-> {OUT_PDF}")
+    ImageOps.grayscale(Image.open(OUT_PNG)).save(OUT_GRAY)
     plt.close(fig)
+    print(f"-> {OUT_PDF}")
+    print(f"-> {OUT_SVG}")
+    print(f"-> {OUT_PNG}")
+    print(f"-> {OUT_GRAY}")
 
 
 if __name__ == "__main__":

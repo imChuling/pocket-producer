@@ -15,3 +15,5 @@ landing-redesign/
 frontend/test-results/
 tmp/
 artifacts/cocola-audio/
+~$*
+artifacts/editable_figure1/node_modules
