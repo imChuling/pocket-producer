@@ -154,5 +154,12 @@ Deadline: 2026-09-25 AoE (rolling review)
 - [x] Demo video / demo page: author decided NOT to submit (2026-08-18);
   the "demonstration video accompanies this submission" sentence was
   removed from the conclusion accordingly
-- [ ] Clean-clone verification: one command builds PDF + 151/151 + tests
+- [x] Clean-clone verification passed 2026-08-20 (commit 71e29dd):
+  fresh `git clone` → checker 151/151, `build.sh` → 3 pages,
+  `pytest research/tests/` 4 passed, `pytest backend/tests/ranking/`
+  232 passed / 1 skipped; clean-clone PDF text-identical to the
+  submission PDF (byte diff is embedded timestamps only)
+- [x] Abstract closing sentence reworked 2026-08-20 (broke the
+  symmetric "Because X, and Y, Z rather than W" construction into
+  two sentences; content unchanged). FROZEN at 71e29dd for upload
 - [ ] Upload to ISMIR submission system (title, abstract, PDF, subject area)
