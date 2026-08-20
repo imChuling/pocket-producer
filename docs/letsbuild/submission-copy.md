@@ -24,6 +24,8 @@ https://pocketproducer.vercel.app/audiotool
 
 **Source code**
 https://github.com/imChuling/pocket-producer
+(private; judge access granted on request — invite any GitHub handle the
+jury names, or note in the form's comment field that access is available)
 
 **Description (longer field, if the form has one)**
 
@@ -83,6 +85,7 @@ Solo: Chuling Li (chuling.li.cs@gmail.com)
 - [ ] App loads in an incognito window; full loop works on a fresh profile
 - [ ] Demo video public/unlisted and plays without login
 - [ ] README top screen has the video link and quickstart
-- [ ] Repo public (or judge access granted) and free of secrets
+- [ ] Repo stays private; judge access path confirmed on the form
+      (invite handle or comment-field note); repo free of secrets
 - [ ] All four form links tested from the incognito window
 - [ ] Screenshot the submitted form for the archive
