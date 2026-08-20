@@ -22,6 +22,8 @@ COPY tools/ ./tools/
 COPY api/ ./api/
 COPY jobs/ ./jobs/
 COPY skills/ ./skills/
+COPY ranking/ ./ranking/
+COPY artifacts/ ./artifacts/
 COPY start.sh ./
 
 RUN chmod +x start.sh
