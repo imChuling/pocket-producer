@@ -6,7 +6,6 @@ dict-based stub). No external services needed.
 Run: python -m pytest tests/test_api_integration.py -v
 """
 
-import asyncio
 import pathlib
 import sys
 from datetime import UTC, datetime
@@ -48,7 +47,11 @@ class StubCollection:
         return None
 
     def find(self, filter=None, projection=None):
-        results = [self._project(dict(d), projection) for d in self._docs if self._matches(d, filter or {})]
+        results = [
+            self._project(dict(d), projection)
+            for d in self._docs
+            if self._matches(d, filter or {})
+        ]
         return StubCursor(results)
 
     def update_one(self, filter, update):
@@ -212,15 +215,16 @@ class _FakeMongo:
 
 @pytest.fixture()
 def client():
-    import api.deps
     import api.auth
+    import api.deps
 
     original_mongo = api.deps._mongo
     api.deps._mongo = _FakeMongo()
 
     with patch("api.pipeline.get_genai_client", return_value=MagicMock()):
-        from api.main import app
         from fastapi.testclient import TestClient
+
+        from api.main import app
 
         app.dependency_overrides[api.auth.verify_firebase_token] = lambda: FAKE_USER_ID
 
@@ -331,7 +335,7 @@ class TestValidationAndSecurity:
             headers={"Authorization": "Bearer fake"},
         )
         assert resp.status_code == 202
-        frag_id = resp.json()["fragment_id"]
+        assert resp.json()["fragment_id"]
 
         frag = _stub_db["fragments"].find_one({"user_id": FAKE_USER_ID})
         assert frag is not None
@@ -400,7 +404,6 @@ class TestCrossRoute:
         assert resp.json()["status"] == "ok"
 
     def test_fix_stuck_fragments(self, client):
-        from bson import ObjectId
 
         _stub_db["fragments"].insert_one({
             "user_id": FAKE_USER_ID,
@@ -427,7 +430,6 @@ class TestCrossRoute:
         assert statuses["legitimately processing"] == "processing"
 
     def test_reset_projects_clears_associations(self, client):
-        from bson import ObjectId
 
         _stub_db["projects"].insert_one({
             "user_id": FAKE_USER_ID,

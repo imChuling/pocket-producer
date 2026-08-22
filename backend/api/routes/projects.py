@@ -1,10 +1,8 @@
-import asyncio
-import json
 import logging
 from datetime import UTC, datetime
 
 from bson import ObjectId
-from fastapi import APIRouter, Body, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from ..auth import verify_firebase_token

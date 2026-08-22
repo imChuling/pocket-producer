@@ -8,6 +8,6 @@ by a direct Gemini multimodal call for latency optimization. The Catcher agent
 is available for full Agent Engine deployment where latency is less critical.
 """
 
+from ._runner import group_fragment_with_agents  # noqa: F401
 from .memory import memory_agent  # noqa: F401
 from .producer import producer_agent  # noqa: F401
-from ._runner import group_fragment_with_agents  # noqa: F401

@@ -99,9 +99,9 @@ def auth_client():
     original = api.deps._mongo
     api.deps._mongo = _FakeMongo()
     with patch("api.pipeline.get_genai_client", return_value=MagicMock()):
-        import api.auth
         from fastapi.testclient import TestClient
 
+        import api.auth
         from api.main import app
 
         app.dependency_overrides[api.auth.verify_firebase_token] = (

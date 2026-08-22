@@ -9,7 +9,15 @@ from google.cloud import storage
 from pydantic import BaseModel
 
 from ..auth import verify_firebase_token
-from ..deps import acquire_pipeline_slot, debounced_dna_update, get_db, limiter, parse_object_id, release_pipeline_slot, sanitize_creator_text
+from ..deps import (
+    acquire_pipeline_slot,
+    debounced_dna_update,
+    get_db,
+    limiter,
+    parse_object_id,
+    release_pipeline_slot,
+    sanitize_creator_text,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +47,7 @@ async def fragment_status_stream(
                 {"status": 1, "pipeline_step": 1, "project_id": 1, "project_title": 1},
             )
             if not frag:
-                yield f"data: {{}}\n\n"
+                yield "data: {}\n\n"
                 break
             step = frag.get("pipeline_step", "")
             status = frag.get("status", "processing")
@@ -149,6 +157,7 @@ async def update_fragment_notes(
         )
         if frag and frag.get("embedding"):
             import time
+
             from ..pipeline import memory_and_project
             tag_for_project = {
                 "emotions": frag.get("emotions", []),
@@ -467,6 +476,7 @@ async def _reanalyze_fragment_text(user_id: str, fragment_id: str, new_text: str
 
         if not isinstance(embedding, Exception) and embedding:
             import time
+
             from ..pipeline import memory_and_project
             tag_for_project = tag_result if isinstance(tag_result, dict) else None
             await memory_and_project(db, user_id, fragment_id, embedding, tag_for_project, time.monotonic())
@@ -626,7 +636,7 @@ async def reanalyze_fragment(
                     try:
                         await asyncio.wait_for(asyncio.shield(work), timeout=10)
                         break
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         yield _json.dumps({"status": "heartbeat"}) + "\n"
                 await debounced_dna_update()
                 yield _json.dumps({"status": "done", "fragment_id": fragment_id}) + "\n"

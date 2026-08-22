@@ -50,7 +50,15 @@ target-version = "py311"
 select = ["E", "F", "I", "N", "W", "UP"]
 
 [tool.ruff.lint.per-file-ignores]
+# Phase-1 agent/API modules carry long prompt and log strings; wrapping them
+# risks changing prompt content for no functional gain. New code (ranking/,
+# tools/, tests/) stays at the 100-column limit.
 "api/main.py" = ["E501"]
+"api/pipeline.py" = ["E501"]
+"api/routes/fragments.py" = ["E501"]
+"api/routes/projects.py" = ["E501"]
+"api/routes/admin.py" = ["E501"]
+"agents/*" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
