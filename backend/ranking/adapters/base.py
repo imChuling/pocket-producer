@@ -43,15 +43,6 @@ def audio_sha256(waveform: np.ndarray, sample_rate: int) -> str:
     return digest.hexdigest()
 
 
-def pool_windows_mean_l2(windows: np.ndarray) -> np.ndarray:
-    """Deterministic pooling: mean over windows, then L2 normalization."""
-    pooled = np.asarray(windows, dtype=np.float64).mean(axis=0)
-    norm = float(np.linalg.norm(pooled))
-    if not np.isfinite(norm) or norm == 0.0:
-        raise ValueError("cannot L2-normalize a zero or non-finite vector")
-    return pooled / norm
-
-
 def encode_with_lineage(
     adapter: AudioRepresentationAdapter,
     waveform: np.ndarray,
