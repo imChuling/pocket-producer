@@ -1,7 +1,7 @@
 {
   "name": "Pocket Producer",
   "short_name": "Pocket Producer",
-  "description": "AI-powered creative memory for music makers.",
+  "description": "A session-aware retrieval instrument for unfinished music.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
