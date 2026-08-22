@@ -142,41 +142,39 @@ export function AudiotoolImporter({ onImported }: AudiotoolImporterProps) {
         </div>
       </div>
 
-      {isProjectOpen && (
-        <div className="px-4 pb-3">
-          <button
-            type="button"
-            onClick={() => void handleImport()}
-            disabled={importing !== null || alreadyImported}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm transition-all duration-200 disabled:opacity-50"
-            style={{
-              background: alreadyImported
-                ? "rgba(160,181,235,0.1)"
-                : "rgba(160,181,235,0.15)",
-              color: "var(--gravel, #777169)",
-            }}
-          >
-            {importing ? (
-              <>
-                <Loader2 size={14} className="animate-spin" />
-                {importing.total > 0
-                  ? `Importing ${importing.done}/${importing.total}...`
-                  : "Importing..."}
-              </>
-            ) : alreadyImported ? (
-              <>
-                <Check size={14} />
-                Imported
-              </>
-            ) : (
-              <>
-                <FolderOpen size={14} />
-                Import samples to library
-              </>
-            )}
-          </button>
-        </div>
-      )}
+      <div className="px-4 pb-3">
+        <button
+          type="button"
+          onClick={() => void handleImport()}
+          disabled={!isProjectOpen || importing !== null || alreadyImported}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm transition-all duration-200 disabled:opacity-50"
+          style={{
+            background: alreadyImported
+              ? "rgba(160,181,235,0.1)"
+              : "rgba(160,181,235,0.15)",
+            color: "var(--gravel, #777169)",
+          }}
+        >
+          {importing ? (
+            <>
+              <Loader2 size={14} className="animate-spin" />
+              {importing.total > 0
+                ? `Importing ${importing.done}/${importing.total}...`
+                : "Importing..."}
+            </>
+          ) : alreadyImported ? (
+            <>
+              <Check size={14} />
+              Imported
+            </>
+          ) : (
+            <>
+              <FolderOpen size={14} />
+              Import samples to library
+            </>
+          )}
+        </button>
+      </div>
 
       {message && (
         <div className="px-4 pb-3">
