@@ -48,6 +48,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
   const isProcessing = reanalyzing || (fragment.status === "processing" && !isStuckProcessing);
   const isError = fragment.status === "error" || fragment.status === "timeout";
   const isAudio = fragment.type === "audio";
+  const isAudiotool = Boolean(fragment.text && fragment.text.includes("Imported from Audiotool"));
   const displayTitle = fragment.title || "Audio fragment";
 
   // Reset the pipeline indicator when processing stops — adjusted during
@@ -168,9 +169,11 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
       whileHover={{ y: -3, boxShadow: "rgba(0,0,0,0.08) 0px 8px 24px 0px, rgba(160,181,235,0.1) 0px 4px 16px 0px" }}
       whileTap={{ scale: 0.99 }}
       transition={{ type: "spring", stiffness: 300, damping: 22 }}
-      className="group relative backdrop-blur-sm rounded-[24px] p-5 space-y-3 shadow-hairline"
+      className={`group relative backdrop-blur-sm rounded-[24px] p-5 space-y-3 shadow-hairline${isAudiotool ? " border-l-[3px] border-l-[rgba(255,140,60,0.45)]" : ""}`}
       style={{
-        background: isAudio
+        background: isAudiotool
+          ? "linear-gradient(135deg, rgba(255,255,255,0.85), rgba(255,167,115,0.12), rgba(255,130,80,0.06))"
+          : isAudio
           ? "linear-gradient(135deg, rgba(255,255,255,0.85), rgba(160,181,235,0.08), rgba(207,218,245,0.04))"
           : "linear-gradient(135deg, rgba(255,255,255,0.85), rgba(226,193,97,0.07), rgba(255,200,160,0.03))",
         ...(isProcessing ? {
