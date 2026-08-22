@@ -6,6 +6,7 @@ import { useAudiotool } from "@/hooks/use-audiotool";
 import { listImportableSampleNames } from "@/lib/audiotool/import-project";
 import { mixSamplesToWav } from "@/lib/audiotool/mix-samples";
 import { getIdToken } from "@/lib/firebase";
+import { linkAudiotoolInsert } from "@/lib/api";
 
 interface AudiotoolImporterProps {
   onImported: () => void;
@@ -118,6 +119,13 @@ export function AudiotoolImporter({ onImported }: AudiotoolImporterProps) {
         body: formData,
       });
       if (response.ok) {
+        const data = (await response.json()) as { fragment_id: string };
+        // Create a Pocket Producer project mirroring this Audiotool project.
+        await linkAudiotoolInsert({
+          audiotool_project_id: selectedProject,
+          display_name: display,
+          fragment_id: data.fragment_id,
+        }).catch(() => {});
         setImportedProjects((prev) => new Set(prev).add(selectedProject));
         setStatus(`Imported "${display}"`);
         onImported();
