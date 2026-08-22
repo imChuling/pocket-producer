@@ -13,12 +13,10 @@ import uuid
 from ranking.audio_cosine import InsufficientContextError
 from ranking.role_probe import RoleProbe
 from ranking.schemas import (
-    FragmentCandidate,
     RankedCandidate,
     RankEvidence,
     RankRequest,
     RankResponse,
-    SessionFingerprint,
 )
 
 

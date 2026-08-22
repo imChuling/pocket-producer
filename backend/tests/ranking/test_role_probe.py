@@ -1,7 +1,6 @@
 """Tests for zero-shot instrument-role classification probe."""
 
 import numpy as np
-import pytest
 
 from ranking.role_probe import CONFIDENCE_THRESHOLD, ROLE_VOCAB, RoleProbe
 
@@ -18,7 +17,8 @@ def _make_probe(n_dims: int = 8) -> RoleProbe:
 
 def _aligned_embedding(probe: RoleProbe, role_idx: int) -> np.ndarray:
     """Embedding aligned with a specific role's prompt direction."""
-    return probe._prompts[role_idx] + np.random.default_rng(99).normal(0, 0.01, probe._prompts.shape[1])
+    noise = np.random.default_rng(99).normal(0, 0.01, probe._prompts.shape[1])
+    return probe._prompts[role_idx] + noise
 
 
 class TestRoleProbe:

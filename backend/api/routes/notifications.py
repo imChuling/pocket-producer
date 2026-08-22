@@ -51,7 +51,9 @@ async def mark_notification_read(
 
 @router.post("/read-all")
 @limiter.limit("10/minute")
-async def mark_all_notifications_read(request: Request, user_id: str = Depends(verify_firebase_token)):
+async def mark_all_notifications_read(
+    request: Request, user_id: str = Depends(verify_firebase_token)
+):
     db = get_db()
     db["notifications"].update_many(
         {"user_id": user_id, "read": False}, {"$set": {"read": True}}

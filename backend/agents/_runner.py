@@ -14,7 +14,6 @@ import logging
 from typing import Any
 
 from bson import ObjectId
-
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
@@ -173,7 +172,7 @@ async def group_fragment_with_agents(
 
         try:
             final_text, event_count = await asyncio.wait_for(_run(), timeout=150)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning("Agent pipeline timed out (150s) for fragment %s", fragment_id)
             return None
 

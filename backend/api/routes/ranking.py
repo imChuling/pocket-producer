@@ -47,7 +47,7 @@ async def rank(
             loop.run_in_executor(None, _service.rank, rank_request),
             timeout=RANK_TIMEOUT_SECONDS,
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.warning(
             "ranking timeout after %.1fs: requested=%s, falling back to rules",
             RANK_TIMEOUT_SECONDS,

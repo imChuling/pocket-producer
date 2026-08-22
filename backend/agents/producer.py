@@ -20,7 +20,6 @@ from bson import ObjectId
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
 from google.adk.tools.agent_tool import AgentTool
-
 from google.genai import types as genai_types
 
 from tools.rescue_score import compute_rescue_score

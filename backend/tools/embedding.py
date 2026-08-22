@@ -25,10 +25,13 @@ def _embed_sync(text: str, input_type: str) -> list[float]:
         except Exception as e:
             err = str(e)
             rate_limited = "rate" in err.lower() or "429" in err
-            transient = any(code in err for code in ("500", "502", "503", "504", "timeout", "Timeout"))
+            transient = any(
+                code in err for code in ("500", "502", "503", "504", "timeout", "Timeout")
+            )
             if attempt < 2 and (rate_limited or transient):
                 delay = (20 if rate_limited else 5) * (attempt + 1)
-                logger.warning("Voyage %s, waiting %ds... (%s)", "rate limited" if rate_limited else "transient error", delay, e)
+                kind = "rate limited" if rate_limited else "transient error"
+                logger.warning("Voyage %s, waiting %ds... (%s)", kind, delay, e)
                 time.sleep(delay)
             else:
                 raise

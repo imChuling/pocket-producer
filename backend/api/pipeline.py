@@ -380,7 +380,7 @@ ONLY output the JSON object. No markdown wrapping, no explanation outside the JS
                     logger.info("Gemini structured result: %s", json.dumps(parsed, ensure_ascii=False)[:500])
                     break
                 logger.warning("Attempt %d: failed to parse tagging response (len=%d): %.500s", attempt + 1, len(result_text), repr(result_text[:500]))
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning("Attempt %d: Gemini tagging timed out after %ds (model=%s)", attempt + 1, timeout, model)
                 last_error = "timeout"
             except Exception as e:
@@ -413,7 +413,6 @@ def _build_fallback_tags(features: dict, text: str | None = None) -> dict:
     if not tags:
         tags.append("audio sketch")
 
-    energy = features.get("energy_curve", [])
     brightness = features.get("brightness")
     mode = features.get("estimated_mode", "")
 
@@ -494,7 +493,7 @@ async def process_fragment_background(
             try:
                 features = await asyncio.wait_for(asyncio.shield(features_task), timeout=25)
                 logger.info("Audio features ready before tagging (%.1fs)", time.monotonic() - t0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.info("Audio features not ready after 25s — tagging without them")
             except Exception as e:
                 logger.warning("Audio features extraction failed: %s", e)
@@ -676,12 +675,16 @@ async def _memory_and_project_locked(
     from agents import group_fragment_with_agents
     from agents.producer import (
         _current_db as producer_db_var,
+    )
+    from agents.producer import (
         _current_user_id as producer_user_var,
-        create_project_from_fragments,
+    )
+    from agents.producer import (
         attach_fragment_to_project,
-        refresh_project_score,
-        generate_project_title,
+        create_project_from_fragments,
         generate_next_action,
+        generate_project_title,
+        refresh_project_score,
     )
 
     existing = await asyncio.to_thread(
@@ -863,7 +866,11 @@ async def _memory_and_project_locked(
 async def _generate_next_action(db, user_id: str, project_id: str) -> dict | None:
     from agents.producer import (
         _current_db as producer_db_var,
+    )
+    from agents.producer import (
         _current_user_id as producer_user_var,
+    )
+    from agents.producer import (
         generate_next_action,
     )
 
