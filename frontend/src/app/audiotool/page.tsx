@@ -17,6 +17,7 @@ import {
   undoInsert,
   type InsertReceipt,
 } from "@/lib/audiotool/insert-fragment";
+import { importProjectAsFragments } from "@/lib/audiotool/import-project";
 import { extractSessionAudio } from "@/lib/audiotool/session-audio";
 import { fingerprintFromDocument } from "@/lib/audiotool/session-fingerprint";
 import { linkAudiotoolInsert, unlinkAudiotoolInsert } from "@/lib/api";
@@ -42,6 +43,12 @@ export default function AudiotoolPage() {
     title: string;
   } | null>(null);
   const [undoing, setUndoing] = useState(false);
+  const [importing, setImporting] = useState<{ done: number; total: number } | null>(null);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
+  // Projects already imported this session, so the button can't double-ingest.
+  const [importedProjects, setImportedProjects] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [availableModels, setAvailableModels] = useState<string[]>();
   // Tag sets of fragments inserted this session, in insert order.
   // Kept as a list (not a flat set) so undoing an insert also retracts
@@ -212,6 +219,43 @@ export default function AudiotoolPage() {
     }
   }, [audiotool, lastInsert, undoing]);
 
+  const handleImportProject = useCallback(async () => {
+    const doc = audiotool.document();
+    const samples = audiotool.samples();
+    const projectName = audiotool.openProjectName;
+    if (!doc || !samples || !projectName || importing) return;
+    const display =
+      audiotool.projects.find((p) => p.name === projectName)?.displayName ??
+      projectName;
+    setImporting({ done: 0, total: 0 });
+    setImportMessage(null);
+    try {
+      const result = await importProjectAsFragments(doc, samples, {
+        projectDisplayName: display,
+        getAuthToken: async () => {
+          const token = await getIdToken();
+          if (!token) throw new Error("Not signed in");
+          return token;
+        },
+        onProgress: (done, total) => setImporting({ done, total }),
+      });
+      if (result.totalSamples === 0) {
+        setImportMessage("No importable samples found in this project.");
+      } else {
+        setImportedProjects((previous) => new Set(previous).add(projectName));
+        setImportMessage(
+          `Imported ${result.imported} of ${result.totalSamples} samples` +
+            (result.failed > 0 ? ` (${result.failed} failed)` : "") +
+            " into your library.",
+        );
+      }
+    } catch {
+      setImportMessage("Import failed — please try again.");
+    } finally {
+      setImporting(null);
+    }
+  }, [audiotool, importing]);
+
   if (authLoading || !user) {
     return (
       <main className="flex min-h-[60vh] items-center justify-center">
@@ -290,14 +334,45 @@ export default function AudiotoolPage() {
             <h1 className="text-lg font-medium text-obsidian">
               Continue this session
             </h1>
-            <button
-              type="button"
-              onClick={() => void audiotool.closeProject()}
-              className="inline-flex items-center gap-1.5 text-sm text-slate hover:text-gravel"
-            >
-              <Unplug className="h-4 w-4" /> Close project
-            </button>
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                disabled={
+                  importing !== null ||
+                  (audiotool.openProjectName !== null &&
+                    importedProjects.has(audiotool.openProjectName))
+                }
+                onClick={() => void handleImportProject()}
+                className="inline-flex items-center gap-1.5 text-sm text-slate hover:text-gravel disabled:opacity-50"
+              >
+                {importing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {importing.total > 0
+                      ? `Importing ${importing.done}/${importing.total}…`
+                      : "Importing…"}
+                  </>
+                ) : audiotool.openProjectName !== null &&
+                  importedProjects.has(audiotool.openProjectName) ? (
+                  "Samples imported ✓"
+                ) : (
+                  "Import samples to library"
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => void audiotool.closeProject()}
+                className="inline-flex items-center gap-1.5 text-sm text-slate hover:text-gravel"
+              >
+                <Unplug className="h-4 w-4" /> Close project
+              </button>
+            </div>
           </header>
+          {importMessage && (
+            <p className="rounded-xl border border-chalk bg-powder px-4 py-2.5 text-sm text-gravel">
+              {importMessage}
+            </p>
+          )}
           {lastInsert && (
             <div className="flex items-center justify-between rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
               <span>

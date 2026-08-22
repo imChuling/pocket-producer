@@ -27,6 +27,8 @@ paper.
    "adds a role this session doesn't have yet")
 4. **Inserts** the chosen fragment at the playhead in one Nexus transaction
 5. **Undoes** cleanly: restores the exact prior entity set
+6. **Imports** an existing Audiotool project's samples into your library in
+   one click, so your own back catalog becomes searchable creative memory
 
 Every recommendation is inspectable and reversible. The default ranker is a
 hand-tuned rules baseline; a learned five-signal fusion is user-selectable
