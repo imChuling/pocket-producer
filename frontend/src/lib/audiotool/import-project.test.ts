@@ -107,6 +107,11 @@ describe("importProjectAsFragments", () => {
     expect(url).toBe("/api/ingest");
     expect(init.headers.Authorization).toBe("Bearer tok");
     expect(init.body.get("text")).toContain('Audiotool project "Night Sketch"');
+    // The ingest endpoint 415s on non-audio content types, so an untyped
+    // Nexus blob must be re-wrapped as audio/wav before upload.
+    const uploaded = init.body.get("file") as File;
+    expect(uploaded.type).toBe("audio/wav");
+    expect(uploaded.name).toBe("samples_uuid-1.wav");
     expect(progress).toEqual([
       [1, 2],
       [2, 2],

@@ -90,8 +90,12 @@ export async function importProjectAsFragments(
         continue;
       }
       const shortName = name.replace(/\//g, "_");
+      // Nexus may return the blob without a MIME type; the ingest endpoint
+      // rejects non-audio content types, so pin it to audio/wav explicitly.
+      const wavBlob =
+        blob.type === "audio/wav" ? blob : new Blob([blob], { type: "audio/wav" });
       const formData = new FormData();
-      formData.append("file", blob, `${shortName}.wav`);
+      formData.append("file", wavBlob, `${shortName}.wav`);
       formData.append(
         "text",
         `Imported from Audiotool project "${options.projectDisplayName}" ` +
