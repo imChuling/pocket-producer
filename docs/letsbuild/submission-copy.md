@@ -1,6 +1,9 @@
 # Let's Build 2026 Submission Copy
 
-Portal: developer.audiotool.com (login required). Deadline 23 Aug 2026, 6pm EST.
+Portal: per Discord staff guidance (2026-08-20), submission is via a Google Form
+posted in the Let's Build Discord -- find the form link in the Discord submission
+thread before submitting (the FAQ's mention of a developer-hub portal appears
+outdated). Deadline 23 Aug 2026, 6pm EST.
 Four required materials: working app URL, demo video (2-5 min), README, source link.
 
 ## Form fields (paste-ready)
@@ -57,11 +60,14 @@ submitted to ISMIR 2026 as a Late-Breaking/Demo paper.
 Technical highlights:
 - Real Nexus read AND write: session fingerprinting, sample upload, insert
   at playhead in one transaction, exact undo via an insert receipt
+- Your Audiotool history becomes searchable memory: one click imports an
+  existing project's samples into the fragment library through the same
+  Nexus download API, so old work can be recommended into new sessions
 - OAuth tokens never leave the browser; the backend sees only the session
   fingerprint and candidate metadata
 - Graceful degradation: if the model service is down, the rules ranker
   answers; the closed loop never depends on a remote model
-- 316 automated tests across frontend (Vitest) and backend (pytest),
+- 322 automated tests across frontend (Vitest) and backend (pytest),
   including offline Nexus fixtures so CI needs no live account
 - Reproducible research pipeline: versioned artifacts, a frozen split, and
   a 151-assertion consistency check tying every public number to its JSON
