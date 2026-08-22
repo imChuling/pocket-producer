@@ -86,7 +86,7 @@ export type FeedbackPayload = {
   model_id: string;
 };
 
-export async function sendFeedback(payload: FeedbackPayload): Promise<void> {
+async function sendFeedback(payload: FeedbackPayload): Promise<void> {
   await apiPost("/ranking/feedback", payload);
 }
 

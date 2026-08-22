@@ -61,7 +61,7 @@ Technical highlights:
   fingerprint and candidate metadata
 - Graceful degradation: if the model service is down, the rules ranker
   answers; the closed loop never depends on a remote model
-- 327 automated tests across frontend (Vitest) and backend (pytest),
+- 316 automated tests across frontend (Vitest) and backend (pytest),
   including offline Nexus fixtures so CI needs no live account
 - Reproducible research pipeline: versioned artifacts, a frozen split, and
   a 151-assertion consistency check tying every public number to its JSON

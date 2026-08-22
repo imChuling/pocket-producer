@@ -6,7 +6,6 @@ import pytest
 from ranking.adapters.base import (
     EmbeddingCache,
     encode_with_lineage,
-    pool_windows_mean_l2,
 )
 from ranking.adapters.fake import FakeAdapter
 
@@ -74,18 +73,3 @@ class TestEmbeddingCache:
         assert b.encode_calls == 1
 
 
-class TestPooling:
-    def test_pooled_vector_is_l2_normalized(self):
-        windows = np.stack([np.ones(4), np.zeros(4) + 3.0])
-        pooled = pool_windows_mean_l2(windows)
-        assert pytest.approx(float(np.linalg.norm(pooled)), abs=1e-6) == 1.0
-
-    def test_window_order_does_not_matter(self):
-        w1 = np.random.default_rng(0).normal(size=(3, 4))
-        pooled_a = pool_windows_mean_l2(w1)
-        pooled_b = pool_windows_mean_l2(w1[::-1])
-        np.testing.assert_allclose(pooled_a, pooled_b, atol=1e-12)
-
-    def test_zero_vector_rejected(self):
-        with pytest.raises(ValueError):
-            pool_windows_mean_l2(np.zeros((2, 4)))
