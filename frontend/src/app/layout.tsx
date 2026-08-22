@@ -26,8 +26,25 @@ const ibmPlexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: "Pocket Producer",
-  description: "AI-powered creative memory for music makers",
+  description:
+    "A session-aware retrieval instrument for unfinished music. It reads your open Audiotool project, ranks your own fragments by session compatibility, and lets you preview, insert, and undo.",
   manifest: "/manifest.webmanifest",
+  openGraph: {
+    title: "Pocket Producer",
+    description:
+      "A session-aware retrieval instrument for unfinished music.",
+    url: "https://pocketproducer.vercel.app",
+    siteName: "Pocket Producer",
+    images: [{ url: "/og.png", width: 1200, height: 549 }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Pocket Producer",
+    description:
+      "A session-aware retrieval instrument for unfinished music.",
+    images: ["/og.png"],
+  },
   appleWebApp: {
     capable: true,
     title: "Pocket Producer",
