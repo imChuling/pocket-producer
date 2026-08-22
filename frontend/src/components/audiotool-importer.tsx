@@ -151,17 +151,11 @@ export function AudiotoolImporter({ onImported }: AudiotoolImporterProps) {
         <button
           type="button"
           onClick={handleConnect}
-          className="flex w-full items-center justify-center gap-2.5 py-5 px-4 rounded-[20px] border border-dashed cursor-pointer transition-all duration-300"
-          style={{
-            background: "rgba(255,167,115,0.06)",
-            borderColor: "rgba(255,167,115,0.3)",
-          }}
+          className="flex w-full items-center justify-center gap-2.5 py-5 px-4 rounded-[20px] border border-dashed border-chalk hover:border-slate/50 cursor-pointer transition-all duration-300"
+          style={{ background: "rgba(255,255,255,0.3)" }}
         >
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(255,167,115,0.15)" }}
-          >
-            <Cable size={14} style={{ color: "#cc7a4a" }} />
+          <div className="w-8 h-8 rounded-full bg-powder flex items-center justify-center">
+            <Cable size={14} className="text-slate" />
           </div>
           <span className="text-sm text-gravel">Import from Audiotool</span>
         </button>
@@ -179,18 +173,12 @@ export function AudiotoolImporter({ onImported }: AudiotoolImporterProps) {
 
   return (
     <div
-      className="rounded-[20px] border overflow-hidden transition-all duration-300"
-      style={{
-        background: "rgba(255,167,115,0.06)",
-        borderColor: "rgba(255,167,115,0.25)",
-      }}
+      className="rounded-[20px] border border-chalk overflow-hidden transition-all duration-300"
+      style={{ background: "rgba(255,255,255,0.5)" }}
     >
       <div className="px-4 py-3 flex items-center gap-2.5">
-        <div
-          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-          style={{ background: "rgba(255,167,115,0.15)" }}
-        >
-          <Cable size={14} style={{ color: "#cc7a4a" }} />
+        <div className="w-8 h-8 rounded-full bg-powder flex items-center justify-center flex-shrink-0">
+          <Cable size={14} className="text-slate" />
         </div>
         <div className="flex-1 min-w-0 relative">
           <select
@@ -225,9 +213,9 @@ export function AudiotoolImporter({ onImported }: AudiotoolImporterProps) {
           className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm transition-all duration-200 disabled:opacity-50"
           style={{
             background: alreadyImported
-              ? "rgba(255,167,115,0.1)"
-              : "rgba(255,167,115,0.18)",
-            color: "#8a5a3a",
+              ? "rgba(160,181,235,0.1)"
+              : "rgba(160,181,235,0.15)",
+            color: "var(--gravel, #777169)",
           }}
         >
           {importing ? (
