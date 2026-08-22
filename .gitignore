@@ -20,3 +20,4 @@ artifacts/editable_figure1/node_modules
 .pytest_cache/
 .ruff_cache/
 ~$*.pptx
+*\[Auto-saved\]*.pptx
