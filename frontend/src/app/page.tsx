@@ -9,6 +9,7 @@ import { apiPost } from "@/lib/api";
 import { signInWithGoogle } from "@/lib/firebase";
 import { AudioRecorder } from "@/components/audio-recorder";
 import { FileDropzone } from "@/components/file-dropzone";
+import { AudiotoolImporter } from "@/components/audiotool-importer";
 import { FragmentCard } from "@/components/fragment-card";
 import { MatchModeSelector } from "@/components/match-mode-selector";
 
@@ -893,6 +894,7 @@ function CaptureDashboard() {
                 </button>
               </div>
               <FileDropzone onFile={handleFile} />
+              <AudiotoolImporter onImported={refresh} />
             </div>
           </div>
           <div className="flex-1 min-w-0">
@@ -945,14 +947,14 @@ function CaptureDashboard() {
                   style={{ background: "linear-gradient(135deg, rgba(160,181,235,0.4), rgba(226,193,97,0.2))" }}
                 />
                 <div className="space-y-2 text-center">
-                  <p className="text-sm text-gravel">Record, type, or upload your first musical idea</p>
+                  <p className="text-sm text-gravel">Record, type, upload, or import your first musical idea</p>
                   <p className="text-xs text-slate max-w-[300px] mx-auto leading-relaxed">
                     Each idea becomes a fragment — AI analyzes its emotion, key, tempo, and themes, then groups related fragments into projects automatically.
                   </p>
                 </div>
                 <div className="flex flex-col gap-3 w-full max-w-[280px]">
                   {[
-                    { step: "1", label: "Capture", detail: "Record, type, or drop an audio file" },
+                    { step: "1", label: "Capture", detail: "Record, type, drop audio, or import from Audiotool" },
                     { step: "2", label: "Analyze", detail: "AI profiles your idea (audio ~30–60s)" },
                     { step: "3", label: "Connect", detail: "Related fragments form projects" },
                   ].map((s) => (
