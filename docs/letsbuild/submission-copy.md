@@ -62,8 +62,7 @@ Dataset against six baseline families with a frozen held-out split, and
 found the learned fusion's advantage depends on how the weak-supervision
 labels are constructed. So the product tells the truth about that: the
 model proposes under uncertainty, the musician stays in charge, and every
-recommendation is inspectable and reversible. The same evaluation is
-submitted to ISMIR 2026 as a Late-Breaking/Demo paper.
+recommendation is inspectable and reversible.
 
 First run tip for judges: a fresh account starts with an empty library.
 Connect Audiotool and click "Import samples to library" on any of your
