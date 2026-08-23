@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Loader2, Play, Pause, Pencil } from "lucide-react";
 import { getIdToken } from "@/lib/firebase";
 
@@ -39,9 +39,32 @@ export function AudioPlayer({
   const [duration, setDuration] = useState(0);
   const [dragging, setDragging] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
   const playingRef = useRef(false);
   const progressBarRef = useRef<HTMLDivElement | null>(null);
   const draggingRef = useRef(false);
+  // Track drag listeners so unmount mid-drag doesn't leave them behind.
+  const dragCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      dragCleanupRef.current?.();
+      const audio = audioRef.current;
+      if (audio) {
+        audio.pause();
+        audio.ontimeupdate = null;
+        audio.ondurationchange = null;
+        audio.onloadedmetadata = null;
+        audio.onended = null;
+        audio.onerror = null;
+        audioRef.current = null;
+      }
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
+    };
+  }, []);
 
   function ratioFromX(clientX: number): number {
     const bar = progressBarRef.current;
@@ -73,11 +96,16 @@ export function AudioPlayer({
           ? audio.duration : duration;
         if (d > 0) audio.currentTime = lastRatio * d;
       }
+      removeListeners();
+    };
+    const removeListeners = () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
+      dragCleanupRef.current = null;
     };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
+    dragCleanupRef.current = removeListeners;
   }
 
   function formatTime(sec: number): string {
@@ -110,6 +138,7 @@ export function AudioPlayer({
       if (!res.ok) throw new Error("Failed to load audio");
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
+      objectUrlRef.current = url;
 
       const audio = new Audio(url);
       let realDuration = 0;
@@ -162,6 +191,11 @@ export function AudioPlayer({
       audio.onerror = () => {
         playingRef.current = false;
         setPlaying(false);
+        if (objectUrlRef.current) {
+          URL.revokeObjectURL(objectUrlRef.current);
+          objectUrlRef.current = null;
+        }
+        audioRef.current = null;
       };
       audioRef.current = audio;
       await audio.play();

@@ -21,3 +21,4 @@ artifacts/editable_figure1/node_modules
 .ruff_cache/
 ~$*.pptx
 *\[Auto-saved\]*.pptx
+.vercel

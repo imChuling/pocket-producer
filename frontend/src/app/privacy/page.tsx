@@ -79,7 +79,7 @@ export default function PrivacyPage() {
             <h2 className="font-heading text-base font-medium text-obsidian mb-2">Your Rights</h2>
             <ul className="list-disc pl-5 space-y-1">
               <li><strong>Delete individual fragments</strong> &mdash; available from any fragment card</li>
-              <li><strong>Delete your entire account</strong> &mdash; available in Settings; this permanently
+              <li><strong>Delete your entire account</strong> &mdash; contact us to request deletion; this permanently
                 removes all your fragments, projects, DNA data, notification history, settings, and
                 audio files from our systems</li>
               <li><strong>Data portability</strong> &mdash; contact us to request an export of your data</li>

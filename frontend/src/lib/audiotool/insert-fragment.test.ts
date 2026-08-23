@@ -91,7 +91,7 @@ describe("insertFragment", () => {
     const doc = await offlineDocument();
     const upload = vi.fn(async () => fakeUpload());
     const receipt = await insertFragment(
-      { samples: { upload }, document: doc },
+      { samples: { upload }, document: doc as unknown as InsertDeps["document"] },
       FRAGMENT,
       { audioBlob: new Blob(["x"]), playheadSeconds: 2, projectBpm: 120 },
     );
@@ -111,12 +111,12 @@ describe("insertFragment", () => {
     const idsBefore = new Set(doc.queryEntities.get().map((e) => e.id));
     const upload = vi.fn(async () => fakeUpload());
     const receipt = await insertFragment(
-      { samples: { upload }, document: doc },
+      { samples: { upload }, document: doc as unknown as InsertDeps["document"] },
       FRAGMENT,
       { audioBlob: new Blob(["x"]), playheadSeconds: 0, projectBpm: 120 },
     );
     expect(doc.queryEntities.get().length).toBeGreaterThan(idsBefore.size);
-    await undoInsert(doc, receipt);
+    await undoInsert(doc as unknown as InsertDeps["document"], receipt);
     const idsAfter = new Set(doc.queryEntities.get().map((e) => e.id));
     expect(idsAfter).toEqual(idsBefore);
   }, 30000);
@@ -125,12 +125,12 @@ describe("insertFragment", () => {
     const doc = await offlineDocument();
     const upload = vi.fn(async () => fakeUpload());
     const receipt = await insertFragment(
-      { samples: { upload }, document: doc },
+      { samples: { upload }, document: doc as unknown as InsertDeps["document"] },
       FRAGMENT,
       { audioBlob: new Blob(["x"]), playheadSeconds: 0, projectBpm: 120 },
     );
-    await undoInsert(doc, receipt);
-    await expect(undoInsert(doc, receipt)).resolves.toBeUndefined();
+    await undoInsert(doc as unknown as InsertDeps["document"], receipt);
+    await expect(undoInsert(doc as unknown as InsertDeps["document"], receipt)).resolves.toBeUndefined();
   }, 30000);
 
   it("surfaces transaction failures without a receipt", async () => {
