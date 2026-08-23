@@ -78,11 +78,11 @@ for the first sentence, then slide 9 (architecture) for the rest
 **01:48-02:10 — Rank with evidence** · live app, click Suggest 3
 - Hover the evidence chips on each card; point at "Served by rules-v1"
 > "It ranks my own fragments by whether they could belong to this piece.
-> Every suggestion carries its evidence — tempo proximity, the role it
-> fills, tag overlap — drawn from the ranker's actual features, never
-> generated prose. The badge tells me which model served: the default is
-> a rules baseline, and a learned fusion is selectable. I'll come back
-> to why that's a choice."
+> Every suggestion carries its evidence — tempo proximity, what it
+> brings to the session, how recently it was captured — drawn from the
+> ranker's actual features, never generated prose. The badge tells me
+> which model served: the default is a rules baseline, and a learned
+> fusion is selectable. I'll come back to why that's a choice."
 
 **02:10-02:35 — Preview, insert — the money shot** · live, both windows
 - Preview a candidate (audio audible), click Insert, then IMMEDIATELY
@@ -103,9 +103,9 @@ for the first sentence, then slide 9 (architecture) for the rest
 ## Act 3 — Why you can trust it (2:50-3:20)
 
 **02:50-03:00 — Honest uncertainty (brief)** · deck slide 19 only, one beat
-> "Under the hood this is a measured system — six baselines, a frozen
-> evaluation, submitted to ISMIR. But the principle is simple: the
-> model proposes, the musician decides."
+> "We did our own research behind this, testing the ranker against six
+> baselines. And the takeaway is simple: the model proposes, the
+> musician decides."
 
 **03:00-03:20 — Close** · deck slide 22, then back to the session
 > "Pocket Producer is creative memory, not autopilot. It helps you
@@ -163,11 +163,11 @@ available" instead of guessing. And I can add intent in my own words:
 dark bass to sit under these drums.
 
 It ranks my own fragments by whether they could belong to this piece.
-Every suggestion carries its evidence — tempo proximity, the role it
-fills, tag overlap — drawn from the ranker's actual features, never
-generated prose. The badge tells me which model served: the default is a
-rules baseline, and a learned fusion is selectable. I'll come back to
-why that's a choice.
+Every suggestion carries its evidence — tempo proximity, what it brings
+to the session, how recently it was captured — drawn from the ranker's
+actual features, never generated prose. The badge tells me which model
+served: the default is a rules baseline, and a learned fusion is
+selectable. I'll come back to why that's a choice.
 
 Preview, then insert. One Nexus transaction: upload the sample, wait for
 the server to confirm, place it at the playhead. And there it is — in
@@ -178,9 +178,9 @@ exact reversal, not "delete last thing". And it works both ways: one
 click imports this project's samples into my library, so my Audiotool
 back catalog becomes searchable creative memory too.
 
-Under the hood this is a measured system — six baselines, a frozen
-evaluation, submitted to ISMIR. But the principle is simple: the model
-proposes, the musician decides.
+We did our own research behind this, testing the ranker against six
+baselines. And the takeaway is simple: the model proposes, the musician
+decides.
 
 Pocket Producer is creative memory, not autopilot. It helps you re-enter
 unfinished music with your own material — and every action it takes, you
