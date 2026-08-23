@@ -1,6 +1,6 @@
 # Let's Build 2026 Demo Script
 
-Target length: ~3:30 (official allowance 2-5 min). One continuous story in
+Target length: ~3:20 (official allowance 2-5 min). One continuous story in
 three acts: what the library is (four surfaces), how it meets Audiotool
 (the integration), why you can trust it (honest uncertainty). Record raw
 one-take evidence footage first, then cut the polished version from it.
@@ -100,17 +100,14 @@ for the first sentence, then slide 9 (architecture) for the rest
 > click imports this project's samples into my library, so my Audiotool
 > back catalog becomes searchable creative memory too."
 
-## Act 3 — Why you can trust it (2:50-3:30)
+## Act 3 — Why you can trust it (2:50-3:20)
 
-**02:50-03:10 — Honest uncertainty** · deck slides 19-20
-> "Under the hood this is a measured system: six baselines, a frozen
-> held-out split, submitted to ISMIR as a Late-Breaking/Demo paper. Our
-> own evaluation shows the learned ranker's advantage is sensitive to
-> how you configure it — nearly eight points on the hardest examples.
-> That's exactly why the fusion is opt-in instead of silently in charge:
-> the model proposes, the musician decides."
+**02:50-03:00 — Honest uncertainty (brief)** · deck slide 19 only, one beat
+> "Under the hood this is a measured system — six baselines, a frozen
+> evaluation, submitted to ISMIR. But the principle is simple: the
+> model proposes, the musician decides."
 
-**03:10-03:30 — Close** · deck slide 22, then back to the session
+**03:00-03:20 — Close** · deck slide 22, then back to the session
 > "Pocket Producer is creative memory, not autopilot. It helps you
 > re-enter unfinished music with your own material — and every action it
 > takes, you can see why, and you can reverse it. Try it at
@@ -181,12 +178,9 @@ exact reversal, not "delete last thing". And it works both ways: one
 click imports this project's samples into my library, so my Audiotool
 back catalog becomes searchable creative memory too.
 
-Under the hood this is a measured system: six baselines, a frozen
-held-out split, submitted to ISMIR as a Late-Breaking/Demo paper. Our
-own evaluation shows the learned ranker's advantage is sensitive to how
-you configure it — nearly eight points on the hardest examples. That's
-exactly why the fusion is opt-in instead of silently in charge: the
-model proposes, the musician decides.
+Under the hood this is a measured system — six baselines, a frozen
+evaluation, submitted to ISMIR. But the principle is simple: the model
+proposes, the musician decides.
 
 Pocket Producer is creative memory, not autopilot. It helps you re-enter
 unfinished music with your own material — and every action it takes, you
