@@ -57,9 +57,21 @@ model proposes under uncertainty, the musician stays in charge, and every
 recommendation is inspectable and reversible. The same evaluation is
 submitted to ISMIR 2026 as a Late-Breaking/Demo paper.
 
+First run tip for judges: a fresh account starts with an empty library.
+Connect Audiotool and click "Import samples to library" on any of your
+projects — your own samples become an analyzed, rankable fragment
+library in under a minute, and the full suggest → preview → insert →
+undo loop is live from there.
+
 Technical highlights:
 - Real Nexus read AND write: session fingerprinting, sample upload, insert
   at playhead in one transaction, exact undo via an insert receipt
+- We found and patched a Nexus SDK 0.0.17 bug during development:
+  insertSample crashes in any minified production build, because an
+  internal check compares protobuf classes by constructor name and
+  minification collapses all class names. Our one-line fix (compare
+  typeName instead) ships as a pnpm patch in the repo, with the full
+  root-cause analysis — happy to upstream it as an issue/PR
 - Your Audiotool history becomes searchable memory: one click imports an
   existing project's samples into the fragment library through the same
   Nexus download API, so old work can be recommended into new sessions

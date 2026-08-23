@@ -208,6 +208,19 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) and
 
 ---
 
+## First run
+
+A fresh account starts with an empty fragment library. The fastest way to
+populate it is Audiotool itself: open
+[pocketproducer.vercel.app/audiotool](https://pocketproducer.vercel.app/audiotool),
+connect your Audiotool account, open any of your projects, and click
+**Import samples to library**. Your own samples are downloaded, analyzed,
+and become rankable fragments in under a minute — the full
+suggest → preview → insert → undo loop is live from there. (Recording or
+uploading audio on the Capture page works too.)
+
+---
+
 ## Run it locally
 
 ```bash
