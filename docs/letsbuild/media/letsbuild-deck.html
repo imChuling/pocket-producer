@@ -549,6 +549,35 @@ body.notes-on .slide-nav { bottom:calc(34vh + 12px); }
   </div>
 </div>
 
+<!-- ═══════════ SLIDE 3f: TOUR - AUDIOTOOL ═══════════ -->
+<div class="slide slide-split">
+  <div class="left">
+    <div class="label au d0">Tour &middot; Audiotool</div>
+    <h2 class="heading au d1" style="font-size:clamp(22px,3vw,32px);line-height:1.2;margin-top:8px">
+      The fourth surface is a workflow
+    </h2>
+    <p class="au d2" style="font-size:13px;color:var(--gravel);line-height:1.6;margin-top:12px">
+      Connect once, open the project you're stuck on. The page reads the session, ranks your library against it, and writes the result back: suggest, preview, insert, undo, and import &mdash; without leaving the flow.
+    </p>
+    <p class="au d3" style="font-size:13px;color:var(--gravel);line-height:1.6;margin-top:8px">
+      This one deserves its own act. Here's how it works, step by step.
+    </p>
+  </div>
+  <div class="right au d4">
+    <div class="fp-panel">
+      <div class="fp-title">Continue this session</div>
+      <div style="font-size:11px;color:var(--slate);margin-bottom:4px">Tempo 120 BPM &middot; 3 tracks &middot; playhead 0.0s</div>
+      <div style="height:5px;border-radius:3px;background:linear-gradient(90deg,#a0b5eb,#8fa3d0);width:88%"></div>
+      <div style="font-size:11px;color:var(--slate);margin:8px 0 4px">Night Rain Bass &middot; role gap fill &middot; 120 BPM</div>
+      <div style="height:5px;border-radius:3px;background:linear-gradient(90deg,#ffa773,#d4a06a);width:64%"></div>
+      <div class="fp-intent">
+        <div class="fp-intent-label">One click each</div>
+        <div class="fp-intent-input">&#9654; Preview &middot; + Insert at playhead &middot; Undo</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════ SLIDE 3: AUDIOTOOL WORKFLOW ARCHITECTURE ═══════════ -->
 <div class="slide slide-center">
   <div class="label au d0">Architecture</div>
@@ -1109,6 +1138,8 @@ const NOTES = [
   "DNA turns the same library inward. Emotion radar, style bubbles, theme distribution, an hourly heatmap of when your ideas actually happen, and a network view of how fragments connect. It's a creative profile computed from what you actually made -- not what you claim you make.",
   // 3e Demo: library tour
   "Here's the library in motion. I type an idea, the pipeline tags it live in about fifteen seconds, it lands in a project with a reason attached, and the DNA view updates. That's the memory half. Now the instrument half: Audiotool.",
+  // 3f Tour: Audiotool
+  "And the fourth surface is the reason this app exists: a two-way workflow with the Audiotool project you have open. It reads the session, ranks your library against it, and writes the result back -- reversibly. This one deserves its own act.",
   // 3 Architecture
   "Here's the whole loop with Audiotool. Pocket Producer connects over OAuth and reads your open project as a live Nexus document. Everything sensitive stays in the browser -- your Audiotool token never touches our backend. What goes to the server is just the session fingerprint and your intent, plain metadata. The backend ranks your own fragment library and sends back candidates with evidence. You preview, you insert, and if you don't like it -- exact undo, right back into Audiotool.",
   // 4 Demo: connect
