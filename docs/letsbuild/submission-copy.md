@@ -3,7 +3,10 @@
 Portal: per Discord staff guidance (2026-08-20), submission is via a Google Form
 posted in the Let's Build Discord -- find the form link in the Discord submission
 thread before submitting (the FAQ's mention of a developer-hub portal appears
-outdated). Deadline 23 Aug 2026, 6pm EST.
+outdated). Deadline: Discord guidance said 23 Aug 2026 6pm EST, but the
+official site (checked 2026-08-23) says submissions are open until
+28 Sep 2026 -- VERIFY in Discord which applies before assuming either;
+submitting by the earlier date is always safe.
 Four required materials: working app URL, demo video (2-5 min), README, source link.
 
 ## Form fields (paste-ready)
@@ -17,7 +20,9 @@ Audiotool project you have open, ranks your own fragments by whether they
 could grow into that piece, and lets you preview, insert, and undo.
 
 **Category**
-Primary: Songstarter (also fits: Composition, Connect / DAW Integration)
+Primary: Creation ("instruments, sequencers, and tools that shape how music
+is made"). Judges tag categories themselves and one project can win in
+several; if the form asks, Creation is ours.
 
 **App URL**
 https://pocketproducer.vercel.app/audiotool
@@ -87,16 +92,23 @@ Technical highlights:
 **Team**
 Solo: Chuling Li (chuling.li.cs@gmail.com)
 
-## Judging criteria mapping (for our own reference)
+## What the contest rewards (verified 2026-08-23 from audiotool.com/LetsBuild)
 
-- Innovation (30%): compatibility-not-similarity framing; evidence-grounded
-  proposals; honest uncertainty handling as a design principle
-- Technical execution (25%): full Nexus read/write/undo loop, token
-  isolation, fallback architecture, test coverage
-- Musical value (25%): re-entering unfinished work is a real musician
-  problem; suggestions come from the musician's own material
-- User experience (20%): one primary action per state, preview before
-  commit, undo always available, evidence chips instead of black-box scores
+Official categories: Creation / Games / Listening / Education; judges tag
+submissions and one project can win in several. No published criteria
+weights. What the site and press releases emphasize, and how we map:
+
+- Built with the Nexus SDK (the series' stated axis): we are the deep
+  case — session read, transactional write, exact undo, plus a root-caused
+  SDK patch shipped in the repo
+- Jury is largely musicians and educators (Berklee, NYU, Fraunhofer IDMT,
+  working producers), not ML researchers: the demo leads with the musician
+  story and working features; research appears only as a trust beat
+- "AI-powered music software" / "anyone can build": AI that proposes with
+  evidence while the musician stays in charge; import makes onboarding
+  instant from any Audiotool account
+- Working, shipped tools over concepts: live URL, 322 tests, reversible
+  writes against real projects
 
 ## Pre-submit checklist
 
