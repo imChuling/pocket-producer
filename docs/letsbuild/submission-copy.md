@@ -3,10 +3,11 @@
 Portal: per Discord staff guidance (2026-08-20), submission is via a Google Form
 posted in the Let's Build Discord -- find the form link in the Discord submission
 thread before submitting (the FAQ's mention of a developer-hub portal appears
-outdated). Deadline: Discord guidance said 23 Aug 2026 6pm EST, but the
-official site (checked 2026-08-23) says submissions are open until
-28 Sep 2026 -- VERIFY in Discord which applies before assuming either;
-submitting by the earlier date is always safe.
+outdated). Deadlines (per official FAQ): each thematic challenge closes
+~2 weeks after it opens -- the Songstarter challenge closes 23 Aug 2026
+6pm EST, submit today. The grand prize final submission is extended to
+28 Sep 2026, so a stronger revision can be submitted for the grand prize
+after today's challenge entry.
 Four required materials: working app URL, demo video (2-5 min), README, source link.
 
 ## Form fields (paste-ready)
@@ -19,10 +20,12 @@ A session-aware retrieval instrument for unfinished music: it reads the
 Audiotool project you have open, ranks your own fragments by whether they
 could grow into that piece, and lets you preview, insert, and undo.
 
-**Category**
-Primary: Creation ("instruments, sequencers, and tools that shape how music
-is made"). Judges tag categories themselves and one project can win in
-several; if the form asks, Creation is ours.
+**Category / challenge**
+Two different fields, don't mix them up:
+- Thematic challenge (what we submit to now, deadline 23 Aug): Songstarter
+- Series category (judges tag it; one project can win in several): ours is
+  Creation ("instruments, sequencers, and tools that shape how music is
+  made")
 
 **App URL**
 https://pocketproducer.vercel.app/audiotool
