@@ -383,6 +383,21 @@ export default function AudiotoolPage() {
               {importMessage}
             </p>
           )}
+          {fragments.length === 0 && importing === null && !importMessage && (
+            <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+              <span className="font-medium">Your library is empty.</span>{" "}
+              Click{" "}
+              <button
+                type="button"
+                onClick={() => void handleImportProject()}
+                className="font-medium underline underline-offset-2 hover:text-sky-700"
+              >
+                Import samples to library
+              </button>{" "}
+              to turn this project&apos;s sounds into rankable fragments in
+              about a minute — or record and upload ideas on the Capture page.
+            </div>
+          )}
           {lastInsert && (
             <div className="flex items-center justify-between rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
               <span>
