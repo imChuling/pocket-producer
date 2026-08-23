@@ -72,6 +72,13 @@ class TestIntentMatch:
     def test_empty_intent_is_zero(self):
         assert intent_match("", ["dark"]) == 0.0
 
+    def test_punctuation_does_not_break_tokens(self):
+        # "bass," must still meet the tag "bass".
+        assert intent_match("dark bass, slower bridge", ["bass", "bridge"]) == 0.5
+
+    def test_hyphenated_tags_still_match(self):
+        assert intent_match("synth-pop hook", ["synth-pop"]) == 0.5
+
 
 class TestNovelty:
     def test_all_new_tags_score_one(self):

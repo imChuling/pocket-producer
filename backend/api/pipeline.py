@@ -276,6 +276,7 @@ Return ONLY a JSON object with these fields (flat structure, not nested):
 - "key": musical key you detect from the audio (e.g. "Em", "C#m"), null if unclear. Prefer your own hearing over librosa if they conflict.
 - "bpm": BPM you detect, null if unclear. Prefer librosa's value if provided.
 - "suggestion": a concrete, actionable next-step for the creator (1-2 sentences, same language as any lyrics/text). Be specific to what you HEARD.
+- "title": a 2-5 word evocative title for this fragment, same language as its content. Name what makes it distinct (mood + material), never generic words like "fragment", "audio", "recording", "untitled". No quotes.
 - "transcript": if you can make out any sung/spoken words, include the first ~300 characters here as a string (do NOT transcribe more than that). null if purely instrumental.
 
 ONLY output the JSON object. No markdown wrapping, no explanation outside the JSON."""
@@ -298,6 +299,7 @@ Return ONLY a JSON object with these fields (flat structure, not nested):
 - "key": musical key if detectable (e.g. "Em", "C#m"), null otherwise.
 - "bpm": BPM if detectable, null otherwise.
 - "suggestion": a concrete, actionable next-step for the creator (1-2 sentences, same language as the fragment). Be specific to THIS fragment's content and potential.
+- "title": a 2-5 word evocative title for this fragment, same language as its content. Name what makes it distinct (mood + material), never generic words like "fragment", "audio", "recording", "untitled". No quotes.
 
 ONLY output the JSON object. No markdown wrapping, no explanation outside the JSON."""
 
@@ -321,6 +323,7 @@ ONLY output the JSON object. No markdown wrapping, no explanation outside the JS
             "key": {"type": "string", "nullable": True},
             "bpm": {"type": "number", "nullable": True},
             "suggestion": {"type": "string"},
+            "title": {"type": "string", "nullable": True},
             "transcript": {"type": "string", "nullable": True},
         },
         "required": ["emotions", "themes", "tags", "potential", "suggestion"],
@@ -596,6 +599,23 @@ async def process_fragment_background(
             {"_id": ObjectId(fragment_id), "user_id": user_id},
             {"$set": final_update},
         )
+
+        # AI title fills in only where no human name exists: the ingest
+        # default ("Audio fragment N") or no title at all. A rename the
+        # creator made while analysis ran must never be overwritten.
+        ai_title = (tag_result or {}).get("title")
+        if isinstance(ai_title, str) and 0 < len(ai_title.strip()) <= 80:
+            db["fragments"].update_one(
+                {
+                    "_id": ObjectId(fragment_id),
+                    "user_id": user_id,
+                    "$or": [
+                        {"title": None},
+                        {"title": {"$regex": r"^Audio fragment \d+$"}},
+                    ],
+                },
+                {"$set": {"title": ai_title.strip()}},
+            )
 
         # Make the new fragment rank-ready: encode its CLAP audio embedding
         # in the background (the /rank path reads representations.audio_semantic).

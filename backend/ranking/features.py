@@ -48,8 +48,16 @@ def track_gap(active_track_types: list[str], tags: list[str]) -> float:
     return 1.0 if candidate_roles - active else 0.0
 
 
+def _intent_tokens(text_intent: str) -> set[str]:
+    # Punctuation must not glue itself to tokens: "dark bass, slower
+    # bridge" has to yield {"dark", "bass", "slower", "bridge"} so the
+    # token "bass" can meet the tag "bass".
+    cleaned = "".join(c if c.isalnum() or c in "-_" else " " for c in text_intent.lower())
+    return {t for t in cleaned.split() if t}
+
+
 def intent_match(text_intent: str, tags: list[str]) -> float:
-    intent_tokens = {t for t in text_intent.lower().split() if t}
+    intent_tokens = _intent_tokens(text_intent)
     if not intent_tokens:
         return 0.0
     tag_tokens = {t.lower() for t in tags}
@@ -60,7 +68,7 @@ def novelty(tags: list[str], active_track_types: list[str], text_intent: str) ->
     tag_tokens = {t.lower() for t in tags}
     if not tag_tokens:
         return 0.0
-    known = {t.lower() for t in active_track_types} | set(text_intent.lower().split())
+    known = {t.lower() for t in active_track_types} | _intent_tokens(text_intent)
     return len(tag_tokens - known) / len(tag_tokens)
 
 
