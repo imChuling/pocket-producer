@@ -1,0 +1,1186 @@
+<title>Pocket Producer Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --eggshell: #fdfcfc;
+  --powder: #f5f3f1;
+  --chalk: #e5e5e5;
+  --fog: #b1b0b0;
+  --gravel: #777169;
+  --slate: #a59f97;
+  --obsidian: #000000;
+  --sky-mint: #a0b5eb;
+  --sunset: #ffa773;
+  --amber-glow: #e2c161;
+  --dna-rose: #ff9473;
+  --surface: #ffffff;
+  --shadow-card: rgba(0,0,0,0.4) 0px 0px 1px 0px, rgba(0,0,0,0.04) 0px 2px 4px 0px;
+  --font-heading: 'Cormorant', serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body {
+  width:100%; height:100%;
+  font-family: var(--font-sans);
+  background: var(--eggshell);
+  color: var(--obsidian);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── SLIDE SYSTEM ── */
+.slide {
+  position:fixed; inset:0;
+  display:flex; flex-direction:column;
+  justify-content:center; align-items:center;
+  opacity:0; transform:translateY(30px) scale(0.97); filter:blur(8px);
+  transition: opacity 1s cubic-bezier(.16,1,.3,1),
+              transform 1s cubic-bezier(.16,1,.3,1),
+              filter 1s cubic-bezier(.16,1,.3,1);
+  pointer-events:none; overflow:hidden;
+  padding:48px 60px;
+}
+.slide.active {
+  opacity:1; transform:translateY(0) scale(1); filter:blur(0);
+  pointer-events:auto; z-index:10;
+}
+.slide.exit {
+  opacity:0; transform:translateY(-30px) scale(0.98); filter:blur(12px); z-index:5;
+}
+
+/* ── PROGRESS + NAV ── */
+.progress-bar {
+  position:fixed; top:0; left:0; height:2px; z-index:100;
+  background:linear-gradient(90deg, var(--sky-mint), var(--sunset), var(--amber-glow));
+  transition:width 0.3s;
+}
+.slide-nav {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  display:flex; gap:6px; z-index:100;
+}
+.slide-dot {
+  width:6px; height:6px; border-radius:50%;
+  background:var(--chalk); transition:all 0.4s cubic-bezier(.34,1.56,.64,1); cursor:pointer;
+}
+.slide-dot:hover { background:var(--fog); transform:scale(1.3); }
+.slide-dot.active { background:var(--obsidian); width:20px; border-radius:3px; }
+.counter {
+  position:fixed; top:16px; right:20px;
+  font-family:var(--font-mono); font-size:11px;
+  color:var(--slate); letter-spacing:0.08em; z-index:100;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ── AMBIENT BG ── */
+.ambient {
+  position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden;
+}
+.ambient::before {
+  content:""; position:absolute;
+  width:700px; height:700px; top:-18%; right:-12%; border-radius:50%;
+  background:radial-gradient(circle, rgba(160,181,235,0.15) 0%, transparent 70%);
+  animation:float-a 20s ease-in-out infinite;
+}
+.ambient::after {
+  content:""; position:absolute;
+  width:600px; height:600px; bottom:-12%; left:-10%; border-radius:50%;
+  background:radial-gradient(circle, rgba(255,148,115,0.10) 0%, transparent 65%);
+  animation:float-b 24s ease-in-out infinite;
+}
+@keyframes float-a {0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(30px,-40px) scale(1.05)}}
+@keyframes float-b {0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-30px,25px) scale(1.06)}}
+
+/* ── TYPOGRAPHY ── */
+.heading { font-family:var(--font-heading); font-weight:300; }
+.mono { font-family:var(--font-mono); }
+.label {
+  font-family:var(--font-mono); font-size:10px;
+  text-transform:uppercase; letter-spacing:0.25em; color:var(--slate);
+}
+
+/* ── HORIZON LINE ── */
+.horizon {
+  width:100%; max-width:500px; height:1px; margin:0 auto;
+  background:linear-gradient(90deg, transparent 5%, rgba(160,181,235,0.4) 30%, rgba(255,148,115,0.35) 50%, rgba(226,193,97,0.25) 70%, transparent 95%);
+}
+
+/* ── CARDS ── */
+.deck-card {
+  background:var(--surface); border-radius:16px;
+  box-shadow:var(--shadow-card); padding:24px;
+}
+.tag {
+  display:inline-flex; align-items:center;
+  font-family:var(--font-mono); font-size:10px; font-weight:500;
+  padding:3px 10px; border-radius:9999px; line-height:1;
+}
+.tag.green { background:rgba(45,110,63,0.08); color:#2d6e3f; }
+.tag.blue { background:rgba(160,181,235,0.15); color:#4a6a8a; }
+.tag.tan { background:rgba(226,193,97,0.15); color:#8a7a3e; }
+.tag.purple { background:rgba(107,90,138,0.12); color:#6b5a8a; }
+.tag.teal { background:rgba(62,110,120,0.12); color:#3e6e78; }
+.tag.rose { background:rgba(255,148,115,0.12); color:#8a5a42; }
+
+/* ── EVIDENCE CHIP ── */
+.evidence {
+  display:inline-flex; align-items:center;
+  font-family:var(--font-mono); font-size:11px; font-weight:500;
+  padding:5px 12px; border-radius:9999px; line-height:1;
+}
+.ev-role { background:rgba(200,230,208,0.6); color:#3d7a4f; }
+.ev-tempo { background:rgba(232,223,211,0.6); color:#7a6b56; }
+.ev-tag { background:rgba(204,228,232,0.6); color:#3e6e78; }
+.ev-intent { background:rgba(200,218,240,0.6); color:#4a6a8a; }
+.ev-harmonic { background:rgba(216,206,232,0.6); color:#6b5a8a; }
+
+/* ── MACBOOK FRAME (for demo slides) ── */
+.mac-frame {
+  width:100%; max-width:680px;
+  background:#1a1a1a; border-radius:10px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.06);
+  overflow:hidden;
+}
+.mac-chrome {
+  height:32px; background:#2d2d2d;
+  display:flex; align-items:center; padding:0 12px; gap:6px;
+}
+.mac-dot { width:8px; height:8px; border-radius:50%; }
+.mac-dot.r { background:#ff5f57; }
+.mac-dot.y { background:#febc2e; }
+.mac-dot.g { background:#28c840; }
+.mac-url {
+  flex:1; margin:0 40px;
+  background:rgba(255,255,255,0.08); border-radius:4px;
+  padding:3px 10px;
+  font-family:var(--font-mono); font-size:10px; color:rgba(255,255,255,0.5);
+  text-align:center;
+}
+.mac-screen {
+  aspect-ratio:16/10; background:var(--powder);
+  display:flex; align-items:center; justify-content:center;
+  position:relative;
+}
+.demo-placeholder {
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:12px;
+  color:var(--slate);
+}
+.demo-play {
+  width:56px; height:56px; border-radius:50%;
+  background:var(--obsidian); color:white;
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,0,0,0.15);
+  transition:transform 0.2s;
+}
+.demo-play:hover { transform:scale(1.08); }
+.demo-caption {
+  font-family:var(--font-mono); font-size:10px;
+  text-transform:uppercase; letter-spacing:0.15em;
+  color:var(--slate);
+}
+
+/* ── WORKFLOW DIAGRAM ── */
+.wf-diagram {
+  display:flex; flex-direction:column; align-items:center;
+  gap:0; max-width:600px; width:100%;
+}
+.wf-row {
+  display:flex; align-items:center; gap:16px; width:100%;
+  justify-content:center;
+}
+.wf-box {
+  border-radius:12px; padding:12px 20px;
+  font-size:12px; font-weight:500;
+  text-align:center; min-width:160px;
+}
+.wf-box.at {
+  background:#1a1a1a; color:white;
+  box-shadow:0 2px 8px rgba(0,0,0,0.15);
+}
+.wf-box.pp {
+  background:var(--surface); color:var(--obsidian);
+  border:1.5px solid var(--chalk);
+  box-shadow:var(--shadow-card);
+}
+.wf-box.be {
+  background:var(--powder); color:var(--gravel);
+  border:1px solid var(--chalk);
+}
+.wf-connector {
+  display:flex; flex-direction:column; align-items:center;
+  gap:2px; padding:4px 0;
+}
+.wf-arrow-down {
+  width:1.5px; height:16px;
+  background:linear-gradient(to bottom, var(--chalk), var(--fog));
+}
+.wf-arrow-label {
+  font-family:var(--font-mono); font-size:9px;
+  color:var(--slate); letter-spacing:0.08em;
+}
+.wf-arrow-head {
+  width:0; height:0;
+  border-left:4px solid transparent;
+  border-right:4px solid transparent;
+  border-top:5px solid var(--fog);
+}
+.wf-side-arrow {
+  font-size:14px; color:var(--fog); flex-shrink:0;
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fade-up {
+  from{opacity:0;transform:translateY(24px);filter:blur(4px)}
+  to{opacity:1;transform:translateY(0);filter:blur(0)}
+}
+@keyframes scale-in {
+  from{opacity:0;transform:scale(0.88)} to{opacity:1;transform:scale(1)}
+}
+@keyframes tag-pop {
+  from{opacity:0;transform:scale(0.6)} to{opacity:1;transform:scale(1)}
+}
+@keyframes shimmer-bg {
+  0%{background-position:-200% center} 100%{background-position:200% center}
+}
+.slide.active .au { animation:fade-up 0.7s cubic-bezier(.16,1,.3,1) both; }
+.slide.active .asi { animation:scale-in 0.6s cubic-bezier(.34,1.56,.64,1) both; }
+.slide.active .atp { animation:tag-pop 0.4s cubic-bezier(.34,1.56,.64,1) both; }
+.d0{animation-delay:0s}.d1{animation-delay:.1s}.d2{animation-delay:.2s}
+.d3{animation-delay:.3s}.d4{animation-delay:.4s}.d5{animation-delay:.5s}
+.d6{animation-delay:.6s}.d7{animation-delay:.7s}.d8{animation-delay:.8s}
+.d9{animation-delay:.9s}.d10{animation-delay:1s}.d12{animation-delay:1.2s}
+.d14{animation-delay:1.4s}.d16{animation-delay:1.6s}
+
+.shimmer-text {
+  background:linear-gradient(90deg, #000 0%, #000 40%, rgba(160,181,235,0.7) 50%, #000 60%, #000 100%);
+  background-size:200% auto;
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  animation:shimmer-bg 4s ease-in-out infinite;
+}
+
+/* ── SLIDE LAYOUTS ── */
+.slide-center { text-align:center; gap:20px; }
+.slide-split {
+  flex-direction:row; gap:60px;
+  justify-content:center; align-items:center;
+}
+.slide-split .left { flex:1; max-width:400px; }
+.slide-split .right { flex:1; max-width:460px; }
+
+/* ── FINGERPRINT MOCKUP ── */
+.fp-panel {
+  background:var(--powder); border:1px solid var(--chalk);
+  border-radius:12px; padding:16px 20px;
+}
+.fp-title { font-size:12px; font-weight:500; color:var(--gravel); margin-bottom:10px; }
+.fp-grid {
+  display:grid; grid-template-columns:1fr 1fr 1fr;
+  gap:8px 16px; font-size:12px;
+}
+.fp-label { color:var(--slate); font-size:11px; }
+.fp-value { color:var(--obsidian); font-weight:500; }
+.fp-intent { margin-top:12px; border-top:1px solid var(--chalk); padding-top:10px; }
+.fp-intent-label { font-size:11px; color:var(--gravel); margin-bottom:6px; }
+.fp-intent-input {
+  width:100%; padding:8px 12px; border:1px solid var(--chalk);
+  border-radius:8px; font-size:12px; color:var(--obsidian); background:var(--surface);
+}
+
+/* ── CANDIDATE CARD MOCKUP ── */
+.cand-card {
+  background:var(--powder); border:1px solid var(--chalk);
+  border-radius:12px; padding:14px 18px;
+}
+.cand-title { font-size:14px; font-weight:500; margin-bottom:8px; }
+.cand-why {
+  font-family:var(--font-mono); font-size:9px; font-weight:500;
+  text-transform:uppercase; letter-spacing:0.15em; color:var(--slate); margin-bottom:6px;
+}
+.cand-chips { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px; }
+.cand-actions { display:flex; gap:6px; }
+.cand-btn {
+  font-family:var(--font-mono); font-size:10px; font-weight:500;
+  padding:5px 12px; border-radius:8px; border:1px solid var(--chalk);
+  color:var(--gravel); background:transparent; cursor:pointer;
+  display:flex; align-items:center; gap:4px;
+}
+.cand-btn.primary { background:var(--obsidian); color:white; border-color:var(--obsidian); }
+
+/* ── UNDO BAR MOCKUP ── */
+.undo-bar {
+  background:#ecfdf5; border:1px solid #6ee7b7;
+  border-radius:12px; padding:10px 16px;
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:12px; color:#064e3b;
+}
+.undo-btn {
+  font-family:var(--font-mono); font-size:10px; font-weight:500;
+  padding:4px 12px; border-radius:8px; border:1px solid #6ee7b7;
+  color:#064e3b; background:transparent; cursor:pointer;
+}
+
+/* ── COMPARISON TABLE ── */
+.compare-table { width:100%; border-collapse:collapse; font-size:13px; }
+.compare-table th {
+  font-family:var(--font-mono); font-size:10px; font-weight:500;
+  text-transform:uppercase; letter-spacing:0.1em; color:var(--slate);
+  text-align:left; padding:6px 12px; border-bottom:1px solid var(--chalk);
+}
+.compare-table td {
+  padding:8px 12px; border-bottom:1px solid rgba(229,229,229,0.5);
+  font-variant-numeric:tabular-nums;
+}
+.compare-table .em { font-weight:600; color:var(--obsidian); }
+
+/* ── SPEAKER NOTES BAR ── */
+.notes-bar {
+  position:fixed; left:0; right:0; bottom:0; z-index:200;
+  background:rgba(20,20,20,0.94); color:#e8e6e3;
+  padding:14px 24px 18px; display:none;
+  font-size:13px; line-height:1.65;
+  backdrop-filter:blur(8px);
+  max-height:34vh; overflow-y:auto;
+}
+body.notes-on .notes-bar { display:block; }
+body.notes-on .slide-nav { bottom:calc(34vh + 12px); }
+.notes-bar .notes-label {
+  font-family:var(--font-mono); font-size:9px;
+  text-transform:uppercase; letter-spacing:0.2em;
+  color:var(--amber-glow); margin-bottom:6px;
+}
+.notes-hint {
+  position:fixed; bottom:24px; left:20px; z-index:100;
+  font-family:var(--font-mono); font-size:9px;
+  color:var(--chalk); letter-spacing:0.08em;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width:768px) {
+  .slide { padding:32px 24px; }
+  .slide-split { flex-direction:column; gap:32px; }
+  .slide-split .left, .slide-split .right { max-width:100%; }
+  .mac-frame { max-width:100%; }
+}
+</style>
+
+<div class="ambient"></div>
+<div class="progress-bar" id="progress"></div>
+<div class="counter" id="counter"></div>
+
+<!-- ═══════════ SLIDE 1: TITLE ═══════════ -->
+<div class="slide slide-center">
+  <div class="label au d0">Let's Build 2026</div>
+  <h1 class="heading au d1" style="font-size:clamp(36px,5vw,56px);line-height:1.15;max-width:600px">
+    <span class="shimmer-text">Pocket Producer</span>
+  </h1>
+  <p class="au d2" style="font-size:15px;color:var(--gravel);max-width:460px;line-height:1.6">
+    A session-aware retrieval instrument for unfinished music.
+  </p>
+  <div class="horizon au d4" style="margin-top:12px"></div>
+  <p class="mono au d5" style="font-size:11px;color:var(--slate);margin-top:4px">
+    Chuling Li &middot; Solo &middot; pocketproducer.vercel.app
+  </p>
+</div>
+
+<!-- ═══════════ SLIDE 2: THE PROBLEM ═══════════ -->
+<div class="slide slide-center">
+  <div class="label au d0">The problem</div>
+  <h2 class="heading au d1" style="font-size:clamp(28px,4vw,42px);max-width:560px;line-height:1.2">
+    Which of my own fragments could grow into <em>this</em>?
+  </h2>
+  <p class="au d3" style="font-size:14px;color:var(--gravel);max-width:440px;line-height:1.65;margin-top:8px">
+    Re-opening a half-finished track is the hardest moment.
+    You have dozens of your own loops. No way to ask which ones
+    belong with what's already there.
+  </p>
+  <div style="display:flex;gap:10px;margin-top:16px">
+    <span class="tag blue atp d5">Not similarity</span>
+    <span class="tag green atp d6">Session compatibility</span>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 3: FOUR SURFACES OVERVIEW ═══════════ -->
+<div class="slide slide-center">
+  <div class="label au d0">The app</div>
+  <h2 class="heading au d1" style="font-size:clamp(24px,3.5vw,36px);line-height:1.2">
+    One library, four surfaces
+  </h2>
+  <div class="au d3" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px;max-width:560px;width:100%;text-align:left">
+    <div class="fp-panel">
+      <span class="tag blue" style="font-size:9px">CAPTURE</span>
+      <p style="font-size:12px;color:var(--gravel);line-height:1.55;margin-top:8px">Record, type, drop audio, or import an Audiotool project. Every input becomes an AI-analyzed fragment.</p>
+    </div>
+    <div class="fp-panel">
+      <span class="tag tan" style="font-size:9px">PROJECTS</span>
+      <p style="font-size:12px;color:var(--gravel);line-height:1.55;margin-top:8px">Agents group related fragments into projects, each with a rescue score and a next action.</p>
+    </div>
+    <div class="fp-panel">
+      <span class="tag purple" style="font-size:9px">DNA</span>
+      <p style="font-size:12px;color:var(--gravel);line-height:1.55;margin-top:8px">A creative profile computed from the whole library: emotions, styles, themes, timing.</p>
+    </div>
+    <div class="fp-panel">
+      <span class="tag rose" style="font-size:9px">AUDIOTOOL</span>
+      <p style="font-size:12px;color:var(--gravel);line-height:1.55;margin-top:8px">The two-way workflow: session-aware ranking of your fragments, insert with exact undo.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 3b: CAPTURE ═══════════ -->
+<div class="slide slide-split">
+  <div class="left">
+    <div class="label au d0">Tour &middot; Capture</div>
+    <h2 class="heading au d1" style="font-size:clamp(22px,3vw,32px);line-height:1.2;margin-top:8px">
+      Every idea becomes a fragment
+    </h2>
+    <p class="au d2" style="font-size:13px;color:var(--gravel);line-height:1.6;margin-top:12px">
+      Four ways in: tap to record, type a lyric, drop an audio file, or import a whole Audiotool project as one mixed-down fragment.
+    </p>
+    <p class="au d3" style="font-size:13px;color:var(--gravel);line-height:1.6;margin-top:8px">
+      The agent pipeline tags each fragment with instruments, emotions, and themes, and writes one concrete suggestion. Cards support rename, reanalyze, notes, and timestamped comments.
+    </p>
+  </div>
+  <div class="right au d4">
+    <div class="fp-panel">
+      <div class="fp-title">Audio fragment 35 &middot; A &middot; 117.5 BPM</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span class="tag blue" style="font-size:9px">lyric fragment</span>
+        <span class="tag tan" style="font-size:9px">melancholy</span>
+        <span class="tag purple" style="font-size:9px">loneliness</span>
+        <span class="tag teal" style="font-size:9px">metaphor</span>
+      </div>
+      <div class="fp-intent">
+        <div class="fp-intent-label">AI suggestion</div>
+        <div class="fp-intent-input" style="font-style:italic">Expand this into a verse by describing what it feels like when the 'rain' finally stops.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 3c: PROJECTS ═══════════ -->
+<div class="slide slide-split">
+  <div class="left">
+    <div class="label au d0">Tour &middot; Projects</div>
+    <h2 class="heading au d1" style="font-size:clamp(22px,3vw,32px);line-height:1.2;margin-top:8px">
+      Fragments group themselves
+    </h2>
+    <p class="au d2" style="font-size:13px;color:var(--gravel);line-height:1.6;margin-top:12px">
+      You never file anything. Agents group related fragments into projects: same song candidates, shared themes, similar emotion, and each connection states its reason.
+    </p>
+    <p class="au d3" style="font-size:13px;color:var(--gravel);line-height:1.6;margin-top:8px">
+      Every project carries a rescue score, how alive it still is, and one concrete next action. Scan re-groups on demand; reset starts over.
+    </p>
+  </div>
+  <div class="right au d4">
+    <div class="fp-panel">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div class="fp-title" style="margin-bottom:0">Cold Shadow Language</div>
+        <span style="font-family:var(--font-mono);font-size:20px;color:var(--obsidian)">90</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+        <span class="tag blue" style="font-size:9px">related theme</span>
+        <span class="tag green" style="font-size:9px">same song candidate</span>
+        <span class="tag tan" style="font-size:9px">similar emotion</span>
+      </div>
+      <div class="fp-intent">
+        <div class="fp-intent-label">Next action</div>
+        <div class="fp-intent-input" style="font-style:italic">Align the 'Something' hook (Am, 72 bpm) with the Em 76 bpm verse by setting a project tempo of 74.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 3d: DNA ═══════════ -->
+<div class="slide slide-split">
+  <div class="left">
+    <div class="label au d0">Tour &middot; DNA</div>
+    <h2 class="heading au d1" style="font-size:clamp(22px,3vw,32px);line-height:1.2;margin-top:8px">
+      A profile of how you create
+    </h2>
+    <p class="au d2" style="font-size:13px;color:var(--gravel);line-height:1.6;margin-top:12px">
+      The same library, turned inward: emotion radar, style bubbles, theme distribution, an hourly heatmap of when ideas happen, and a network view of how fragments connect.
+    </p>
+    <p class="au d3" style="font-size:13px;color:var(--gravel);line-height:1.6;margin-top:8px">
+      Computed from what you actually made, not what you claim you make.
+    </p>
+  </div>
+  <div class="right au d4">
+    <div class="fp-panel">
+      <div class="fp-title">Creative archetype &middot; The Poet</div>
+      <div style="font-size:11px;color:var(--slate);margin-bottom:4px">melancholy</div>
+      <div style="height:5px;border-radius:3px;background:linear-gradient(90deg,#a0b5eb,#8fa3d0);width:95%"></div>
+      <div style="font-size:11px;color:var(--slate);margin:8px 0 4px">longing</div>
+      <div style="height:5px;border-radius:3px;background:linear-gradient(90deg,#ffa773,#d4a06a);width:70%"></div>
+      <div style="font-size:11px;color:var(--slate);margin:8px 0 4px">vulnerability</div>
+      <div style="height:5px;border-radius:3px;background:linear-gradient(90deg,#e2c161,#c4a44e);width:38%"></div>
+      <div class="fp-intent">
+        <div class="fp-intent-label">Peak creative window</div>
+        <div class="fp-intent-input">23:00 &ndash; 1:00 &middot; 34% of your ideas happen here</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 3e: DEMO - LIBRARY TOUR ═══════════ -->
+<div class="slide slide-center">
+  <div class="label au d0">Demo</div>
+  <h2 class="heading au d1" style="font-size:clamp(22px,3vw,30px);line-height:1.2;margin-bottom:8px">
+    The library in motion
+  </h2>
+  <div class="mac-frame asi d2">
+    <div class="mac-chrome">
+      <div class="mac-dot r"></div>
+      <div class="mac-dot y"></div>
+      <div class="mac-dot g"></div>
+      <div class="mac-url">pocketproducer.vercel.app</div>
+    </div>
+    <div class="mac-screen">
+      <div class="demo-placeholder">
+        <div class="demo-play">&#9654;</div>
+        <div class="demo-caption">Screen recording: Capture &rarr; Projects &rarr; DNA</div>
+        <div style="font-size:11px;color:var(--fog);max-width:300px;text-align:center;line-height:1.5">
+          type an idea &rarr; live tagging &rarr; project grouping &rarr; DNA profile
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 3: AUDIOTOOL WORKFLOW ARCHITECTURE ═══════════ -->
+<div class="slide slide-center">
+  <div class="label au d0">Architecture</div>
+  <h2 class="heading au d1" style="font-size:clamp(22px,3vw,32px);line-height:1.2">
+    How it works with Audiotool
+  </h2>
+  <div class="wf-diagram au d2" style="margin-top:24px">
+    <!-- Row 1: Audiotool -->
+    <div class="wf-row">
+      <div class="wf-box at" style="min-width:280px">
+        <div style="font-size:10px;opacity:0.6;margin-bottom:2px;font-family:var(--font-mono);letter-spacing:0.1em">AUDIOTOOL</div>
+        Your open project (Nexus document)
+      </div>
+    </div>
+    <!-- Connector: read -->
+    <div class="wf-connector">
+      <div class="wf-arrow-down"></div>
+      <div class="wf-arrow-label">OAuth &middot; document read</div>
+      <div class="wf-arrow-head"></div>
+    </div>
+    <!-- Row 2: Pocket Producer browser -->
+    <div class="wf-row">
+      <div class="wf-box pp" style="min-width:280px">
+        <div style="font-size:10px;color:var(--slate);margin-bottom:2px;font-family:var(--font-mono);letter-spacing:0.1em">POCKET PRODUCER (BROWSER)</div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap">
+          <span class="tag tan" style="font-size:9px">session fingerprint</span>
+          <span class="tag blue" style="font-size:9px">intent input</span>
+          <span class="tag green" style="font-size:9px">token isolation</span>
+        </div>
+      </div>
+    </div>
+    <!-- Connector: rank request -->
+    <div class="wf-connector">
+      <div class="wf-arrow-down"></div>
+      <div class="wf-arrow-label">fingerprint + intent (no tokens)</div>
+      <div class="wf-arrow-head"></div>
+    </div>
+    <!-- Row 3: Backend -->
+    <div class="wf-row">
+      <div class="wf-box be">
+        <div style="font-size:10px;color:var(--slate);margin-bottom:2px;font-family:var(--font-mono);letter-spacing:0.1em">BACKEND (CLOUD RUN)</div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap">
+          <span class="tag purple" style="font-size:9px">CLAP embeddings</span>
+          <span class="tag rose" style="font-size:9px">ranker registry</span>
+          <span class="tag teal" style="font-size:9px">evidence builder</span>
+        </div>
+      </div>
+    </div>
+    <!-- Connector: ranked results -->
+    <div class="wf-connector">
+      <div class="wf-arrow-down"></div>
+      <div class="wf-arrow-label">ranked candidates + evidence</div>
+      <div class="wf-arrow-head"></div>
+    </div>
+    <!-- Row 4: Back to browser -->
+    <div class="wf-row">
+      <div class="wf-box pp" style="min-width:280px">
+        <div style="font-size:10px;color:var(--slate);margin-bottom:2px;font-family:var(--font-mono);letter-spacing:0.1em">POCKET PRODUCER (BROWSER)</div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap">
+          <span class="tag green" style="font-size:9px">preview</span>
+          <span class="tag tan" style="font-size:9px">insert decision</span>
+        </div>
+      </div>
+    </div>
+    <!-- Connector: write back -->
+    <div class="wf-connector">
+      <div class="wf-arrow-down"></div>
+      <div class="wf-arrow-label">sample upload + insert at playhead</div>
+      <div class="wf-arrow-head"></div>
+    </div>
+    <!-- Row 5: Back to Audiotool -->
+    <div class="wf-row">
+      <div class="wf-box at" style="min-width:280px">
+        <div style="font-size:10px;opacity:0.6;margin-bottom:2px;font-family:var(--font-mono);letter-spacing:0.1em">AUDIOTOOL</div>
+        Sample on timeline &middot; exact undo available
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 4: DEMO - CONNECT ═══════════ -->
+<div class="slide slide-center">
+  <div class="label au d0">Demo</div>
+  <h2 class="heading au d1" style="font-size:clamp(22px,3vw,30px);line-height:1.2;margin-bottom:8px">
+    Connect to Audiotool
+  </h2>
+  <div class="mac-frame asi d2">
+    <div class="mac-chrome">
+      <div class="mac-dot r"></div>
+      <div class="mac-dot y"></div>
+      <div class="mac-dot g"></div>
+      <div class="mac-url">pocketproducer.vercel.app/audiotool</div>
+    </div>
+    <div class="mac-screen">
+      <div class="demo-placeholder">
+        <div class="demo-play">&#9654;</div>
+        <div class="demo-caption">Screen recording: OAuth flow</div>
+        <div style="font-size:11px;color:var(--fog);max-width:300px;text-align:center;line-height:1.5">
+          Connect button &rarr; scope confirmation &rarr; project list
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 5: SESSION FINGERPRINT ═══════════ -->
+<div class="slide slide-split">
+  <div class="left">
+    <div class="label au d0">Step 1</div>
+    <h2 class="heading au d1" style="font-size:clamp(22px,3vw,32px);line-height:1.2;margin-top:8px">
+      Read the session
+    </h2>
+    <p class="au d2" style="font-size:13px;color:var(--gravel);line-height:1.6;margin-top:12px">
+      Pocket Producer reads the open Audiotool document through Nexus and builds a session fingerprint. It shows exactly what it read.
+    </p>
+    <p class="au d3" style="font-size:13px;color:var(--gravel);line-height:1.6;margin-top:8px">
+      Audiotool documents carry no key signature, so the field says "not available" rather than guessing. The musician adds intent in their own words.
+    </p>
+  </div>
+  <div class="right au d4">
+    <div class="fp-panel">
+      <div class="fp-title">What we read from your session</div>
+      <div class="fp-grid">
+        <div><div class="fp-label">Tempo</div><div class="fp-value">120 BPM</div></div>
+        <div><div class="fp-label">Key</div><div class="fp-value" style="color:var(--slate);font-style:italic">not available</div></div>
+        <div><div class="fp-label">Tracks</div><div class="fp-value">4</div></div>
+        <div><div class="fp-label">Track types</div><div class="fp-value">drums, synth</div></div>
+        <div><div class="fp-label">Playhead</div><div class="fp-value">12.5s</div></div>
+      </div>
+      <div class="fp-intent">
+        <div class="fp-intent-label">What are you going for? (optional)</div>
+        <div class="fp-intent-input">dark bass to sit under these drums</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 6: DEMO - SESSION READ ═══════════ -->
+<div class="slide slide-center">
+  <div class="label au d0">Demo</div>
+  <h2 class="heading au d1" style="font-size:clamp(22px,3vw,30px);line-height:1.2;margin-bottom:8px">
+    Session fingerprint in action
+  </h2>
+  <div class="mac-frame asi d2">
+    <div class="mac-chrome">
+      <div class="mac-dot r"></div>
+      <div class="mac-dot y"></div>
+      <div class="mac-dot g"></div>
+      <div class="mac-url">pocketproducer.vercel.app/audiotool</div>
+    </div>
+    <div class="mac-screen">
+      <div class="demo-placeholder">
+        <div class="demo-play">&#9654;</div>
+        <div class="demo-caption">Screen recording: session read</div>
+        <div style="font-size:11px;color:var(--fog);max-width:340px;text-align:center;line-height:1.5">
+          Open project &rarr; fingerprint appears &rarr; type intent &rarr; set intensity
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 7: RANKING + EVIDENCE ═══════════ -->
+<div class="slide slide-split">
+  <div class="left">
+    <div class="label au d0">Step 2</div>
+    <h2 class="heading au d1" style="font-size:clamp(22px,3vw,32px);line-height:1.2;margin-top:8px">
+      Rank with evidence
+    </h2>
+    <p class="au d2" style="font-size:13px;color:var(--gravel);line-height:1.6;margin-top:12px">
+      Every suggestion carries structured evidence drawn from the ranker's actual features. Not generated prose, not a black-box score.
+    </p>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-top:16px">
+      <div class="au d4" style="display:flex;align-items:center;gap:8px">
+        <span class="evidence ev-role">role gap fill</span>
+        <span style="font-size:11px;color:var(--gravel)">adds a missing instrument</span>
+      </div>
+      <div class="au d5" style="display:flex;align-items:center;gap:8px">
+        <span class="evidence ev-tempo">120 BPM match</span>
+        <span style="font-size:11px;color:var(--gravel)">tempo proximity</span>
+      </div>
+      <div class="au d6" style="display:flex;align-items:center;gap:8px">
+        <span class="evidence ev-tag">tag: bass</span>
+        <span style="font-size:11px;color:var(--gravel)">matches intent</span>
+      </div>
+      <div class="au d7" style="display:flex;align-items:center;gap:8px">
+        <span class="evidence ev-harmonic">harmonic fit</span>
+        <span style="font-size:11px;color:var(--gravel)">audio similarity signal</span>
+      </div>
+    </div>
+  </div>
+  <div class="right">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="cand-card asi d3">
+        <div class="cand-title">Deep Sub Bass 01</div>
+        <div class="cand-why">Why this now</div>
+        <div class="cand-chips">
+          <span class="evidence ev-role">role gap fill</span>
+          <span class="evidence ev-tempo">120 BPM</span>
+          <span class="evidence ev-tag">bass</span>
+        </div>
+        <div class="cand-actions">
+          <button class="cand-btn">&#9654; Preview</button>
+          <button class="cand-btn primary">+ Insert into Audiotool</button>
+          <button class="cand-btn">&times; Skip</button>
+        </div>
+      </div>
+      <div class="cand-card asi d5">
+        <div class="cand-title">Low Rumble Pad</div>
+        <div class="cand-why">Why this now</div>
+        <div class="cand-chips">
+          <span class="evidence ev-tempo">118 BPM close</span>
+          <span class="evidence ev-intent">matches intent</span>
+        </div>
+        <div class="cand-actions">
+          <button class="cand-btn">&#9654; Preview</button>
+          <button class="cand-btn primary">+ Insert into Audiotool</button>
+          <button class="cand-btn">&times; Skip</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 8: DEMO - RANKING ═══════════ -->
+<div class="slide slide-center">
+  <div class="label au d0">Demo</div>
+  <h2 class="heading au d1" style="font-size:clamp(22px,3vw,30px);line-height:1.2;margin-bottom:8px">
+    Ranking and preview
+  </h2>
+  <div class="mac-frame asi d2">
+    <div class="mac-chrome">
+      <div class="mac-dot r"></div>
+      <div class="mac-dot y"></div>
+      <div class="mac-dot g"></div>
+      <div class="mac-url">pocketproducer.vercel.app/audiotool</div>
+    </div>
+    <div class="mac-screen">
+      <div class="demo-placeholder">
+        <div class="demo-play">&#9654;</div>
+        <div class="demo-caption">Screen recording: ranking + preview</div>
+        <div style="font-size:11px;color:var(--fog);max-width:340px;text-align:center;line-height:1.5">
+          Candidates appear &rarr; evidence chips &rarr; preview playback &rarr; model/intensity controls
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 9: INSERT + UNDO ═══════════ -->
+<div class="slide slide-split">
+  <div class="left">
+    <div class="label au d0">Step 3</div>
+    <h2 class="heading au d1" style="font-size:clamp(22px,3vw,32px);line-height:1.2;margin-top:8px">
+      Insert, then undo
+    </h2>
+    <p class="au d2" style="font-size:13px;color:var(--gravel);line-height:1.6;margin-top:12px">
+      One Nexus transaction: upload the sample, wait for server confirmation, place it on the timeline at the playhead.
+    </p>
+    <p class="au d3" style="font-size:13px;color:var(--gravel);line-height:1.6;margin-top:8px">
+      Undo restores the exact prior entity set from an insert receipt. Not "delete last thing" -- an exact reversal validated against the official Nexus document validator.
+    </p>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <span class="tag green atp d5">Transactional write</span>
+      <span class="tag blue atp d6">Receipt-based undo</span>
+    </div>
+  </div>
+  <div class="right">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="undo-bar au d4">
+        <span>Inserted "Deep Sub Bass 01" at 12.5s</span>
+        <button class="undo-btn">Undo</button>
+      </div>
+      <div class="deck-card au d6" style="padding:16px;text-align:center;font-size:12px;color:var(--gravel)">
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Audiotool Timeline</div>
+        <div style="display:flex;align-items:flex-end;gap:3px;justify-content:center;height:40px">
+          <div style="width:60px;height:20px;background:rgba(160,181,235,0.3);border-radius:3px;font-size:8px;display:flex;align-items:center;justify-content:center;color:var(--gravel)">drums</div>
+          <div style="width:50px;height:16px;background:rgba(226,193,97,0.3);border-radius:3px;font-size:8px;display:flex;align-items:center;justify-content:center;color:var(--gravel)">synth</div>
+          <div style="width:45px;height:14px;background:rgba(45,110,63,0.2);border-radius:3px;font-size:8px;display:flex;align-items:center;justify-content:center;color:#2d6e3f;border:1px dashed rgba(45,110,63,0.4)">bass &uarr;</div>
+        </div>
+        <div style="font-size:9px;color:var(--slate);margin-top:6px">Sample inserted at playhead (12.5s)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 10: DEMO - INSERT + UNDO ═══════════ -->
+<div class="slide slide-center">
+  <div class="label au d0">Demo</div>
+  <h2 class="heading au d1" style="font-size:clamp(22px,3vw,30px);line-height:1.2;margin-bottom:8px">
+    Insert and undo
+  </h2>
+  <div class="mac-frame asi d2">
+    <div class="mac-chrome">
+      <div class="mac-dot r"></div>
+      <div class="mac-dot y"></div>
+      <div class="mac-dot g"></div>
+      <div class="mac-url">pocketproducer.vercel.app/audiotool</div>
+    </div>
+    <div class="mac-screen">
+      <div class="demo-placeholder">
+        <div class="demo-play">&#9654;</div>
+        <div class="demo-caption">Screen recording: insert + undo</div>
+        <div style="font-size:11px;color:var(--fog);max-width:340px;text-align:center;line-height:1.5">
+          Click insert &rarr; sample appears on Audiotool timeline &rarr; click undo &rarr; restored
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 11: IMPORT ═══════════ -->
+<div class="slide slide-split">
+  <div class="left">
+    <div class="label au d0">Step 4</div>
+    <h2 class="heading au d1" style="font-size:clamp(22px,3vw,32px);line-height:1.2;margin-top:8px">
+      Import your back catalog
+    </h2>
+    <p class="au d2" style="font-size:13px;color:var(--gravel);line-height:1.6;margin-top:12px">
+      One click imports an existing Audiotool project's samples into your fragment library. Your own back catalog becomes searchable creative memory.
+    </p>
+    <p class="au d3" style="font-size:13px;color:var(--gravel);line-height:1.6;margin-top:8px">
+      Each sample goes through the standard ingest pipeline: CLAP embedding, tagging, storage. After import, those fragments rank alongside everything else.
+    </p>
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+      <span class="tag green atp d5">Up to 8 samples</span>
+      <span class="tag blue atp d6">Standard ingest</span>
+      <span class="tag tan atp d7">Provenance tracked</span>
+    </div>
+  </div>
+  <div class="right">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="deck-card au d4" style="padding:18px">
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px">Import flow</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:20px;height:20px;border-radius:50%;background:var(--powder);border:1px solid var(--chalk);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0">1</span>
+            <span>Open an Audiotool project</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:20px;height:20px;border-radius:50%;background:var(--powder);border:1px solid var(--chalk);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0">2</span>
+            <span>Click "Import samples to library"</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:20px;height:20px;border-radius:50%;background:var(--powder);border:1px solid var(--chalk);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0">3</span>
+            <span>Samples download, embed, and store</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:20px;height:20px;border-radius:50%;background:var(--powder);border:1px solid var(--chalk);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0">4</span>
+            <span>Fragments appear in your library</span>
+          </div>
+        </div>
+      </div>
+      <div class="undo-bar au d6" style="background:rgba(160,181,235,0.08);border-color:var(--sky-mint);color:var(--obsidian)">
+        <span style="font-size:12px">Imported 5 of 5 samples</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--slate)">Samples imported &#10003;</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 12: DEMO - IMPORT ═══════════ -->
+<div class="slide slide-center">
+  <div class="label au d0">Demo</div>
+  <h2 class="heading au d1" style="font-size:clamp(22px,3vw,30px);line-height:1.2;margin-bottom:8px">
+    Import project samples
+  </h2>
+  <div class="mac-frame asi d2">
+    <div class="mac-chrome">
+      <div class="mac-dot r"></div>
+      <div class="mac-dot y"></div>
+      <div class="mac-dot g"></div>
+      <div class="mac-url">pocketproducer.vercel.app/audiotool</div>
+    </div>
+    <div class="mac-screen">
+      <div class="demo-placeholder">
+        <div class="demo-play">&#9654;</div>
+        <div class="demo-caption">Screen recording: import samples</div>
+        <div style="font-size:11px;color:var(--fog);max-width:340px;text-align:center;line-height:1.5">
+          Open project &rarr; click import &rarr; progress &rarr; fragments in library
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 13: INNOVATION ═══════════ -->
+<div class="slide slide-center">
+  <div class="label au d0">Innovation</div>
+  <h2 class="heading au d1" style="font-size:clamp(24px,3.5vw,36px);max-width:560px;line-height:1.2">
+    Honest uncertainty as a design principle
+  </h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px;max-width:560px;width:100%">
+    <div class="deck-card au d3" style="padding:18px">
+      <div style="font-size:13px;font-weight:500;margin-bottom:6px">Model is selectable</div>
+      <div style="font-size:11px;color:var(--gravel);line-height:1.5">
+        Rules baseline is the default. Learned fusion is opt-in because its advantage depends on label construction.
+      </div>
+    </div>
+    <div class="deck-card au d4" style="padding:18px">
+      <div style="font-size:13px;font-weight:500;margin-bottom:6px">Evidence, not scores</div>
+      <div style="font-size:11px;color:var(--gravel);line-height:1.5">
+        Every suggestion carries per-signal evidence drawn from the ranker's actual features. Never generated prose.
+      </div>
+    </div>
+    <div class="deck-card au d5" style="padding:18px">
+      <div style="font-size:13px;font-weight:500;margin-bottom:6px">Graceful fallback</div>
+      <div style="font-size:11px;color:var(--gravel);line-height:1.5">
+        If fusion is unavailable, rules baseline answers automatically. The badge tells you which model served.
+      </div>
+    </div>
+    <div class="deck-card au d6" style="padding:18px">
+      <div style="font-size:13px;font-weight:500;margin-bottom:6px">Missing = "not available"</div>
+      <div style="font-size:11px;color:var(--gravel);line-height:1.5">
+        Session data the document doesn't carry is reported honestly. Never imputed, never guessed.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 12: RESEARCH ═══════════ -->
+<div class="slide slide-split">
+  <div class="left">
+    <div class="label au d0">Research</div>
+    <h2 class="heading au d1" style="font-size:clamp(22px,3vw,32px);line-height:1.2;margin-top:8px">
+      A measured system
+    </h2>
+    <p class="au d2" style="font-size:13px;color:var(--gravel);line-height:1.6;margin-top:12px">
+      Submitted to ISMIR 2026 as a Late-Breaking/Demo paper. Six baselines, frozen held-out split, sensitivity analysis.
+    </p>
+    <p class="au d3" style="font-size:13px;color:var(--gravel);line-height:1.6;margin-top:8px">
+      The learned fusion shows a <strong>7.8 pp sensitivity</strong> on the hardest examples across audio embedding and training configurations. This is why the fusion is opt-in.
+    </p>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <span class="tag purple atp d5">ISMIR 2026 LBD</span>
+      <span class="tag tan atp d6">151 assertion checks</span>
+      <span class="tag blue atp d7">322 automated tests</span>
+    </div>
+  </div>
+  <div class="right au d4">
+    <div class="deck-card" style="padding:18px;overflow-x:auto">
+      <div style="font-family:var(--font-mono);font-size:9px;text-transform:uppercase;letter-spacing:0.15em;color:var(--slate);margin-bottom:10px">
+        Held-out sensitivity (fusion - cosine)
+      </div>
+      <table class="compare-table">
+        <thead>
+          <tr><th>Regime</th><th>LAION-CLAP</th><th>MS-CLAP</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>hard_similar</td>
+            <td>+2.1 pp</td>
+            <td class="em">+9.9 pp</td>
+          </tr>
+          <tr>
+            <td>overall</td>
+            <td>+0.6 pp</td>
+            <td class="em">+2.6 pp</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="font-size:11px;color:var(--slate);margin-top:10px;line-height:1.5">
+        Same split, same signals, 7.8 pp difference across embedding and training configurations.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 13: TECH STACK ═══════════ -->
+<div class="slide slide-center">
+  <div class="label au d0">Under the hood</div>
+  <h2 class="heading au d1" style="font-size:clamp(22px,3vw,32px);line-height:1.2">
+    Technical highlights
+  </h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px;max-width:540px;width:100%;text-align:left">
+    <div class="au d2" style="display:flex;align-items:flex-start;gap:10px;padding:10px 0">
+      <span class="mono" style="font-size:13px;color:var(--sky-mint);flex-shrink:0;width:20px;text-align:center">01</span>
+      <div>
+        <div style="font-size:12px;font-weight:500">Nexus SDK 0.0.17</div>
+        <div style="font-size:10px;color:var(--gravel)">Exact pin, read + write + undo</div>
+      </div>
+    </div>
+    <div class="au d3" style="display:flex;align-items:flex-start;gap:10px;padding:10px 0">
+      <span class="mono" style="font-size:13px;color:var(--sunset);flex-shrink:0;width:20px;text-align:center">02</span>
+      <div>
+        <div style="font-size:12px;font-weight:500">Token isolation</div>
+        <div style="font-size:10px;color:var(--gravel)">OAuth tokens never leave browser</div>
+      </div>
+    </div>
+    <div class="au d4" style="display:flex;align-items:flex-start;gap:10px;padding:10px 0">
+      <span class="mono" style="font-size:13px;color:var(--amber-glow);flex-shrink:0;width:20px;text-align:center">03</span>
+      <div>
+        <div style="font-size:12px;font-weight:500">6 registered rankers</div>
+        <div style="font-size:10px;color:var(--gravel)">Rules fallback always available</div>
+      </div>
+    </div>
+    <div class="au d5" style="display:flex;align-items:flex-start;gap:10px;padding:10px 0">
+      <span class="mono" style="font-size:13px;color:var(--dna-rose);flex-shrink:0;width:20px;text-align:center">04</span>
+      <div>
+        <div style="font-size:12px;font-weight:500">322 automated tests</div>
+        <div style="font-size:10px;color:var(--gravel)">Vitest (56) + pytest (266)</div>
+      </div>
+    </div>
+    <div class="au d6" style="display:flex;align-items:flex-start;gap:10px;padding:10px 0">
+      <span class="mono" style="font-size:13px;color:var(--sky-mint);flex-shrink:0;width:20px;text-align:center">05</span>
+      <div>
+        <div style="font-size:12px;font-weight:500">Next.js 16 + FastAPI</div>
+        <div style="font-size:10px;color:var(--gravel)">Vercel + Cloud Run</div>
+      </div>
+    </div>
+    <div class="au d7" style="display:flex;align-items:flex-start;gap:10px;padding:10px 0">
+      <span class="mono" style="font-size:13px;color:var(--sunset);flex-shrink:0;width:20px;text-align:center">06</span>
+      <div>
+        <div style="font-size:12px;font-weight:500">Frozen CLAP encoders</div>
+        <div style="font-size:10px;color:var(--gravel)">Offline embedding, CPU ranker < 500K</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 14: CLOSE ═══════════ -->
+<div class="slide slide-center">
+  <div class="label au d0">Let's Build 2026</div>
+  <h2 class="heading au d1" style="font-size:clamp(28px,4vw,44px);max-width:520px;line-height:1.15">
+    Creative memory,<br>not autopilot
+  </h2>
+  <p class="au d3" style="font-size:14px;color:var(--gravel);max-width:440px;line-height:1.65;margin-top:8px">
+    It helps you re-enter unfinished music with your own material, and every action it takes -- rank, insert, undo -- you can see why, and you can reverse it.
+  </p>
+  <div class="horizon au d5" style="margin-top:16px"></div>
+  <div class="au d6" style="margin-top:12px;display:flex;flex-direction:column;align-items:center;gap:4px">
+    <span class="mono" style="font-size:12px;color:var(--obsidian)">pocketproducer.vercel.app/audiotool</span>
+    <span class="mono" style="font-size:10px;color:var(--slate)">Chuling Li &middot; chuling.li.cs@gmail.com</span>
+  </div>
+</div>
+
+<!-- ── NAV DOTS ── -->
+<div class="slide-nav" id="nav"></div>
+<div class="notes-hint">N = voiceover notes</div>
+<div class="notes-bar" id="notesBar">
+  <div class="notes-label">Voiceover</div>
+  <div id="notesText"></div>
+</div>
+
+<script>
+const NOTES = [
+  // 1 Title
+  "Hi, I'm Chuling. This is Pocket Producer -- a session-aware retrieval instrument for unfinished music, built on the Audiotool Nexus SDK. Let me show you what that means.",
+  // 2 Problem
+  "Here's the moment this tool is built for. You open a track you left half-finished last week. You've got dozens of your own loops sitting in a folder somewhere -- but no way to ask: which of these actually belongs with what's already here? Most tools answer with similarity -- 'what sounds like this.' But that's the wrong question. A bassline that fills a gap can belong better than a loop that just blends in. We call the right question session compatibility.",
+  // 3 Four surfaces
+  "Pocket Producer is four surfaces around one library. Capture is where ideas land. Projects is where agents group them. DNA is who you are as a creator. And Audiotool is where the loop closes -- your library flowing back into a real session. Quick tour of the first three, then the Audiotool deep dive.",
+  // 3b Capture
+  "Capture is the front door, and there are four ways in: tap to record, type a lyric, drop an audio file -- or pull a whole Audiotool project in as one mixed-down fragment. Every input becomes a fragment, and the agent pipeline tags it: instruments, emotions, themes, plus one concrete suggestion for where it could go next. The cards are a working notebook, not a graveyard -- rename, reanalyze, add notes, leave timestamped comments as your thinking evolves.",
+  // 3c Projects
+  "Here's the part you never do by hand: filing. Agents watch the library and group related fragments into projects -- same song candidates, shared themes, similar emotion -- and every connection states its reason. Each project gets a rescue score, which is how alive it still is, and one concrete next action. You stay in control: scan to re-group, reset to start over.",
+  // 3d DNA
+  "DNA turns the same library inward. Emotion radar, style bubbles, theme distribution, an hourly heatmap of when your ideas actually happen, and a network view of how fragments connect. It's a creative profile computed from what you actually made -- not what you claim you make.",
+  // 3e Demo: library tour
+  "Here's the library in motion. I type an idea, the pipeline tags it live in about fifteen seconds, it lands in a project with a reason attached, and the DNA view updates. That's the memory half. Now the instrument half: Audiotool.",
+  // 3 Architecture
+  "Here's the whole loop with Audiotool. Pocket Producer connects over OAuth and reads your open project as a live Nexus document. Everything sensitive stays in the browser -- your Audiotool token never touches our backend. What goes to the server is just the session fingerprint and your intent, plain metadata. The backend ranks your own fragment library and sends back candidates with evidence. You preview, you insert, and if you don't like it -- exact undo, right back into Audiotool.",
+  // 4 Demo: connect
+  "So let's see it for real. I click Connect, Audiotool asks me to approve two scopes -- project write and sample write -- and that's it. My projects show up, I pick the one I've been stuck on.",
+  // 5 Fingerprint explain
+  "The first thing it does is read the session. Tempo, how many tracks, what roles they play, where the playhead is. And notice the Key field -- it says 'not available.' Audiotool documents don't carry a key signature, so we say so, instead of guessing. Then there's one thing the app can't read from the document: what I'm going for. So I just type it -- 'dark bass to sit under these drums.'",
+  // 6 Demo: session read
+  "Watch it happen live. I open the project, the fingerprint fills in within a second, I type my intent, and pick how many suggestions I want -- nudge me with one, or let me explore six.",
+  // 7 Ranking explain
+  "Now the interesting part. Every suggestion comes with evidence -- and this is real evidence from the ranker's own features, not generated text. This chip says the loop fills a role the session doesn't have yet. This one says its tempo matches. This one, that it matches what I typed. If you can't see why a recommendation was made, you can't trust it -- so we show every reason.",
+  // 8 Demo: ranking
+  "Here it is running. Three candidates, each with its 'why this now' chips. I hit preview and listen before anything touches my project. And up here I can switch the model -- the default is a transparent rules ranker; the learned model is there if I want it. More on why that's the default in a minute.",
+  // 9 Insert + undo explain
+  "When I like one, insert is a single Nexus transaction: upload the sample, wait for the server to confirm, place it at the playhead. And undo isn't 'delete the last thing' -- the insert produces a receipt of every entity it created, and undo restores the exact prior state. We validate that against Audiotool's own document validator.",
+  // 10 Demo: insert + undo
+  "So -- insert. Switch over to Audiotool, and there it is, sitting at the playhead on a new track. Play it... and say I change my mind. One click on undo, and the project is exactly what it was before. Nothing lost, nothing left behind.",
+  // 11 Import
+  "There's one more thing. Your old Audiotool projects are full of material you've already made -- but it's locked inside those project files. One click on 'Import samples to library' pulls up to eight samples out of any project, runs them through the same ingest pipeline -- CLAP embedding, tagging, storage -- and they show up as normal fragments. Your back catalog becomes searchable creative memory. Each imported fragment carries provenance, so you always know where it came from. And back on the Capture page there's the one-click version: import a whole project as a single mixed-down fragment, which also creates a matching project in your library.",
+  // 12 Demo: import
+  "Watch the import. I open a different project, click import, and it downloads the samples one by one. A few seconds later, 'Imported 5 of 5.' I go back to home, and those fragments are right there in my library, ready to rank against the session I'm actually working on.",
+  // 13 Innovation
+  "The thing I care most about in this design: the system is honest about what it doesn't know. The learned ranker is opt-in, not default -- because our own evaluation says its advantage depends on how you build the training labels. Evidence chips instead of black-box scores. Automatic fallback that tells you which model actually answered. And missing data says 'not available' instead of pretending.",
+  // 14 Research
+  "That honesty comes from actually measuring. We evaluated this for ISMIR 2026 -- six baselines, a frozen held-out split. Same data, same signals, and the learned model's advantage differs by nearly eight points across embedding and training configurations. That's exactly why the product treats scores as proposals, not judgments.",
+  // 15 Tech
+  "Under the hood: real Nexus read and write, tokens isolated in the browser, six registered rankers with a rules fallback that always works, and 322 automated tests -- including offline Nexus fixtures, so CI never needs a live account.",
+  // 16 Close
+  "Pocket Producer is creative memory, not autopilot. It helps you re-enter unfinished music with your own material -- and every action it takes, you can see why, and you can reverse. Try it at pocketproducer.vercel.app. Thanks for watching."
+];
+
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+let current = 0;
+
+function show(n) {
+  n = Math.max(0, Math.min(n, total - 1));
+  slides.forEach((s, i) => {
+    s.classList.remove('active','exit');
+    if (i === n) s.classList.add('active');
+    else if (i === current && i !== n) s.classList.add('exit');
+  });
+  current = n;
+  document.getElementById('progress').style.width = ((n + 1) / total * 100) + '%';
+  document.getElementById('counter').textContent = (n + 1) + ' / ' + total;
+  document.getElementById('notesText').textContent = NOTES[n] || '';
+  document.querySelectorAll('.slide-dot').forEach((d, i) => {
+    d.classList.toggle('active', i === n);
+  });
+}
+
+const nav = document.getElementById('nav');
+for (let i = 0; i < total; i++) {
+  const dot = document.createElement('div');
+  dot.className = 'slide-dot';
+  dot.addEventListener('click', () => show(i));
+  nav.appendChild(dot);
+}
+
+show(0);
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); show(current + 1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); show(current - 1); }
+  if (e.key === 'Home') { e.preventDefault(); show(0); }
+  if (e.key === 'End') { e.preventDefault(); show(total - 1); }
+  if (e.key === 'n' || e.key === 'N') { document.body.classList.toggle('notes-on'); }
+});
+
+let touchStartX = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 50) show(current + (dx < 0 ? 1 : -1));
+});
+</script>

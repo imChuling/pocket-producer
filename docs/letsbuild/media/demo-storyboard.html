@@ -1,0 +1,860 @@
+<title>Demo Storyboard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #f6f5f2;
+    --surface: #ffffff;
+    --surface-alt: #edecea;
+    --text: #1a1a1f;
+    --text-muted: #6b6d7a;
+    --accent: #b07a2e;
+    --accent-bg: #f5ead6;
+    --action-green: #2d6e3f;
+    --action-green-bg: #dff0e3;
+    --warn-rose: #9e3a3a;
+    --warn-rose-bg: #f5dede;
+    --claim-blue: #3a5f8a;
+    --claim-blue-bg: #dbe7f3;
+    --claim-purple: #6b5a8a;
+    --claim-purple-bg: #e8e0f0;
+    --border: #d8d6d0;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16161a;
+      --surface: #1e1e24;
+      --surface-alt: #26262e;
+      --text: #e4e2de;
+      --text-muted: #8b8fa3;
+      --accent: #d4a054;
+      --accent-bg: #2e2518;
+      --action-green: #5a9e6f;
+      --action-green-bg: #1a2e1f;
+      --warn-rose: #c47070;
+      --warn-rose-bg: #2e1a1a;
+      --claim-blue: #7ba4d0;
+      --claim-blue-bg: #1a2434;
+      --claim-purple: #a891c8;
+      --claim-purple-bg: #261e34;
+      --border: #2e2e36;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16161a;
+    --surface: #1e1e24;
+    --surface-alt: #26262e;
+    --text: #e4e2de;
+    --text-muted: #8b8fa3;
+    --accent: #d4a054;
+    --accent-bg: #2e2518;
+    --action-green: #5a9e6f;
+    --action-green-bg: #1a2e1f;
+    --warn-rose: #c47070;
+    --warn-rose-bg: #2e1a1a;
+    --claim-blue: #7ba4d0;
+    --claim-blue-bg: #1a2434;
+    --claim-purple: #a891c8;
+    --claim-purple-bg: #261e34;
+    --border: #2e2e36;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.55;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .wrap {
+    max-width: 780px;
+    margin: 0 auto;
+  }
+
+  header {
+    margin-bottom: 1.5rem;
+  }
+
+  header h1 {
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 1.1rem;
+    letter-spacing: 0.03em;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+
+  header .meta {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .criteria {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .criteria-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.6rem 0.7rem;
+    text-align: center;
+  }
+
+  .criteria-item .pct {
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .criteria-item .label {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 0.15rem;
+  }
+
+  .setup {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.82rem;
+  }
+
+  .setup h2, .rules h2 {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.6rem;
+  }
+
+  .setup ul, .rules ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    color: var(--text);
+  }
+
+  .setup li::before {
+    content: "\2022";
+    color: var(--text-muted);
+    margin-right: 0.5rem;
+  }
+
+  .phase-label {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .phase-label:first-of-type { margin-top: 0; }
+
+  .shot {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+
+  .shot-header {
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border);
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .timecode {
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 0.78rem;
+    color: var(--accent);
+    background: var(--accent-bg);
+    padding: 0.12rem 0.45rem;
+    border-radius: 3px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .shot-title {
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 0.82rem;
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    padding: 0.12rem 0.45rem;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  .tag-claim {
+    color: var(--claim-blue);
+    background: var(--claim-blue-bg);
+  }
+
+  .tag-score {
+    color: var(--claim-purple);
+    background: var(--claim-purple-bg);
+  }
+
+  .shot-body {
+    padding: 0.85rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.2rem;
+  }
+
+  .actions ol {
+    list-style: none;
+    counter-reset: step;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.82rem;
+  }
+
+  .actions li {
+    counter-increment: step;
+    padding-left: 1.5rem;
+    position: relative;
+    line-height: 1.5;
+  }
+
+  .actions li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: var(--action-green);
+    background: var(--action-green-bg);
+    width: 1rem;
+    height: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    top: 0.2rem;
+  }
+
+  .voiceover {
+    background: var(--surface-alt);
+    border-radius: 4px;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.84rem;
+    line-height: 1.6;
+    font-style: italic;
+    color: var(--text);
+    border-left: 3px solid var(--accent);
+  }
+
+  .ui-detail {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    background: var(--surface-alt);
+    border-radius: 4px;
+    padding: 0.5rem 0.8rem;
+    border-left: 3px solid var(--claim-blue);
+  }
+
+  .ui-detail strong {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .warn {
+    font-size: 0.76rem;
+    color: var(--warn-rose);
+    background: var(--warn-rose-bg);
+    padding: 0.35rem 0.65rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .warn::before {
+    content: "!";
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 0.68rem;
+    flex-shrink: 0;
+    margin-top: 0.08rem;
+  }
+
+  .rules {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    margin-top: 1.5rem;
+  }
+
+  .rules h2 { color: var(--warn-rose); }
+
+  .rules li::before {
+    content: "\2716";
+    color: var(--warn-rose);
+    margin-right: 0.5rem;
+    font-size: 0.68rem;
+  }
+
+  .duration-bar {
+    display: flex;
+    gap: 1px;
+    margin-bottom: 2rem;
+    border-radius: 4px;
+    overflow: hidden;
+    height: 5px;
+  }
+
+  .duration-bar span { display: block; height: 100%; }
+
+  .tags-row {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 540px) {
+    .criteria { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Pocket Producer -- Demo Video Storyboard</h1>
+    <div class="meta">
+      <span>Target: 3:30 - 4:00</span>
+      <span>12 shots, 4 phases</span>
+      <span>Let's Build 2026</span>
+    </div>
+  </header>
+
+  <div class="criteria">
+    <div class="criteria-item">
+      <div class="pct">30%</div>
+      <div class="label">Innovation</div>
+    </div>
+    <div class="criteria-item">
+      <div class="pct">25%</div>
+      <div class="label">Technical</div>
+    </div>
+    <div class="criteria-item">
+      <div class="pct">25%</div>
+      <div class="label">Musical Value</div>
+    </div>
+    <div class="criteria-item">
+      <div class="pct">20%</div>
+      <div class="label">UX</div>
+    </div>
+  </div>
+
+  <div class="setup">
+    <h2>Before Recording</h2>
+    <ul>
+      <li>1920x1080, macOS screen recording (Cmd+Shift+5), <strong>system audio ON</strong> for preview playback</li>
+      <li>One browser window. Pocket Producer tab + Audiotool tab side by side or quick tab-switch</li>
+      <li>Prepare one real unfinished Audiotool project: drums + at least one more track, tempo set, 4+ tracks</li>
+      <li>Fragment library must have 10+ fragments with varied tags/tempos (the ranker needs material to rank)</li>
+      <li>Subtitles / closed captions added in post-edit (reusable for ISMIR video later)</li>
+      <li>Record raw one-take evidence first, cut polished version from it</li>
+    </ul>
+  </div>
+
+  <div class="duration-bar" title="Phase proportions: Problem 15s, Integration 55s, Workflow 90s, Research+Close 50s">
+    <span style="flex:15;background:var(--accent);opacity:0.6" title="Problem"></span>
+    <span style="flex:55;background:var(--claim-blue);opacity:0.5" title="Integration"></span>
+    <span style="flex:90;background:var(--action-green);opacity:0.5" title="Workflow"></span>
+    <span style="flex:50;background:var(--claim-purple);opacity:0.5" title="Research+Close"></span>
+  </div>
+
+  <!-- ====== PHASE 1: PROBLEM ====== -->
+  <div class="phase-label">Phase 1 -- The Problem (15s)</div>
+
+  <div class="shot">
+    <div class="shot-header">
+      <span class="timecode">00:00 - 00:15</span>
+      <span class="shot-title">Hook</span>
+      <span class="tag tag-score">Musical Value 25%</span>
+    </div>
+    <div class="shot-body">
+      <div>
+        <div class="section-label">On screen</div>
+        <div class="actions">
+          <ol>
+            <li>Audiotool open with your unfinished project -- timeline visible, a few tracks with content, some empty</li>
+            <li>Slowly scroll the timeline left-right so it feels alive and real</li>
+            <li>Maybe hover over a track or two</li>
+          </ol>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Voiceover</div>
+        <div class="voiceover">
+          This is a track I never finished. I have dozens of my own loops and sketches somewhere in my library. The problem isn't making more sounds -- it's knowing which of them could grow into <em>this</em>.
+        </div>
+      </div>
+      <div class="ui-detail">
+        <strong>Why this matters:</strong> This establishes the core problem judges need to understand. Every musician has this experience. Don't rush it -- let them feel it.
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== PHASE 2: AUDIOTOOL INTEGRATION ====== -->
+  <div class="phase-label">Phase 2 -- Audiotool Integration (55s)</div>
+
+  <div class="shot">
+    <div class="shot-header">
+      <span class="timecode">00:15 - 00:35</span>
+      <span class="shot-title">OAuth + Connect</span>
+      <span class="tag tag-claim">Real Nexus Integration</span>
+      <span class="tag tag-score">Technical 25%</span>
+    </div>
+    <div class="shot-body">
+      <div>
+        <div class="section-label">On screen</div>
+        <div class="actions">
+          <ol>
+            <li>Switch to Pocket Producer tab: pocketproducer.vercel.app/audiotool</li>
+            <li>Connection panel visible: "Continue a session in Audiotool" with the scope explanation (<code>project:write</code>, <code>sample:write</code>)</li>
+            <li>Click <strong>"Connect Audiotool"</strong></li>
+            <li>OAuth consent popup appears -- <strong>pause here 3 seconds</strong>, let judges see it's real OAuth</li>
+            <li>Approve the consent</li>
+          </ol>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Voiceover</div>
+        <div class="voiceover">
+          Pocket Producer connects through Audiotool's Nexus SDK. It requests project:write and sample:write so it can read the session and insert what I choose. My Audiotool login never leaves this browser -- the backend never sees the token.
+        </div>
+      </div>
+      <div class="warn">The OAuth consent screen is your strongest proof of real integration. Let it fill the frame for a full beat. Judges will look for this.</div>
+      <div class="ui-detail">
+        <strong>UI element to highlight:</strong> The connection panel text explicitly says "Your Audiotool login never leaves this browser" and lists the exact scopes. This is both a security feature and a trust signal.
+      </div>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="shot-header">
+      <span class="timecode">00:35 - 00:45</span>
+      <span class="shot-title">Project list</span>
+      <span class="tag tag-claim">Real Account Data</span>
+      <span class="tag tag-score">Technical 25%</span>
+    </div>
+    <div class="shot-body">
+      <div>
+        <div class="section-label">On screen</div>
+        <div class="actions">
+          <ol>
+            <li>After OAuth, the project list appears: "Open a project" header + your Audiotool username at top-right</li>
+            <li>Your real Audiotool projects listed with folder icons</li>
+            <li>Click the unfinished project you prepared</li>
+            <li>Loading spinner while it reads the document via Nexus</li>
+          </ol>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Voiceover</div>
+        <div class="voiceover">
+          It lists my actual Audiotool projects. I'll open the one I was working on.
+        </div>
+      </div>
+      <div class="ui-detail">
+        <strong>Why show this:</strong> Multiple real projects prove this isn't a hardcoded demo. The username display confirms the real account connection.
+      </div>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="shot-header">
+      <span class="timecode">00:45 - 01:10</span>
+      <span class="shot-title">Session fingerprint</span>
+      <span class="tag tag-claim">Nexus Document Read</span>
+      <span class="tag tag-score">Innovation 30%</span>
+    </div>
+    <div class="shot-body">
+      <div>
+        <div class="section-label">On screen</div>
+        <div class="actions">
+          <ol>
+            <li>Session summary panel appears: "What we read from your session"</li>
+            <li>Point at each field -- <strong>Tempo</strong> (e.g. "120 BPM"), <strong>Key</strong> ("not available" -- be honest), <strong>Tracks</strong> ("4"), <strong>Track types</strong> ("drums, synth"), <strong>Playhead</strong> ("12.5s")</li>
+            <li>Hover over "Key: not available" briefly -- this is honesty</li>
+            <li>Click the text intent field: "What are you going for?"</li>
+            <li>Type: <strong>"dark bass to sit under these drums"</strong></li>
+          </ol>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Voiceover</div>
+        <div class="voiceover">
+          It reads the open session through Nexus: tempo, track count, what instrument roles are already covered, where my playhead is. Audiotool documents don't carry a key signature, so it says "not available" rather than guessing.<br><br>
+          I can also add intent in my own words. Right now I want a dark bass to sit under these drums.
+        </div>
+      </div>
+      <div class="ui-detail">
+        <strong>Innovation proof:</strong> Session <em>compatibility</em>, not similarity. The system reads what's already there (tempo, roles, playhead) and asks what's missing -- not "find something that sounds like this." The "Key: not available" is intentional: missing data is reported, never imputed.
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== PHASE 3: CORE WORKFLOW ====== -->
+  <div class="phase-label">Phase 3 -- Core Workflow (1:30)</div>
+
+  <div class="shot">
+    <div class="shot-header">
+      <span class="timecode">01:10 - 01:25</span>
+      <span class="shot-title">Intensity + model controls</span>
+      <span class="tag tag-claim">User Control</span>
+      <span class="tag tag-score">UX 20%</span>
+    </div>
+    <div class="shot-body">
+      <div>
+        <div class="section-label">On screen</div>
+        <div class="actions">
+          <ol>
+            <li>Below the session summary: the control bar with <strong>Nudge / Suggest / Explore</strong> toggle + model dropdown + "Suggest 3" button</li>
+            <li>Click through intensity levels: Nudge (1 result), Suggest (3), Explore (6) -- show the toggle changing</li>
+            <li>Open the model dropdown: show <strong>Rules</strong> (default) and <strong>Fusion</strong> available</li>
+            <li>Leave it on <strong>Suggest</strong> mode + <strong>Rules</strong> model</li>
+          </ol>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Voiceover</div>
+        <div class="voiceover">
+          I control how many suggestions I want. Nudge gives me one; Suggest gives three; Explore gives six. The model is selectable too -- Rules is the transparent default; Fusion is a learned ranker I can switch to. More on why that's a choice in a moment.
+        </div>
+      </div>
+      <div class="ui-detail">
+        <strong>UX principle:</strong> The musician sets the intervention level, not the system. This is "one primary action per state" -- the interface doesn't overwhelm.
+      </div>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="shot-header">
+      <span class="timecode">01:25 - 01:55</span>
+      <span class="shot-title">Ranking + evidence</span>
+      <span class="tag tag-claim">Grounded Ranking</span>
+      <span class="tag tag-score">Innovation 30%</span>
+    </div>
+    <div class="shot-body">
+      <div>
+        <div class="section-label">On screen</div>
+        <div class="actions">
+          <ol>
+            <li>Click <strong>"Suggest 3"</strong> (sparkle icon button)</li>
+            <li>Loading spinner briefly, then three candidate cards appear in a grid</li>
+            <li>Each card shows: fragment title, <strong>"Why this now"</strong> section with colored evidence chips</li>
+            <li>Hover over first card's evidence chips: e.g. <span style="display:inline-block;background:var(--action-green-bg);color:var(--action-green);padding:0 4px;border-radius:3px;font-size:0.75rem">role gap fill</span> <span style="display:inline-block;background:var(--accent-bg);color:var(--accent);padding:0 4px;border-radius:3px;font-size:0.75rem">120 BPM match</span> <span style="display:inline-block;background:#cce4e8;color:#3e6e78;padding:0 4px;border-radius:3px;font-size:0.75rem">tag: bass</span></li>
+            <li>Move to second card -- show <em>different</em> evidence (e.g. tempo match but different role)</li>
+            <li>Note the small <strong>"Served by rules-v1"</strong> badge -- the system tells you which model answered</li>
+          </ol>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Voiceover</div>
+        <div class="voiceover">
+          Three suggestions from my own library. Each one carries structured evidence: this fragment fills a role my session doesn't have yet, its tempo is close, its tags match my intent. These labels come from the ranker's actual features -- tempo proximity, role gap detection, tag overlap. Never generated prose, never a black-box score. Every reason you see is a real signal the ranker used.
+        </div>
+      </div>
+      <div class="ui-detail">
+        <strong>Evidence chip types (color-coded in UI):</strong><br>
+        <span style="color:var(--action-green)">Green</span> = role/track gap fill &nbsp;
+        <span style="color:var(--accent)">Tan</span> = tempo/key match &nbsp;
+        <span style="color:#3e6e78">Teal</span> = tag overlap &nbsp;
+        <span style="color:#4a6a8a">Blue</span> = intent match &nbsp;
+        <span style="color:#6b5a8a">Purple</span> = harmonic fit &nbsp;
+        <span style="color:#8a5a42">Coral</span> = timbral match
+      </div>
+      <div class="warn">This is the key innovation shot. Spend time here. Hover slowly over each chip so judges can read them. The "Why this now" label is the headline.</div>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="shot-header">
+      <span class="timecode">01:55 - 02:10</span>
+      <span class="shot-title">Preview + listen</span>
+      <span class="tag tag-claim">Preview Before Commit</span>
+      <span class="tag tag-score">UX 20%</span>
+    </div>
+    <div class="shot-body">
+      <div>
+        <div class="section-label">On screen</div>
+        <div class="actions">
+          <ol>
+            <li>Click <strong>Preview</strong> (play icon) on the best candidate</li>
+            <li>Audio plays through system audio -- <strong>let it play 3-5 seconds</strong></li>
+            <li>Optionally preview a second candidate to show comparison</li>
+          </ol>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Voiceover</div>
+        <div class="voiceover">
+          Before committing, I can preview. This is my own audio, from my own library -- Pocket Producer doesn't generate anything.
+        </div>
+      </div>
+      <div class="ui-detail">
+        <strong>Musical value:</strong> "Your own material, not generated" is a core differentiator. The preview is the musician staying in control.
+      </div>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="shot-header">
+      <span class="timecode">02:10 - 02:35</span>
+      <span class="shot-title">Insert into Audiotool</span>
+      <span class="tag tag-claim">Real Nexus Write</span>
+      <span class="tag tag-score">Technical 25%</span>
+    </div>
+    <div class="shot-body">
+      <div>
+        <div class="section-label">On screen</div>
+        <div class="actions">
+          <ol>
+            <li>Click <strong>"Insert into Audiotool"</strong> button on the chosen candidate</li>
+            <li>Loading spinner on the button while the Nexus transaction runs</li>
+            <li>Green confirmation bar appears: <strong>"Inserted 'Fragment Title' at 12.5s -- check your Audiotool timeline"</strong> + Undo button</li>
+            <li>Switch to Audiotool tab</li>
+            <li>Show the timeline: <strong>new sample visible at the playhead position</strong></li>
+            <li>Zoom in on the inserted sample to make it clearly visible</li>
+          </ol>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Voiceover</div>
+        <div class="voiceover">
+          Insert. One Nexus transaction: it uploads the sample, waits for the server to confirm, then places it on the timeline at my playhead position. This is a real write into the real project -- not a simulation.
+        </div>
+      </div>
+      <div class="warn">Show the Audiotool timeline BEFORE the insert (previous shot's Audiotool view) and AFTER. The before/after is proof of real write. Zoom in so the new sample is clearly visible.</div>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="shot-header">
+      <span class="timecode">02:35 - 02:55</span>
+      <span class="shot-title">Undo</span>
+      <span class="tag tag-claim">Exact Undo via Receipt</span>
+      <span class="tag tag-score">Innovation 30%</span>
+      <span class="tag tag-score">UX 20%</span>
+    </div>
+    <div class="shot-body">
+      <div>
+        <div class="section-label">On screen</div>
+        <div class="actions">
+          <ol>
+            <li>Switch back to Pocket Producer</li>
+            <li>The green bar still shows: "Inserted 'Fragment Title' at 12.5s" with the Undo button</li>
+            <li>Click <strong>Undo</strong></li>
+            <li>Green bar disappears</li>
+            <li>Switch to Audiotool: <strong>the sample is gone from the timeline</strong></li>
+            <li>Hold on the clean timeline for 2 seconds -- same state as before the insert</li>
+          </ol>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Voiceover</div>
+        <div class="voiceover">
+          And undo. It doesn't just delete something -- it restores the exact prior entity set using the insert receipt. The system proposes; I decide. Every action is reversible.
+        </div>
+      </div>
+      <div class="ui-detail">
+        <strong>Technical detail worth mentioning:</strong> The undo works from an "insert receipt" that records every entity the transaction created. This is validated against Audiotool's official document validator in tests. Not a generic "delete last thing" -- an exact reversal.
+      </div>
+      <div class="warn">Three timeline states must be visible across shots 8-9: before insert, after insert, after undo. This is the strongest proof of real read/write integration.</div>
+    </div>
+  </div>
+
+  <!-- ====== PHASE 4: WHY IT'S DIFFERENT + CLOSE ====== -->
+  <div class="phase-label">Phase 4 -- Innovation + Research + Close (50s)</div>
+
+  <div class="shot">
+    <div class="shot-header">
+      <span class="timecode">02:55 - 03:10</span>
+      <span class="shot-title">Model honesty</span>
+      <span class="tag tag-claim">Honest Uncertainty</span>
+      <span class="tag tag-score">Innovation 30%</span>
+    </div>
+    <div class="shot-body">
+      <div>
+        <div class="section-label">On screen</div>
+        <div class="actions">
+          <ol>
+            <li>Back in Pocket Producer, open the model dropdown</li>
+            <li>Switch from <strong>Rules</strong> to <strong>Fusion</strong></li>
+            <li>Click "Suggest 3" again -- new results appear</li>
+            <li>Note the badge: "Served by fusion-5sig-v1"</li>
+            <li>Evidence chips may differ from the Rules results</li>
+          </ol>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Voiceover</div>
+        <div class="voiceover">
+          The fusion model is a five-signal learned ranker. It's available, but it's not the default -- because our offline evaluation found that its advantage over the rules baseline depends on how the weak-supervision labels are constructed. Rather than silently using the fancier model, we let you choose, and we tell you which model answered.
+        </div>
+      </div>
+      <div class="ui-detail">
+        <strong>This is the core innovation pitch:</strong> Most tools hide their model choices. Pocket Producer makes them explicit and selectable, grounded in actual evaluation evidence. "Honest uncertainty as a design principle."
+      </div>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="shot-header">
+      <span class="timecode">03:10 - 03:15</span>
+      <span class="shot-title">Fallback architecture</span>
+      <span class="tag tag-claim">Graceful Degradation</span>
+      <span class="tag tag-score">Technical 25%</span>
+    </div>
+    <div class="shot-body">
+      <div>
+        <div class="section-label">On screen</div>
+        <div class="actions">
+          <ol>
+            <li>Brief: show the "Served by rules-v1" or mention the fallback badge</li>
+          </ol>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Voiceover</div>
+        <div class="voiceover">
+          If the fusion model is unavailable, the system falls back to the rules ranker automatically and tells you. The core loop never depends on a remote model.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="shot-header">
+      <span class="timecode">03:15 - 03:35</span>
+      <span class="shot-title">Research backing (ISMIR)</span>
+      <span class="tag tag-claim">Measured System</span>
+      <span class="tag tag-score">Innovation 30%</span>
+    </div>
+    <div class="shot-body">
+      <div>
+        <div class="section-label">On screen</div>
+        <div class="actions">
+          <ol>
+            <li>Cut to: README on GitHub -- scroll to the results tables (dev set + held-out)</li>
+            <li>Show the held-out sensitivity table: LAION-CLAP vs MS-CLAP results, the 7.8pp swing</li>
+            <li>Brief flash of the sensitivity figure (heldout-sensitivity.png) if you have it open</li>
+          </ol>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Voiceover</div>
+        <div class="voiceover">
+          This isn't decoration. We evaluated against six baselines on a frozen held-out split. The learned fusion shows a 7.8 percentage-point swing on the hardest examples depending on which audio embedding and training configuration you use. That sensitivity is why the rules baseline is the default and the fusion is opt-in. The same evaluation is submitted to ISMIR 2026 as a Late-Breaking Demo paper.
+        </div>
+      </div>
+      <div class="ui-detail">
+        <strong>ISMIR mention adds credibility:</strong> It signals peer review and research rigor. Judges care about whether the technical claims are substantiated. The frozen split + sensitivity analysis is strong evidence. Don't dwell on numbers -- the point is "we measured it and the answer is nuanced."
+      </div>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="shot-header">
+      <span class="timecode">03:35 - 03:50</span>
+      <span class="shot-title">Close</span>
+      <span class="tag tag-claim">Thesis</span>
+    </div>
+    <div class="shot-body">
+      <div>
+        <div class="section-label">On screen</div>
+        <div class="actions">
+          <ol>
+            <li>Back to the Pocket Producer session view with suggestions visible</li>
+            <li>Hold for 3 seconds, let the interface breathe</li>
+            <li>Maybe one final slow hover over an evidence chip</li>
+          </ol>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Voiceover</div>
+        <div class="voiceover">
+          Pocket Producer is creative memory, not autopilot. It helps you re-enter unfinished music with your own material, and every action it takes -- rank, insert, undo -- you can see why, and you can reverse it.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rules">
+    <h2>Recording Rules</h2>
+    <ul>
+      <li>No shot may claim something the raw footage doesn't show</li>
+      <li>No fabricated UI states; if a state is slow, cut the wait, not the state</li>
+      <li>Show Audiotool timeline in three states: before insert, after insert, after undo</li>
+      <li>Keep the OAuth consent popup visible for at least 3 seconds</li>
+      <li>System audio must be on for the Preview shot -- the sound is proof</li>
+      <li>Keep the raw one-take file; archive under docs/letsbuild/evidence/</li>
+      <li>Record raw evidence footage first, then cut the polished version</li>
+    </ul>
+  </div>
+
+  <div class="setup" style="margin-top:1.25rem">
+    <h2>Judging Coverage Checklist</h2>
+    <ul>
+      <li><strong>Innovation (30%):</strong> Shots 4 (session fingerprint), 6 (evidence chips), 9 (undo receipt), 10 (model honesty), 12 (research)</li>
+      <li><strong>Technical (25%):</strong> Shots 2 (OAuth/scopes), 3 (real projects), 8 (Nexus write transaction), 11 (fallback)</li>
+      <li><strong>Musical Value (25%):</strong> Shots 1 (the problem), 7 (preview your own material), 13 (close)</li>
+      <li><strong>UX (20%):</strong> Shots 5 (intensity control), 7 (preview before commit), 9 (undo always available), 6 ("Why this now")</li>
+    </ul>
+  </div>
+</div>
