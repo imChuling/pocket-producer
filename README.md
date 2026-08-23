@@ -10,7 +10,7 @@ Not a generator. Not a collaborator. A tool you steer.
 **Try it:** [pocketproducer.vercel.app/audiotool](https://pocketproducer.vercel.app/audiotool)
 (sign in, connect your Audiotool account, open a project, and go)
 
-<!-- **Demo video:** [YouTube link -- fill in after upload] -->
+**Demo video:** [youtu.be/2Q4TSPM9PE0](https://youtu.be/2Q4TSPM9PE0)
 
 Built for [Audiotool Let's Build 2026](https://www.audiotool.com/LetsBuild/)
 with a companion

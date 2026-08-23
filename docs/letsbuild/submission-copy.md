@@ -31,7 +31,7 @@ Two different fields, don't mix them up:
 https://pocketproducer.vercel.app/audiotool
 
 **Demo video**
-[YouTube link — fill in after upload]
+https://youtu.be/2Q4TSPM9PE0
 
 **Source code**
 https://github.com/imChuling/pocket-producer
