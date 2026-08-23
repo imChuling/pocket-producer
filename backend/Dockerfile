@@ -17,6 +17,15 @@ RUN pip install uv
 COPY requirements.txt ./
 RUN uv pip install --system -r requirements.txt
 
+# CLAP stack (runtime-gated by POCKET_ENABLE_CLAP): CPU-only torch keeps the
+# image lean; msclap pulls its remaining deps against it. Weights are baked
+# at build time so a fresh instance never downloads them mid-request.
+RUN uv pip install --system --index-url https://download.pytorch.org/whl/cpu \
+    "torch>=2.6,<3" "torchaudio" \
+    && uv pip install --system "msclap>=1.3,<2" "soundfile>=0.12,<1"
+ENV HF_HOME=/opt/hf-cache
+RUN python -c "from huggingface_hub import hf_hub_download; hf_hub_download('microsoft/msclap', 'CLAP_weights_2023.pth')"
+
 COPY agents/ ./agents/
 COPY tools/ ./tools/
 COPY api/ ./api/

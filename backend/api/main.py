@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import threading
 import uuid
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -39,6 +40,27 @@ logger = logging.getLogger(__name__)
 # Lifespan
 # ---------------------------------------------------------------------------
 
+def _warm_clap_in_background() -> None:
+    # Loading msclap (torch import + 658 MB of weights) takes double-digit
+    # seconds; doing it here keeps the first /session-embed request fast.
+    # A daemon thread so startup readiness never waits on it.
+    if os.environ.get("POCKET_ENABLE_CLAP") != "1":
+        return
+
+    def _load() -> None:
+        try:
+            from api.routes.ranking import _get_clap
+
+            adapter = _get_clap()
+            if adapter is not None:
+                adapter.encode_text(["warmup"])
+                logger.info("CLAP warmup complete")
+        except Exception:
+            logger.exception("CLAP warmup failed — will retry on first request")
+
+    threading.Thread(target=_load, name="clap-warmup", daemon=True).start()
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     logger.info("Warming up DB connection and Gemini client...")
@@ -48,6 +70,7 @@ async def lifespan(application: FastAPI):
         logger.info("Warmup complete")
     except Exception:
         logger.exception("Warmup failed — will retry on first request")
+    _warm_clap_in_background()
     yield
 
 
