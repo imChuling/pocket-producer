@@ -4,13 +4,18 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@audiotool/nexus':
+    hash: a2a52cb79e2f683460c26455b0da1377a1703a25b297e439bf0be85e7153f7f2
+    path: patches/@audiotool__nexus.patch
+
 importers:
 
   .:
     dependencies:
       '@audiotool/nexus':
         specifier: 0.0.17
-        version: 0.0.17
+        version: 0.0.17(patch_hash=a2a52cb79e2f683460c26455b0da1377a1703a25b297e439bf0be85e7153f7f2)
       firebase:
         specifier: ^12.13.0
         version: 12.13.0
@@ -4006,7 +4011,7 @@ snapshots:
 
   '@asamuzakjp/nwsapi@2.3.9': {}
 
-  '@audiotool/nexus@0.0.17':
+  '@audiotool/nexus@0.0.17(patch_hash=a2a52cb79e2f683460c26455b0da1377a1703a25b297e439bf0be85e7153f7f2)':
     dependencies:
       '@bufbuild/protobuf': 1.10.0
       '@connectrpc/connect': 1.7.0(@bufbuild/protobuf@1.10.0)

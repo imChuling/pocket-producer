@@ -172,6 +172,25 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
     return () => cancelAnimationFrame(rafId);
   }, []);
 
+  // Unmounting mid-recording must release the microphone and discard the
+  // take — the parent is gone, so there is nowhere to deliver the blob.
+  useEffect(() => {
+    return () => {
+      const recorder = mediaRecorder.current;
+      if (recorder && recorder.state !== "inactive") {
+        recorder.onstop = null;
+        recorder.stop();
+      }
+      mediaRecorder.current = null;
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+      if (timerRef.current) clearInterval(timerRef.current);
+      audioCtxRef.current?.close().catch(() => {});
+      audioCtxRef.current = null;
+      analyserRef.current = null;
+    };
+  }, []);
+
   const start = useCallback(async () => {
     setError(null);
     try {
@@ -228,6 +247,8 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
     } catch (err) {
       audioCtxRef.current?.close().catch(() => {});
       audioCtxRef.current = null;
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
       const name = err instanceof DOMException ? err.name : "";
       if (name === "NotAllowedError" || name === "SecurityError") {
         setError("Microphone access denied — check browser and OS permission settings");

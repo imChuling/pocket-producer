@@ -18,14 +18,24 @@ export default function AnnotatePage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
+
+  const releasePreview = useCallback(() => {
+    audioRef.current?.pause();
+    audioRef.current = null;
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !user) router.replace("/login");
   }, [authLoading, user, router]);
 
   useEffect(() => {
-    return () => audioRef.current?.pause();
-  }, []);
+    return () => releasePreview();
+  }, [releasePreview]);
 
   const fetchNext = useCallback(
     () => apiFetch<NextPairResponse>("/ranking/pairs/next"),
@@ -44,17 +54,17 @@ export default function AnnotatePage() {
     });
     if (!response.ok) return;
     const url = URL.createObjectURL(await response.blob());
-    audioRef.current?.pause();
+    releasePreview();
     const audio = new Audio(url);
     audioRef.current = audio;
-    audio.onended = () => URL.revokeObjectURL(url);
+    previewUrlRef.current = url;
     try {
       await audio.play();
     } catch (e) {
       // Rapid preview switches abort the pending play(); that is expected.
       if (!(e instanceof DOMException && e.name === "AbortError")) throw e;
     }
-  }, []);
+  }, [releasePreview]);
 
   if (authLoading || !user) {
     return (

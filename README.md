@@ -204,7 +204,7 @@ Foundation encoders are **frozen and never on the click path** -- embeddings are
 computed offline and cached; the online ranker is a sub-500K CPU model.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) and
-[`docs/research/2026-07-25-pocketrank-frontier-architecture.md`](docs/research/2026-07-25-pocketrank-frontier-architecture.md).
+[`docs/_archive/research/2026-07-25-pocketrank-frontier-architecture.md`](docs/_archive/research/2026-07-25-pocketrank-frontier-architecture.md).
 
 ---
 
@@ -222,10 +222,10 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 ./.venv/bin/pytest -q
 ```bash
 # Frontend
 cd frontend
-npm install
+pnpm install               # pnpm required: applies patches/ to @audiotool/nexus
 echo "NEXT_PUBLIC_AUDIOTOOL_CLIENT_ID=your-client-id" >> .env.local
-npm run check                 # eslint + tsc + vitest
-npm run dev                   # → http://127.0.0.1:3000/audiotool
+pnpm run check                 # eslint + tsc + vitest
+pnpm run dev                   # → http://127.0.0.1:3000/audiotool
 ```
 
 > **Use `127.0.0.1`, not `localhost`.** Audiotool rejects `localhost` in an

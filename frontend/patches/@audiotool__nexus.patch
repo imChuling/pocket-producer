@@ -1,0 +1,13 @@
+diff --git a/dist/synced-document-ywEybIAl.js b/dist/synced-document-ywEybIAl.js
+index ad4d587a687b47a310ec6656598c9835c1bcf01e..c05c5670cba804491d05081a6a2d4aebf340a9a0 100644
+--- a/dist/synced-document-ywEybIAl.js
++++ b/dist/synced-document-ywEybIAl.js
+@@ -4299,7 +4299,7 @@ const Yi = (i, t) => {
+ }, Un = (i, t, e, n) => {
+   switch (t.kind) {
+     case "message": {
+-      if (t.T.name === q.name) {
++      if (t.T.typeName === q.typeName) {
+         const a = n;
+         return new q({
+           fieldIndex: a.fieldIndex.slice(),

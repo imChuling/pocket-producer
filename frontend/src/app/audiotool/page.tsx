@@ -59,6 +59,16 @@ export default function AudiotoolPage() {
     [insertedTagSets],
   );
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
+
+  const releasePreview = useCallback(() => {
+    audioRef.current?.pause();
+    audioRef.current = null;
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !user) router.replace("/login");
@@ -81,9 +91,9 @@ export default function AudiotoolPage() {
 
   useEffect(() => {
     return () => {
-      audioRef.current?.pause();
+      releasePreview();
     };
-  }, []);
+  }, [releasePreview]);
 
   function getFingerprint(): ReturnType<typeof fingerprintFromDocument> | null {
     const doc = audiotool.document();
@@ -106,12 +116,12 @@ export default function AudiotoolPage() {
     });
     if (!response.ok) throw new Error("Could not load preview audio");
     const url = URL.createObjectURL(await response.blob());
-    audioRef.current?.pause();
+    releasePreview();
     const audio = new Audio(url);
     audioRef.current = audio;
-    audio.onended = () => URL.revokeObjectURL(url);
+    previewUrlRef.current = url;
     await audio.play();
-  }, []);
+  }, [releasePreview]);
 
   const insertFragment = useCallback(
     async (fragment: Fragment) => {

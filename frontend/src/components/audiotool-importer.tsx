@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { Cable, ChevronDown, FolderOpen, Loader2, Check } from "lucide-react";
 import { useAudiotool } from "@/hooks/use-audiotool";
 import { listImportableSampleNames } from "@/lib/audiotool/import-project";
@@ -16,38 +16,25 @@ export function AudiotoolImporter({ onImported }: AudiotoolImporterProps) {
   const audiotool = useAudiotool();
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
+  const [statusMessage, setStatus] = useState<string | null>(null);
+  const [connectOpened, setConnectOpened] = useState(false);
+  // The "connect in the new tab" hint is derived, so it clears itself the
+  // moment the hook reports a live connection — no polling, no stale closure.
+  const connectHint =
+    connectOpened &&
+    audiotool.status !== "connected" &&
+    audiotool.status !== "project-open"
+      ? "Connect in the new tab, then come back here."
+      : null;
+  const status = statusMessage ?? connectHint;
   const [importedProjects, setImportedProjects] = useState<Set<string>>(
     () => new Set(),
   );
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Poll for connection after opening auth in new tab.
-  useEffect(() => {
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, []);
-
   const handleConnect = useCallback(() => {
     // Open Audiotool page in a new tab instead of redirecting away.
     window.open("/audiotool", "_blank");
-    setStatus("Connect in the new tab, then come back here.");
-    // Poll until connected (restore picks up the Nexus session).
-    if (pollRef.current) clearInterval(pollRef.current);
-    pollRef.current = setInterval(() => {
-      if (
-        audiotool.status === "connected" ||
-        audiotool.status === "project-open"
-      ) {
-        if (pollRef.current) {
-          clearInterval(pollRef.current);
-          pollRef.current = null;
-        }
-        setStatus(null);
-      }
-    }, 1000);
-  }, [audiotool.status]);
+    setConnectOpened(true);
+  }, []);
 
   const handleSelectAndOpen = useCallback(
     async (projectName: string) => {

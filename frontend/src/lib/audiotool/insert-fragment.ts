@@ -16,10 +16,12 @@ export type InsertReceipt = {
   insertedAtSeconds: number;
 };
 
-type EntityLike = { id: string };
+type EntityLike = { id: string; entityType?: string };
 
 type TransactionLike = {
-  entities: { get: () => EntityLike[] };
+  entities: {
+    get: () => EntityLike[];
+  };
   insertSample: (
     sample: { name: string; durationSeconds: number; bpm?: number },
     options?: {
@@ -81,8 +83,6 @@ export async function insertFragment(
   const uploaded = await upload.uploaded;
   if (uploaded instanceof Error) throw uploaded;
 
-  // Audiotool maps samples to musical time, so a bpm is always needed;
-  // preference order: project tempo, fragment tempo, then a documented default.
   const bpm = options.projectBpm ?? fragment.bpm ?? DEFAULT_BPM;
   const positionTicks = Math.max(
     0,
@@ -122,7 +122,6 @@ export async function undoInsert(
 ): Promise<void> {
   await document.modify((t) => {
     const created = new Set(receipt.createdEntityIds);
-    // Remove dependents first so no removal ever leaves dangling pointers.
     for (const id of [...receipt.createdEntityIds].reverse()) {
       const stillExists = t.entities
         .get()
