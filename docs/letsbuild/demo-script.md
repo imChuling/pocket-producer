@@ -55,10 +55,12 @@ Recording setup:
 
 ## Act 2 — The Audiotool integration (1:20-2:50)
 
-**01:20-01:30 — Architecture beat** · deck slide 8
-> "Here's how it meets Audiotool: the browser talks to the open project
-> through the Nexus SDK. OAuth tokens never leave the browser — the
-> backend only ever sees a session fingerprint and candidate metadata."
+**01:20-01:30 — Architecture beat** · deck slide 7 (Tour · Audiotool)
+for the first sentence, then slide 9 (architecture) for the rest
+> "The fourth surface is the reason this app exists. Here's how it meets
+> Audiotool: the browser talks to the open project through the Nexus
+> SDK. OAuth tokens never leave the browser — the backend only ever sees
+> a session fingerprint and candidate metadata."
 
 **01:30-01:48 — Connect and read** · live app: /audiotool
 - Click Connect, let the OAuth consent screen stay visible for a beat,
@@ -96,7 +98,7 @@ Recording setup:
 
 ## Act 3 — Why you can trust it (2:50-3:30)
 
-**02:50-03:10 — Honest uncertainty** · deck slides 18-19
+**02:50-03:10 — Honest uncertainty** · deck slides 19-20
 > "Under the hood this is a measured system: six baselines, a frozen
 > held-out split, submitted to ISMIR as a Late-Breaking/Demo paper. Our
 > own evaluation shows the learned ranker's advantage is sensitive to
@@ -104,7 +106,7 @@ Recording setup:
 > That's exactly why the fusion is opt-in instead of silently in charge:
 > the model proposes, the musician decides."
 
-**03:10-03:30 — Close** · deck slide 21, then back to the session
+**03:10-03:30 — Close** · deck slide 22, then back to the session
 > "Pocket Producer is creative memory, not autopilot. It helps you
 > re-enter unfinished music with your own material — and every action it
 > takes, you can see why, and you can reverse it. Try it at
@@ -145,9 +147,10 @@ The same library, turned inward. My creative archetype, emotion flow,
 sound palette, and when ideas actually happen — computed from what I
 made, not what I claim I make.
 
-Here's how it meets Audiotool: the browser talks to the open project
-through the Nexus SDK. OAuth tokens never leave the browser — the
-backend only ever sees a session fingerprint and candidate metadata.
+The fourth surface is the reason this app exists. Here's how it meets
+Audiotool: the browser talks to the open project through the Nexus SDK.
+OAuth tokens never leave the browser — the backend only ever sees a
+session fingerprint and candidate metadata.
 
 I connect, open my unfinished project, and Pocket Producer reads the
 session through Nexus: tempo, tracks, playhead. It shows exactly what it
