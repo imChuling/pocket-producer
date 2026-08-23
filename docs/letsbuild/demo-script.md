@@ -21,12 +21,16 @@ Recording setup:
 
 ## Act 1 — The library (0:00-1:20)
 
-**00:00-00:12 — Hook** · deck slides 1-2, then cut to Audiotool project
-> "This is a track I never finished. I have dozens of my own loops and
-> sketches. The problem isn't making more sounds — it's knowing which of
-> them could grow into *this*. Pocket Producer answers that question."
+**00:00-00:16 — Hook** · deck slides 1-2, then cut to Audiotool project
+> "Musicians leave ideas everywhere — voice memos on your phone, a
+> hummed melody in Notes, loops buried in old project files. Most of
+> those demos are never heard again. And this is a track I never
+> finished. The problem isn't making more sounds — it's knowing which
+> of my scattered ideas could grow into *this*. Pocket Producer
+> collects them, and helps them become songs."
 
-**00:12-00:22 — Four surfaces** · deck slide 3
+**00:16-00:26 — Four surfaces** · deck slide 3 (later beats' timecodes
+shift ~4s with the longer hook; treat them as relative)
 > "It's one fragment library with four surfaces: Capture everything,
 > Projects that assemble themselves, a DNA profile of how you create,
 > and a two-way Audiotool workflow."
@@ -124,9 +128,12 @@ for the first sentence, then slide 9 (architecture) for the rest
 
 ## Teleprompter — full voiceover, continuous read
 
-This is a track I never finished. I have dozens of my own loops and
-sketches. The problem isn't making more sounds — it's knowing which of
-them could grow into this. Pocket Producer answers that question.
+Musicians leave ideas everywhere — voice memos on your phone, a hummed
+melody in Notes, loops buried in old project files. Most of those demos
+are never heard again. And this is a track I never finished. The
+problem isn't making more sounds — it's knowing which of my scattered
+ideas could grow into this. Pocket Producer collects them, and helps
+them become songs.
 
 It's one fragment library with four surfaces: Capture everything,
 Projects that assemble themselves, a DNA profile of how you create, and
