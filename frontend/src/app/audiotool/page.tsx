@@ -29,6 +29,7 @@ import {
   toCandidates,
 } from "@/lib/ranking-api";
 import type { Fragment } from "@/types";
+import type { ParsedIntent } from "@/types/audiotool";
 
 export default function AudiotoolPage() {
   const { user, loading: authLoading } = useAuth();
@@ -36,6 +37,8 @@ export default function AudiotoolPage() {
   const audiotool = useAudiotool();
   const { fragments } = useFragments();
   const [intent, setIntent] = useState("");
+  // LLM reading of the intent, already reviewed (chips) by the user.
+  const [parsedIntent, setParsedIntent] = useState<ParsedIntent | null>(null);
   const [openingProject, setOpeningProject] = useState<string | null>(null);
   const [lastInsert, setLastInsert] = useState<{
     receipt: InsertReceipt;
@@ -423,6 +426,7 @@ export default function AudiotoolPage() {
               const fresh = getFingerprint();
               if (!fresh) throw new Error("No session to rank against");
               fresh.context_tags = sessionTags;
+              fresh.parsed_intent = parsedIntent;
               const doc = audiotool.document();
               const samplesApi = audiotool.samples();
               if (doc && samplesApi) {
@@ -454,6 +458,8 @@ export default function AudiotoolPage() {
               return requestRecommendations(fresh, fragments, { limit, modelId });
             }}
             onIntentChange={setIntent}
+            parsedIntent={parsedIntent}
+            onParsedIntentChange={setParsedIntent}
             onPreview={previewFragment}
             onInsert={insertFragment}
             onFeedback={handleFeedback}

@@ -50,6 +50,30 @@ class TestKeyMatch:
         assert key_match(None, "A minor") == 0.0
         assert key_match("A minor", None) == 0.0
 
+    def test_exact_mode_rejects_relative(self):
+        assert key_match("C major", "A minor", mode="exact") == 0.0
+
+    def test_relative_accepts_relative_pair(self):
+        assert key_match("C major", "A minor", mode="relative") == 1.0
+        assert key_match("A minor", "C major", mode="relative") == 1.0
+
+    def test_relative_rejects_fifth(self):
+        assert key_match("C major", "G major", mode="relative") == 0.0
+
+    def test_fifth_accepts_fifth_same_mode(self):
+        assert key_match("C major", "G major", mode="fifth") == 0.5
+        assert key_match("C major", "F major", mode="fifth") == 0.5
+
+    def test_fifth_accepts_relative(self):
+        assert key_match("C major", "A minor", mode="fifth") == 1.0
+
+    def test_fifth_rejects_unrelated(self):
+        assert key_match("C major", "F# major", mode="fifth") == 0.0
+
+    def test_exact_same_key_all_modes(self):
+        for m in ("exact", "relative", "fifth"):
+            assert key_match("D minor", "D minor", mode=m) == 1.0
+
 
 class TestTrackGap:
     def test_candidate_filling_missing_role_scores_one(self):

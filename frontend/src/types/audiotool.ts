@@ -1,6 +1,18 @@
 // Stable frontend contract types. Field names mirror backend/ranking/schemas.py
 // and must not be renamed independently.
 
+/**
+ * LLM reading of the free-text intent, mirrored from ParsedIntent in
+ * backend/ranking/schemas.py. Always user-reviewed before it ranks:
+ * the UI renders it as removable chips and echoes back what survives.
+ */
+export type ParsedIntent = {
+  tags: string[];
+  roles: string[];
+  bpm: number | null;
+  key: string | null;
+};
+
 export type SessionFingerprint = {
   project_id: string;
   bpm: number | null;
@@ -14,6 +26,8 @@ export type SessionFingerprint = {
   context_tags?: string[];
   /** Server-populated when session region audio is available; never set by the browser. */
   region_audio_embeddings?: number[][] | null;
+  /** User-approved LLM interpretation of text_intent; null degrades to raw text matching. */
+  parsed_intent?: ParsedIntent | null;
 };
 
 export type RecommendationEvent =

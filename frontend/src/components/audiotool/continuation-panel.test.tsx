@@ -6,6 +6,14 @@ import { ContinuationPanel } from "./continuation-panel";
 import type { Fragment } from "@/types";
 import type { RankResponse, SessionFingerprint } from "@/types/audiotool";
 
+// SessionSummary imports ranking-api -> lib/api -> firebase, which
+// initializes auth at module load; stub the api layer so tests never
+// touch Firebase or the network.
+vi.mock("@/lib/api", () => ({
+  apiFetch: vi.fn(),
+  apiPost: vi.fn(),
+}));
+
 afterEach(cleanup);
 
 const fingerprint: SessionFingerprint = {

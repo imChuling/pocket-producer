@@ -7,6 +7,7 @@ import { CandidateCard } from "@/components/audiotool/candidate-card";
 import { SessionSummary } from "@/components/audiotool/session-summary";
 import type { Fragment } from "@/types";
 import type {
+  ParsedIntent,
   RankResponse,
   RecommendationEvent,
   SessionFingerprint,
@@ -56,6 +57,8 @@ export function ContinuationPanel({
   availableModels,
   requestRecommendations,
   onIntentChange,
+  parsedIntent,
+  onParsedIntentChange,
   onPreview,
   onInsert,
   onFeedback,
@@ -70,6 +73,9 @@ export function ContinuationPanel({
     modelId: string,
   ) => Promise<RankResponse>;
   onIntentChange: (intent: string) => void;
+  /** User-approved LLM reading of the intent; rendered as removable chips. */
+  parsedIntent?: ParsedIntent | null;
+  onParsedIntentChange?: (parsed: ParsedIntent | null) => void;
   onPreview: (fragment: Fragment) => Promise<void> | void;
   onInsert: (fragment: Fragment) => Promise<void>;
   onFeedback: (feedback: PanelFeedback) => void;
@@ -158,6 +164,8 @@ export function ContinuationPanel({
         <SessionSummary
           fingerprint={fingerprint}
           onIntentChange={onIntentChange}
+          parsedIntent={parsedIntent}
+          onParsedIntentChange={onParsedIntentChange}
         />
         <p className="rounded-xl border border-chalk bg-powder p-6 text-center text-slate">
           No fragments in your library yet. Capture a few ideas first — then
@@ -172,6 +180,8 @@ export function ContinuationPanel({
       <SessionSummary
         fingerprint={fingerprint}
         onIntentChange={onIntentChange}
+        parsedIntent={parsedIntent}
+        onParsedIntentChange={onParsedIntentChange}
       />
       <div className="flex flex-wrap items-center gap-3">
         <div
