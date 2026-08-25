@@ -7,6 +7,7 @@
 import { apiFetch, apiPost } from "@/lib/api";
 import type { Fragment } from "@/types";
 import type {
+  ParsedIntent,
   RankResponse,
   RecommendationEvent,
   SessionFingerprint,
@@ -62,6 +63,19 @@ export async function fetchModelCards(): Promise<{
   models: ModelCard[];
 }> {
   return apiFetch("/ranking/model-card");
+}
+
+/**
+ * Ask the server's LLM to read a free-text intent as structured fields.
+ * Null means "no usable reading" — the caller degrades to raw-text
+ * matching and the user never sees an error for it.
+ */
+export async function parseIntent(text: string): Promise<ParsedIntent | null> {
+  const result = await apiPost<{ parsed: ParsedIntent | null }>(
+    "/ranking/intent",
+    { text },
+  );
+  return result.parsed;
 }
 
 export async function requestRecommendations(

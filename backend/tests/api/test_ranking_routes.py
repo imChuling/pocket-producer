@@ -215,6 +215,120 @@ def test_slow_adapter_triggers_timeout_fallback(auth_client):
         ranking_mod.RANK_TIMEOUT_SECONDS = original_timeout
 
 
+def test_rank_logs_exposure(auth_client):
+    response = auth_client.post(
+        "/api/ranking/rank",
+        json=rank_payload(),
+        headers={"Authorization": "Bearer fake"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    docs = _stub_db["ranking_requests"].docs
+    assert len(docs) == 1
+    doc = docs[0]
+    assert doc["request_id"] == body["request_id"]
+    assert doc["user_id"] == FAKE_USER_ID
+    assert doc["project_id"] == "p1"
+    assert doc["model_id_requested"] == "rules-v1"
+    assert doc["model_id_served"] == body["model_id"]
+    assert doc["fallback_used"] is False
+    assert doc["fragment_ids"] == [c["fragment_id"] for c in body["candidates"]]
+    assert doc["n_candidates_in"] == 1
+    assert "created_at" in doc
+    # session content and auth material must never be stored
+    lowered = {k.lower() for k in doc}
+    assert "text_intent" not in lowered
+    assert "access_token" not in lowered
+    assert "authorization" not in lowered
+
+
+def test_rank_logs_exposure_on_fallback(auth_client):
+    response = auth_client.post(
+        "/api/ranking/rank",
+        json=rank_payload(model_id="missing-model"),
+        headers={"Authorization": "Bearer fake"},
+    )
+    assert response.status_code == 200
+    doc = _stub_db["ranking_requests"].docs[0]
+    assert doc["model_id_requested"] == "missing-model"
+    assert doc["model_id_served"] == "rules-v1"
+    assert doc["fallback_used"] is True
+
+
+def test_rank_succeeds_when_exposure_logging_fails(auth_client):
+    class BrokenCollection:
+        def insert_one(self, doc):
+            raise RuntimeError("mongo down")
+
+    _stub_db._collections["ranking_requests"] = BrokenCollection()
+    response = auth_client.post(
+        "/api/ranking/rank",
+        json=rank_payload(),
+        headers={"Authorization": "Bearer fake"},
+    )
+    assert response.status_code == 200
+    assert response.json()["candidates"]
+
+
+def test_intent_endpoint_returns_parsed_fields(auth_client):
+    from ranking.schemas import ParsedIntent
+
+    parsed = ParsedIntent(tags=["dark", "cinematic"], roles=["bass"], bpm=90)
+    with patch("api.routes.ranking.parse_intent", return_value=parsed):
+        response = auth_client.post(
+            "/api/ranking/intent",
+            json={"text": "darker, more cinematic, not too heavy"},
+            headers={"Authorization": "Bearer fake"},
+        )
+    assert response.status_code == 200
+    body = response.json()["parsed"]
+    assert body["tags"] == ["dark", "cinematic"]
+    assert body["roles"] == ["bass"]
+    assert body["bpm"] == 90
+
+
+def test_intent_endpoint_degrades_to_null_on_failure(auth_client):
+    with patch("api.routes.ranking.parse_intent", return_value=None):
+        response = auth_client.post(
+            "/api/ranking/intent",
+            json={"text": "something"},
+            headers={"Authorization": "Bearer fake"},
+        )
+    assert response.status_code == 200
+    assert response.json()["parsed"] is None
+
+
+def test_intent_endpoint_requires_auth(anon_client):
+    response = anon_client.post("/api/ranking/intent", json={"text": "dark"})
+    assert response.status_code in (401, 422)
+
+
+def test_rank_applies_parsed_intent_without_llm_call(auth_client):
+    """parsed_intent tags reach intent_match; no Gemini call on the rank path."""
+    payload = rank_payload()
+    payload["session"]["text_intent"] = "something moodier"
+    payload["session"]["parsed_intent"] = {
+        "tags": ["dark", "bass"],
+        "roles": [],
+        "bpm": None,
+        "key": None,
+    }
+    with patch("ranking.intent._get_genai_client") as get_client:
+        response = auth_client.post(
+            "/api/ranking/rank",
+            json=payload,
+            headers={"Authorization": "Bearer fake"},
+        )
+    assert response.status_code == 200
+    get_client.assert_not_called()
+    evidence = {
+        e["code"]: e["contribution"]
+        for e in response.json()["candidates"][0]["evidence"]
+    }
+    # "something moodier" alone matches no tags; the expansion does.
+    assert evidence.get("intent_match", 0) > 0
+
+
 def test_feedback_ignores_user_id_in_body(auth_client):
     payload = {
         "request_id": "req-2",

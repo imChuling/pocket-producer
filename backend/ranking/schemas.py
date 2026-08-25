@@ -9,6 +9,21 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
+class ParsedIntent(BaseModel):
+    """LLM interpretation of a free-text intent.
+
+    Produced by /api/ranking/intent, shown to the user as editable chips,
+    then echoed back inside SessionFingerprint. The ranker treats it as a
+    proposal: live session values (bpm, key) always win; parsed values only
+    fill blanks. Tags/roles are lowercase tokens in the tagging vocabulary.
+    """
+
+    tags: list[str] = []
+    roles: list[str] = []
+    bpm: float | None = Field(default=None, gt=0)
+    key: str | None = None
+
+
 class SessionFingerprint(BaseModel):
     project_id: str
     bpm: float | None = None
@@ -26,6 +41,9 @@ class SessionFingerprint(BaseModel):
     # means mean-session ranking cannot run and must fall back.
     region_audio_embeddings: list[list[float]] | None = None
     region_chroma_vectors: list[list[float]] | None = None
+    # LLM interpretation of text_intent (user-reviewed). Backward-compatible
+    # addition; absent means intent matching falls back to raw token overlap.
+    parsed_intent: ParsedIntent | None = None
 
 
 class FragmentCandidate(BaseModel):

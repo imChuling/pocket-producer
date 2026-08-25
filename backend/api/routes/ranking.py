@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel, Field, field_validator
 
 from ranking.enrichment import attach_audio_embeddings
+from ranking.intent import apply_parsed_intent, parse_intent
 from ranking.schemas import FeedbackEvent, RankRequest, RankResponse
 from ranking.service import default_service
 
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/ranking", tags=["ranking"])
 
 RANK_TIMEOUT_SECONDS = 2.0
+INTENT_TIMEOUT_SECONDS = 8.0
 
 _service = default_service()
 
@@ -40,7 +42,11 @@ async def rank(
     rank_request: RankRequest,
     user_id: str = Depends(verify_firebase_token),
 ) -> RankResponse:
-    rank_request = attach_audio_embeddings(get_db(), user_id, rank_request)
+    db = get_db()
+    rank_request = attach_audio_embeddings(db, user_id, rank_request)
+    # Pure enrichment from the client-echoed parsed intent; no LLM call
+    # happens on the rank path, so the 2s budget is untouched.
+    rank_request = apply_parsed_intent(rank_request)
     loop = asyncio.get_running_loop()
     try:
         response = await asyncio.wait_for(
@@ -61,7 +67,66 @@ async def rank(
             response.model_id,
             response.request_id,
         )
+    _log_exposure(db, user_id, rank_request, response)
     return response
+
+
+def _log_exposure(db, user_id: str, rank_request: RankRequest, response: RankResponse) -> None:
+    """Persist the served list so feedback events have a denominator.
+
+    Ids and ranking metadata only: no text_intent, no embeddings, no OAuth
+    material. A failed write must never fail the rank request itself.
+    """
+    try:
+        db["ranking_requests"].insert_one(
+            {
+                "request_id": response.request_id,
+                "user_id": user_id,
+                "project_id": rank_request.session.project_id,
+                "model_id_requested": rank_request.model_id,
+                "model_id_served": response.model_id,
+                "fallback_used": response.fallback_used,
+                "fragment_ids": [c.fragment_id for c in response.candidates],
+                "n_candidates_in": len(rank_request.candidates),
+                "created_at": datetime.now(UTC),
+            }
+        )
+    except Exception:
+        logger.warning(
+            "exposure logging failed for request_id=%s", response.request_id
+        )
+
+
+# --- LLM intent parsing -----------------------------------------------------
+
+
+class IntentRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=500)
+
+
+@router.post("/intent")
+@limiter.limit("15/minute")
+async def parse_intent_endpoint(
+    request: Request,
+    body: IntentRequest,
+    user_id: str = Depends(verify_firebase_token),
+):
+    """Interpret free-text creative intent as structured, editable fields.
+
+    The client shows the result as chips the user can correct, then echoes
+    the approved version back inside SessionFingerprint.parsed_intent. A
+    null result means the client should degrade to raw-text matching; it is
+    never an error the user has to see.
+    """
+    try:
+        parsed = await asyncio.wait_for(
+            asyncio.to_thread(parse_intent, body.text),
+            timeout=INTENT_TIMEOUT_SECONDS,
+        )
+    except TimeoutError:
+        logger.warning("intent parsing timed out after %.1fs", INTENT_TIMEOUT_SECONDS)
+        parsed = None
+    return {"parsed": parsed.model_dump() if parsed is not None else None}
 
 
 # --- Session audio CLAP encoding ------------------------------------------
