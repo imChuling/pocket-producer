@@ -35,6 +35,10 @@ def make_adapter(name: str):
         from ranking.adapters.laion_clap import LaionClapMusicAdapter
 
         return LaionClapMusicAdapter()
+    if name == "mert-v1-95m":
+        from ranking.adapters.mert import MertAdapter
+
+        return MertAdapter()
     raise ValueError(f"unknown adapter {name}")
 
 DATA_DIR = pathlib.Path(__file__).parent / "data" / "fsld"
@@ -85,12 +89,31 @@ def main() -> int:
     parser.add_argument("--out", default=None)
     parser.add_argument("--adapter", default="msclap-2023")
     parser.add_argument("--limit", type=int, default=0)
+    parser.add_argument(
+        "--match-items",
+        default=None,
+        help="existing items jsonl; embed exactly its item_ids so a new "
+        "representation shares the corpus (protocol-mert-sensitivity-v1)",
+    )
     args = parser.parse_args()
     if args.out is None:
         suffix = "" if args.adapter == "msclap-2023" else f"_{args.adapter}"
         args.out = str(DATA_DIR / f"items{suffix}.jsonl")
 
     rows = selected_rows(pathlib.Path(args.manifest))
+    if args.match_items:
+        wanted = {
+            json.loads(line)["item_id"]
+            for line in pathlib.Path(args.match_items).read_text().splitlines()
+            if line.strip()
+        }
+        rows = [r for r in rows if f"fsld:{r['freesound_id']}" in wanted]
+        if len(rows) != len(wanted):
+            raise SystemExit(
+                f"--match-items mismatch: {len(wanted)} wanted, "
+                f"{len(rows)} matched in manifest"
+            )
+        print(f"restricted to {len(rows)} items from {args.match_items}")
     if args.limit:
         rows = rows[: args.limit]
     print(f"selected annotated well-cut loops: {len(rows)}")
