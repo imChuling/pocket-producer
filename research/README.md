@@ -3,7 +3,7 @@
 Every number in the paper (`docs/ismir2026/lbd.tex`) is derived from
 versioned artifacts in `artifacts/`. This document maps each claim to the
 script that produced it and the command to re-run it. The mapping is
-enforced by `research/check_paper_numbers.py` (152 assertions), which runs
+enforced by `research/check_paper_numbers.py` (151 assertions), which runs
 before every PDF build.
 
 ## Prerequisites
@@ -120,7 +120,7 @@ backend/.venv/bin/python research/export_fusion_weights.py \
 
 ## Verification
 
-Number consistency check (152 assertions, paper ↔ artifacts):
+Number consistency check (151 assertions, paper ↔ artifacts):
 
 ```bash
 python research/check_paper_numbers.py

@@ -62,7 +62,7 @@ def main():
     parser.add_argument("--items", required=True)
     parser.add_argument("--split", required=True)
     parser.add_argument("--output", required=True)
-    parser.add_argument("--mode", required=True, choices=["laion", "msclap"])
+    parser.add_argument("--mode", required=True, choices=["laion", "msclap", "mert"])
     args = parser.parse_args()
 
     print(f"=== Corrective held-out eval ({args.mode}) ===")
@@ -90,8 +90,9 @@ def main():
     print(f"Examples: {len(train_examples)} train, {len(heldout_examples)} held-out\n",
           flush=True)
 
-    use_source_weights = args.mode == "msclap"
-    use_neg_weights = args.mode == "msclap"
+    # mert follows the msclap sw-BPR recipe (protocol-mert-sensitivity-v1.md)
+    use_source_weights = args.mode in ("msclap", "mert")
+    use_neg_weights = args.mode in ("msclap", "mert")
 
     fidx_fusion = np.array(FUSION_5SIG_IDX)
     fidx_cosine = np.array(COSINE_IDX)
@@ -229,9 +230,9 @@ def main():
 
         bootstrap_results[contrast_name] = contrast_cis
 
-    # LOSO (MS-CLAP only)
+    # LOSO (modes with the sw-BPR recipe)
     loso_summary = None
-    if args.mode == "msclap":
+    if args.mode in ("msclap", "mert"):
         print("\n=== LOSO ABLATION (held-out, full-train weights) ===\n",
               flush=True)
         full_idx = np.array(FUSION_5SIG_IDX)
@@ -283,7 +284,9 @@ def main():
 
     report = {
         "experiment": f"corrective held-out eval ({args.mode})",
-        "protocol": "research/protocol-heldout-correction-v1.md",
+        "protocol": ("research/protocol-mert-sensitivity-v1.md"
+                     if args.mode == "mert"
+                     else "research/protocol-heldout-correction-v1.md"),
         "status": "post-hoc protocol correction, NOT confirmatory",
         "correction_note": ("Training on full 484 train sources per seed, "
                             "fixing protocol mismatch where original scripts "
@@ -291,7 +294,11 @@ def main():
         "items_file": str(args.items),
         "split_file": str(args.split),
         "split_sha256": split_data.get("sha256_heldout_ids", ""),
-        "embedding_model": "laion-clap-music" if args.mode == "laion" else "msclap-2023",
+        "embedding_model": {
+            "laion": "laion-clap-music",
+            "msclap": "msclap-2023",
+            "mert": "mert-v1-95m",
+        }[args.mode],
         "embedding_dim": dim,
         "pair_seed": PAIR_SEED,
         "seeds": list(SEEDS),
