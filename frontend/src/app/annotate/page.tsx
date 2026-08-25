@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import {
@@ -15,6 +15,7 @@ import { apiFetch, apiPost } from "@/lib/api";
 import { getIdToken } from "@/lib/firebase";
 
 export default function AnnotatePage() {
+  if (process.env.NODE_ENV === "production") notFound();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const audioRef = useRef<HTMLAudioElement | null>(null);

@@ -39,6 +39,7 @@ export default function ProjectsPage() {
   }, [refresh]);
 
   const handleReset = useCallback(async () => {
+    if (!window.confirm("Delete all projects and re-group from scratch?")) return;
     setResetting(true);
     setScanResult(null);
     try {
