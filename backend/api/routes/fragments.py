@@ -170,7 +170,7 @@ async def update_fragment_notes(
                     await memory_and_project(
                         db, user_id, str(oid), frag["embedding"], tag_for_project, time.monotonic(),
                     )
-                    await debounced_dna_update()
+                    await debounced_dna_update(user_id)
                 except Exception:
                     logger.exception("Project re-evaluation after notes failed for %s", fragment_id)
 
@@ -211,7 +211,7 @@ def _schedule_project_reeval(db, user_id: str, oid: ObjectId, fragment_id: str) 
             await memory_and_project(
                 db, user_id, fragment_id, frag["embedding"], tag_for_project, time.monotonic(),
             )
-            await debounced_dna_update()
+            await debounced_dna_update(user_id)
         except Exception:
             logger.exception("Project re-evaluation after comment failed for %s", fragment_id)
 
@@ -481,7 +481,7 @@ async def _reanalyze_fragment_text(user_id: str, fragment_id: str, new_text: str
             tag_for_project = tag_result if isinstance(tag_result, dict) else None
             await memory_and_project(db, user_id, fragment_id, embedding, tag_for_project, time.monotonic())
 
-        await debounced_dna_update()
+        await debounced_dna_update(user_id)
     except Exception:
         logger.exception("Re-analysis failed for fragment %s", fragment_id)
         db["fragments"].update_one(
@@ -549,9 +549,12 @@ async def stream_audio(
 
     if range:
         range_spec = range.replace("bytes=", "")
-        range_start_str, range_end_str = range_spec.split("-", 1)
-        range_start = int(range_start_str) if range_start_str else 0
-        range_end = int(range_end_str) if range_end_str else file_size - 1
+        try:
+            range_start_str, range_end_str = range_spec.split("-", 1)
+            range_start = int(range_start_str) if range_start_str else 0
+            range_end = int(range_end_str) if range_end_str else file_size - 1
+        except (ValueError, TypeError):
+            raise HTTPException(416, "Invalid Range header")
         range_end = min(range_end, file_size - 1)
         content_length = range_end - range_start + 1
 
@@ -604,12 +607,14 @@ async def reanalyze_fragment(
 ):
     from ..pipeline import process_fragment_background
 
+    oid = parse_object_id(fragment_id, "fragment_id")
+
     if not await acquire_pipeline_slot():
         raise HTTPException(429, "Too many fragments processing, please try again shortly")
 
     db = get_db()
     frag = db["fragments"].find_one(
-        {"_id": ObjectId(fragment_id), "user_id": user_id},
+        {"_id": oid, "user_id": user_id},
         {"_id": 1, "audio_url": 1, "text": 1},
     )
     if not frag:
@@ -617,7 +622,7 @@ async def reanalyze_fragment(
         raise HTTPException(404, "Fragment not found")
 
     db["fragments"].update_one(
-        {"_id": ObjectId(fragment_id), "user_id": user_id},
+        {"_id": oid, "user_id": user_id},
         {"$set": {"status": "processing"}},
     )
 
@@ -638,17 +643,17 @@ async def reanalyze_fragment(
                         break
                     except TimeoutError:
                         yield _json.dumps({"status": "heartbeat"}) + "\n"
-                await debounced_dna_update()
+                await debounced_dna_update(user_id)
                 yield _json.dumps({"status": "done", "fragment_id": fragment_id}) + "\n"
             except Exception:
                 if not work.done():
                     work.cancel()
                 frag_doc = db["fragments"].find_one(
-                    {"_id": ObjectId(fragment_id), "user_id": user_id}, {"status": 1}
+                    {"_id": oid, "user_id": user_id}, {"status": 1}
                 )
                 if frag_doc and frag_doc.get("status") == "processing":
                     db["fragments"].update_one(
-                        {"_id": ObjectId(fragment_id), "user_id": user_id},
+                        {"_id": oid, "user_id": user_id},
                         {"$set": {"status": "error"}},
                     )
                 logger.exception("Reanalyze failed for %s", fragment_id)

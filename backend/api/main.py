@@ -190,13 +190,21 @@ async def ingest_fragment(
     fragment_id = str(result.inserted_id)
 
     async def _ingest_pipeline():
-        while not await acquire_pipeline_slot():
+        for _ in range(120):
+            if await acquire_pipeline_slot():
+                break
             await asyncio.sleep(1)
+        else:
+            logger.error("Pipeline slot timeout for fragment %s", fragment_id)
+            db["fragments"].update_one(
+                {"_id": result.inserted_id}, {"$set": {"status": "error"}}
+            )
+            return
         try:
             await process_fragment_background(user_id, fragment_id, audio_url, sanitized_text)
         finally:
             await release_pipeline_slot()
-        await debounced_dna_update()
+        await debounced_dna_update(user_id)
 
     def _on_task_done(t):
         _background_tasks.discard(t)

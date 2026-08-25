@@ -85,8 +85,8 @@ _dna_lock = asyncio.Lock()
 _dna_pending = False
 
 
-async def debounced_dna_update(delay: float = 2.0):
-    """Schedule a DNA update, collapsing multiple calls within `delay` seconds."""
+async def debounced_dna_update(user_id: str | None = None, delay: float = 2.0):
+    """Schedule a DNA update for one user, collapsing rapid triggers."""
     global _dna_pending
     if _dna_pending:
         return
@@ -96,7 +96,7 @@ async def debounced_dna_update(delay: float = 2.0):
         _dna_pending = False
         try:
             from jobs.dna_insights import run as run_dna
-            await asyncio.to_thread(run_dna)
+            await asyncio.to_thread(run_dna, user_id)
         except Exception:
             logger.warning("Debounced DNA update failed", exc_info=True)
 

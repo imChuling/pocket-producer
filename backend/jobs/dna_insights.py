@@ -6,14 +6,15 @@ from datetime import UTC, datetime
 from pymongo import MongoClient
 
 
-def run():
+def run(target_user_id: str | None = None):
     client = MongoClient(os.environ["MONGODB_CONNECTION_STRING"])
     db = client["pocketproducer"]
     fragments = db["fragments"]
     user_dna = db["user_dna"]
 
     try:
-        for user_id in fragments.distinct("user_id"):
+        user_ids = [target_user_id] if target_user_id else fragments.distinct("user_id")
+        for user_id in user_ids:
             fragment_count = fragments.count_documents({"user_id": user_id})
 
             # Flat array fields: emotions, themes, style, structure_hint

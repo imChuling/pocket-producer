@@ -16,7 +16,7 @@ export function useFragments() {
   const refresh = useCallback(async () => {
     if (!user) return;
     try {
-      const data = await apiFetch<{ fragments: Fragment[] }>("/fragments?limit=20");
+      const data = await apiFetch<{ fragments: Fragment[] }>("/fragments?limit=200");
       setFragments(data.fragments);
     } catch {
       /* silent */
