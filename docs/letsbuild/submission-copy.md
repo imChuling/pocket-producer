@@ -1,13 +1,7 @@
 # Let's Build 2026 Submission Copy
 
-Portal: per Discord staff guidance (2026-08-20), submission is via a Google Form
-posted in the Let's Build Discord -- find the form link in the Discord submission
-thread before submitting (the FAQ's mention of a developer-hub portal appears
-outdated). Deadlines (per official FAQ): each thematic challenge closes
-~2 weeks after it opens -- the Songstarter challenge closes 23 Aug 2026
-6pm EST, submit today. The grand prize final submission is extended to
-28 Sep 2026, so a stronger revision can be submitted for the grand prize
-after today's challenge entry.
+Grand prize deadline extended to 28 Sep 2026.
+Submission via Google Form (link in Let's Build Discord).
 Four required materials: working app URL, demo video (2-5 min), README, source link.
 
 ## Form fields (paste-ready)
@@ -21,13 +15,12 @@ Audiotool project you have open, ranks your own fragments by whether they
 could grow into that piece, and lets you preview, insert, and undo.
 
 **Category / challenge**
-Two different fields, don't mix them up:
-- Thematic challenge (what we submit to now, deadline 23 Aug): Songstarter
-- Series category (judges tag it; one project can win in several): ours is
-  Creation ("instruments, sequencers, and tools that shape how music is
-  made")
+Songstarter (thematic challenge) / Creation (series category)
 
 **App URL**
+https://pocketproducer.vercel.app
+
+**Audiotool integration**
 https://pocketproducer.vercel.app/audiotool
 
 **Demo video**
@@ -35,8 +28,6 @@ https://youtu.be/ARTcGMVqx0E
 
 **Source code**
 https://github.com/imChuling/pocket-producer
-(private; judge access granted on request — invite any GitHub handle the
-jury names, or note in the form's comment field that access is available)
 
 **Description (longer field, if the form has one)**
 
@@ -117,7 +108,6 @@ weights. What the site and press releases emphasize, and how we map:
 - [ ] App loads in an incognito window; full loop works on a fresh profile
 - [ ] Demo video public/unlisted and plays without login
 - [ ] README top screen has the video link and quickstart
-- [ ] Repo stays private; judge access path confirmed on the form
-      (invite handle or comment-field note); repo free of secrets
+- [ ] Repo is public; no secrets in git history
 - [ ] All four form links tested from the incognito window
 - [ ] Screenshot the submitted form for the archive
