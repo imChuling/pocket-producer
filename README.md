@@ -7,8 +7,8 @@
 
 You stay in charge. It just retrieves.
 
-**Try it:** [pocketproducer.vercel.app/audiotool](https://pocketproducer.vercel.app/audiotool)
-(sign in, connect your Audiotool account, open a project, and go)
+**Try it:** [pocketproducer.vercel.app](https://pocketproducer.vercel.app)
+**Audiotool integration:** [pocketproducer.vercel.app/audiotool](https://pocketproducer.vercel.app/audiotool)
 
 **Demo video:** [youtu.be/ARTcGMVqx0E](https://youtu.be/ARTcGMVqx0E)
 
