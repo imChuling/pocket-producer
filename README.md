@@ -1,8 +1,8 @@
 # Pocket Producer
 
-[![ISMIR 2026 LBD](https://img.shields.io/badge/ISMIR%202026-Late--Breaking%20Demo-blue)](https://ismir.net/)
-[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
-[![Try it](https://img.shields.io/badge/Try%20it-pocketproducer.vercel.app-green)](https://pocketproducer.vercel.app)
+[![ISMIR 2026 LBD](https://img.shields.io/badge/ISMIR%202026-Late--Breaking%20Demo-a0b5eb?style=flat&labelColor=1a1a2e)](https://ismir.net/)
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-a59f97?style=flat&labelColor=777169)](https://creativecommons.org/licenses/by-nc/4.0/)
+[![Try it](https://img.shields.io/badge/Try%20it-pocketproducer.vercel.app-ffa773?style=flat&labelColor=1a1a2e)](https://pocketproducer.vercel.app)
 
 > **A session-aware retrieval instrument for unfinished music.** It reads the
 > Audiotool project you have open, ranks your own audio fragments by whether
