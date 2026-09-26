@@ -499,7 +499,7 @@
       "category": "non-english-fragment",
       "input": {
         "type": "text",
-        "raw_text": "妈妈的手今年变小了"
+        "raw_text": "Mom's hands got smaller this year"
       },
       "expected_output": {
         "tags": {

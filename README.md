@@ -1,5 +1,9 @@
 # Pocket Producer
 
+[![ISMIR 2026 LBD](https://img.shields.io/badge/ISMIR%202026-Late--Breaking%20Demo-blue)](https://ismir.net/)
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
+[![Try it](https://img.shields.io/badge/Try%20it-pocketproducer.vercel.app-green)](https://pocketproducer.vercel.app)
+
 > **A session-aware retrieval instrument for unfinished music.** It reads the
 > Audiotool project you have open, ranks your own audio fragments by whether
 > they *could grow into a piece of music* with what's already there, and
@@ -151,7 +155,7 @@ first-pass filter, not a final decision-maker.
 
 ## Evaluation setup
 
-- **Preregistered before looking at results.** [`research/protocol.md`](research/protocol.md)
+- **Preregistered before looking at results.** [`research/protocol-v2.md`](research/protocol-v2.md)
   (frozen 2026-07-30): primary metric, baselines, splits, and the failure
   criterion are fixed in advance.
 - **Metrics must match label semantics.** Asking for nDCG on pairwise labels
@@ -221,8 +225,7 @@ Nexus SDK  ──documents──▶  session fingerprint
 Foundation encoders are frozen and stay off the click path. Embeddings are
 computed offline and cached; the online ranker is a sub-500K CPU model.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) and
-[`docs/_archive/research/2026-07-25-pocketrank-frontier-architecture.md`](docs/_archive/research/2026-07-25-pocketrank-frontier-architecture.md).
+See [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
@@ -310,10 +313,9 @@ That system still runs the capture and library side, and its
 The current work is a deliberate change of direction after an evidence audit
 found the ranking layer could not support its own claims: a single `embedding`
 field mixed modalities, "similarity" was standing in for usefulness, and there
-was no held-out evaluation. The audit
-([`docs/_archive/superpowers/plans/2026-07-25-pocketrank-evidence-audit.md`](docs/_archive/superpowers/plans/2026-07-25-pocketrank-evidence-audit.md))
-graded 75 claims by evidence strength and deleted the ones that could not be
-supported. Everything above is what replaced them.
+was no held-out evaluation. The audit graded 75 claims by evidence strength
+and deleted the ones that could not be supported. Everything above is what
+replaced them.
 
 ---
 
@@ -339,3 +341,5 @@ Single author. Across both phases:
 ## License
 
 [Apache 2.0](LICENSE), including all domain skills.
+The accompanying ISMIR 2026 Late-Breaking/Demo paper is licensed under
+[CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).

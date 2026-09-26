@@ -739,8 +739,8 @@ idea?"
 
 ### Example 10: Non-English fragment
 
-New fragment: "窗外的雨声像是在说再见"
-(Translation: "The rain outside sounds like it's saying goodbye")
+New fragment: "The rain outside sounds like it's saying goodbye"
+(Originally written in Chinese)
 - emotion: [melancholy, tenderness]
 - theme: [farewell, nature]
 - structure_hint: verse_candidate

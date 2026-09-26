@@ -22,3 +22,12 @@ artifacts/editable_figure1/node_modules
 ~$*.pptx
 *\[Auto-saved\]*.pptx
 .vercel
+
+# Internal tooling / private docs
+CHANGELOG.md
+docs/_archive/
+docs/ismir2026/
+docs/security/
+docs/letsbuild/media/recording-guide.html
+frontend/CLAUDE.md
+frontend/AGENTS.md
