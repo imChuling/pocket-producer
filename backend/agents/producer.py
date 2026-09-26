@@ -567,10 +567,10 @@ Rules:
 Examples:
 
 For a new_project grouping:
-"I listened to '梨花' and it reminded me of that recording you made about
-the hat and mask — both carry this ache of looking back at something you
+"I listened to 'Pear Blossom' and it reminded me of that recording you made about
+the hat and mask, both carry this ache of looking back at something you
 can't return to. One feels like a verse, the other like a lead-in to a
-chorus. I put them together as '梨花念'. Maybe try humming a melody that
+chorus. I put them together as 'Pear Blossom Reverie'. Maybe try humming a melody that
 bridges the two?"
 
 For no_group:

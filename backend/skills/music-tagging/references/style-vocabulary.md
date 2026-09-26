@@ -388,7 +388,7 @@ features prominent bass, sparse guitar, and deadpan or dramatic vocals.
   sparse guitar (chorus + delay), programmed or mechanical-sounding drums,
   dark or brooding atmosphere, deadpan or theatrical vocal delivery
 - Reference points: Joy Division, Bauhaus, Interpol, Fontaines D.C.,
-  Idles, 梅卡德尔 (Chinese post-punk scene)
+  Idles, Meikadeer (Chinese post-punk scene)
 - Spotify genres: "post-punk", "gothic post-punk", "uk post-punk"
 - Distinction from `punk`: post-punk is more atmospheric and experimental;
   punk is faster, simpler, and more aggressive
