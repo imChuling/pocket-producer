@@ -14,7 +14,7 @@ You stay in charge. It just retrieves.
 **Try it:** [pocketproducer.vercel.app](https://pocketproducer.vercel.app)
 **Audiotool integration:** [pocketproducer.vercel.app/audiotool](https://pocketproducer.vercel.app/audiotool)
 
-**Demo video:** [youtu.be/ARTcGMVqx0E](https://youtu.be/ARTcGMVqx0E)
+**Demo video:** [youtu.be/s56Rp_1M9OE](https://youtu.be/s56Rp_1M9OE)
 
 Built for [Audiotool Let's Build 2026](https://www.audiotool.com/LetsBuild/).
 Ranking evaluation on the Freesound Loop Dataset in `research/`.
