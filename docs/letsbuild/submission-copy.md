@@ -24,7 +24,7 @@ https://pocketproducer.vercel.app
 https://pocketproducer.vercel.app/audiotool
 
 **Demo video**
-https://youtu.be/ARTcGMVqx0E
+https://youtu.be/s56Rp_1M9OE
 
 **Source code**
 https://github.com/imChuling/pocket-producer
