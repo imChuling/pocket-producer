@@ -7,6 +7,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useProjectDetail } from "@/hooks/use-projects";
 import { apiPost } from "@/lib/api";
 import { RescueScore } from "@/components/rescue-score";
+import { ProjectIntelligence } from "@/components/project-intelligence";
+import { GuidedTour } from "@/components/guided-tour";
 import { FragmentCard } from "@/components/fragment-card";
 import type { NextAction } from "@/types";
 
@@ -169,6 +171,7 @@ export default function ProjectDetailPage({
             <div className="lg:sticky lg:top-20 space-y-5">
               {project.score_breakdown && (
                 <div
+                  data-tour="rescue-score"
                   className="backdrop-blur-sm rounded-[24px] p-5 shadow-hairline animate-card-enter"
                   style={{ animationDelay: "80ms", background: "linear-gradient(135deg, rgba(255,255,255,0.7), rgba(160,181,235,0.05))" }}
                 >
@@ -179,8 +182,17 @@ export default function ProjectDetailPage({
                 </div>
               )}
 
+              <div data-tour="intelligence">
+                <ProjectIntelligence
+                  fragments={project.fragments}
+                  connectionReasons={project.connection_reasons}
+                  connectionTypes={project.connection_types}
+                />
+              </div>
+
               {(project.connection_reasons ?? []).length > 0 && (
                 <div
+                  data-tour="connections"
                   className="backdrop-blur-sm rounded-[24px] p-5 space-y-3 shadow-hairline animate-card-enter"
                   style={{ animationDelay: "120ms", background: "linear-gradient(135deg, rgba(255,255,255,0.7), rgba(160,181,235,0.06))" }}
                 >
@@ -205,11 +217,13 @@ export default function ProjectDetailPage({
               )}
 
               {project.next_action && (
-                <NextActionCard
-                  projectId={project._id}
-                  action={project.next_action}
-                  onUpdate={() => refresh()}
-                />
+                <div data-tour="next-action">
+                  <NextActionCard
+                    projectId={project._id}
+                    action={project.next_action}
+                    onUpdate={() => refresh()}
+                  />
+                </div>
               )}
 
               {/* Sections summary */}
@@ -251,6 +265,7 @@ export default function ProjectDetailPage({
           </div>
         </div>
       </div>
+      <GuidedTour context="project" />
     </div>
   );
 }

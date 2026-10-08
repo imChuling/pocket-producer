@@ -69,10 +69,12 @@ export function TopNav() {
           <nav className="flex items-center gap-1">
             {navLinks.map(({ href, icon: Icon, label }) => {
               const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+              const tourId = href === "/projects" ? "nav-projects" : href === "/dna" ? "nav-dna" : undefined;
               return (
                 <Link
                   key={href}
                   href={href}
+                  data-tour={tourId}
                   className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm transition-all duration-200 cursor-pointer btn-press ${
                     active
                       ? "text-white"

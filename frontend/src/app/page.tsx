@@ -12,6 +12,7 @@ import { FileDropzone } from "@/components/file-dropzone";
 import { AudiotoolImporter } from "@/components/audiotool-importer";
 import { FragmentCard } from "@/components/fragment-card";
 import { MatchModeSelector } from "@/components/match-mode-selector";
+import { GuidedTour } from "@/components/guided-tour";
 
 /* ═══════════════════════════════════════════════════════════════════════
    NOISE TEXTURE — film grain for editorial feel
@@ -826,7 +827,7 @@ function CaptureDashboard() {
       <div className="relative z-10 max-w-[1100px] mx-auto px-6 py-10 animate-page-enter">
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
           <div className="lg:w-[340px] flex-shrink-0">
-            <div className="lg:sticky lg:top-20 space-y-6">
+            <div className="lg:sticky lg:top-20 space-y-6" data-tour="capture">
               <div className="space-y-1">
                 <p className="font-mono text-[10px] font-medium uppercase tracking-[0.3em] text-slate">
                   {greeting}{firstName ? `, ${firstName}` : ""}
@@ -897,7 +898,7 @@ function CaptureDashboard() {
               <AudiotoolImporter onImported={refresh} />
             </div>
           </div>
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0" data-tour="fragments">
             {!loading && fragments.length > 0 && (
               <div className="space-y-5 pb-12">
                 <div className="flex items-center gap-3">
@@ -977,6 +978,7 @@ function CaptureDashboard() {
           </div>
         </div>
       </div>
+      <GuidedTour context="dashboard" autoStart />
     </div>
   );
 }
