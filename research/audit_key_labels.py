@@ -106,7 +106,7 @@ def main():
 
     import librosa
 
-    items = [json.loads(l) for l in open(args.items) if l.strip()]
+    items = [json.loads(line) for line in open(args.items) if line.strip()]
     print(f"loaded {len(items)} items")
     keyed = [i for i in items if normalize_key(i.get("key")) is not None]
     print(f"{len(keyed)} have parseable key annotations")

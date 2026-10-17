@@ -34,15 +34,13 @@ from run_fusion import (
     compute_source_weights,
     evaluate,
     load_items,
+    rules_standin,
     train_logistic,
 )
 
 FUSION_5SIG_IDX = [0, 1, 2, 3, 4]
 COSINE_IDX = [0]
-RULES_IDX = [2, 3, 4]  # tempo, key, tag_jaccard
-
-RULES_WEIGHTS = np.array([0.30, 0.20, 0.35])
-RULES_WEIGHTS = RULES_WEIGHTS / RULES_WEIGHTS.sum()
+RULES_IDX, RULES_WEIGHTS = rules_standin()
 
 HARD_SIMILAR_WEIGHT = 2.0
 NEG_TYPE_WEIGHTS = {"hard_similar": HARD_SIMILAR_WEIGHT}
@@ -333,7 +331,6 @@ def run_loso(heldout_examples, per_seed_weights):
     loso_results = {}
 
     for si, sw_entry in enumerate(per_seed_weights):
-        seed = sw_entry["seed"]
         w_full = np.array(sw_entry["fusion-5sig"])
 
         if si == 0:

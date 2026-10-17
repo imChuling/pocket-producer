@@ -39,6 +39,7 @@ import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "backend"))
 
+from ranking.baselines import OFFLINE_STANDIN_WEIGHTS
 from ranking.features import key_match, tempo_match
 from ranking.harmonic_probe import session_chroma, transpose_invariant_score
 from ranking.role_probe import CONFIDENCE_THRESHOLD, RoleProbe
@@ -48,6 +49,17 @@ SEEDS = [20260725, 20260801, 20260802, 20260803, 20260804]
 PAIR_SEED = 20260725
 SIGNALS = ["audio_cos_mean", "audio_cos_max", "tempo", "key", "tag_jaccard",
            "role_gap", "harmonic"]
+
+# rules-v1 signal name -> offline signal name
+_STANDIN_SIGNAL = {"tempo_match": "tempo", "key_match": "key", "tag_overlap": "tag_jaccard"}
+
+
+def rules_standin():
+    """(signal indices, normalized weights) of the rules-v1 offline stand-in."""
+    names = list(OFFLINE_STANDIN_WEIGHTS)
+    idx = np.array([SIGNALS.index(_STANDIN_SIGNAL[n]) for n in names])
+    w = np.array([OFFLINE_STANDIN_WEIGHTS[n] for n in names])
+    return idx, w / w.sum()
 
 
 def load_items(path):
@@ -152,19 +164,33 @@ def compute_source_weights(examples):
     return {sid: 1.0 / c for sid, c in counts.items()}
 
 
+def feature_scale(train, feature_idx):
+    """1/std per signal over every train candidate vector (1.0 for constant signals)."""
+    rows = np.stack([ex["pos"][feature_idx] for ex in train]
+                    + [neg[feature_idx] for ex in train for neg in ex["negs"]])
+    std = rows.std(axis=0)
+    return 1.0 / np.where(std > 0, std, 1.0)
+
+
 def train_logistic(train, feature_idx, seed, epochs=300, lr=0.05,
-                   source_weights=None, neg_type_weights=None):
+                   source_weights=None, neg_type_weights=None, standardize=False):
     """BPR logistic trainer with optional per-source and per-neg-type weighting.
 
     source_weights: dict[source_id, float] — gradient multiplier per source;
         typically 1/n_examples_from_source so large packs don't dominate.
     neg_type_weights: dict[neg_type, float] — gradient multiplier per negative
         type (e.g. {"hard_similar": 2.0}).
+    standardize: train on signals divided by their train-set standard
+        deviation (the mean cancels in pairwise differences). The returned
+        weights are mapped back to the raw signal scale, so evaluate() and
+        the deployed ranker need no change.
     """
     rng = np.random.default_rng(seed)
     dim = len(feature_idx)
+    scale = feature_scale(train, feature_idx) if standardize else None
     w = np.zeros(dim)
-    m_w = np.zeros(dim); v_w = np.zeros(dim)
+    m_w = np.zeros(dim)
+    v_w = np.zeros(dim)
     beta1, beta2, eps = 0.9, 0.999, 1e-8
     t = 0
     for _ in range(epochs):
@@ -176,6 +202,8 @@ def train_logistic(train, feature_idx, seed, epochs=300, lr=0.05,
             for neg, ntype in zip(ex["negs"], ex["neg_types"]):
                 fn = neg[feature_idx]
                 diff = fp - fn
+                if scale is not None:
+                    diff = diff * scale
                 z = w @ diff
                 sig = 1.0 / (1.0 + np.exp(-z))
                 nw = neg_type_weights.get(ntype, 1.0) if neg_type_weights else 1.0
@@ -186,7 +214,7 @@ def train_logistic(train, feature_idx, seed, epochs=300, lr=0.05,
                 m_hat = m_w / (1 - beta1**t)
                 v_hat = v_w / (1 - beta2**t)
                 w -= lr * m_hat / (np.sqrt(v_hat) + eps)
-    return w
+    return w * scale if scale is not None else w
 
 
 def evaluate(examples, w, feature_idx):
@@ -263,7 +291,6 @@ def main():
     }
 
     results = {name: [] for name in conditions}
-    per_type_last = {}
 
     for seed in SEEDS:
         train_sources, val_sources = split_sources(

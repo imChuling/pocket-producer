@@ -30,7 +30,7 @@ import torch
 from ranking.context_model import LadderConfig, PocketRankContext, trainable_parameters
 from ranking.deepsets_ranker import DeepSetsRanker
 from ranking.linear_ranker import LinearRanker
-from ranking.training import train_model, pairwise_eval
+from ranking.research.training import train_model
 from ranking.weak_pairs import split_sources
 
 SEEDS = [20260725, 20260801, 20260802, 20260803, 20260804]
@@ -109,7 +109,7 @@ def main():
     args = parser.parse_args()
 
     data_path = pathlib.Path(args.weak_data)
-    examples = [json.loads(l) for l in data_path.open() if l.strip()]
+    examples = [json.loads(line) for line in data_path.open() if line.strip()]
     input_dim = len(examples[0]["positive_embedding"])
     print(f"Loaded {len(examples)} examples, input_dim={input_dim}", flush=True)
 

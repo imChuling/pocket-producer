@@ -34,13 +34,21 @@ class RoleGapRanker:
         ],
     }
 
-    def __init__(self, probe: RoleProbe):
+    def __init__(self, probe: "RoleProbe | None" = None, *, adapter=None):
         self._probe = probe
+        self._adapter = adapter
+
+    def _ensure_probe(self):
+        if self._probe is None and self._adapter is not None:
+            from ranking.role_probe import build_probe_from_adapter
+            self._probe = build_probe_from_adapter(self._adapter)
+            self._adapter = None
 
     def healthy(self) -> bool:
         return True
 
     def rank(self, request: RankRequest) -> RankResponse:
+        self._ensure_probe()
         regions = request.session.region_audio_embeddings
         if not regions:
             raise InsufficientContextError(

@@ -1,0 +1,457 @@
+{
+  "experiment": "corrective held-out eval (decoupled)",
+  "protocol": "research/protocol-mert-sensitivity-v1.md",
+  "status": "post-hoc protocol correction, NOT confirmatory",
+  "correction_note": "Training on full 484 train sources per seed, fixing protocol mismatch where original scripts used val_fraction=0.25 internal split",
+  "items_file": "research/data/fsld/items_laion-clap-music_packonly.jsonl",
+  "split_file": "artifacts/heldout-split-packonly/split.json",
+  "split_sha256": "3f4967ca916ac5a985388836f9fb60e44bef93c3f73d2df7ee1c37ee4f36384c",
+  "embedding_model": "mert-v1-95m (mining) + laion-clap-music (signals)",
+  "embedding_dim": 512,
+  "pair_seed": 20260725,
+  "seeds": [
+    20260725,
+    20260801,
+    20260802,
+    20260803,
+    20260804
+  ],
+  "source_weighted_bpr": true,
+  "neg_type_weights": {
+    "hard_similar": 2.0
+  },
+  "training_note": "full train side, no internal val split",
+  "heldout_summary": {
+    "rules": {
+      "mean_overall": 0.7872,
+      "std_overall": 0.0,
+      "values_overall": [
+        0.7872,
+        0.7872,
+        0.7872,
+        0.7872,
+        0.7872
+      ],
+      "mean_easy": 0.9025,
+      "values_easy": [
+        0.9025,
+        0.9025,
+        0.9025,
+        0.9025,
+        0.9025
+      ],
+      "mean_hard_similar": 0.8591,
+      "values_hard_similar": [
+        0.8591,
+        0.8591,
+        0.8591,
+        0.8591,
+        0.8591
+      ],
+      "mean_hard_tempo_key": 0.4238,
+      "values_hard_tempo_key": [
+        0.4238,
+        0.4238,
+        0.4238,
+        0.4238,
+        0.4238
+      ]
+    },
+    "cosine": {
+      "mean_overall": 0.9669,
+      "std_overall": 0.0,
+      "values_overall": [
+        0.9669,
+        0.9669,
+        0.9669,
+        0.9669,
+        0.9669
+      ],
+      "mean_easy": 0.9768,
+      "values_easy": [
+        0.9768,
+        0.9768,
+        0.9768,
+        0.9768,
+        0.9768
+      ],
+      "mean_hard_similar": 0.9567,
+      "values_hard_similar": [
+        0.9567,
+        0.9567,
+        0.9567,
+        0.9567,
+        0.9567
+      ],
+      "mean_hard_tempo_key": 0.9554,
+      "values_hard_tempo_key": [
+        0.9554,
+        0.9554,
+        0.9554,
+        0.9554,
+        0.9554
+      ]
+    },
+    "fusion-5sig": {
+      "mean_overall": 0.9714,
+      "std_overall": 0.002,
+      "values_overall": [
+        0.9725,
+        0.9709,
+        0.9701,
+        0.9693,
+        0.9742
+      ],
+      "mean_easy": 0.9768,
+      "values_easy": [
+        0.9799,
+        0.9768,
+        0.9768,
+        0.9721,
+        0.9783
+      ],
+      "mean_hard_similar": 0.9703,
+      "values_hard_similar": [
+        0.9721,
+        0.9721,
+        0.969,
+        0.9598,
+        0.9783
+      ],
+      "mean_hard_tempo_key": 0.9599,
+      "values_hard_tempo_key": [
+        0.9554,
+        0.9554,
+        0.9554,
+        0.974,
+        0.9591
+      ]
+    }
+  },
+  "per_seed_weights": [
+    {
+      "seed": 20260725,
+      "fusion-5sig": [
+        12.84950590440106,
+        3.4415506997474274,
+        1.602944116596056,
+        0.24165119762232518,
+        2.1529440130702993
+      ]
+    },
+    {
+      "seed": 20260801,
+      "fusion-5sig": [
+        12.849152233364444,
+        3.8079980099134674,
+        1.5233901748607996,
+        -0.14450621148360687,
+        2.326349128032611
+      ]
+    },
+    {
+      "seed": 20260802,
+      "fusion-5sig": [
+        10.876238414033615,
+        2.3167246810008106,
+        1.2458294543055257,
+        0.09919744749406172,
+        -0.1898354906932108
+      ]
+    },
+    {
+      "seed": 20260803,
+      "fusion-5sig": [
+        12.25134507483041,
+        3.465777288195121,
+        1.1064631724064742,
+        -1.147758214864169,
+        -0.06799438397445172
+      ]
+    },
+    {
+      "seed": 20260804,
+      "fusion-5sig": [
+        12.290783317225223,
+        3.9581405587509386,
+        1.1348590666263754,
+        -0.26804926086944336,
+        1.02014259216458
+      ]
+    }
+  ],
+  "bootstrap": {
+    "fusion_vs_cosine": {
+      "easy": {
+        "point_delta": 0.0,
+        "ci_lo": -0.007107,
+        "ci_hi": 0.006485
+      },
+      "hard_similar": {
+        "point_delta": 0.013622,
+        "ci_lo": -0.002778,
+        "ci_hi": 0.032693
+      },
+      "hard_tempo_key": {
+        "point_delta": 0.004461,
+        "ci_lo": -0.001667,
+        "ci_hi": 0.011953
+      },
+      "overall": {
+        "point_delta": 0.004523,
+        "ci_lo": -0.002451,
+        "ci_hi": 0.012117
+      }
+    },
+    "fusion_vs_rules": {
+      "easy": {
+        "point_delta": 0.074303,
+        "ci_lo": 0.038795,
+        "ci_hi": 0.11312
+      },
+      "hard_similar": {
+        "point_delta": 0.111146,
+        "ci_lo": 0.062783,
+        "ci_hi": 0.159404
+      },
+      "hard_tempo_key": {
+        "point_delta": 0.536059,
+        "ci_lo": 0.4347,
+        "ci_hi": 0.638641
+      },
+      "overall": {
+        "point_delta": 0.184249,
+        "ci_lo": 0.140312,
+        "ci_hi": 0.229374
+      }
+    },
+    "cosine_vs_rules": {
+      "easy": {
+        "point_delta": 0.074303,
+        "ci_lo": 0.036977,
+        "ci_hi": 0.114546
+      },
+      "hard_similar": {
+        "point_delta": 0.097523,
+        "ci_lo": 0.039877,
+        "ci_hi": 0.152597
+      },
+      "hard_tempo_key": {
+        "point_delta": 0.531599,
+        "ci_lo": 0.435111,
+        "ci_hi": 0.63185
+      },
+      "overall": {
+        "point_delta": 0.179725,
+        "ci_lo": 0.132328,
+        "ci_hi": 0.227966
+      }
+    }
+  },
+  "loso": {
+    "full-5sig": {
+      "mean_easy": 0.9768,
+      "values_easy": [
+        0.9799,
+        0.9768,
+        0.9768,
+        0.9721,
+        0.9783
+      ],
+      "mean_hard_similar": 0.9703,
+      "values_hard_similar": [
+        0.9721,
+        0.9721,
+        0.969,
+        0.9598,
+        0.9783
+      ],
+      "mean_hard_tempo_key": 0.9599,
+      "values_hard_tempo_key": [
+        0.9554,
+        0.9554,
+        0.9554,
+        0.974,
+        0.9591
+      ],
+      "mean_overall": 0.9714,
+      "values_overall": [
+        0.9725,
+        0.9709,
+        0.9701,
+        0.9693,
+        0.9742
+      ]
+    },
+    "minus-audio_cos_mean": {
+      "mean_easy": 0.9628,
+      "values_easy": [
+        0.9737,
+        0.9721,
+        0.9675,
+        0.9334,
+        0.9675
+      ],
+      "mean_hard_similar": 0.9567,
+      "values_hard_similar": [
+        0.9598,
+        0.9598,
+        0.9505,
+        0.9381,
+        0.9752
+      ],
+      "mean_hard_tempo_key": 0.9101,
+      "values_hard_tempo_key": [
+        0.8587,
+        0.9071,
+        0.8625,
+        0.974,
+        0.948
+      ],
+      "mean_overall": 0.9498,
+      "values_overall": [
+        0.9451,
+        0.9548,
+        0.9402,
+        0.9435,
+        0.9653
+      ]
+    },
+    "minus-audio_cos_max": {
+      "mean_easy": 0.9771,
+      "values_easy": [
+        0.9814,
+        0.9768,
+        0.9768,
+        0.9721,
+        0.9783
+      ],
+      "mean_hard_similar": 0.9672,
+      "values_hard_similar": [
+        0.9659,
+        0.969,
+        0.9721,
+        0.9598,
+        0.969
+      ],
+      "mean_hard_tempo_key": 0.9576,
+      "values_hard_tempo_key": [
+        0.9517,
+        0.9554,
+        0.9517,
+        0.9703,
+        0.9591
+      ],
+      "mean_overall": 0.9703,
+      "values_overall": [
+        0.9709,
+        0.9701,
+        0.9701,
+        0.9685,
+        0.9717
+      ]
+    },
+    "minus-tempo": {
+      "mean_easy": 0.9752,
+      "values_easy": [
+        0.9752,
+        0.9768,
+        0.9737,
+        0.9721,
+        0.9783
+      ],
+      "mean_hard_similar": 0.9604,
+      "values_hard_similar": [
+        0.9659,
+        0.9659,
+        0.9598,
+        0.9474,
+        0.9628
+      ],
+      "mean_hard_tempo_key": 0.9599,
+      "values_hard_tempo_key": [
+        0.9554,
+        0.9554,
+        0.9554,
+        0.974,
+        0.9591
+      ],
+      "mean_overall": 0.968,
+      "values_overall": [
+        0.9685,
+        0.9693,
+        0.9661,
+        0.9661,
+        0.9701
+      ]
+    },
+    "minus-key": {
+      "mean_easy": 0.9777,
+      "values_easy": [
+        0.9783,
+        0.9783,
+        0.9768,
+        0.9768,
+        0.9783
+      ],
+      "mean_hard_similar": 0.9709,
+      "values_hard_similar": [
+        0.9721,
+        0.9721,
+        0.969,
+        0.9659,
+        0.9752
+      ],
+      "mean_hard_tempo_key": 0.9561,
+      "values_hard_tempo_key": [
+        0.9554,
+        0.9554,
+        0.9554,
+        0.9554,
+        0.9591
+      ],
+      "mean_overall": 0.9712,
+      "values_overall": [
+        0.9717,
+        0.9717,
+        0.9701,
+        0.9693,
+        0.9733
+      ]
+    },
+    "minus-tag_jaccard": {
+      "mean_easy": 0.9768,
+      "values_easy": [
+        0.9799,
+        0.9768,
+        0.9783,
+        0.9721,
+        0.9768
+      ],
+      "mean_hard_similar": 0.9696,
+      "values_hard_similar": [
+        0.9721,
+        0.9752,
+        0.9721,
+        0.9598,
+        0.969
+      ],
+      "mean_hard_tempo_key": 0.9599,
+      "values_hard_tempo_key": [
+        0.9554,
+        0.9554,
+        0.9554,
+        0.974,
+        0.9591
+      ],
+      "mean_overall": 0.9712,
+      "values_overall": [
+        0.9725,
+        0.9717,
+        0.9717,
+        0.9693,
+        0.9709
+      ]
+    }
+  }
+}

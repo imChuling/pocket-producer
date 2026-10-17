@@ -19,6 +19,14 @@ Usage:
     --split artifacts/heldout-split-packonly/split.json \
     --output artifacts/msclap-sensitivity-correction \
     --mode msclap
+
+  # Decoupled: MERT-space mining, CLAP-space signals
+  python research/run_heldout_correction.py \
+    --items research/data/fsld/items_laion-clap-music_packonly.jsonl \
+    --items-mining research/data/fsld/items_mert_packonly.jsonl \
+    --split artifacts/heldout-split-packonly/split.json \
+    --output artifacts/heldout-eval-decoupled \
+    --mode decoupled
 """
 
 import argparse
@@ -26,29 +34,57 @@ import json
 import pathlib
 import statistics
 import sys
-from collections import Counter
 
 import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "backend"))
 
+from ranking.weak_pairs import build_weak_pairs
 from run_fusion import (
     PAIR_SEED,
     SEEDS,
     SIGNALS,
     build_feature_examples,
+    candidate_signals,
     compute_source_weights,
     evaluate,
     load_items,
+    rules_standin,
     train_logistic,
 )
 
+
+def build_decoupled_examples(mining_items, signal_items, seed, aux):
+    """Mine pairs in mining-space, compute signals in signal-space."""
+    sig_by_id = {i["item_id"]: i for i in signal_items}
+    mining_lookup = {id(item["embedding"]): item for item in mining_items}
+    pairs = build_weak_pairs(mining_items, seed=seed)
+    examples = []
+    for p in pairs:
+        ctx_mining = [mining_lookup[id(e)] for e in p["context_embeddings"]]
+        pos_mining = mining_lookup[id(p["positive_embedding"])]
+        ctx_sig = [sig_by_id[m["item_id"]] for m in ctx_mining]
+        pos_sig = sig_by_id[pos_mining["item_id"]]
+        pos_feat = candidate_signals(ctx_sig, pos_sig, aux)
+        negs = []
+        neg_types = []
+        for ne, nt in zip(p["negative_embeddings"], p["negative_types"]):
+            neg_mining = mining_lookup[id(ne)]
+            neg_sig = sig_by_id[neg_mining["item_id"]]
+            neg_feat = candidate_signals(ctx_sig, neg_sig, aux)
+            negs.append(neg_feat)
+            neg_types.append(nt)
+        examples.append({
+            "source_id": p["source_id"],
+            "pos": pos_feat,
+            "negs": negs,
+            "neg_types": neg_types,
+        })
+    return examples
+
 FUSION_5SIG_IDX = [0, 1, 2, 3, 4]
 COSINE_IDX = [0]
-RULES_IDX = [2, 3, 4]
-
-RULES_WEIGHTS = np.array([0.30, 0.20, 0.35])
-RULES_WEIGHTS = RULES_WEIGHTS / RULES_WEIGHTS.sum()
+RULES_IDX, RULES_WEIGHTS = rules_standin()
 
 HARD_SIMILAR_WEIGHT = 2.0
 NEG_TYPE_WEIGHTS = {"hard_similar": HARD_SIMILAR_WEIGHT}
@@ -60,18 +96,24 @@ ALPHA = 0.05
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--items", required=True)
+    parser.add_argument("--items-mining", default=None,
+                        help="Mining-space items (for decoupled mode)")
     parser.add_argument("--split", required=True)
     parser.add_argument("--output", required=True)
-    parser.add_argument("--mode", required=True, choices=["laion", "msclap", "mert"])
+    parser.add_argument("--mode", required=True,
+                        choices=["laion", "msclap", "mert", "decoupled"])
     args = parser.parse_args()
 
+    if args.mode == "decoupled" and not args.items_mining:
+        parser.error("--items-mining is required for decoupled mode")
+
     print(f"=== Corrective held-out eval ({args.mode}) ===")
-    print(f"Protocol: protocol-heldout-correction-v1.md")
-    print(f"Training on FULL train side (no internal val split)\n")
+    print("Protocol: protocol-heldout-correction-v1.md")
+    print("Training on FULL train side (no internal val split)\n")
 
     all_items = load_items(args.items)
     dim = len(all_items[0]["embedding"])
-    print(f"Loaded {len(all_items)} items, embedding dim={dim}", flush=True)
+    print(f"Loaded {len(all_items)} signal items, embedding dim={dim}", flush=True)
 
     with open(args.split) as f:
         split_data = json.load(f)
@@ -85,14 +127,26 @@ def main():
           flush=True)
 
     aux = {}
-    train_examples = build_feature_examples(train_items, seed=PAIR_SEED, aux=aux)
-    heldout_examples = build_feature_examples(heldout_items, seed=PAIR_SEED, aux=aux)
+    if args.mode == "decoupled":
+        all_mining = load_items(args.items_mining)
+        mining_dim = len(all_mining[0]["embedding"])
+        print(f"Loaded {len(all_mining)} mining items, embedding dim={mining_dim}",
+              flush=True)
+        train_mining = [i for i in all_mining if i["source_id"] not in heldout_ids]
+        heldout_mining = [i for i in all_mining if i["source_id"] in heldout_ids]
+        train_examples = build_decoupled_examples(
+            train_mining, train_items, seed=PAIR_SEED, aux=aux)
+        heldout_examples = build_decoupled_examples(
+            heldout_mining, heldout_items, seed=PAIR_SEED, aux=aux)
+        print(f"Decoupled: mining={mining_dim}d, signals={dim}d")
+    else:
+        train_examples = build_feature_examples(train_items, seed=PAIR_SEED, aux=aux)
+        heldout_examples = build_feature_examples(heldout_items, seed=PAIR_SEED, aux=aux)
     print(f"Examples: {len(train_examples)} train, {len(heldout_examples)} held-out\n",
           flush=True)
 
-    # mert follows the msclap sw-BPR recipe (protocol-mert-sensitivity-v1.md)
-    use_source_weights = args.mode in ("msclap", "mert")
-    use_neg_weights = args.mode in ("msclap", "mert")
+    use_source_weights = args.mode in ("msclap", "mert", "decoupled")
+    use_neg_weights = args.mode in ("msclap", "mert", "decoupled")
 
     fidx_fusion = np.array(FUSION_5SIG_IDX)
     fidx_cosine = np.array(COSINE_IDX)
@@ -232,7 +286,7 @@ def main():
 
     # LOSO (modes with the sw-BPR recipe)
     loso_summary = None
-    if args.mode in ("msclap", "mert"):
+    if args.mode in ("msclap", "mert", "decoupled"):
         print("\n=== LOSO ABLATION (held-out, full-train weights) ===\n",
               flush=True)
         full_idx = np.array(FUSION_5SIG_IDX)
@@ -285,7 +339,7 @@ def main():
     report = {
         "experiment": f"corrective held-out eval ({args.mode})",
         "protocol": ("research/protocol-mert-sensitivity-v1.md"
-                     if args.mode == "mert"
+                     if args.mode in ("mert", "decoupled")
                      else "research/protocol-heldout-correction-v1.md"),
         "status": "post-hoc protocol correction, NOT confirmatory",
         "correction_note": ("Training on full 484 train sources per seed, "
@@ -298,6 +352,7 @@ def main():
             "laion": "laion-clap-music",
             "msclap": "msclap-2023",
             "mert": "mert-v1-95m",
+            "decoupled": "mert-v1-95m (mining) + laion-clap-music (signals)",
         }[args.mode],
         "embedding_dim": dim,
         "pair_seed": PAIR_SEED,

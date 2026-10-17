@@ -24,7 +24,9 @@ RUN uv pip install --system --index-url https://download.pytorch.org/whl/cpu \
     "torch>=2.6,<3" "torchaudio" \
     && uv pip install --system "msclap>=1.3,<2" "soundfile>=0.12,<1"
 ENV HF_HOME=/opt/hf-cache
-RUN python -c "from huggingface_hub import hf_hub_download; hf_hub_download('microsoft/msclap', 'CLAP_weights_2023.pth')"
+RUN python -c "from huggingface_hub import hf_hub_download; hf_hub_download('microsoft/msclap', 'CLAP_weights_2023.pth')" \
+    && python -c "from transformers import GPT2Tokenizer, GPT2Model; GPT2Tokenizer.from_pretrained('openai-community/gpt2'); GPT2Model.from_pretrained('openai-community/gpt2')"
+ENV HF_HUB_OFFLINE=1
 
 COPY agents/ ./agents/
 COPY tools/ ./tools/

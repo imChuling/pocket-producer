@@ -22,8 +22,6 @@ import numpy as np
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "backend"))
 
 from ranking.features import key_match, tempo_match
-from ranking.harmonic_probe import session_chroma, transpose_invariant_score
-from ranking.role_probe import CONFIDENCE_THRESHOLD, RoleProbe
 from ranking.weak_pairs import build_weak_pairs, split_sources
 
 SEEDS = [20260725, 20260801, 20260802, 20260803, 20260804]
@@ -104,7 +102,8 @@ def train_logistic(train, feature_idx, seed, epochs=300, lr=0.05):
     rng = np.random.default_rng(seed)
     dim = len(feature_idx)
     w = np.zeros(dim)
-    m_w = np.zeros(dim); v_w = np.zeros(dim)
+    m_w = np.zeros(dim)
+    v_w = np.zeros(dim)
     beta1, beta2, eps = 0.9, 0.999, 1e-8
     t = 0
     for _ in range(epochs):

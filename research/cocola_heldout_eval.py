@@ -19,7 +19,6 @@ import argparse
 import json
 import pathlib
 import sys
-import time
 
 import numpy as np
 import torch
@@ -146,11 +145,6 @@ def main():
     print(f"Embeddings: {n_ok} ok, {n_miss} missing")
 
     # --- Evaluate ---
-    # Pre-build a tensor of all embeddings for batched scoring
-    emb_ids = list(cocola_emb.keys())
-    emb_tensor = torch.stack([cocola_emb[k] for k in emb_ids])
-    emb_idx = {k: i for i, k in enumerate(emb_ids)}
-
     def batch_scores_vs_context(candidate_ids, context_ids):
         """Compute max-pooled COCOLA score for each candidate against context.
         Returns array of shape (len(candidate_ids),)."""
@@ -251,7 +245,7 @@ def main():
             print(f"  {tier:20s}: N/A")
 
     # --- CLAP cosine baseline on same examples (apples-to-apples) ---
-    print(f"\n  CLAP cosine baseline (same examples, for direct comparison):")
+    print("\n  CLAP cosine baseline (same examples, for direct comparison):")
 
     clap_emb = {}
     with open(ITEMS_PATH) as f:
@@ -308,7 +302,7 @@ def main():
             report["clap_cosine_baseline"][tier] = {"rate": round(float(rate), 4), "n": len(vals)}
             print(f"  {tier:20s}: {rate:.4f} ({len(vals)} examples)")
 
-    print(f"\n  Paper baselines (full held-out, not subset):")
+    print("\n  Paper baselines (full held-out, not subset):")
     print(f"  {'overall':20s}: ~0.929")
     print(f"  {'hard_similar':20s}: ~0.814")
 

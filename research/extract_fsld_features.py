@@ -13,7 +13,6 @@ Usage:
 """
 
 import argparse
-import io
 import json
 import pathlib
 import sys
@@ -40,7 +39,7 @@ def main():
 
     import librosa
 
-    items = [json.loads(l) for l in open(args.items) if l.strip()]
+    items = [json.loads(line) for line in open(args.items) if line.strip()]
     print(f"{len(items)} items", flush=True)
 
     # --- Part 1: role prompt embeddings (LAION-CLAP text tower) ---
@@ -50,7 +49,7 @@ def main():
     else:
         try:
             print("Encoding role prompts with LAION-CLAP...", flush=True)
-            from ranking.adapters.laion_clap import LaionClapMusicAdapter
+            from ranking.research.adapters.laion_clap import LaionClapMusicAdapter
 
             adapter = LaionClapMusicAdapter()
             prompts = [ROLE_PROMPT_TEMPLATE.format(role=r) for r in ROLE_VOCAB]

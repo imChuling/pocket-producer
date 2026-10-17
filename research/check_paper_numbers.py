@@ -400,7 +400,7 @@ def check_removed_claims(tex):
     # partial (offline tests done, real-account capture pending)
     check_not_in_tex("no_working_prototype", "working prototype", tex)
     check_not_in_tex("no_live_session_read", "live Audiotool session", tex)
-    check_in_tex("has_offline_validation_hedge", "live-account capture", tex)
+    check_in_tex("has_offline_validation_hedge", "evaluated offline", tex)
 
 
 def check_ledger_consistency():
@@ -434,10 +434,10 @@ def main():
     ablation = load_json(ABLATION_PACKONLY)
     fusion_mixed = load_json(FUSION_MIXED)
     heldout_eval = load_json(HELDOUT_EVAL)
-    heldout_bootstrap = load_json(HELDOUT_BOOTSTRAP)
+    load_json(HELDOUT_BOOTSTRAP)
     split = load_json(SPLIT)
     deploy_weights = load_json(DEPLOY_WEIGHTS)
-    msclap_sens = load_json(MSCLAP_SENSITIVITY)
+    load_json(MSCLAP_SENSITIVITY)
     factorial = load_json(FACTORIAL)
     laion_corr = load_json(LAION_CORRECTION)
     msclap_corr = load_json(MSCLAP_CORRECTION)

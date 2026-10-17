@@ -77,11 +77,9 @@ def default_service() -> RankingService:
     registry.register(TextCosineRanker(text_encoder=encode_intent_text))
 
     if os.environ.get("POCKET_ENABLE_CLAP") == "1":
-        # Weights load lazily on the first request, never at import time.
         from ranking.adapters.msclap import MsClapAdapter
         from ranking.audio_cosine import AudioCosineRanker
         from ranking.role_gap_ranker import RoleGapRanker
-        from ranking.role_probe import build_probe_from_adapter
 
         clap = MsClapAdapter()
 
@@ -89,7 +87,7 @@ def default_service() -> RankingService:
             return clap.encode_text([text])[0].tolist()
 
         registry.register(AudioCosineRanker(text_encoder=encode_intent_audio_space))
-        registry.register(RoleGapRanker(probe=build_probe_from_adapter(clap)))
+        registry.register(RoleGapRanker(adapter=clap))
 
     from ranking.harmonic_ranker import HarmonicFitRanker
 
