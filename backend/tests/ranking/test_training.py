@@ -5,7 +5,7 @@ import torch
 
 from ranking.context_model import LadderConfig, PocketRankContext
 from ranking.linear_ranker import LinearRanker
-from ranking.training import pairwise_eval, train_model
+from ranking.research.training import pairwise_eval, train_model
 from ranking.weak_pairs import build_weak_pairs, split_sources
 
 DIMS = 8

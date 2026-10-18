@@ -73,6 +73,12 @@ class LadderRankerAdapter:
             "checkpoint_hash": f"sha256:{hashlib.sha256(weights).hexdigest()}",
             "dataset_hash": metrics.get("dataset_hash"),
             "label_layer": metrics.get("label_layer"),
+            "limitations": [
+                "trained on the earlier mixed same-uploader weak-label corpus; "
+                "the pack-only analysis flagged that label construction as a "
+                "likely horse (docs/ismir2026, label sensitivity)",
+                "challenger only: not registered unless POCKET_LADDER_DIR is set",
+            ],
         }
 
     def healthy(self) -> bool:

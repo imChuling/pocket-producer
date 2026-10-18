@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from ranking.metrics import (
+from ranking.research.metrics import (
     MetricEligibilityError,
     log_loss,
     mrr,

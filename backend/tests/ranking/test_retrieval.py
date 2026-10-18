@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from ranking.retrieval import ExactIndex, IndexedVector
+from ranking.research.retrieval import ExactIndex, IndexedVector
 
 
 def vec(*values: float) -> list[float]:

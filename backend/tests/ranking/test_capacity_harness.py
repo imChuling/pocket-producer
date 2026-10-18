@@ -1,7 +1,7 @@
 """Capacity measurement harness sanity checks."""
 
-from ranking.capacity import measure_ladder
 from ranking.context_model import LadderConfig
+from ranking.research.capacity import measure_ladder
 
 SMALL = LadderConfig(input_dim=32, d_model=16, structured_dim=4, low_rank=8)
 

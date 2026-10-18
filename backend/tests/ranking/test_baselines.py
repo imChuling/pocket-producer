@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from ranking.baselines import RulesRanker
+from ranking.baselines import OFFLINE_STANDIN_WEIGHTS, WEIGHTS, RulesRanker
 from ranking.schemas import FragmentCandidate, RankRequest, SessionFingerprint
 
 
@@ -67,6 +67,50 @@ def test_missing_bpm_and_key_scores_zero_for_those_features():
     codes = {e.code for e in result.candidates[0].evidence}
     assert "tempo_match" not in codes
     assert "key_match" not in codes
+
+
+def test_offline_standin_is_a_subset_of_live_rules_signals():
+    assert set(OFFLINE_STANDIN_WEIGHTS) <= set(WEIGHTS)
+    assert all(w > 0 for w in OFFLINE_STANDIN_WEIGHTS.values())
+
+
+def test_role_gap_fills_a_role_missing_from_the_session_not_a_repeat():
+    # Audiotool reports track kinds, not roles: the roles already in the
+    # session come from the fragments inserted so far.
+    audiotool_session = session(
+        active_track_types=["audio", "note"],
+        text_intent="",
+        context_tags=["drums", "dark"],
+    )
+    result = RulesRanker().rank(
+        RankRequest(
+            session=audiotool_session,
+            candidates=[
+                candidate("drums-again", tags=["drums"]),
+                candidate("bass-new", tags=["bass"]),
+            ],
+        )
+    )
+    assert [c.fragment_id for c in result.candidates] == ["bass-new", "drums-again"]
+    codes = {c.fragment_id: {e.code for e in c.evidence} for c in result.candidates}
+    assert "track_gap" in codes["bass-new"]
+    assert "track_gap" not in codes["drums-again"]
+    assert "novelty" not in codes["drums-again"]
+
+
+def test_tag_overlap_uses_session_context_tags():
+    overlapping = candidate("overlap", tags=["pad", "loop"])
+    disjoint = candidate("disjoint", tags=["bright"])
+    result = RulesRanker().rank(
+        RankRequest(
+            session=session(text_intent="", context_tags=["pad", "loop"]),
+            candidates=[disjoint, overlapping],
+        )
+    )
+    assert result.candidates[0].fragment_id == "overlap"
+    top = {e.code: e.contribution for e in result.candidates[0].evidence}
+    assert top["tag_overlap"] == pytest.approx(0.10)
+    assert "tag_overlap" not in {e.code for e in result.candidates[1].evidence}
 
 
 def test_equal_scores_sort_stable_by_fragment_id():

@@ -13,10 +13,11 @@ Negative types:
 """
 
 import hashlib
+from dataclasses import dataclass
 
 import numpy as np
 
-from ranking.features import key_match, tempo_match
+from ranking.features import _TEMPO_TOLERANCE, normalize_key
 
 CONTEXT_MIN = 2
 CONTEXT_MAX = 4
@@ -27,68 +28,91 @@ def _context_bpm(context_items: list[dict]) -> float | None:
     return float(np.mean(values)) if values else None
 
 
-def _negative_pool(items: list[dict], source_id: str) -> list[dict]:
-    return [item for item in items if item["source_id"] != source_id]
+@dataclass(frozen=True)
+class _ItemIndex:
+    """Per-item arrays, aligned with the input item order."""
+
+    embeddings: np.ndarray
+    bpm: np.ndarray
+    has_bpm: np.ndarray
+    keys: list[str | None]
+
+    @classmethod
+    def build(cls, items: list[dict]) -> "_ItemIndex":
+        has_bpm = np.array([bool(item.get("bpm")) for item in items])
+        bpm = np.array(
+            [float(item["bpm"]) if has else 0.0 for item, has in zip(items, has_bpm)]
+        )
+        return cls(
+            embeddings=np.asarray([item["embedding"] for item in items], dtype=np.float64),
+            bpm=bpm,
+            has_bpm=has_bpm,
+            keys=[normalize_key(item.get("key")) for item in items],
+        )
 
 
 def _pick_negatives(
     rng: np.random.Generator,
-    pool: list[dict],
+    items: list[dict],
+    index: _ItemIndex,
+    pool_rows: np.ndarray,
     context_items: list[dict],
-    positive: dict,
+    positive_row: int,
 ) -> list[tuple[dict, str]]:
     context_bpm = _context_bpm(context_items)
-    context_keys = {item.get("key") for item in context_items if item.get("key")}
+    context_keys = {
+        normalize_key(item["key"]) for item in context_items if item.get("key")
+    }
+    context_keys.discard(None)
+    has_context_keys = any(item.get("key") for item in context_items)
 
-    def is_easy(item: dict) -> bool:
-        tempo_incompatible = (
-            context_bpm is not None
-            and item.get("bpm")
-            and tempo_match(context_bpm, item["bpm"]) == 0.0
-        )
-        key_incompatible = bool(context_keys) and all(
-            key_match(key, item.get("key")) == 0.0 for key in context_keys
-        )
-        return bool(tempo_incompatible or key_incompatible)
+    # Same scalar arithmetic as features.tempo_match, applied to the pool at once.
+    if context_bpm is not None:
+        ratio = np.abs(context_bpm - index.bpm[pool_rows]) / max(context_bpm, 1.0)
+        tempo = np.maximum(0.0, 1.0 - ratio / _TEMPO_TOLERANCE)
+        has_bpm = index.has_bpm[pool_rows]
+        tempo_incompatible = has_bpm & (tempo == 0.0)
+        tempo_ok = has_bpm & (tempo > 0.8)
+    else:
+        tempo_incompatible = np.zeros(len(pool_rows), dtype=bool)
+        tempo_ok = tempo_incompatible
 
-    def is_hard_tempo_key(item: dict) -> bool:
-        tempo_ok = (
-            context_bpm is not None
-            and item.get("bpm")
-            and tempo_match(context_bpm, item["bpm"]) > 0.8
-        )
-        key_ok = not context_keys or any(
-            key_match(key, item.get("key")) == 1.0 for key in context_keys
-        )
-        return bool(tempo_ok and key_ok)
+    key_in_context = np.array(
+        [index.keys[row] is not None and index.keys[row] in context_keys for row in pool_rows],
+        dtype=bool,
+    )
+    key_incompatible = has_context_keys & ~key_in_context
+    key_ok = (not has_context_keys) | key_in_context
 
-    positive_vector = np.asarray(positive["embedding"])
+    easy = tempo_incompatible | key_incompatible
+    hard = tempo_ok & key_ok
+
     chosen: list[tuple[dict, str]] = []
     used_ids: set[str] = set()
 
-    easy_candidates = [item for item in pool if is_easy(item)]
+    easy_candidates = [items[int(row)] for row in pool_rows[easy]]
     rng.shuffle(easy_candidates)
     for item in easy_candidates[:2]:
         chosen.append((item, "easy"))
         used_ids.add(item["item_id"])
 
     hard_tk = [
-        item
-        for item in pool
-        if item["item_id"] not in used_ids and is_hard_tempo_key(item)
+        items[int(row)]
+        for row in pool_rows[hard]
+        if items[int(row)]["item_id"] not in used_ids
     ]
     if hard_tk:
         item = hard_tk[int(rng.integers(len(hard_tk)))]
         chosen.append((item, "hard_tempo_key"))
         used_ids.add(item["item_id"])
 
-    remaining = [item for item in pool if item["item_id"] not in used_ids]
+    remaining = [row for row in pool_rows if items[int(row)]["item_id"] not in used_ids]
     if remaining:
-        similarities = [
-            float(np.asarray(item["embedding"]) @ positive_vector)
-            for item in remaining
-        ]
-        item = remaining[int(np.argmax(similarities))]
+        # Row-wise dot products, not one matrix product: the same BLAS path as
+        # the original per-item loop, so argmax ties resolve identically.
+        positive_vector = index.embeddings[positive_row]
+        similarities = [float(index.embeddings[row] @ positive_vector) for row in remaining]
+        item = items[int(remaining[int(np.argmax(similarities))])]
         chosen.append((item, "hard_similar"))
 
     return chosen
@@ -96,6 +120,9 @@ def _pick_negatives(
 
 def build_weak_pairs(items: list[dict], seed: int) -> list[dict]:
     rng = np.random.default_rng(seed)
+    index = _ItemIndex.build(items)
+    row_of = {id(item): row for row, item in enumerate(items)}
+    source_rows = np.array([item["source_id"] for item in items])
     by_source: dict[str, list[dict]] = {}
     for item in items:
         by_source.setdefault(item["source_id"], []).append(item)
@@ -105,8 +132,8 @@ def build_weak_pairs(items: list[dict], seed: int) -> list[dict]:
         members = sorted(by_source[source_id], key=lambda item: item["item_id"])
         if len(members) < CONTEXT_MIN + 1:
             continue
-        pool = _negative_pool(items, source_id)
-        if not pool:
+        pool_rows = np.flatnonzero(source_rows != source_id)
+        if not len(pool_rows):
             continue
         for positive in members:
             others = [item for item in members if item["item_id"] != positive["item_id"]]
@@ -114,8 +141,10 @@ def build_weak_pairs(items: list[dict], seed: int) -> list[dict]:
                 rng.integers(CONTEXT_MIN, min(CONTEXT_MAX, len(others)) + 1)
             )
             picked = rng.choice(len(others), size=context_size, replace=False)
-            context_items = [others[index] for index in sorted(picked)]
-            negatives = _pick_negatives(rng, pool, context_items, positive)
+            context_items = [others[index_] for index_ in sorted(picked)]
+            negatives = _pick_negatives(
+                rng, items, index, pool_rows, context_items, row_of[id(positive)]
+            )
             if not negatives:
                 continue
             examples.append(

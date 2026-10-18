@@ -1,6 +1,6 @@
 """The research export must never leak identity or auth material."""
 
-from ranking.export import export_feedback_rows
+from ranking.research.export import export_feedback_rows
 
 RAW_DOCS = [
     {

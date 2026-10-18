@@ -13,8 +13,8 @@ from pathlib import Path
 from ranking.audio_cosine import AudioCosineRanker, InsufficientContextError
 from ranking.baselines import RulesRanker
 from ranking.mean_session import MeanSessionRanker
-from ranking.metrics import pairwise_accuracy
 from ranking.recency import RecencyRanker
+from ranking.research.metrics import pairwise_accuracy
 from ranking.schemas import FragmentCandidate, RankRequest, SessionFingerprint
 from ranking.text_cosine import TextCosineRanker
 

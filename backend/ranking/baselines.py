@@ -16,13 +16,27 @@ from ranking.schemas import (
     SessionFingerprint,
 )
 
+# Filling a role the session lacks outweighs repeating one it has: a full
+# tag duplicate (tag_overlap 1.0) scores below a new role (track_gap +
+# novelty), while partial tag overlap still rewards coherence.
 WEIGHTS = {
+    "tempo_match": 0.25,
+    "key_match": 0.20,
+    "track_gap": 0.15,
+    "intent_match": 0.20,
+    "novelty": 0.05,
+    "tag_overlap": 0.10,
+    "recency": 0.05,
+}
+
+# Offline stand-in for rules-v1 on FSLD pairs, where only these three of its
+# signals are computable. The ratios are frozen by
+# protocol-heldout-correction-v1; the published held-out rules numbers
+# depend on them, so they are not tied to the live WEIGHTS above.
+OFFLINE_STANDIN_WEIGHTS = {
     "tempo_match": 0.30,
     "key_match": 0.20,
-    "track_gap": 0.10,
-    "intent_match": 0.25,
-    "novelty": 0.10,
-    "recency": 0.05,
+    "tag_overlap": 0.35,
 }
 
 _LABELS = {
@@ -31,6 +45,7 @@ _LABELS = {
     "track_gap": "Adds a role the session doesn't have yet",
     "intent_match": "Matches your stated intent",
     "novelty": "Brings new material into the session",
+    "tag_overlap": "Shares tags with fragments in this session",
     "recency": "Recently captured fragment",
 }
 
@@ -78,14 +93,18 @@ class RulesRanker:
             "tempo_match": features.tempo_match(session.bpm, candidate.bpm),
             "key_match": features.key_match(session.key, candidate.key),
             "track_gap": features.track_gap(
-                session.active_track_types, candidate.tags
+                session.active_track_types, candidate.tags, session.context_tags
             ),
             "intent_match": features.intent_match(
                 session.text_intent, candidate.tags
             ),
             "novelty": features.novelty(
-                candidate.tags, session.active_track_types, session.text_intent
+                candidate.tags,
+                session.active_track_types,
+                session.text_intent,
+                session.context_tags,
             ),
+            "tag_overlap": features.tag_overlap(session.context_tags, candidate.tags),
             "recency": features.recency(candidate.created_at_iso, newest_iso),
         }
         evidence = [

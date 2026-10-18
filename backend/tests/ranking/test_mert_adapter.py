@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 from ranking.adapters.base import AudioRepresentationAdapter
-from ranking.adapters.mert import MertAdapter
+from ranking.research.adapters.mert import MertAdapter
 
 
 def test_import_does_not_load_weights():

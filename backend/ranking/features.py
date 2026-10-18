@@ -103,12 +103,26 @@ def key_match(
     return 0.0
 
 
-def track_gap(active_track_types: list[str], tags: list[str]) -> float:
+def session_roles(active_track_types: list[str], context_tags: list[str]) -> set[str]:
+    """Roles already present in the session.
+
+    Audiotool reports DAW track kinds (audio, note, ...), never musical roles,
+    so the roles a session actually contains come from the tags of the
+    fragments already in it; track types are kept for hosts that do report
+    roles directly.
+    """
+    present = {t.lower() for t in active_track_types} | {t.lower() for t in context_tags}
+    return present & ROLE_TAGS
+
+
+def track_gap(
+    active_track_types: list[str], tags: list[str], context_tags: list[str] = ()
+) -> float:
     candidate_roles = {t.lower() for t in tags} & ROLE_TAGS
     if not candidate_roles:
         return 0.0
-    active = {t.lower() for t in active_track_types}
-    return 1.0 if candidate_roles - active else 0.0
+    present = session_roles(active_track_types, context_tags)
+    return 1.0 if candidate_roles - present else 0.0
 
 
 def _intent_tokens(text_intent: str) -> set[str]:
@@ -127,12 +141,28 @@ def intent_match(text_intent: str, tags: list[str]) -> float:
     return len(intent_tokens & tag_tokens) / len(intent_tokens)
 
 
-def novelty(tags: list[str], active_track_types: list[str], text_intent: str) -> float:
+def novelty(
+    tags: list[str],
+    active_track_types: list[str],
+    text_intent: str,
+    context_tags: list[str] = (),
+) -> float:
     tag_tokens = {t.lower() for t in tags}
     if not tag_tokens:
         return 0.0
-    known = {t.lower() for t in active_track_types} | _intent_tokens(text_intent)
+    known = (
+        {t.lower() for t in active_track_types}
+        | {t.lower() for t in context_tags}
+        | _intent_tokens(text_intent)
+    )
     return len(tag_tokens - known) / len(tag_tokens)
+
+
+def tag_overlap(context_tags: list[str], tags: list[str]) -> float:
+    left = {t.lower() for t in context_tags}
+    right = {t.lower() for t in tags}
+    union = left | right
+    return len(left & right) / len(union) if union else 0.0
 
 
 def _parse_iso(value: str) -> datetime | None:

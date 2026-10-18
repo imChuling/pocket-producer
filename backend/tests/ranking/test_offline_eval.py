@@ -10,7 +10,7 @@ from safetensors.torch import save_file
 from ranking.context_model import LadderConfig, PocketRankContext
 from ranking.deepsets_ranker import DeepSetsRanker
 from ranking.linear_ranker import LinearRanker
-from ranking.offline_eval import (
+from ranking.research.offline_eval import (
     LADDER_MODEL_IDS,
     SCORERS,
     evaluate_examples,

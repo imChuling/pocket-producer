@@ -18,6 +18,7 @@ import logging
 import os
 import threading
 
+from api._clients import get_genai_client as _get_genai_client
 from ranking.features import ROLE_TAGS, _intent_tokens, _parse_key, normalize_key
 from ranking.schemas import ParsedIntent, RankRequest
 
@@ -27,18 +28,8 @@ MAX_TAGS = 8
 MIN_BPM, MAX_BPM = 40.0, 220.0
 _CACHE_MAX = 256
 
-_genai_client = None
 _cache: dict[str, ParsedIntent] = {}
 _cache_lock = threading.Lock()
-
-
-def _get_genai_client():
-    global _genai_client
-    if _genai_client is None:
-        from google import genai
-
-        _genai_client = genai.Client(vertexai=True)
-    return _genai_client
 
 
 _RESPONSE_SCHEMA = {

@@ -15,6 +15,9 @@ import numpy as np
 from ranking.adapters.base import RepresentationModelCard
 
 _MSCLAP_VERSION = "2023"
+# msclap's 2023 config embeds a 7 s window and picks it at random from longer
+# clips; cropping to the head first keeps the embedding deterministic.
+MAX_SECONDS = 7
 
 
 def _weights_revision(model) -> str:
@@ -25,6 +28,20 @@ def _weights_revision(model) -> str:
             digest = hashlib.sha256(Path(str(path)).read_bytes()).hexdigest()
             return f"sha256:{digest}"
     return f"msclap-package-{_MSCLAP_VERSION}"
+
+
+def prepare_waveform(waveform: np.ndarray, sample_rate: int) -> np.ndarray:
+    """Downmix multichannel audio to mono and crop to the model window.
+
+    Accepts (frames, channels) as soundfile returns it, or (channels, frames);
+    the channel axis is the shorter one.
+    """
+    audio = np.asarray(waveform, dtype=np.float32)
+    if audio.ndim == 2:
+        mono = audio.mean(axis=int(np.argmin(audio.shape)))
+    else:
+        mono = audio.reshape(-1)
+    return np.ascontiguousarray(mono[: int(MAX_SECONDS * sample_rate)])
 
 
 class MsClapAdapter:
@@ -56,7 +73,7 @@ class MsClapAdapter:
         import soundfile
 
         model = self._load()
-        mono = np.asarray(waveform, dtype=np.float32).reshape(-1)
+        mono = prepare_waveform(waveform, sample_rate)
         with tempfile.NamedTemporaryFile(suffix=".wav") as handle:
             soundfile.write(handle.name, mono, sample_rate)
             embeddings = model.get_audio_embeddings([handle.name])

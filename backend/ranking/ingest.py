@@ -32,7 +32,6 @@ def _encode_sync(db, user_id: str, fragment_id: str, gcs_uri: str) -> str:
     import librosa
     import numpy as np
     from bson import ObjectId
-    from google.cloud import storage
 
     from ranking.adapters.base import audio_sha256, encode_with_lineage
     from ranking.zero_shot import style_scores
@@ -40,7 +39,8 @@ def _encode_sync(db, user_id: str, fragment_id: str, gcs_uri: str) -> str:
     bucket_name, blob_name = gcs_uri.replace("gs://", "").split("/", 1)
     suffix = pathlib.Path(blob_name).suffix or ".webm"
     with tempfile.NamedTemporaryFile(suffix=suffix) as handle:
-        storage.Client().bucket(bucket_name).blob(blob_name).download_to_filename(handle.name)
+        from api._clients import get_gcs_client
+        get_gcs_client().bucket(bucket_name).blob(blob_name).download_to_filename(handle.name)
         waveform, sample_rate = librosa.load(handle.name, sr=TARGET_SAMPLE_RATE, mono=True)
     waveform = waveform.astype(np.float32)
 

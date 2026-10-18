@@ -80,6 +80,10 @@ class RankedCandidate(BaseModel):
     fragment_id: str
     score: float
     evidence: list[RankEvidence]
+    # Signal vector phi(s, x) the score was computed from, when the ranker
+    # exposes one; logged with the served list so musician decisions can
+    # later supervise the fusion weights. Backward-compatible addition.
+    signals: list[float] | None = None
 
 
 class RankResponse(BaseModel):

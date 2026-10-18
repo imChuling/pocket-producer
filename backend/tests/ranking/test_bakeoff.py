@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from ranking.bakeoff import same_source_recall_at_k, zero_shot_label_accuracy
+from ranking.research.bakeoff import same_source_recall_at_k, zero_shot_label_accuracy
 
 
 def unit(*values: float) -> list[float]:

@@ -103,7 +103,28 @@ class TestFusionRanker:
         )
         assert response.candidates[0].fragment_id == "tagged"
 
-    def test_candidate_without_embedding_scores_zero(self):
+    def test_signal_vector_is_exposed_for_scored_candidates(self):
+        ranker = FusionRanker(WEIGHTS)
+        response = ranker.rank(
+            request(
+                [
+                    candidate("f1", audio_embedding=unit(1, 0, 0), bpm=120.0, tags=["techno"]),
+                    candidate("noaudio", bpm=120.0),
+                ],
+                bpm=120.0,
+                context_tags=["techno"],
+            )
+        )
+        by_id = {c.fragment_id: c for c in response.candidates}
+        signals = by_id["f1"].signals
+        assert signals is not None and len(signals) == len(SIGNAL_NAMES)
+        assert signals[0] == pytest.approx(1.0) and signals[1] == pytest.approx(1.0)
+        assert signals[2] == pytest.approx(1.0)  # tempo
+        assert signals[3] == 0.0  # key: session key is None
+        assert signals[4] == pytest.approx(1.0)  # tag overlap
+        assert "noaudio" not in by_id
+
+    def test_candidate_without_embedding_is_not_served(self):
         ranker = FusionRanker(WEIGHTS)
         response = ranker.rank(
             request([
@@ -111,9 +132,30 @@ class TestFusionRanker:
                 candidate("audio", audio_embedding=unit(1, 0, 0)),
             ])
         )
+        assert [c.fragment_id for c in response.candidates] == ["audio"]
+
+    def test_refuses_when_no_candidate_has_audio(self):
+        ranker = FusionRanker(WEIGHTS)
+        with pytest.raises(InsufficientContextError):
+            ranker.rank(request([candidate("a", bpm=120.0), candidate("b")]))
+
+    def test_evidence_is_relative_to_the_served_set_and_sorted(self):
+        ranker = FusionRanker(WEIGHTS)
+        response = ranker.rank(
+            request(
+                [
+                    candidate("onbeat", audio_embedding=unit(1, 0, 0), bpm=120.0),
+                    candidate("offbeat", audio_embedding=unit(1, 0, 0), bpm=170.0),
+                ],
+                bpm=120.0,
+            )
+        )
         by_id = {c.fragment_id: c for c in response.candidates}
-        assert by_id["noaudio"].score == 0.0
-        assert by_id["noaudio"].evidence == []
+        # Same audio: the shared timbral level is not a reason for either.
+        assert [e.code for e in by_id["onbeat"].evidence] == ["tempo_match"]
+        assert by_id["offbeat"].evidence == []
+        contributions = [e.contribution for e in by_id["onbeat"].evidence]
+        assert contributions == sorted(contributions, reverse=True)
 
     def test_evidence_contributions_present(self):
         ranker = FusionRanker(WEIGHTS)

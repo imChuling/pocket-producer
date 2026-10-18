@@ -9,7 +9,7 @@ import pathlib
 
 import pytest
 
-from ranking.offline_eval import LADDER_MODEL_IDS
+from ranking.research.offline_eval import LADDER_MODEL_IDS
 from ranking.schemas import FragmentCandidate, RankRequest, SessionFingerprint
 
 ARTIFACTS = (

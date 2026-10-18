@@ -26,6 +26,7 @@ import numpy as np
 from ranking.audio_cosine import InsufficientContextError
 from ranking.features import key_match, tempo_match
 from ranking.schemas import (
+    FragmentCandidate,
     RankedCandidate,
     RankEvidence,
     RankRequest,
@@ -33,6 +34,23 @@ from ranking.schemas import (
 )
 
 SIGNAL_NAMES = ["audio_cos_mean", "audio_cos_max", "tempo", "key", "tag_jaccard"]
+
+_EVIDENCE = [
+    ("timbral_match", "Sounds close to your session regions"),
+    ("tempo_match", "Tempo fits the session"),
+    ("key_match", "Key compatibility"),
+    ("tag_overlap", "Shares tags with recent fragments"),
+]
+
+
+def _group(contributions: np.ndarray) -> np.ndarray:
+    """Collapse the two cosine terms into one timbral contribution."""
+    return np.array([
+        contributions[0] + contributions[1],
+        contributions[2],
+        contributions[3],
+        contributions[4],
+    ])
 
 
 def load_weights(path: str | pathlib.Path) -> dict:
@@ -84,16 +102,13 @@ class FusionRanker:
 
         ctx_tags = {t.lower() for t in request.session.context_tags}
 
-        ranked: list[RankedCandidate] = []
+        # Candidates without an audio embedding cannot be scored by this
+        # ranker; they are left out rather than served as evidence-free
+        # proposals at the bottom of the list.
+        scored: list[tuple[FragmentCandidate, np.ndarray, np.ndarray]] = []
         for cand in request.candidates:
             if not cand.audio_embedding:
-                ranked.append(
-                    RankedCandidate(
-                        fragment_id=cand.fragment_id, score=0.0, evidence=[]
-                    )
-                )
                 continue
-
             vec = np.asarray(cand.audio_embedding, dtype=np.float64)
             vec = vec / np.linalg.norm(vec)
             cand_tags = {t.lower() for t in cand.tags}
@@ -105,33 +120,37 @@ class FusionRanker:
                 key_match(request.session.key, cand.key),
                 len(ctx_tags & cand_tags) / len(union) if union else 0.0,
             ])
-            contributions = self._w * signals
-            score = round(1.0 / (1.0 + math.exp(-float(contributions.sum()))), 6)
+            scored.append((cand, signals, self._w * signals))
+        if not scored:
+            raise InsufficientContextError(
+                f"fusion-5sig-v1 cannot score any of the {len(request.candidates)} "
+                "candidates (no audio embeddings)"
+            )
 
-            # Zero-contribution signals carry no evidence: a missing input
-            # (e.g. key, which Audiotool never provides) must not surface
-            # as a reason for the recommendation.
+        # Evidence is relative to the other scorable candidates in this
+        # request: a chip appears only where this candidate beats the mean,
+        # so the cosine baseline level shared by every candidate is not
+        # presented as a reason. With a single candidate there is no set to
+        # compare against, so its own positive contributions are shown.
+        grouped = np.stack([_group(c) for _, _, c in scored])
+        baseline = grouped.mean(axis=0) if len(scored) > 1 else np.zeros(grouped.shape[1])
+
+        ranked: list[RankedCandidate] = []
+        for (cand, signals, contributions), group in zip(scored, grouped):
+            score = round(1.0 / (1.0 + math.exp(-float(contributions.sum()))), 6)
+            relative = group - baseline
             evidence = [
-                RankEvidence(code=code, label=label, contribution=round(c, 6))
-                for code, label, c in [
-                    (
-                        "timbral_match",
-                        "Sounds close to your session regions",
-                        float(contributions[0] + contributions[1]),
-                    ),
-                    ("tempo_match", "Tempo fits the session", float(contributions[2])),
-                    ("key_match", "Key compatibility", float(contributions[3])),
-                    (
-                        "tag_overlap",
-                        "Shares tags with recent fragments",
-                        float(contributions[4]),
-                    ),
-                ]
-                if c != 0.0
+                RankEvidence(code=code, label=label, contribution=round(float(c), 6))
+                for (code, label), c in zip(_EVIDENCE, relative)
+                if c > 0.0
             ]
+            evidence.sort(key=lambda e: -e.contribution)
             ranked.append(
                 RankedCandidate(
-                    fragment_id=cand.fragment_id, score=score, evidence=evidence
+                    fragment_id=cand.fragment_id,
+                    score=score,
+                    evidence=evidence,
+                    signals=[round(float(s), 6) for s in signals],
                 )
             )
 
