@@ -23,6 +23,8 @@ import numpy as np
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "backend"))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
+from ranking.weak_pairs import split_sources
+
 from run_fusion import (
     PAIR_SEED,
     SEEDS,
@@ -33,7 +35,6 @@ from run_fusion import (
     rules_standin,
     train_logistic,
 )
-from ranking.weak_pairs import split_sources
 
 FUSION_5SIG_IDX = np.array([0, 1, 2, 3, 4])
 SIGNAL_NAMES = ["audio_cos_mean", "audio_cos_max", "tempo", "key", "tag_jaccard"]

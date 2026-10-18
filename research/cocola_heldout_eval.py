@@ -20,9 +20,9 @@ import json
 import pathlib
 import sys
 
+import librosa
 import numpy as np
 import torch
-import librosa
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 COCOLA_ROOT = ROOT.parent.parent / "cocola"

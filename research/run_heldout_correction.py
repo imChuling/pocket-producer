@@ -40,6 +40,7 @@ import numpy as np
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "backend"))
 
 from ranking.weak_pairs import build_weak_pairs
+
 from run_fusion import (
     PAIR_SEED,
     SEEDS,

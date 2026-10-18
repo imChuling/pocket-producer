@@ -5,10 +5,12 @@ Layout: 2x3 grid, U-shaped flow, feedback loop on the left.
 """
 
 import matplotlib
+
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
 import pathlib
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
 DPI = 300
 PDF_METADATA = {"CreationDate": None, "Producer": None, "Creator": None}

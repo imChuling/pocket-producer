@@ -25,7 +25,6 @@ matplotlib.rcParams["svg.fonttype"] = "none"
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 LAION = ROOT / "artifacts" / "heldout-eval-correction" / "sensitivity.json"
 MSCLAP = ROOT / "artifacts" / "msclap-sensitivity-correction" / "sensitivity.json"

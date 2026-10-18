@@ -22,7 +22,6 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "backend"))
 
 import librosa  # noqa: E402
 import numpy as np  # noqa: E402
-
 from ranking.adapters.base import encode_with_lineage  # noqa: E402
 
 

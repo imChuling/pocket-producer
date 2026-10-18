@@ -32,8 +32,8 @@ from ranking.role_probe import CONFIDENCE_THRESHOLD, RoleProbe  # noqa: F401
 from ranking.weak_pairs import split_sources
 
 from run_fusion import (  # noqa: E402
-    SEEDS,
     PAIR_SEED,
+    SEEDS,
     SIGNALS,
     build_feature_examples,
     evaluate,

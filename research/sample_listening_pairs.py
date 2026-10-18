@@ -26,7 +26,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "backend
 
 from ranking.baselines import OFFLINE_STANDIN_WEIGHTS
 from ranking.weak_pairs import build_weak_pairs
-from run_fusion import PAIR_SEED, SIGNALS, load_items, candidate_signals
+
+from run_fusion import PAIR_SEED, SIGNALS, candidate_signals, load_items
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 ITEMS_PATH = ROOT / "research" / "data" / "fsld" / "items_laion-clap-music_packonly.jsonl"

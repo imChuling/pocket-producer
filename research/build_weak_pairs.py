@@ -19,7 +19,6 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "backend"))
 
 from dotenv import dotenv_values  # noqa: E402
 from pymongo import MongoClient  # noqa: E402
-
 from ranking.weak_pairs import build_weak_pairs  # noqa: E402
 
 

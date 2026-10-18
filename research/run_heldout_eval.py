@@ -29,8 +29,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "backend
 from ranking.weak_pairs import split_sources
 
 from run_fusion import (
-    SEEDS,
     PAIR_SEED,
+    SEEDS,
     SIGNALS,
     build_feature_examples,
     evaluate,

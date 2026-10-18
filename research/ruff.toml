@@ -1,0 +1,11 @@
+extend = "../backend/pyproject.toml"
+
+[lint]
+extend-ignore = ["E402", "N803", "N806"]
+
+[lint.per-file-ignores]
+"run_ablation.py" = ["E501"]
+"run_factorial.py" = ["E501"]
+"download_heldout_audio.py" = ["E501"]
+"extract_fsld_features.py" = ["E501"]
+"human_signal_alignment.py" = ["E501"]
