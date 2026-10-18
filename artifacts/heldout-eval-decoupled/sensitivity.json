@@ -453,5 +453,9 @@
         0.9709
       ]
     }
-  }
+  },
+  "audio_source": "mining: freesound_preview_mp3 (MERT); signals: fsl10k_wav (LAION-CLAP)",
+  "mining_space": "mert-v1-95m",
+  "signal_space": "laion-clap-music",
+  "interpretation": "With hard_similar mined in an embedding space independent of the scored cosine, the CLAP cosine baseline on hard_similar rises from 0.814 (CLAP-mined) to 0.957 and the fusion advantage shrinks to +1.4 pp: the hard_similar regime's difficulty for cosine, and most of fusion's advantage there, come from mining negatives in the same space as the scored signal."
 }

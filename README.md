@@ -160,7 +160,7 @@ first-pass filter, not a final decision-maker.
   criterion are fixed in advance.
 - **Metrics must match label semantics.** Asking for nDCG on pairwise labels
   raises `MetricEligibilityError`; the rule is enforced in code, not by discipline
-  ([`backend/ranking/metrics.py`](backend/ranking/metrics.py)).
+  ([`backend/ranking/research/metrics.py`](backend/ranking/research/metrics.py)).
 - **Six comparison methods**: recency · text-only (Voyage) · audio-cosine (CLAP) ·
   mean-session · rules · context reranker.
 - **Grouped splits** by participant and by source pack; no time-stretched or

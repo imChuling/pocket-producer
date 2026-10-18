@@ -117,6 +117,26 @@ backend/.venv/bin/python research/export_fusion_weights.py \
 | `artifacts/factorial/factorial.json` | `run_factorial.py` | 2×2 representation × training decomposition (dev side only) |
 | `artifacts/heldout-eval-packonly/` | `run_heldout_eval.py` | superseded first held-out run (kept for the corrective-disclosure audit trail) |
 | `artifacts/human-signal-alignment/alignment.json` | `human_signal_alignment.py` | pilot signal-alignment analysis (removed from the paper; raw vote matrix unavailable) |
+| `artifacts/ablation-7sig-packonly/ablation.json` | `run_ablation_7sig.py` | 7-signal LOSO on the pack-only train side; role_gap and harmonic add nothing over fusion-5sig |
+| `artifacts/standardize-check/` | `run_standardize_check.py` | per-signal standardization before BPR; worse on both LAION and MS-CLAP dev splits, not adopted |
+| `artifacts/keymask-check/keymask_msclap.json` | `run_keymask_check.py` | train/serve key mismatch: serving the shipped weights with key = 0 costs nothing on dev (+0.5 pp overall); retraining with key masked recovers +0.02 pp, so the shipped weights stay |
+| `artifacts/heldout-eval-mert/sensitivity.json` | `embed_mert_from_previews.py` + `run_heldout_correction.py --mode mert` | third representation column (MERT-v1-95M from Freesound preview MP3s); fusion advantage persists but the MERT cosine baseline is weaker (0.848 overall) |
+| `artifacts/heldout-eval-decoupled/sensitivity.json` | `run_heldout_correction.py --mode decoupled --items-mining items_mert_packonly.jsonl` | hard_similar mined in MERT space, signals scored in LAION-CLAP space: CLAP cosine on hard_similar rises to 0.957 and the fusion advantage shrinks to +1.4 pp, so most of the CLAP-mined hard_similar gain comes from mining negatives in the scored space |
+| `artifacts/human-eval-v1/power_sim.json` | `power_sim_human_v1.py` | power simulation for the pre-registered listening study (`prereg_human_v1.md`), driven by the 17 discordant-capable pairs in `data/listening_test/pairs.json` |
+| `artifacts/fusion-feedback/weights.json` (once data exists) | `finetune_from_feedback.py` | fusion weights fine-tuned on logged musician decisions (`ranking_requests.candidate_signals` + `ranking_feedback`), warm-started from the deployed weights |
+
+## Embedding-stage determinism (caveat)
+
+The numbers above are reproducible from the committed `items_*.jsonl`
+embedding files onward. The embedding step itself is not: `msclap` embeds a
+7 s window and picks it at random from longer clips (`CLAPWrapper.py`,
+`random.randrange`), and `embed_fsld_subset.py` set no seed. 51% of the
+pack-only loops exceed 7 s (27% exceed 14 s), so re-running
+`embed_fsld_subset.py` yields different vectors for those items. LAION-CLAP
+without fusion truncates to 10 s the same way. The deployed adapter now
+crops to the first 7 s before calling the model (`ranking/adapters/msclap.py`),
+so online session embeddings are deterministic; the research files were
+produced before that change and are kept as-is.
 
 ## Verification
 

@@ -1,0 +1,136 @@
+{
+  "experiment": "per-signal standardization check for fusion-5sig (dev side)",
+  "items_file": "research/data/fsld/items_msclap_packonly_train.jsonl",
+  "mode": "msclap",
+  "pair_seed": 20260725,
+  "seeds": [
+    20260725,
+    20260801,
+    20260802,
+    20260803,
+    20260804
+  ],
+  "signals": [
+    "audio_cos_mean",
+    "audio_cos_max",
+    "tempo",
+    "key",
+    "tag_jaccard"
+  ],
+  "mean_train_scale_1_over_std": [
+    4.484,
+    4.5334,
+    2.4303,
+    2.0008,
+    4.802
+  ],
+  "summary": {
+    "raw": {
+      "mean_overall": 0.9085,
+      "std_overall": 0.0087,
+      "mean_easy": 0.9706,
+      "std_easy": 0.0058,
+      "mean_hard_similar": 0.8056,
+      "std_hard_similar": 0.0242,
+      "mean_hard_tempo_key": 0.8872,
+      "std_hard_tempo_key": 0.0258,
+      "mean_weights_raw_scale": [
+        6.3253,
+        7.5436,
+        1.2113,
+        0.8974,
+        0.5428
+      ]
+    },
+    "standardized": {
+      "mean_overall": 0.9045,
+      "std_overall": 0.0118,
+      "mean_easy": 0.9701,
+      "std_easy": 0.0061,
+      "mean_hard_similar": 0.7949,
+      "std_hard_similar": 0.0294,
+      "mean_hard_tempo_key": 0.8828,
+      "std_hard_tempo_key": 0.0327,
+      "mean_weights_raw_scale": [
+        6.6381,
+        8.4306,
+        1.2368,
+        1.1341,
+        0.4524
+      ]
+    }
+  },
+  "delta_standardized_minus_raw": {
+    "overall": -0.004,
+    "easy": -0.0005,
+    "hard_similar": -0.0107,
+    "hard_tempo_key": -0.0044
+  },
+  "per_seed": {
+    "raw": [
+      {
+        "overall": 0.9184,
+        "easy": 0.9718,
+        "hard_similar": 0.814,
+        "hard_tempo_key": 0.9161
+      },
+      {
+        "overall": 0.8968,
+        "easy": 0.9677,
+        "hard_similar": 0.8032,
+        "hard_tempo_key": 0.8482
+      },
+      {
+        "overall": 0.9155,
+        "easy": 0.9776,
+        "hard_similar": 0.8179,
+        "hard_tempo_key": 0.8878
+      },
+      {
+        "overall": 0.9038,
+        "easy": 0.9733,
+        "hard_similar": 0.7651,
+        "hard_tempo_key": 0.9036
+      },
+      {
+        "overall": 0.9082,
+        "easy": 0.9624,
+        "hard_similar": 0.8276,
+        "hard_tempo_key": 0.8805
+      }
+    ],
+    "standardized": [
+      {
+        "overall": 0.9184,
+        "easy": 0.9718,
+        "hard_similar": 0.8073,
+        "hard_tempo_key": 0.9228
+      },
+      {
+        "overall": 0.8907,
+        "easy": 0.969,
+        "hard_similar": 0.7871,
+        "hard_tempo_key": 0.8374
+      },
+      {
+        "overall": 0.9114,
+        "easy": 0.9792,
+        "hard_similar": 0.8211,
+        "hard_tempo_key": 0.8647
+      },
+      {
+        "overall": 0.894,
+        "easy": 0.968,
+        "hard_similar": 0.7473,
+        "hard_tempo_key": 0.8929
+      },
+      {
+        "overall": 0.9082,
+        "easy": 0.9624,
+        "hard_similar": 0.8119,
+        "hard_tempo_key": 0.8962
+      }
+    ]
+  },
+  "note": "exploratory; the shipped weights and the paper's numbers use raw signals"
+}

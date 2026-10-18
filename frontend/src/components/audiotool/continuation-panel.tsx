@@ -276,6 +276,7 @@ export function ContinuationPanel({
                 await onPreview(fragment);
               }}
               onInsert={async () => {
+                emit(candidate.fragment_id, "accept");
                 await onInsert(fragment);
                 emit(candidate.fragment_id, "insert");
               }}

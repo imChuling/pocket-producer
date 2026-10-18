@@ -1,0 +1,74 @@
+{
+  "protocol": "research/prereg_human_v1.md section 4.1",
+  "pairs_file": "research/data/listening_test/pairs.json",
+  "n_pairs": 40,
+  "n_discordant_capable": 17,
+  "n_concordant": 23,
+  "no_preference_rate_assumed": 0.15,
+  "p_agree_both_assumed": 0.7,
+  "sims_per_cell": 1500,
+  "alpha": 0.05,
+  "results": {
+    "raters=10,p_fusion=0.55": {
+      "n_raters": 10,
+      "p_fusion_on_discordant": 0.55,
+      "expected_overall_delta_pp": 4.2,
+      "power": 0.197
+    },
+    "raters=10,p_fusion=0.6": {
+      "n_raters": 10,
+      "p_fusion_on_discordant": 0.6,
+      "expected_overall_delta_pp": 8.4,
+      "power": 0.636
+    },
+    "raters=10,p_fusion=0.65": {
+      "n_raters": 10,
+      "p_fusion_on_discordant": 0.65,
+      "expected_overall_delta_pp": 12.7,
+      "power": 0.952
+    },
+    "raters=10,p_fusion=0.7": {
+      "n_raters": 10,
+      "p_fusion_on_discordant": 0.7,
+      "expected_overall_delta_pp": 16.9,
+      "power": 0.997
+    },
+    "raters=10,p_fusion=0.75": {
+      "n_raters": 10,
+      "p_fusion_on_discordant": 0.75,
+      "expected_overall_delta_pp": 21.3,
+      "power": 1.0
+    },
+    "raters=15,p_fusion=0.55": {
+      "n_raters": 15,
+      "p_fusion_on_discordant": 0.55,
+      "expected_overall_delta_pp": 4.2,
+      "power": 0.293
+    },
+    "raters=15,p_fusion=0.6": {
+      "n_raters": 15,
+      "p_fusion_on_discordant": 0.6,
+      "expected_overall_delta_pp": 8.6,
+      "power": 0.839
+    },
+    "raters=15,p_fusion=0.65": {
+      "n_raters": 15,
+      "p_fusion_on_discordant": 0.65,
+      "expected_overall_delta_pp": 12.7,
+      "power": 0.994
+    },
+    "raters=15,p_fusion=0.7": {
+      "n_raters": 15,
+      "p_fusion_on_discordant": 0.7,
+      "expected_overall_delta_pp": 17.0,
+      "power": 1.0
+    },
+    "raters=15,p_fusion=0.75": {
+      "n_raters": 15,
+      "p_fusion_on_discordant": 0.75,
+      "expected_overall_delta_pp": 21.1,
+      "power": 1.0
+    }
+  },
+  "note": "McNemar with continuity correction on all valid (rater, pair) observations; only discordant-capable pairs contribute to the test statistic."
+}

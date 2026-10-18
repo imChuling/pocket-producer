@@ -58,6 +58,8 @@ export type RankedCandidate = {
   fragment_id: string;
   score: number;
   evidence: RankEvidence[];
+  /** Signal vector behind the score, when the serving ranker exposes one. */
+  signals?: number[] | null;
 };
 
 export type RankResponse = {

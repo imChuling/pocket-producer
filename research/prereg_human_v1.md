@@ -110,15 +110,27 @@ bootstrap (rater-clustered, 10,000 draws).
 
 Decision rule: reject H0 (no difference) at alpha = 0.05.
 
-Minimum detectable effect: McNemar's test is powered by the number
-of discordant (rater, pair) observations (where the rater agrees with
-one ranker but not the other). With N=10 raters x 40 pairs, the
-upper bound is 400 observations, but the effective sample is limited
-to the discordant subset. With 17 disagreement-stratum pairs and
-an estimated 40-60% discordance rate across the full set, we expect
-roughly 80-120 discordant observations, sufficient to detect a 15 pp
-difference at 80% power (alpha=0.05). This is an exploratory study;
-confidence intervals are the primary inferential tool.
+Minimum detectable effect: McNemar's test is powered only by
+discordant (rater, pair) observations, which can arise only on the
+17 pairs where fusion and cosine pick different candidates (on the
+other 23 pairs both rankers agree, so the human response cannot
+separate them). Every valid response on those 17 pairs is discordant,
+so N=10 raters give about 145 discordant observations after an
+assumed 15% no-preference rate. Simulation
+(`research/power_sim_human_v1.py`, `artifacts/human-eval-v1/power_sim.json`,
+1,500 runs per cell, alpha=0.05) with the actual pair manifest gives:
+
+| raters | P(side with fusion on discordant pairs) | overall delta | power |
+|---|---|---|---|
+| 10 | 0.60 | +8.4 pp | 0.64 |
+| 10 | 0.65 | +12.7 pp | 0.95 |
+| 15 | 0.60 | +8.6 pp | 0.84 |
+| 15 | 0.65 | +12.7 pp | 0.99 |
+
+So N=10 detects an overall delta of roughly 10 pp or more at 80%
+power; N=15 brings an 8 to 9 pp delta into range. Confidence
+intervals (rater-clustered bootstrap) remain the primary inferential
+tool.
 
 ### 4.2 Exploratory analysis (H2)
 

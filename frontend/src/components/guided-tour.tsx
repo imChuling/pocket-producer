@@ -25,7 +25,7 @@ const DASHBOARD_STEPS: TourStep[] = [
   },
   {
     title: "AI Analysis Pipeline",
-    body: "Audio fragments run through CLAP/MERT embedding models, spectral analysis, and LLM interpretation. The pipeline takes 30-60 seconds and shows each step in real time.",
+    body: "Audio fragments run through a CLAP audio embedding model, spectral analysis, and LLM interpretation. The pipeline takes 30-60 seconds and shows each step in real time.",
     target: "[data-tour='fragments']",
     position: "left",
   },
@@ -37,7 +37,7 @@ const DASHBOARD_STEPS: TourStep[] = [
   },
   {
     title: "Ranking Pipeline",
-    body: "Inside a project, a multi-signal fusion ranker (BPR-trained on 5 similarity signals) suggests which fragments fit next, with per-signal evidence for each recommendation.",
+    body: "In an open Audiotool session, a transparent rules ranker proposes which fragments fit next, with per-signal evidence for each proposal. A learned five-signal fusion is available as an alternative you can switch to.",
     position: "center",
   },
   {
@@ -92,7 +92,11 @@ function Spotlight({
   onNext: () => void;
   onClose: () => void;
 }) {
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  // Measured per step; `pos: null` means the step's target was not found.
+  const [measured, setMeasured] = useState<{
+    step: TourStep;
+    pos: { top: number; left: number } | null;
+  } | null>(null);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -103,50 +107,57 @@ function Spotlight({
   }, [onClose]);
 
   useEffect(() => {
-    if (!step.target || step.position === "center") {
-      setPos(null);
-      return;
-    }
-    const el = document.querySelector(step.target);
-    if (!el) {
-      setPos(null);
-      return;
-    }
-    const rect = el.getBoundingClientRect();
-    const scrollY = window.scrollY;
-    const scrollX = window.scrollX;
+    const { target, position } = step;
+    if (!target || position === "center") return;
+    // Measure in the next frame so the step's target has been laid out.
+    const frame = requestAnimationFrame(() => {
+      const el = document.querySelector(target);
+      if (!el) {
+        setMeasured({ step, pos: null });
+        return;
+      }
+      const rect = el.getBoundingClientRect();
+      const scrollY = window.scrollY;
+      const scrollX = window.scrollX;
 
-    let top = rect.top + scrollY;
-    let left = rect.left + scrollX;
+      let top = rect.top + scrollY;
+      let left = rect.left + scrollX;
 
-    switch (step.position) {
-      case "bottom":
-        top = rect.bottom + scrollY + 12;
-        left = rect.left + scrollX + rect.width / 2;
-        break;
-      case "top":
-        top = rect.top + scrollY - 12;
-        left = rect.left + scrollX + rect.width / 2;
-        break;
-      case "right":
-        top = rect.top + scrollY + rect.height / 2;
-        left = rect.right + scrollX + 12;
-        break;
-      case "left":
-        top = rect.top + scrollY + rect.height / 2;
-        left = rect.left + scrollX - 12;
-        break;
-    }
+      switch (position) {
+        case "bottom":
+          top = rect.bottom + scrollY + 12;
+          left = rect.left + scrollX + rect.width / 2;
+          break;
+        case "top":
+          top = rect.top + scrollY - 12;
+          left = rect.left + scrollX + rect.width / 2;
+          break;
+        case "right":
+          top = rect.top + scrollY + rect.height / 2;
+          left = rect.right + scrollX + 12;
+          break;
+        case "left":
+          top = rect.top + scrollY + rect.height / 2;
+          left = rect.left + scrollX - 12;
+          break;
+      }
 
-    const pad = 16;
-    top = Math.max(pad, Math.min(top, document.documentElement.scrollHeight - pad));
-    left = Math.max(pad, Math.min(left, window.innerWidth - pad));
+      const pad = 16;
+      top = Math.max(pad, Math.min(top, document.documentElement.scrollHeight - pad));
+      left = Math.max(pad, Math.min(left, window.innerWidth - pad));
 
-    setPos({ top, left });
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setMeasured({ step, pos: { top, left } });
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    return () => cancelAnimationFrame(frame);
   }, [step]);
 
-  const isCenter = !step.target || step.position === "center" || !pos;
+  const measure = measured?.step === step ? measured : null;
+  const pos = measure?.pos ?? null;
+  const isCenter =
+    !step.target || step.position === "center" || (measure !== null && pos === null);
+  // A targeted step stays hidden for the frame before its target is measured.
+  const pending = !isCenter && measure === null;
 
   return (
     <motion.div
@@ -166,8 +177,13 @@ function Spotlight({
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
         className="absolute bg-white rounded-2xl p-5 shadow-xl max-w-[340px] w-[90vw]"
         style={
-          isCenter
-            ? { top: "50%", left: "50%", transform: "translate(-50%, -50%)" }
+          isCenter || pending
+            ? {
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                visibility: pending ? "hidden" : undefined,
+              }
             : {
                 top: pos!.top,
                 left: pos!.left,
