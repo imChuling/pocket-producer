@@ -22,8 +22,10 @@ from google.adk.tools import FunctionTool
 from google.adk.tools.agent_tool import AgentTool
 from google.genai import types as genai_types
 
+from api._clients import get_genai_client
 from tools.rescue_score import compute_rescue_score
 
+from ._serialization import to_json as _to_json
 from ._skills_loader import get_skill_toolset
 from .memory import memory_agent
 
@@ -32,28 +34,7 @@ logger = logging.getLogger(__name__)
 _current_user_id: ContextVar[str] = ContextVar("producer_agent_user_id")
 _current_db: ContextVar[Any] = ContextVar("producer_agent_db")
 
-_genai_client = None
-
-
-def _get_genai_client():
-    global _genai_client
-    if _genai_client is None:
-        from google import genai
-        _genai_client = genai.Client(vertexai=True)
-    return _genai_client
-
-
-class _JSONEncoder(json.JSONEncoder):
-    def default(self, o: Any) -> Any:
-        if isinstance(o, ObjectId):
-            return str(o)
-        if isinstance(o, datetime):
-            return o.isoformat()
-        return super().default(o)
-
-
-def _to_json(value: Any) -> str:
-    return json.dumps(value, cls=_JSONEncoder, ensure_ascii=False)
+_get_genai_client = get_genai_client
 
 
 def _db():

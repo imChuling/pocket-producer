@@ -5,7 +5,6 @@ from typing import Any
 from urllib.parse import urlparse
 
 import requests
-from google.cloud import storage
 
 _MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024
 
@@ -42,8 +41,8 @@ def _extract_sync(audio_url: str) -> dict[str, Any]:
         if audio_url.startswith("gs://"):
             parts = audio_url.replace("gs://", "").split("/", 1)
             bucket_name, blob_name = parts[0], parts[1]
-            client = storage.Client()
-            client.bucket(bucket_name).blob(blob_name).download_to_filename(tmp.name)
+            from api._clients import get_gcs_client
+            get_gcs_client().bucket(bucket_name).blob(blob_name).download_to_filename(tmp.name)
         else:
             _validate_audio_url(audio_url)
             r = requests.get(audio_url, timeout=30, stream=True)

@@ -21,6 +21,9 @@ from bson import ObjectId
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
 
+from ranking import features as ranking_features
+
+from ._serialization import to_json as _to_json
 from ._skills_loader import get_skill_toolset
 
 logger = logging.getLogger(__name__)
@@ -28,19 +31,6 @@ logger = logging.getLogger(__name__)
 _current_user_id: ContextVar[str] = ContextVar("memory_agent_user_id")
 _current_db: ContextVar[Any] = ContextVar("memory_agent_db")
 
-
-class _JSONEncoder(json.JSONEncoder):
-    def default(self, o: Any) -> Any:
-        if isinstance(o, ObjectId):
-            return str(o)
-        from datetime import datetime
-        if isinstance(o, datetime):
-            return o.isoformat()
-        return super().default(o)
-
-
-def _to_json(value: Any) -> str:
-    return json.dumps(value, cls=_JSONEncoder, ensure_ascii=False)
 
 
 def _db():
@@ -123,6 +113,7 @@ async def vector_search_fragment_neighbors(fragment_id: str, limit: int = 6) -> 
                 "Vector search via MCP: %d neighbors for %s (threshold=%.2f)",
                 len(neighbors), fragment_id, threshold,
             )
+            neighbors = await enrich_neighbors_with_signals(fragment_id, neighbors)
             return _to_json({"neighbors": neighbors, "threshold_applied": threshold, "via": "mcp"})
         except Exception:
             logger.warning(
@@ -150,6 +141,7 @@ async def vector_search_fragment_neighbors(fragment_id: str, limit: int = 6) -> 
         {"$project": {"embedding": 0}},
     ]
     neighbors = await asyncio.to_thread(lambda: list(db["fragments"].aggregate(pipeline)))
+    neighbors = await enrich_neighbors_with_signals(fragment_id, neighbors)
     return _to_json({"neighbors": neighbors, "threshold_applied": threshold})
 
 
@@ -383,6 +375,164 @@ async def mongo_mcp_find(collection: str, filter: dict, limit: int = 10) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Deterministic pairwise signal computation
+# ---------------------------------------------------------------------------
+
+
+def _jaccard(a: list[str], b: list[str]) -> float:
+    left = {t.lower() for t in a if t}
+    right = {t.lower() for t in b if t}
+    union = left | right
+    return len(left & right) / len(union) if union else 0.0
+
+
+_STRUCTURE_COMPLEMENTS = {
+    "verse_candidate": {"chorus_candidate", "hook_candidate", "bridge_candidate"},
+    "chorus_candidate": {"verse_candidate", "bridge_candidate"},
+    "hook_candidate": {"verse_candidate", "chorus_candidate"},
+    "bridge_candidate": {"verse_candidate", "chorus_candidate"},
+    "melodic_motif": {"verse_candidate", "chorus_candidate", "lyric_fragment"},
+    "lyric_fragment": {"melodic_motif", "verse_candidate"},
+}
+
+
+def _feature_proximity(a: float | None, b: float | None, tolerance: float) -> float:
+    if a is None or b is None:
+        return 0.0
+    ref = max(abs(a), abs(b), 1e-6)
+    return max(0.0, 1.0 - abs(a - b) / (ref * tolerance))
+
+
+def _temporal_proximity(src_created: Any, nbr_created: Any) -> float:
+    from datetime import datetime
+    def _to_dt(v: Any) -> datetime | None:
+        if isinstance(v, datetime):
+            return v
+        if isinstance(v, str):
+            try:
+                return datetime.fromisoformat(v.replace("Z", "+00:00"))
+            except ValueError:
+                return None
+        if isinstance(v, dict) and "$date" in v:
+            return _to_dt(v["$date"])
+        return None
+    a, b = _to_dt(src_created), _to_dt(nbr_created)
+    if a is None or b is None:
+        return 0.0
+    days_apart = abs((a - b).total_seconds()) / 86400.0
+    return 1.0 / (1.0 + days_apart / 7.0)
+
+
+def _recency(nbr_created: Any, src_created: Any) -> float:
+    from datetime import datetime
+    def _to_iso(v: Any) -> str | None:
+        if isinstance(v, datetime):
+            return v.isoformat()
+        if isinstance(v, str):
+            return v
+        if isinstance(v, dict) and "$date" in v:
+            return _to_iso(v["$date"])
+        return None
+    nbr_iso = _to_iso(nbr_created)
+    src_iso = _to_iso(src_created)
+    if not nbr_iso or not src_iso:
+        return 0.0
+    return ranking_features.recency(nbr_iso, src_iso)
+
+
+def _structure_complement(src_hint: str | None, nbr_hint: str | None) -> float:
+    if not src_hint or not nbr_hint:
+        return 0.0
+    if src_hint == nbr_hint:
+        return 0.5
+    complements = _STRUCTURE_COMPLEMENTS.get(src_hint, set())
+    return 1.0 if nbr_hint in complements else 0.0
+
+
+def _compute_pairwise_signals(
+    source: dict, neighbor: dict,
+) -> dict[str, float]:
+    """Compute deterministic ranking signals between two fragments.
+
+    Reuses the same feature functions as the Audiotool ranker and adds
+    tag-level overlap signals so that the Memory Agent gets hard numbers
+    instead of having to infer compatibility from raw metadata.
+    """
+    src_bpm = source.get("bpm")
+    nbr_bpm = neighbor.get("bpm")
+    src_key = source.get("key")
+    nbr_key = neighbor.get("key")
+    src_tags = source.get("tags") or []
+    nbr_tags = neighbor.get("tags") or []
+    src_emotions = source.get("emotions") or []
+    nbr_emotions = neighbor.get("emotions") or []
+    src_themes = source.get("themes") or []
+    nbr_themes = neighbor.get("themes") or []
+    src_style = source.get("style") or []
+    nbr_style = neighbor.get("style") or []
+
+    src_af = source.get("audio_features") or {}
+    nbr_af = neighbor.get("audio_features") or {}
+
+    return {
+        # --- from ranking/features.py (shared with Audiotool ranker) ---
+        "tempo_match": round(ranking_features.tempo_match(src_bpm, nbr_bpm), 3),
+        "key_match_exact": round(ranking_features.key_match(src_key, nbr_key, mode="exact"), 3),
+        "key_match_relative": round(ranking_features.key_match(src_key, nbr_key, mode="relative"), 3),
+        "key_match_fifth": round(ranking_features.key_match(src_key, nbr_key, mode="fifth"), 3),
+        "tag_overlap": round(ranking_features.tag_overlap(src_tags, nbr_tags), 3),
+        "track_gap": round(ranking_features.track_gap([], nbr_tags, src_tags), 3),
+        "novelty": round(ranking_features.novelty(nbr_tags, [], source.get("notes") or "", src_tags), 3),
+        "intent_match": round(ranking_features.intent_match(
+            source.get("notes") or "", nbr_tags,
+        ), 3),
+        "recency": round(_recency(neighbor.get("created_at"), source.get("created_at")), 3),
+        # --- tag-level overlaps ---
+        "emotion_overlap": round(_jaccard(src_emotions, nbr_emotions), 3),
+        "theme_overlap": round(_jaccard(src_themes, nbr_themes), 3),
+        "style_overlap": round(_jaccard(src_style, nbr_style), 3),
+        # --- structural complementarity ---
+        "structure_complement": round(_structure_complement(
+            source.get("structure_hint"), neighbor.get("structure_hint"),
+        ), 3),
+        # --- audio feature proximity (timbral compatibility) ---
+        "brightness_proximity": round(_feature_proximity(
+            src_af.get("brightness"), nbr_af.get("brightness"), 0.5,
+        ), 3),
+        "onset_density_proximity": round(_feature_proximity(
+            src_af.get("onset_density"), nbr_af.get("onset_density"), 0.5,
+        ), 3),
+        "energy_proximity": round(_feature_proximity(
+            src_af.get("energy_mean"), nbr_af.get("energy_mean"), 0.5,
+        ), 3),
+        # --- temporal proximity (same creative session) ---
+        "temporal_proximity": round(_temporal_proximity(
+            source.get("created_at"), neighbor.get("created_at"),
+        ), 3),
+    }
+
+
+async def enrich_neighbors_with_signals(
+    fragment_id: str, neighbors: list[dict],
+) -> list[dict]:
+    """Attach pre-computed pairwise signals to each neighbor document."""
+    db = _db()
+    user_id = _user_id()
+    source = await asyncio.to_thread(
+        db["fragments"].find_one,
+        {"_id": ObjectId(fragment_id), "user_id": user_id},
+        {"embedding": 0},
+    )
+    if not source:
+        return neighbors
+
+    for nbr in neighbors:
+        nbr["computed_signals"] = _compute_pairwise_signals(source, nbr)
+
+    return neighbors
+
+
+# ---------------------------------------------------------------------------
 # Agent definition
 # ---------------------------------------------------------------------------
 
@@ -400,14 +550,69 @@ their relationships. You NEVER write to the database.
    the rain song") overrides embedding similarity; an explicit separation
    ("standalone idea") caps the relationship at related_theme.
 2. Call vector_search_fragment_neighbors to find semantically similar fragments.
+   Each neighbor now includes a `computed_signals` object with pre-computed
+   deterministic scores (all normalized 0-1):
+
+   Musical signals (shared with the Audiotool ranker):
+   - `tempo_match`: how close the BPMs are (1.0 = identical, 0.0 = >25% apart)
+   - `key_match_exact`: 1.0 if same key and mode, else 0.0
+   - `key_match_relative`: 1.0 if exact OR relative major/minor (Am=C), else 0.0
+   - `key_match_fifth`: adds 0.5 for tonic a fifth apart (Camelot neighbors)
+   - `tag_overlap`: Jaccard overlap of tag sets (1.0 = identical tags)
+   - `track_gap`: 1.0 if neighbor adds a role (drums/bass/melody/vocal/etc.)
+     the source fragment lacks; 0.0 otherwise
+   - `novelty`: fraction of the neighbor's tags that are NOT in the source
+     (1.0 = entirely new material, 0.0 = nothing new)
+   - `intent_match`: overlap between the source fragment's notes (creator's
+     stated intent) and the neighbor's tags (1.0 = notes keywords fully
+     matched by neighbor tags, 0.0 = no match or no notes)
+   - `recency`: how recently the neighbor was created relative to the source
+     fragment (1.0 = same time, 0.5 = ~30 days older, decaying with a
+     30-day half-life)
+
+   Semantic signals (computed from Gemini tagging results):
+   - `emotion_overlap`: Jaccard overlap of emotion tags (1.0 = identical emotions)
+   - `theme_overlap`: Jaccard overlap of theme tags (1.0 = identical themes)
+   - `style_overlap`: Jaccard overlap of style tags
+   - `structure_complement`: 1.0 if structure hints are complementary
+     (e.g. verse + chorus), 0.5 if same hint, 0.0 if unrelated or missing
+
+   Audio feature proximity (timbral compatibility from librosa analysis):
+   - `brightness_proximity`: how close the spectral centroids are (1.0 = same
+     brightness/warmth, 0.0 = very different tonal character)
+   - `onset_density_proximity`: how similar the rhythmic density is (1.0 =
+     same attack rate, 0.0 = sparse vs dense mismatch)
+   - `energy_proximity`: how close the RMS energy levels are (1.0 = same
+     loudness range)
+
+   Temporal signal:
+   - `temporal_proximity`: 1.0 if created at the same time, 0.5 if ~7 days
+     apart, decaying further. High values suggest the same creative session.
+
+   USE THESE SCORES directly in your evaluation:
+   - musical_compatibility: tempo_match >= 0.6 AND key_match_relative >= 0.5
+     means "strong"; both at 0.0 means "conflicting"
+   - emotional_alignment: emotion_overlap >= 0.3 supports "strong"
+   - thematic_alignment: theme_overlap >= 0.3 supports "strong"
+   - structure_complement = 1.0 is strong evidence for same_song_candidate
+   - track_gap = 1.0 means the neighbor fills a missing role (valuable for
+     project composition)
+   - novelty >= 0.5 means the neighbor brings mostly new tags (diversity)
+   - intent_match >= 0.5 means the creator's notes describe what this
+     neighbor offers (strong evidence for deliberate connection)
+   - recency >= 0.5 means the neighbor is relatively recent (current work)
+   - brightness_proximity >= 0.7 AND energy_proximity >= 0.7 means the
+     fragments have compatible timbral character (supports same_song_candidate)
+   - temporal_proximity >= 0.8 suggests the fragments were created in the
+     same creative burst (supports grouping into the same project)
 3. DISCARD any neighbor with similarity_score below the threshold returned by vector_search_fragment_neighbors.
 4. For each remaining neighbor, you MUST consult the relationship-rules skill
    tool to get the 4-signal fusion rules, classification thresholds, and
    worked examples. The skill defines exactly how to evaluate:
    - emotional_alignment, thematic_alignment, musical_compatibility, temporal_pattern
-5. When both fragments have audio_features (key, BPM), consult the
-   musical-knowledge skill tool for key/tempo compatibility algorithms.
-6. If a neighbor already belongs to a project, call get_project_context to
+   Integrate the computed_signals into your evaluation: use tag_overlap for
+   thematic evidence, tempo_match + key_match for musical_compatibility.
+5. If a neighbor already belongs to a project, call get_project_context to
    understand that project's scope before recommending joining it.
 
 ## Hard rejection rules (ALWAYS apply, even before consulting skills)
@@ -417,9 +622,12 @@ REJECT a connection (classify as "unrelated") if:
 
 NOTE on musical compatibility: Key and tempo differences are NOT rejection
 criteria. Creators routinely transpose keys and adjust tempos when combining
-ideas. A melody in Am at 72 BPM and a vocal in C at 140 BPM can absolutely
-be part of the same song. Evaluate musical_compatibility as a SIGNAL (strong/
-weak/n/a), but never use it alone to reject a connection.
+ideas. Use the pre-computed `computed_signals` to evaluate musical_compatibility:
+- tempo_match >= 0.6 AND key_match_relative >= 0.5 → "strong"
+- tempo_match >= 0.3 OR key_match_fifth >= 0.5 → "weak"
+- tempo_match == 0.0 AND all key_match variants == 0.0 → "conflicting"
+- Both fragments lack audio_features (scores all 0.0) → "n/a"
+Never use musical_compatibility alone to reject a connection.
 
 For ALL other classification decisions (same_song_candidate vs related_theme
 vs similar_emotion vs unrelated), you MUST follow the thresholds and

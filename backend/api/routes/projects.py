@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import UTC, datetime
 
@@ -33,31 +34,19 @@ router = APIRouter(prefix="/api/projects", tags=["projects"])
 @limiter.limit("30/minute")
 async def list_projects(request: Request, user_id: str = Depends(verify_firebase_token)):
     db = get_db()
-    projects = list(
-        db["projects"].find({"user_id": user_id}).sort([("rescue_score", -1), ("_id", -1)]).limit(50)
+    projects = await asyncio.to_thread(
+        lambda: list(
+            db["projects"].find({"user_id": user_id}).sort([("rescue_score", -1), ("_id", -1)]).limit(50)
+        )
     )
     for p in projects:
         p["_id"] = str(p["_id"])
     return {"projects": projects}
 
 
-@router.post("/audiotool-session")
-@limiter.limit("30/minute")
-async def link_audiotool_fragment(
-    request: Request,
-    body: AudiotoolLinkRequest,
-    user_id: str = Depends(verify_firebase_token),
-):
-    """Record an Audiotool insertion in the Projects view.
-
-    Finds or creates the project mirroring this Audiotool session and adds
-    the inserted fragment to its fragment_ids.  The fragment document is
-    left untouched: stamping project_id on it would make the capture
-    pipeline's duplicate-group guard reuse the session project for
-    thematic grouping.
-    """
-    db = get_db()
-    frag_oid = parse_object_id(body.fragment_id, "fragment_id")
+def _link_audiotool_sync(db, user_id, body):
+    """Find-or-create Audiotool session project and add the fragment."""
+    frag_oid = ObjectId(body.fragment_id)
     fragment = db["fragments"].find_one({"_id": frag_oid, "user_id": user_id})
     if not fragment:
         raise HTTPException(status_code=404, detail="Fragment not found")
@@ -99,19 +88,27 @@ async def link_audiotool_fragment(
     return {"project_id": project_id, "title": title}
 
 
-@router.post("/audiotool-session/unlink")
+@router.post("/audiotool-session")
 @limiter.limit("30/minute")
-async def unlink_audiotool_fragment(
+async def link_audiotool_fragment(
     request: Request,
-    body: AudiotoolUnlinkRequest,
+    body: AudiotoolLinkRequest,
     user_id: str = Depends(verify_firebase_token),
 ):
-    """Undo the project-side record of an Audiotool insertion.
+    """Record an Audiotool insertion in the Projects view.
 
-    Removes the fragment from the session project, deleting the project if
-    it becomes empty.
+    Finds or creates the project mirroring this Audiotool session and adds
+    the inserted fragment to its fragment_ids.  The fragment document is
+    left untouched: stamping project_id on it would make the capture
+    pipeline's duplicate-group guard reuse the session project for
+    thematic grouping.
     """
     db = get_db()
+    return await asyncio.to_thread(_link_audiotool_sync, db, user_id, body)
+
+
+def _unlink_audiotool_sync(db, user_id, body):
+    """Remove fragment from Audiotool session project, deleting if empty."""
     project = db["projects"].find_one(
         {"user_id": user_id, "audiotool_project_id": body.audiotool_project_id}
     )
@@ -129,29 +126,49 @@ async def unlink_audiotool_fragment(
     return {"unlinked": True, "project_deleted": not remaining}
 
 
+@router.post("/audiotool-session/unlink")
+@limiter.limit("30/minute")
+async def unlink_audiotool_fragment(
+    request: Request,
+    body: AudiotoolUnlinkRequest,
+    user_id: str = Depends(verify_firebase_token),
+):
+    """Undo the project-side record of an Audiotool insertion.
+
+    Removes the fragment from the session project, deleting the project if
+    it becomes empty.
+    """
+    db = get_db()
+    return await asyncio.to_thread(_unlink_audiotool_sync, db, user_id, body)
+
+
 @router.get("/{project_id}")
 @limiter.limit("30/minute")
 async def get_project(request: Request, project_id: str, user_id: str = Depends(verify_firebase_token)):
     db = get_db()
     oid = parse_object_id(project_id, "project_id")
-    project = db["projects"].find_one({"_id": oid, "user_id": user_id})
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    project["_id"] = str(project["_id"])
 
-    fragment_ids = project.get("fragment_ids", [])
-    if fragment_ids:
-        oids = [ObjectId(fid) for fid in fragment_ids if ObjectId.is_valid(fid)]
-        fragments = list(
-            db["fragments"].find({"_id": {"$in": oids}, "user_id": user_id}, {"embedding": 0})
-        )
-        for f in fragments:
-            f["_id"] = str(f["_id"])
-        project["fragments"] = fragments
-    else:
-        project["fragments"] = []
+    def _sync():
+        project = db["projects"].find_one({"_id": oid, "user_id": user_id})
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+        project["_id"] = str(project["_id"])
 
-    return project
+        fragment_ids = project.get("fragment_ids", [])
+        if fragment_ids:
+            oids = [ObjectId(fid) for fid in fragment_ids if ObjectId.is_valid(fid)]
+            fragments = list(
+                db["fragments"].find({"_id": {"$in": oids}, "user_id": user_id}, {"embedding": 0})
+            )
+            for f in fragments:
+                f["_id"] = str(f["_id"])
+            project["fragments"] = fragments
+        else:
+            project["fragments"] = []
+
+        return project
+
+    return await asyncio.to_thread(_sync)
 
 
 @router.post("/{project_id}/complete-action")
@@ -165,14 +182,16 @@ async def complete_action(
     """Mark the current next_action as done, refresh score, generate a new action."""
     db = get_db()
     oid = parse_object_id(project_id, "project_id")
-    project = db["projects"].find_one({"_id": oid, "user_id": user_id})
+    project = await asyncio.to_thread(
+        db["projects"].find_one, {"_id": oid, "user_id": user_id}
+    )
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
     old_action = project.get("next_action")
 
-    # Archive the completed action
-    db["projects"].update_one(
+    await asyncio.to_thread(
+        db["projects"].update_one,
         {"_id": oid, "user_id": user_id},
         {
             "$push": {
@@ -186,19 +205,20 @@ async def complete_action(
         },
     )
 
-    # Refresh score (freshness will improve since last_activity_at just updated)
     from tools.rescue_score import compute_rescue_score
 
     frag_ids = [ObjectId(fid) for fid in project.get("fragment_ids", []) if ObjectId.is_valid(str(fid))]
-    fragments = list(db["fragments"].find({"_id": {"$in": frag_ids}, "user_id": user_id}, {"embedding": 0}))
+    fragments = await asyncio.to_thread(
+        lambda: list(db["fragments"].find({"_id": {"$in": frag_ids}, "user_id": user_id}, {"embedding": 0}))
+    )
     score_data = compute_rescue_score(fragments, project_id)
 
-    # Generate a new next action
     from api.pipeline import _generate_next_action
 
     new_action = await _generate_next_action(db, user_id, project_id)
 
-    db["projects"].update_one(
+    await asyncio.to_thread(
+        db["projects"].update_one,
         {"_id": oid, "user_id": user_id},
         {
             "$set": {
@@ -226,7 +246,9 @@ async def skip_action(
     """Skip the current next_action and generate a different one."""
     db = get_db()
     oid = parse_object_id(project_id, "project_id")
-    project = db["projects"].find_one({"_id": oid, "user_id": user_id})
+    project = await asyncio.to_thread(
+        db["projects"].find_one, {"_id": oid, "user_id": user_id}
+    )
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
@@ -234,7 +256,8 @@ async def skip_action(
 
     new_action = await _generate_next_action(db, user_id, project_id)
 
-    db["projects"].update_one(
+    await asyncio.to_thread(
+        db["projects"].update_one,
         {"_id": oid, "user_id": user_id},
         {"$set": {"next_action": new_action}},
     )

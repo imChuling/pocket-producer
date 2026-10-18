@@ -9,7 +9,6 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from google.cloud import storage
 from slowapi.errors import RateLimitExceeded
 from slowapi.extension import _rate_limit_exceeded_handler
 from slowapi.middleware import SlowAPIMiddleware
@@ -147,7 +146,8 @@ async def ingest_fragment(
     upload_meta = None
     if file:
         upload_meta = await validate_audio_upload(file)
-        gcs_client = storage.Client()
+        from ._clients import get_gcs_client
+        gcs_client = get_gcs_client()
         bucket = gcs_client.bucket(os.environ["GCS_BUCKET"])
         safe_name = Path(file.filename or "audio.webm").name
         blob_name = f"{user_id}/{uuid.uuid4()}-{safe_name}"
@@ -164,8 +164,9 @@ async def ingest_fragment(
     if frag_type == "audio" and file:
         original_name = file.filename or ""
         if original_name.startswith("recording."):
-            count = db["fragments"].count_documents(
-                {"user_id": user_id, "type": "audio"}
+            count = await asyncio.to_thread(
+                db["fragments"].count_documents,
+                {"user_id": user_id, "type": "audio"},
             )
             title = f"Audio fragment {count + 1}"
         else:
@@ -186,7 +187,7 @@ async def ingest_fragment(
         "status": "processing",
         "created_at": datetime.now(UTC),
     }
-    result = db["fragments"].insert_one(fragment_doc)
+    result = await asyncio.to_thread(db["fragments"].insert_one, fragment_doc)
     fragment_id = str(result.inserted_id)
 
     async def _ingest_pipeline():
@@ -196,8 +197,10 @@ async def ingest_fragment(
             await asyncio.sleep(1)
         else:
             logger.error("Pipeline slot timeout for fragment %s", fragment_id)
-            db["fragments"].update_one(
-                {"_id": result.inserted_id}, {"$set": {"status": "error"}}
+            await asyncio.to_thread(
+                db["fragments"].update_one,
+                {"_id": result.inserted_id},
+                {"$set": {"status": "error"}},
             )
             return
         try:

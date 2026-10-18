@@ -7,3 +7,4 @@ firebase-admin-key.json
 tests/
 .ruff_cache/
 .pytest_cache/
+ranking/research/

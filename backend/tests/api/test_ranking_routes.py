@@ -233,6 +233,8 @@ def test_rank_logs_exposure(auth_client):
     assert doc["model_id_served"] == body["model_id"]
     assert doc["fallback_used"] is False
     assert doc["fragment_ids"] == [c["fragment_id"] for c in body["candidates"]]
+    # rules-v1 exposes no signal vector; the slot is still logged per candidate
+    assert doc["candidate_signals"] == [None] * len(body["candidates"])
     assert doc["n_candidates_in"] == 1
     assert "created_at" in doc
     # session content and auth material must never be stored
@@ -240,6 +242,39 @@ def test_rank_logs_exposure(auth_client):
     assert "text_intent" not in lowered
     assert "access_token" not in lowered
     assert "authorization" not in lowered
+
+
+def test_rank_logs_signal_vectors_for_fusion(auth_client):
+    import numpy as np
+
+    def unit(seed):
+        v = np.random.default_rng(seed).normal(size=1024)
+        return (v / np.linalg.norm(v)).tolist()
+
+    ctx = unit(0)
+    payload = rank_payload(model_id="fusion-5sig-v1")
+    payload["session"]["region_audio_embeddings"] = [ctx]
+    payload["session"]["context_tags"] = ["dark"]
+    payload["candidates"] = [
+        {
+            **payload["candidates"][0],
+            "fragment_id": fid,
+            "audio_embedding": emb,
+            "text_embedding": [0.0],
+        }
+        for fid, emb in (("same", ctx), ("other", unit(1)))
+    ]
+    response = auth_client.post(
+        "/api/ranking/rank", json=payload, headers={"Authorization": "Bearer fake"}
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["model_id"] == "fusion-5sig-v1" and body["fallback_used"] is False
+    assert body["candidates"][0]["fragment_id"] == "same"
+    doc = _stub_db["ranking_requests"].docs[0]
+    assert doc["candidate_signals"] == [c["signals"] for c in body["candidates"]]
+    assert all(len(sig) == 5 for sig in doc["candidate_signals"])
+    assert doc["candidate_signals"][0][0] == pytest.approx(1.0)
 
 
 def test_rank_logs_exposure_on_fallback(auth_client):

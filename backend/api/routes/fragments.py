@@ -5,7 +5,6 @@ from datetime import UTC, datetime
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Form, Header, HTTPException, Request
-from google.cloud import storage
 from pydantic import BaseModel
 
 from ..auth import verify_firebase_token
@@ -42,7 +41,8 @@ async def fragment_status_stream(
         for _ in range(120):
             if await request.is_disconnected():
                 break
-            frag = db["fragments"].find_one(
+            frag = await asyncio.to_thread(
+                db["fragments"].find_one,
                 {"_id": oid, "user_id": user_id},
                 {"status": 1, "pipeline_step": 1, "project_id": 1, "project_title": 1},
             )
@@ -77,11 +77,13 @@ async def list_fragments(
     limit: int = 50,
 ):
     db = get_db()
-    fragments = list(
-        db["fragments"]
-        .find({"user_id": user_id}, {"embedding": 0, "edit_history": 0})
-        .sort("created_at", -1)
-        .limit(limit)
+    fragments = await asyncio.to_thread(
+        lambda: list(
+            db["fragments"]
+            .find({"user_id": user_id}, {"embedding": 0, "edit_history": 0})
+            .sort("created_at", -1)
+            .limit(limit)
+        )
     )
     for f in fragments:
         f["_id"] = str(f["_id"])
@@ -93,8 +95,10 @@ async def list_fragments(
 async def get_fragment(request: Request, fragment_id: str, user_id: str = Depends(verify_firebase_token)):
     db = get_db()
     oid = parse_object_id(fragment_id, "fragment_id")
-    fragment = db["fragments"].find_one(
-        {"_id": oid, "user_id": user_id}, {"embedding": 0}
+    fragment = await asyncio.to_thread(
+        db["fragments"].find_one,
+        {"_id": oid, "user_id": user_id},
+        {"embedding": 0},
     )
     if not fragment:
         raise HTTPException(status_code=404, detail="Fragment not found")
@@ -112,8 +116,10 @@ async def update_fragment_title(
 ):
     db = get_db()
     oid = parse_object_id(fragment_id, "fragment_id")
-    result = db["fragments"].update_one(
-        {"_id": oid, "user_id": user_id}, {"$set": {"title": title.strip()}}
+    result = await asyncio.to_thread(
+        db["fragments"].update_one,
+        {"_id": oid, "user_id": user_id},
+        {"$set": {"title": title.strip()}},
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Fragment not found")
@@ -137,13 +143,15 @@ async def update_fragment_notes(
     trimmed = body.notes.strip()
     if trimmed:
         cleaned_notes, _ = sanitize_creator_text(trimmed)
-        result = db["fragments"].update_one(
+        result = await asyncio.to_thread(
+            db["fragments"].update_one,
             {"_id": oid, "user_id": user_id},
             {"$set": {"notes": cleaned_notes}},
         )
     else:
         cleaned_notes = None
-        result = db["fragments"].update_one(
+        result = await asyncio.to_thread(
+            db["fragments"].update_one,
             {"_id": oid, "user_id": user_id},
             {"$unset": {"notes": ""}},
         )
@@ -151,7 +159,8 @@ async def update_fragment_notes(
         raise HTTPException(status_code=404, detail="Fragment not found")
 
     if cleaned_notes:
-        frag = db["fragments"].find_one(
+        frag = await asyncio.to_thread(
+            db["fragments"].find_one,
             {"_id": oid, "user_id": user_id},
             {"embedding": 1, "emotions": 1, "themes": 1, "tags": 1},
         )
@@ -188,9 +197,10 @@ class CommentRequest(BaseModel):
 MAX_COMMENTS_PER_FRAGMENT = 50
 
 
-def _schedule_project_reeval(db, user_id: str, oid: ObjectId, fragment_id: str) -> None:
+async def _schedule_project_reeval(db, user_id: str, oid: ObjectId, fragment_id: str) -> None:
     """Re-run memory/project grouping in the background after intent changed."""
-    frag = db["fragments"].find_one(
+    frag = await asyncio.to_thread(
+        db["fragments"].find_one,
         {"_id": oid, "user_id": user_id},
         {"embedding": 1, "emotions": 1, "themes": 1, "tags": 1},
     )
@@ -236,8 +246,10 @@ async def add_fragment_comment(
     if len(trimmed) > 2000:
         raise HTTPException(status_code=400, detail="Comment too long (max 2000 chars)")
 
-    fragment = db["fragments"].find_one(
-        {"_id": oid, "user_id": user_id}, {"comments": 1}
+    fragment = await asyncio.to_thread(
+        db["fragments"].find_one,
+        {"_id": oid, "user_id": user_id},
+        {"comments": 1},
     )
     if not fragment:
         raise HTTPException(status_code=404, detail="Fragment not found")
@@ -250,13 +262,13 @@ async def add_fragment_comment(
         "text": cleaned_text,
         "created_at": datetime.now(UTC),
     }
-    db["fragments"].update_one(
+    await asyncio.to_thread(
+        db["fragments"].update_one,
         {"_id": oid, "user_id": user_id},
         {"$push": {"comments": comment}},
     )
 
-    # Comments capture creator intent — re-evaluate project grouping with them.
-    _schedule_project_reeval(db, user_id, oid, str(oid))
+    await _schedule_project_reeval(db, user_id, oid, str(oid))
 
     comment["created_at"] = comment["created_at"].isoformat()
     return {"added": True, "comment": comment}
@@ -272,7 +284,8 @@ async def delete_fragment_comment(
 ):
     db = get_db()
     oid = parse_object_id(fragment_id, "fragment_id")
-    result = db["fragments"].update_one(
+    result = await asyncio.to_thread(
+        db["fragments"].update_one,
         {"_id": oid, "user_id": user_id},
         {"$pull": {"comments": {"id": comment_id}}},
     )
@@ -299,7 +312,9 @@ async def update_fragment_tags(
 ):
     db = get_db()
     oid = parse_object_id(fragment_id, "fragment_id")
-    fragment = db["fragments"].find_one({"_id": oid, "user_id": user_id})
+    fragment = await asyncio.to_thread(
+        db["fragments"].find_one, {"_id": oid, "user_id": user_id}
+    )
     if not fragment:
         raise HTTPException(status_code=404, detail="Fragment not found")
 
@@ -331,8 +346,46 @@ async def update_fragment_tags(
         return {"updated": False, "message": "No fields to update"}
 
     update["user_edited_fields"] = edited_fields
-    db["fragments"].update_one({"_id": oid, "user_id": user_id}, {"$set": update})
+    await asyncio.to_thread(
+        db["fragments"].update_one,
+        {"_id": oid, "user_id": user_id},
+        {"$set": update},
+    )
     return {"updated": True, "user_edited_fields": edited_fields}
+
+
+def _delete_fragment_sync(db, oid, user_id, fragment_id):
+    """Delete a fragment and clean up project references and GCS audio."""
+    fragment = db["fragments"].find_one(
+        {"_id": oid, "user_id": user_id}, {"audio_url": 1}
+    )
+    if not fragment:
+        raise HTTPException(status_code=404, detail="Fragment not found")
+
+    result = db["fragments"].delete_one({"_id": oid, "user_id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Fragment not found")
+
+    pull_result = db["projects"].update_many(
+        {"user_id": user_id, "fragment_ids": fragment_id},
+        {"$pull": {"fragment_ids": fragment_id}},
+    )
+    if pull_result.modified_count:
+        logger.info(
+            "Removed fragment %s from %d project(s)", fragment_id, pull_result.modified_count
+        )
+        db["projects"].delete_many(
+            {"user_id": user_id, "fragment_ids": {"$size": 0}},
+        )
+
+    audio_url = fragment.get("audio_url")
+    if audio_url and audio_url.startswith("gs://"):
+        try:
+            bucket_name, blob_name = audio_url.replace("gs://", "").split("/", 1)
+            from api._clients import get_gcs_client
+            get_gcs_client().bucket(bucket_name).blob(blob_name).delete()
+        except Exception:
+            logger.warning("Failed to delete GCS object for fragment %s", fragment_id)
 
 
 @router.post("/{fragment_id}/delete")
@@ -344,38 +397,7 @@ async def delete_fragment(
 ):
     db = get_db()
     oid = parse_object_id(fragment_id, "fragment_id")
-    fragment = db["fragments"].find_one(
-        {"_id": oid, "user_id": user_id}, {"audio_url": 1}
-    )
-    if not fragment:
-        raise HTTPException(status_code=404, detail="Fragment not found")
-
-    result = db["fragments"].delete_one({"_id": oid, "user_id": user_id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Fragment not found")
-
-    # Remove this fragment from any projects that reference it
-    pull_result = db["projects"].update_many(
-        {"user_id": user_id, "fragment_ids": fragment_id},
-        {"$pull": {"fragment_ids": fragment_id}},
-    )
-    if pull_result.modified_count:
-        logger.info(
-            "Removed fragment %s from %d project(s)", fragment_id, pull_result.modified_count
-        )
-        # Clean up empty projects (all fragments deleted)
-        db["projects"].delete_many(
-            {"user_id": user_id, "fragment_ids": {"$size": 0}},
-        )
-
-    audio_url = fragment.get("audio_url")
-    if audio_url and audio_url.startswith("gs://"):
-        try:
-            bucket_name, blob_name = audio_url.replace("gs://", "").split("/", 1)
-            storage.Client().bucket(bucket_name).blob(blob_name).delete()
-        except Exception:
-            logger.warning("Failed to delete GCS object for fragment %s", fragment_id)
-
+    await asyncio.to_thread(_delete_fragment_sync, db, oid, user_id, fragment_id)
     return {"deleted": True}
 
 
@@ -393,7 +415,9 @@ async def edit_fragment_text(
 ):
     db = get_db()
     oid = parse_object_id(fragment_id, "fragment_id")
-    fragment = db["fragments"].find_one({"_id": oid, "user_id": user_id})
+    fragment = await asyncio.to_thread(
+        db["fragments"].find_one, {"_id": oid, "user_id": user_id}
+    )
     if not fragment:
         raise HTTPException(status_code=404, detail="Fragment not found")
 
@@ -415,7 +439,8 @@ async def edit_fragment_text(
     if "text" not in edited_fields:
         edited_fields.append("text")
 
-    db["fragments"].update_one(
+    await asyncio.to_thread(
+        db["fragments"].update_one,
         {"_id": oid, "user_id": user_id},
         {
             "$push": {"edit_history": {"$each": [history_entry], "$slice": -50}},
@@ -429,7 +454,8 @@ async def edit_fragment_text(
     )
 
     if not await acquire_pipeline_slot():
-        db["fragments"].update_one(
+        await asyncio.to_thread(
+            db["fragments"].update_one,
             {"_id": oid, "user_id": user_id},
             {"$set": {"status": "ready"}},
         )
@@ -462,7 +488,9 @@ async def _reanalyze_fragment_text(user_id: str, fragment_id: str, new_text: str
         update: dict = {"status": "ready"}
 
         if isinstance(tag_result, dict):
-            fragment = db["fragments"].find_one({"_id": oid, "user_id": user_id})
+            fragment = await asyncio.to_thread(
+                db["fragments"].find_one, {"_id": oid, "user_id": user_id}
+            )
             edited_fields = fragment.get("user_edited_fields", []) if fragment else []
             for field in ["emotions", "themes", "tags", "structure_hint", "style", "potential", "key", "bpm", "suggestion"]:
                 if field not in edited_fields and field in tag_result:
@@ -471,7 +499,11 @@ async def _reanalyze_fragment_text(user_id: str, fragment_id: str, new_text: str
         if not isinstance(embedding, Exception) and embedding:
             update["embedding"] = embedding
 
-        db["fragments"].update_one({"_id": oid, "user_id": user_id}, {"$set": update})
+        await asyncio.to_thread(
+            db["fragments"].update_one,
+            {"_id": oid, "user_id": user_id},
+            {"$set": update},
+        )
         logger.info("Re-analysis complete for fragment %s", fragment_id)
 
         if not isinstance(embedding, Exception) and embedding:
@@ -484,7 +516,8 @@ async def _reanalyze_fragment_text(user_id: str, fragment_id: str, new_text: str
         await debounced_dna_update(user_id)
     except Exception:
         logger.exception("Re-analysis failed for fragment %s", fragment_id)
-        db["fragments"].update_one(
+        await asyncio.to_thread(
+            db["fragments"].update_one,
             {"_id": oid, "user_id": user_id},
             {"$set": {"status": "ready"}, "$unset": {"embedding": ""}},
         )
@@ -502,7 +535,8 @@ async def delete_edit_history_entry(
 ):
     db = get_db()
     oid = parse_object_id(fragment_id, "fragment_id")
-    result = db["fragments"].update_one(
+    result = await asyncio.to_thread(
+        db["fragments"].update_one,
         {"_id": oid, "user_id": user_id},
         {"$pull": {"edit_history": {"id": entry_id}}},
     )
@@ -523,8 +557,10 @@ async def stream_audio(
 
     db = get_db()
     oid = parse_object_id(fragment_id, "fragment_id")
-    fragment = db["fragments"].find_one(
-        {"_id": oid, "user_id": user_id}, {"audio_url": 1}
+    fragment = await asyncio.to_thread(
+        db["fragments"].find_one,
+        {"_id": oid, "user_id": user_id},
+        {"audio_url": 1},
     )
     if not fragment or not fragment.get("audio_url"):
         raise HTTPException(status_code=404, detail="Audio not found")
@@ -533,9 +569,9 @@ async def stream_audio(
     parts = gcs_uri.replace("gs://", "").split("/", 1)
     bucket_name, blob_name = parts[0], parts[1]
 
-    gcs_client = storage.Client()
-    blob = gcs_client.bucket(bucket_name).blob(blob_name)
-    blob.reload()
+    from api._clients import get_gcs_client
+    blob = get_gcs_client().bucket(bucket_name).blob(blob_name)
+    await asyncio.to_thread(blob.reload)
     file_size = blob.size
     if not file_size:
         raise HTTPException(status_code=404, detail="Audio file not found in storage")
@@ -613,7 +649,8 @@ async def reanalyze_fragment(
         raise HTTPException(429, "Too many fragments processing, please try again shortly")
 
     db = get_db()
-    frag = db["fragments"].find_one(
+    frag = await asyncio.to_thread(
+        db["fragments"].find_one,
         {"_id": oid, "user_id": user_id},
         {"_id": 1, "audio_url": 1, "text": 1},
     )
@@ -621,7 +658,8 @@ async def reanalyze_fragment(
         await release_pipeline_slot()
         raise HTTPException(404, "Fragment not found")
 
-    db["fragments"].update_one(
+    await asyncio.to_thread(
+        db["fragments"].update_one,
         {"_id": oid, "user_id": user_id},
         {"$set": {"status": "processing"}},
     )
@@ -648,11 +686,14 @@ async def reanalyze_fragment(
             except Exception:
                 if not work.done():
                     work.cancel()
-                frag_doc = db["fragments"].find_one(
-                    {"_id": oid, "user_id": user_id}, {"status": 1}
+                frag_doc = await asyncio.to_thread(
+                    db["fragments"].find_one,
+                    {"_id": oid, "user_id": user_id},
+                    {"status": 1},
                 )
                 if frag_doc and frag_doc.get("status") == "processing":
-                    db["fragments"].update_one(
+                    await asyncio.to_thread(
+                        db["fragments"].update_one,
                         {"_id": oid, "user_id": user_id},
                         {"$set": {"status": "error"}},
                     )
@@ -675,7 +716,8 @@ async def group_fragment_with_agent_endpoint(
 
     db = get_db()
     oid = parse_object_id(fragment_id, "fragment_id")
-    fragment = db["fragments"].find_one(
+    fragment = await asyncio.to_thread(
+        db["fragments"].find_one,
         {"_id": oid, "user_id": user_id},
         {"embedding": 1, "status": 1},
     )

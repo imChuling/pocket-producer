@@ -3,9 +3,10 @@ name: relationship-rules
 description: |
   Classify fragment pairs into same_song_candidate / related_theme /
   similar_emotion / unrelated using 4-signal fusion. Call after vector
-  search returns neighbors with score >= 0.70. Also call musical-knowledge
-  for key/tempo checks when both fragments have audio_features. NOT for
-  single-fragment tagging or project scoring.
+  search returns neighbors with score >= 0.70 and computed_signals attached.
+  Use the pre-computed scores in computed_signals as primary evidence;
+  fall back to raw tag inspection only when scores are all 0.0 (missing
+  data). NOT for single-fragment tagging or project scoring.
 license: Apache-2.0
 ---
 
@@ -80,7 +81,26 @@ neighbors from Vector Search:
       "audio_features": { "bpm": 72, "estimated_key": "Am", "..." : "..." },
       "project_id": "string | null",
       "project_title": "string | null",
-      "created_at": "ISODate"
+      "created_at": "ISODate",
+      "computed_signals": {
+        "tempo_match": 0.95,
+        "key_match_exact": 1.0,
+        "key_match_relative": 1.0,
+        "key_match_fifth": 1.0,
+        "tag_overlap": 0.4,
+        "track_gap": 0.0,
+        "novelty": 0.667,
+        "intent_match": 0.5,
+        "recency": 0.95,
+        "emotion_overlap": 0.5,
+        "theme_overlap": 0.333,
+        "style_overlap": 0.25,
+        "structure_complement": 1.0,
+        "brightness_proximity": 0.82,
+        "onset_density_proximity": 0.75,
+        "energy_proximity": 0.87,
+        "temporal_proximity": 0.95
+      }
     }
   ]
 }
@@ -146,13 +166,19 @@ First check Signal 0 (creator intent): read `notes` and `comments` on
 both fragments for explicit connection or separation statements — these
 override the inferred signals below.
 
-Then evaluate the four inference signals independently
-(see "The four signals" below):
-1. Emotional alignment
-2. Thematic alignment
-3. Musical compatibility (consult `musical-knowledge` skill if audio
-   features are present)
-4. Temporal pattern
+Then evaluate the four inference signals using the pre-computed scores
+in `computed_signals` (see "The four signals" below). The computed scores
+are deterministic, normalized to [0, 1], and return 0.0 when data is
+missing. Use them as primary evidence; inspect raw tags only to resolve
+ambiguity or when all computed scores are 0.0.
+
+1. Emotional alignment (use `emotion_overlap`, `style_overlap`)
+2. Thematic alignment (use `theme_overlap`, `tag_overlap`)
+3. Musical compatibility (use `tempo_match`, `key_match_*`, `track_gap`,
+   `novelty`, `intent_match`, `brightness_proximity`,
+   `onset_density_proximity`, `energy_proximity`)
+4. Temporal pattern (use `temporal_proximity`, `recency`,
+   `structure_complement`)
 
 ### Step 3: Classify relationship type
 
@@ -194,17 +220,26 @@ suggestions (merging into one project, generating bridge suggestions).
 
 Required signals (ALL must be true):
 - `similarity >= 0.85`
-- `emotional_alignment` is `strong` (overlapping or compatible emotions)
+- `emotional_alignment` is `strong` (`emotion_overlap >= 0.3` or adjacent
+  emotions)
 - `thematic_alignment` is `strong` OR (themes are compatible AND fragments
   reference each other's specific imagery)
 - `musical_compatibility` is `strong` or `n/a` (n/a only when at least one
   fragment is pure text)
 
+Boosting signals (strengthen confidence when present):
+- `structure_complement == 1.0` (e.g. verse + chorus, complementary parts)
+- `track_gap == 1.0` (neighbor fills a missing instrumental role)
+- `novelty >= 0.5` (neighbor brings fresh material to the project)
+- `recency >= 0.5` (neighbor is from recent creative work)
+- `brightness_proximity >= 0.7` AND `energy_proximity >= 0.7` (similar sound)
+- `temporal_proximity >= 0.8` (created in the same creative session)
+
 Forbidden signals (NONE may be true):
-- `emotional_alignment` is `conflicting` (e.g., one fragment defiance, other
-  vulnerability without bridge context)
-- `musical_compatibility` is `conflicting` (e.g., one is Am 72 BPM, other
-  is F# 140 BPM — keys and tempos incompatible)
+- `emotional_alignment` is `conflicting` (`emotion_overlap == 0` with
+  incompatible emotion regions)
+- `musical_compatibility` is `conflicting` (`tempo_match == 0` AND all
+  `key_match_*` variants are 0)
 
 When in doubt → use `related_theme`. False positives on `same_song_candidate`
 are worse than false negatives. The product can recover from missing a
@@ -257,21 +292,23 @@ the fragments' tag data.
 
 ### Signal 1: Emotional alignment
 
-**Strong**: At least one emotion tag overlaps directly, OR emotions are from
-adjacent cells in the emotion-taxonomy (e.g., `melancholy` ↔ `nostalgia`,
-`defiance` ↔ `anger`).
+Use `computed_signals.emotion_overlap` as the primary indicator:
 
-**Weak**: Emotions are from same broad cluster but not adjacent (e.g., both
-"negative valence" but one is `loneliness` and the other is `anxiety` — same
-direction, different specifics).
+**Strong**: `emotion_overlap >= 0.3` (at least one emotion tag overlaps
+directly), OR emotions are from adjacent cells in the emotion-taxonomy
+(e.g., `melancholy` ↔ `nostalgia`, `defiance` ↔ `anger`). Also consider
+`style_overlap >= 0.3` as supporting evidence.
 
-**Conflicting**: Emotions are from incompatible regions (e.g., one is
-`joyful_activation`, the other is `loss` and there is no bridge logic — these
-don't naturally cohabit in a single song unless one is intentionally setting
-up the other).
+**Weak**: `emotion_overlap > 0` but below 0.3, or emotions are from the
+same broad cluster but not adjacent (e.g., both "negative valence" but
+one is `loneliness` and the other is `anxiety`).
 
-**Unknown**: One or both fragments have empty emotion arrays (e.g., pure
-instrumental motifs with no description).
+**Conflicting**: `emotion_overlap == 0` AND emotions are from incompatible
+regions (e.g., one is `joyful_activation`, the other is `loss` and there
+is no bridge logic).
+
+**Unknown**: `emotion_overlap == 0` AND one or both fragments have empty
+emotion arrays (e.g., pure instrumental motifs with no description).
 
 **Note**: Mixed emotions are not conflicting. A fragment tagged
 `[melancholy, acceptance]` and another tagged `[melancholy, defiance]` align
@@ -280,64 +317,74 @@ are made of.
 
 ### Signal 2: Thematic alignment
 
-**Strong**: Theme arrays share at least one tag, AND the shared tag is from
-the more specific clusters (not generic). For example:
+Use `computed_signals.theme_overlap` and `computed_signals.tag_overlap`
+as the primary indicators:
+
+**Strong**: `theme_overlap >= 0.3` (at least one theme tag overlaps), AND
+the shared tag is from the more specific clusters (not generic). Also
+supported by `tag_overlap >= 0.2`. For example:
 - Both have `nostalgia-memory` → strong
 - Both have `displacement` → strong
 - Both have `family` AND no contradictory theme → strong
 - Both have `self-identity` but no other shared signal → weak (too generic
   on its own)
 
-**Weak**: Themes are in the same cluster but different specific tags (e.g.,
-one is `home`, other is `hometown`).
+**Weak**: `theme_overlap > 0` but below 0.3, or themes are in the same
+cluster but different specific tags (e.g., one is `home`, other is
+`hometown`).
 
-**Conflicting**: Themes are from very different clusters AND the lyric
-specifics confirm different subjects (e.g., one is clearly about heartbreak,
-other clearly about mortality).
+**Conflicting**: `theme_overlap == 0` AND themes are from very different
+clusters AND the lyric specifics confirm different subjects (e.g., one is
+clearly about heartbreak, other clearly about mortality).
 
-**Unknown**: One or both have empty theme arrays.
+**Unknown**: `theme_overlap == 0` AND one or both have empty theme arrays.
 
 ### Signal 3: Musical compatibility
 
 Apply this signal **only when at least one fragment has audio_features**.
 If both fragments are pure text, set this to `n/a`.
 
-**Strong**: Audio features are compatible:
-- Keys are the same OR in compatible relationships (see below)
-- BPMs are within 10% of each other, OR within "doubled/halved" range (e.g.,
-  72 BPM and 144 BPM can be the same musical idea at different feels)
+Use the pre-computed scores as primary evidence:
 
-**Weak**: Keys are not directly compatible but not contradictory; BPMs differ
-by 10-25%.
+**Strong**: `tempo_match >= 0.6` AND `key_match_relative >= 0.5`.
+Also supported by timbral proximity: `brightness_proximity >= 0.7` AND
+`energy_proximity >= 0.7` means the fragments have compatible sound character.
+`track_gap == 1.0` means the neighbor fills a missing instrumental role
+(drums/bass/melody/vocal), which is strong evidence for project composition.
+`novelty >= 0.5` means the neighbor brings mostly new tags to the source,
+adding creative diversity.
+`intent_match >= 0.5` means the creator's notes keywords match the
+neighbor's tags (stated intent fulfilled).
+`structure_complement == 1.0` (e.g. verse + chorus) is strong evidence for
+same_song_candidate.
 
-**Conflicting**: Keys are unrelated (e.g., F# and C — no easy modulation)
-AND BPMs differ by >25% AND not in doubled/halved relationship.
+**Weak**: `tempo_match >= 0.3` OR `key_match_fifth >= 0.5`. Keys are not
+directly compatible but not contradictory; BPMs differ by 10-25%.
 
-**Unknown**: Audio features are missing or unreliable for one or both
-fragments.
+**Conflicting**: `tempo_match == 0` AND all `key_match_*` variants are 0.
+Keys are unrelated AND BPMs differ by >25% AND not in doubled/halved
+relationship.
+
+**Unknown / n/a**: All musical computed scores are 0.0 because audio
+features are missing for one or both fragments.
 
 #### Key compatibility quick reference
 
-These are considered **strongly compatible** (a song can move between them
-naturally):
+The `key_match_*` scores already encode these rules:
+- `key_match_exact == 1.0`: Same key and mode (Am ↔ Am)
+- `key_match_relative == 1.0`: Exact OR relative major/minor (Am ↔ C)
+- `key_match_fifth == 0.5`: Tonic a perfect fifth apart, same mode
+  (C ↔ G, Camelot neighbors)
 
-- Same key (Am ↔ Am)
-- Relative major/minor (Am ↔ C, Em ↔ G, Dm ↔ F)
-- Parallel major/minor (Am ↔ A, Cm ↔ C)
-- Modal interchange of common chords
-- Key a fifth apart (C ↔ G, G ↔ D — circle of fifths neighbors)
-
-For deeper musical knowledge, consult the `musical-knowledge` skill's
-`key-compatibility.md` reference.
+For deeper musical knowledge, consult the `musical-knowledge` skill.
 
 #### BPM compatibility quick reference
 
-- Within 5% → effectively identical
-- Within 10% → strongly compatible
-- Within 10-25% → marginal (mention in reasoning)
-- One is double or half the other → compatible (often same idea at "double
-  time" or "half time" feel)
-- Otherwise → not compatible
+The `tempo_match` score encodes BPM proximity:
+- `tempo_match >= 0.8` → within ~5%, effectively identical
+- `tempo_match >= 0.6` → within ~10%, strongly compatible
+- `tempo_match >= 0.3` → within ~18%, marginal
+- `tempo_match == 0.0` → >25% apart, not compatible
 
 ### Signal 0: Creator intent (override signal)
 
@@ -375,17 +422,25 @@ simply does not apply. Never infer intent from silence.
 This signal is contextual — it doesn't influence relationship type directly,
 but it influences `confidence` and `suggested_action`.
 
-**Active project**: Both fragments are tagged to an existing project that has
-seen activity in the last 30 days. High signal that this is part of ongoing
-creative work.
+Use `computed_signals.temporal_proximity` and `computed_signals.recency`
+as the primary indicators. `temporal_proximity` measures how close the two
+fragments were created in time; `recency` measures how recently the
+neighbor was created relative to the source (30-day half-life decay).
 
-**Dormant**: At least one fragment is part of a project with no activity in
-the last 90 days. The new fragment may be a "resurrection" candidate — useful
-to highlight to the user.
+**Active project**: `temporal_proximity >= 0.8` (created within ~2 days of
+each other) AND `recency >= 0.5`, OR both fragments are tagged to an
+existing project that has seen activity in the last 30 days. High signal
+that this is part of ongoing creative work and the same creative session.
 
-**Unrelated in time**: Fragments are far apart in time (months) and neither
-is associated with an active project. Could be either a forgotten connection
-worth surfacing, or two unrelated ideas that happen to share semantics.
+**Dormant**: `temporal_proximity` between 0.2 and 0.8 (weeks to months
+apart), or `recency < 0.5` (neighbor is older than ~30 days). At least
+one fragment is part of a project with no recent activity. The new
+fragment may be a "resurrection" candidate.
+
+**Unrelated in time**: `temporal_proximity < 0.2` AND `recency < 0.25`
+(months apart) and neither is associated with an active project. Could be
+either a forgotten connection worth surfacing, or two unrelated ideas
+that happen to share semantics.
 
 ## Confidence levels
 
@@ -825,10 +880,11 @@ a wrong connection.
    only means the embeddings are close — it does not mean the fragments
    belong together. Always evaluate all four signals before classifying.
 
-2. **Ignoring temporal context.** Two fragments from the same week in the
-   same project are much more likely to be related than two fragments
-   months apart with no shared project. Factor temporal pattern into
-   confidence, not just relationship type.
+2. **Ignoring temporal context.** Two fragments with `temporal_proximity
+   >= 0.8` (same week) in the same project are much more likely to be
+   related than two fragments months apart (`temporal_proximity < 0.2`)
+   with no shared project. Factor temporal pattern into confidence, not
+   just relationship type.
 
 3. **Upgrading `related_theme` to `same_song_candidate` on shared
    vocabulary alone.** Two songs about "rain" are not automatically the

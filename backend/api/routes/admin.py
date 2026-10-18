@@ -19,16 +19,16 @@ router = APIRouter(tags=["admin"])
 @limiter.limit("10/minute")
 async def get_dna(request: Request, user_id: str = Depends(verify_firebase_token)):
     db = get_db()
-    dna = db["user_dna"].find_one({"user_id": user_id})
+    dna = await asyncio.to_thread(
+        db["user_dna"].find_one, {"user_id": user_id}
+    )
     if dna:
         dna["_id"] = str(dna["_id"])
     return dna or {}
 
 
-@router.get("/api/dna/network")
-@limiter.limit("10/minute")
-async def get_dna_network(request: Request, user_id: str = Depends(verify_firebase_token)):
-    db = get_db()
+def _get_dna_network_sync(db, user_id):
+    """Build the fragment/project network graph from DB."""
     frags = list(db["fragments"].find(
         {"user_id": user_id, "status": "ready"},
         {"embedding": 0, "raw_text": 0, "edit_history": 0},
@@ -61,6 +61,12 @@ async def get_dna_network(request: Request, user_id: str = Depends(verify_fireba
     return {"nodes": nodes, "edges": edges}
 
 
+@router.get("/api/dna/network")
+@limiter.limit("10/minute")
+async def get_dna_network(request: Request, user_id: str = Depends(verify_firebase_token)):
+    db = get_db()
+    return await asyncio.to_thread(_get_dna_network_sync, db, user_id)
+
 
 @router.post("/api/reprocess-projects")
 @limiter.limit("2/minute")
@@ -73,15 +79,17 @@ async def reprocess_projects(
     from ..pipeline import memory_and_project
 
     db = get_db()
-    fragments = list(
-        db["fragments"].find(
-            {
-                "user_id": user_id,
-                "embedding": {"$exists": True},
-                "project_id": {"$exists": False},
-                "status": "ready",
-            },
-            {"embedding": 1, "emotions": 1, "themes": 1, "tags": 1, "structure_hint": 1},
+    fragments = await asyncio.to_thread(
+        lambda: list(
+            db["fragments"].find(
+                {
+                    "user_id": user_id,
+                    "embedding": {"$exists": True},
+                    "project_id": {"$exists": False},
+                    "status": "ready",
+                },
+                {"embedding": 1, "emotions": 1, "themes": 1, "tags": 1, "structure_hint": 1},
+            )
         )
     )
     if not fragments:
@@ -123,7 +131,8 @@ async def fix_stuck_fragments(
     from datetime import timedelta
     db = get_db()
     cutoff = datetime.now(UTC) - timedelta(minutes=2)
-    result = db["fragments"].update_many(
+    result = await asyncio.to_thread(
+        db["fragments"].update_many,
         {
             "user_id": user_id,
             "status": "processing",
@@ -137,13 +146,8 @@ async def fix_stuck_fragments(
     return {"fixed": result.modified_count}
 
 
-@router.post("/api/reset-projects")
-@limiter.limit("2/minute")
-async def reset_projects(
-    request: Request,
-    user_id: str = Depends(verify_firebase_token),
-):
-    db = get_db()
+def _reset_projects_sync(db, user_id):
+    """Delete all projects and unlink fragments."""
     deleted = db["projects"].delete_many({"user_id": user_id})
     db["fragments"].update_many(
         {"user_id": user_id},
@@ -152,7 +156,18 @@ async def reset_projects(
             "connection_reason": "", "connection_types": "",
         }},
     )
-    return {"deleted_projects": deleted.deleted_count}
+    return deleted.deleted_count
+
+
+@router.post("/api/reset-projects")
+@limiter.limit("2/minute")
+async def reset_projects(
+    request: Request,
+    user_id: str = Depends(verify_firebase_token),
+):
+    db = get_db()
+    count = await asyncio.to_thread(_reset_projects_sync, db, user_id)
+    return {"deleted_projects": count}
 
 
 @router.get("/api/agent-memory/status")
@@ -174,7 +189,11 @@ async def agent_memory_status(request: Request, user_id: str = Depends(verify_fi
 @limiter.limit("10/minute")
 async def get_sensitivity(request: Request, user_id: str = Depends(verify_firebase_token)):
     db = get_db()
-    doc = db["user_settings"].find_one({"user_id": user_id}, {"sensitivity": 1})
+    doc = await asyncio.to_thread(
+        db["user_settings"].find_one,
+        {"user_id": user_id},
+        {"sensitivity": 1},
+    )
     if doc and "sensitivity" in doc:
         threshold = doc["sensitivity"]["threshold"]
         level = doc["sensitivity"]["level"]
@@ -192,7 +211,8 @@ async def set_sensitivity(request: Request, user_id: str = Depends(verify_fireba
     level = body.get("level", "medium")
     thresholds = {"high": 0.45, "medium": 0.55, "low": 0.70}
     threshold = thresholds.get(level, 0.55)
-    db["user_settings"].update_one(
+    await asyncio.to_thread(
+        db["user_settings"].update_one,
         {"user_id": user_id},
         {"$set": {"sensitivity": {"threshold": threshold, "level": level}}},
         upsert=True,
@@ -201,9 +221,9 @@ async def set_sensitivity(request: Request, user_id: str = Depends(verify_fireba
 
 
 # Match mode: how eagerly the pipeline connects fragments into projects.
-# strict  — only high-confidence same-song connections (high vector floor)
-# balanced — default behavior
-# loose   — surface more speculative connections (low vector floor)
+# strict  -- only high-confidence same-song connections (high vector floor)
+# balanced -- default behavior
+# loose   -- surface more speculative connections (low vector floor)
 MATCH_MODES = {
     "strict": 0.70,
     "balanced": 0.55,
@@ -215,7 +235,11 @@ MATCH_MODES = {
 @limiter.limit("10/minute")
 async def get_match_mode(request: Request, user_id: str = Depends(verify_firebase_token)):
     db = get_db()
-    doc = db["user_settings"].find_one({"user_id": user_id}, {"match_mode": 1})
+    doc = await asyncio.to_thread(
+        db["user_settings"].find_one,
+        {"user_id": user_id},
+        {"match_mode": 1},
+    )
     mode = doc.get("match_mode", "balanced") if doc else "balanced"
     return {"mode": mode, "threshold": MATCH_MODES.get(mode, 0.55)}
 
@@ -229,9 +253,9 @@ async def set_match_mode(request: Request, user_id: str = Depends(verify_firebas
     if mode not in MATCH_MODES:
         raise HTTPException(status_code=400, detail=f"mode must be one of {sorted(MATCH_MODES)}")
     threshold = MATCH_MODES[mode]
-    # sensitivity.threshold is what vector search reads — keep them in sync.
     level = "low" if mode == "strict" else "medium" if mode == "balanced" else "high"
-    db["user_settings"].update_one(
+    await asyncio.to_thread(
+        db["user_settings"].update_one,
         {"user_id": user_id},
         {"$set": {
             "match_mode": mode,
@@ -242,32 +266,25 @@ async def set_match_mode(request: Request, user_id: str = Depends(verify_firebas
     return {"mode": mode, "threshold": threshold}
 
 
-@router.delete("/api/account")
-@limiter.limit("1/minute")
-async def delete_account(request: Request, user_id: str = Depends(verify_firebase_token)):
-    """Delete all user data: fragments (+ GCS audio), projects, DNA, settings, notifications."""
-    db = get_db()
-
-    # Collect GCS audio URIs before deleting fragments
+def _delete_account_sync(db, user_id):
+    """Delete all user data from DB and GCS."""
     gcs_uris = []
     for frag in db["fragments"].find({"user_id": user_id}, {"audio_url": 1}):
         url = frag.get("audio_url")
         if url and url.startswith("gs://"):
             gcs_uris.append(url)
 
-    # Delete all collections
     r_frags = db["fragments"].delete_many({"user_id": user_id})
     r_projects = db["projects"].delete_many({"user_id": user_id})
     r_dna = db["user_dna"].delete_many({"user_id": user_id})
     r_settings = db["user_settings"].delete_many({"user_id": user_id})
     r_notifs = db["notifications"].delete_many({"user_id": user_id})
 
-    # Delete GCS audio files
     gcs_deleted = 0
     if gcs_uris:
         try:
-            from google.cloud import storage
-            client = storage.Client()
+            from api._clients import get_gcs_client
+            client = get_gcs_client()
             for uri in gcs_uris:
                 parts = uri.replace("gs://", "").split("/", 1)
                 if len(parts) == 2:
@@ -296,6 +313,14 @@ async def delete_account(request: Request, user_id: str = Depends(verify_firebas
     }
 
 
+@router.delete("/api/account")
+@limiter.limit("1/minute")
+async def delete_account(request: Request, user_id: str = Depends(verify_firebase_token)):
+    """Delete all user data: fragments (+ GCS audio), projects, DNA, settings, notifications."""
+    db = get_db()
+    return await asyncio.to_thread(_delete_account_sync, db, user_id)
+
+
 def _verify_job_auth(authorization: str | None):
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=403, detail="Unauthorized")
@@ -305,9 +330,6 @@ def _verify_job_auth(authorization: str | None):
     if job_secret and hmac.compare_digest(token, job_secret):
         return
 
-    # OIDC path (Cloud Scheduler with oidcToken). Only enabled when both the
-    # expected audience AND the allowed caller are configured — verifying with
-    # audience=None would accept any Google-issued identity token.
     audience = os.environ.get("SERVICE_URL")
     allowed_sa = os.environ.get("JOB_INVOKER_SA")
     if audience and allowed_sa:
@@ -329,7 +351,7 @@ def _verify_job_auth(authorization: str | None):
 async def trigger_dna_job(authorization: str = Header(None)):
     _verify_job_auth(authorization)
     from jobs.dna_insights import run
-    run()
+    await asyncio.to_thread(run)
     return {"status": "completed"}
 
 
@@ -337,26 +359,12 @@ async def trigger_dna_job(authorization: str = Header(None)):
 async def trigger_resurrect_job(authorization: str = Header(None)):
     _verify_job_auth(authorization)
     from jobs.resurrect import run
-    run()
+    await asyncio.to_thread(run)
     return {"status": "completed"}
 
 
-@router.post("/api/resurrect-scan")
-@limiter.limit("5/minute")
-async def user_resurrect_scan(
-    request: Request,
-    user_id: str = Depends(verify_firebase_token),
-):
-    """Scan for connections between newest fragment and older fragments/projects.
-
-    Unlike the batch job, this runs per-user on demand and uses a gentler time
-    threshold so it works during demos.
-    """
-    from datetime import UTC, datetime
-
-    db = get_db()
-
-    # Find the most recent fragment
+def _resurrect_scan_sync(db, user_id):
+    """Run per-user resurrect scan: find connections between newest fragment and older ones."""
     latest = db["fragments"].find_one(
         {"user_id": user_id, "status": "ready", "embedding": {"$exists": True}},
         sort=[("created_at", -1)],
@@ -364,7 +372,6 @@ async def user_resurrect_scan(
     if not latest or not latest.get("embedding"):
         return {"notifications_created": 0, "reason": "no_ready_fragments_with_embedding"}
 
-    # Vector search for similar older fragments
     pipeline = [
         {
             "$vectorSearch": {
@@ -391,7 +398,6 @@ async def user_resurrect_scan(
         if not project_id:
             continue
 
-        # Check if we already sent this notification
         exists = db["notifications"].find_one({
             "user_id": user_id,
             "new_fragment_id": str(latest["_id"]),
@@ -404,12 +410,11 @@ async def user_resurrect_scan(
         if not project:
             continue
 
-        # Build a human-readable message
         latest_title = latest.get("title") or "your latest recording"
         project_title = project.get("title") or "an earlier project"
         neighbor_title = neighbor.get("title") or "a fragment"
         emotions = neighbor.get("emotions", [])
-        emotion_str = f" — both carry a sense of {emotions[0]}" if emotions else ""
+        emotion_str = f" -- both carry a sense of {emotions[0]}" if emotions else ""
 
         message = (
             f"Your new fragment \"{latest_title}\" resonates with "
@@ -433,3 +438,18 @@ async def user_resurrect_scan(
         created += 1
 
     return {"notifications_created": created}
+
+
+@router.post("/api/resurrect-scan")
+@limiter.limit("5/minute")
+async def user_resurrect_scan(
+    request: Request,
+    user_id: str = Depends(verify_firebase_token),
+):
+    """Scan for connections between newest fragment and older fragments/projects.
+
+    Unlike the batch job, this runs per-user on demand and uses a gentler time
+    threshold so it works during demos.
+    """
+    db = get_db()
+    return await asyncio.to_thread(_resurrect_scan_sync, db, user_id)

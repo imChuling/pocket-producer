@@ -54,7 +54,7 @@ select = ["E", "F", "I", "N", "W", "UP"]
 # risks changing prompt content for no functional gain. New code (ranking/,
 # tools/, tests/) stays at the 100-column limit.
 "api/main.py" = ["E501"]
-"api/pipeline.py" = ["E501"]
+"api/pipeline/*" = ["E501"]
 "api/routes/fragments.py" = ["E501"]
 "api/routes/projects.py" = ["E501"]
 "api/routes/admin.py" = ["E501"]
