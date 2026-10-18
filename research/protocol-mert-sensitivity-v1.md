@@ -21,7 +21,7 @@ must be labeled a sensitivity extension.
 - Pooling, locked before any run: unweighted mean over **all**
   transformer hidden layers, then mean over time. No layer selection,
   no learned pooling, no post-hoc tuning of either.
-- Adapter: `backend/ranking/adapters/mert.py`, revision pinned to the
+- Adapter: `backend/ranking/research/adapters/mert.py`, revision pinned to the
   checkpoint hash, model card recorded like the other adapters.
 
 ## Data
@@ -88,3 +88,9 @@ representations differ.
   the two CLAP models; representation differences confound model family,
   training data, and dimensionality. The analysis observes the swing,
   it does not attribute it.
+- MERT embeddings were computed from Freesound HQ preview MP3s
+  (lossy, ~128 kbps), not the original lossless WAVs used for the
+  two CLAP runs (FSL10K.zip). Compression artifacts are unlikely to
+  affect the layer-averaged MERT representation materially, but the
+  difference is noted. Field `audio_source: "freesound_preview_mp3"`
+  is recorded in every MERT item for traceability.

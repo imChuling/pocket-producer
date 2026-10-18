@@ -38,12 +38,33 @@ from run_fusion import (
 FUSION_5SIG_IDX = np.array([0, 1, 2, 3, 4])
 SIGNAL_NAMES = ["audio_cos_mean", "audio_cos_max", "tempo", "key", "tag_jaccard"]
 NEG_TYPE_WEIGHTS = {"hard_similar": 2.0}
+KEY_IDX = SIGNAL_NAMES.index("key")
+
+
+def mask_key(examples):
+    """Copies of the examples with the key signal zeroed, as it is online."""
+    masked = []
+    for ex in examples:
+        pos = np.array(ex["pos"], dtype=np.float64)
+        pos[KEY_IDX] = 0.0
+        negs = []
+        for neg in ex["negs"]:
+            neg = np.array(neg, dtype=np.float64)
+            neg[KEY_IDX] = 0.0
+            negs.append(neg)
+        masked.append({**ex, "pos": pos, "negs": negs})
+    return masked
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--items", required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument(
+        "--mask-key", action="store_true",
+        help="zero the key signal in every training example, matching the "
+             "deployed condition where the host DAW exposes no key",
+    )
     args = parser.parse_args()
 
     items = load_items(args.items)
@@ -56,7 +77,9 @@ def main() -> int:
     print(f"{len(items)} items, embedding space: {model_ids}")
 
     examples = build_feature_examples(items, seed=PAIR_SEED, aux={})
-    print(f"{len(examples)} examples")
+    if args.mask_key:
+        examples = mask_key(examples)
+    print(f"{len(examples)} examples (key masked: {args.mask_key})")
 
     sw = compute_source_weights(examples)
     per_seed = []
@@ -87,7 +110,9 @@ def main() -> int:
             "pack-only train split (protocol-heldout-v2), "
             "pack co-membership weak labels, source-weighted BPR "
             "(hard_similar×2.0), mean over 5 seeds"
+            + ("; key signal masked to 0 during training" if args.mask_key else "")
         ),
+        "key_masked": args.mask_key,
         "items_file": args.items,
     }, indent=2))
     print(f"-> {out}")

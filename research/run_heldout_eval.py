@@ -33,7 +33,6 @@ from run_fusion import (
     PAIR_SEED,
     SIGNALS,
     build_feature_examples,
-    candidate_signals,
     evaluate,
     load_items,
     train_logistic,
@@ -58,13 +57,13 @@ def load_aux(items, chroma_path, role_prompts_path):
 
     prompts_path = pathlib.Path(role_prompts_path)
     if prompts_path.exists():
-        from ranking.role_probe import CONFIDENCE_THRESHOLD, RoleProbe
+        from ranking.role_probe import RoleProbe
         prompt_map = json.loads(prompts_path.read_text())
         probe = RoleProbe(np.array(list(prompt_map.values())))
         aux["roles"] = {
             item["item_id"]: probe.classify(item["embedding"]) for item in items
         }
-        print(f"  roles classified", flush=True)
+        print("  roles classified", flush=True)
     else:
         print(f"  WARNING: no role prompts at {prompts_path}; role_gap = 0", flush=True)
 

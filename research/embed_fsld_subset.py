@@ -32,11 +32,11 @@ def make_adapter(name: str):
 
         return MsClapAdapter()
     if name == "laion-clap-music":
-        from ranking.adapters.laion_clap import LaionClapMusicAdapter
+        from ranking.research.adapters.laion_clap import LaionClapMusicAdapter
 
         return LaionClapMusicAdapter()
     if name == "mert-v1-95m":
-        from ranking.adapters.mert import MertAdapter
+        from ranking.research.adapters.mert import MertAdapter
 
         return MertAdapter()
     raise ValueError(f"unknown adapter {name}")

@@ -30,14 +30,14 @@ from run_fusion import (
     compute_source_weights,
     evaluate,
     load_items,
+    rules_standin,
     train_logistic,
 )
 from ranking.weak_pairs import split_sources
 
 FUSION_5SIG_IDX = np.array([0, 1, 2, 3, 4])
 SIGNAL_NAMES = ["audio_cos_mean", "audio_cos_max", "tempo", "key", "tag_jaccard"]
-RULES_WEIGHTS = np.array([0.353, 0.235, 0.412])
-RULES_IDX = np.array([2, 3, 4])
+RULES_IDX, RULES_WEIGHTS = rules_standin()
 
 
 def run_condition(items, condition_name, use_source_weighting, seeds, pair_seed):
@@ -209,7 +209,8 @@ def main() -> int:
             "D_msclap_sourceweighted": {"embedding": "msclap-2023", "training": "source_weighted_bpr_hs2.0"},
         },
         "baselines": {
-            "rules": {"signals": ["tempo", "key", "tag_jaccard"], "weights": [0.353, 0.235, 0.412]},
+            "rules": {"signals": [SIGNAL_NAMES[i] for i in RULES_IDX],
+                      "weights": [round(float(w), 6) for w in RULES_WEIGHTS]},
             "cosine": {"signals": ["audio_cos_mean"], "weights": [1.0]},
         },
         "summaries": all_summaries,

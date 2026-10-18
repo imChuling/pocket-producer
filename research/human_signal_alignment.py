@@ -81,7 +81,7 @@ def main() -> None:
     summary = json.loads((ROOT / "artifacts/eval-pack/eval_summary.json").read_text())
     per_pair = {p["pair"]: p for p in summary["per_pair"]}
 
-    from ranking.adapters.laion_clap import LaionClapMusicAdapter
+    from ranking.research.adapters.laion_clap import LaionClapMusicAdapter
     adapter = LaionClapMusicAdapter()
 
     prompt_map = json.loads((ROOT / "research/data/fsld/role_prompts.json").read_text())
