@@ -10,7 +10,6 @@ from bson.errors import InvalidId
 from fastapi import HTTPException
 from pymongo import MongoClient
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +39,14 @@ PROMPT_INJECTION_RE = re.compile(
     re.IGNORECASE,
 )
 
-limiter = Limiter(key_func=get_remote_address)
+def _forwarded_key(request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+limiter = Limiter(key_func=_forwarded_key)
 
 # ---------------------------------------------------------------------------
 # Concurrent pipeline guard — reject (not queue) when too many are running

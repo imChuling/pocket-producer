@@ -2,6 +2,7 @@ import asyncio
 import io
 import logging
 import os
+import threading
 from datetime import UTC, datetime
 from typing import Literal
 
@@ -134,6 +135,10 @@ async def parse_intent_endpoint(
 # --- Session audio CLAP encoding ------------------------------------------
 
 _clap_adapter = None
+_clap_lock = threading.Lock()
+_clap_infer_lock = threading.Lock()
+
+EMBED_TIMEOUT_SECONDS = 20.0
 
 
 def _get_clap():
@@ -142,10 +147,21 @@ def _get_clap():
         return _clap_adapter
     if os.environ.get("POCKET_ENABLE_CLAP") != "1":
         return None
-    from ranking.adapters.msclap import MsClapAdapter
+    with _clap_lock:
+        if _clap_adapter is not None:
+            return _clap_adapter
+        import torch
 
-    _clap_adapter = MsClapAdapter()
+        torch.set_num_threads(2)
+        from ranking.adapters.msclap import MsClapAdapter
+
+        _clap_adapter = MsClapAdapter()
     return _clap_adapter
+
+
+def _encode_audio_serialized(clap, waveform, sample_rate):
+    with _clap_infer_lock:
+        return clap.encode_audio(waveform, sample_rate)
 
 
 MAX_SESSION_FILES = 8
@@ -170,24 +186,39 @@ async def session_embed(
             status_code=400,
             detail=f"At most {MAX_SESSION_FILES} files per request",
         )
-    embeddings: list[list[float]] = []
-    for upload in files:
-        raw = await upload.read()
-        if len(raw) > MAX_FILE_SIZE:
-            embeddings.append([])
-            continue
-        try:
-            import soundfile
 
-            waveform, sample_rate = soundfile.read(io.BytesIO(raw), dtype="float32")
-            vector = await asyncio.to_thread(
-                clap.encode_audio,
-                np.asarray(waveform, dtype=np.float32), sample_rate,
-            )
-            embeddings.append(vector.tolist())
-        except Exception:
-            logger.warning("session-embed: failed to encode %s", upload.filename)
-            embeddings.append([])
+    async def _encode_all():
+        embeddings: list[list[float]] = []
+        for upload in files:
+            raw = await upload.read()
+            if len(raw) > MAX_FILE_SIZE:
+                embeddings.append([])
+                continue
+            try:
+                import soundfile
+
+                waveform, sample_rate = soundfile.read(
+                    io.BytesIO(raw), dtype="float32"
+                )
+                vector = await asyncio.to_thread(
+                    _encode_audio_serialized,
+                    clap,
+                    np.asarray(waveform, dtype=np.float32),
+                    sample_rate,
+                )
+                embeddings.append(vector.tolist())
+            except Exception:
+                logger.warning("session-embed: failed to encode %s", upload.filename)
+                embeddings.append([])
+        return embeddings
+
+    try:
+        embeddings = await asyncio.wait_for(
+            _encode_all(), timeout=EMBED_TIMEOUT_SECONDS
+        )
+    except TimeoutError:
+        logger.warning("session-embed timed out after %.0fs", EMBED_TIMEOUT_SECONDS)
+        embeddings = []
     valid = [e for e in embeddings if len(e) > 0]
     return {"embeddings": valid, "total": len(files), "encoded": len(valid)}
 

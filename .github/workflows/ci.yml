@@ -21,11 +21,11 @@ jobs:
         run: |
           pip install uv
           uv pip install --system -r requirements.txt
-          uv pip install --system pytest ruff
+          uv pip install --system pytest "ruff==0.16.10"
       - name: Ruff lint
         run: ruff check .
       - name: Tests
-        run: pytest tests/ -x -q --tb=short --ignore=tests/ranking/test_model_ladder.py --ignore=tests/ranking/test_training.py --ignore=tests/ranking/test_msclap_adapter.py --ignore=tests/ranking/test_msclap_preprocessing.py --ignore=tests/ranking/test_ladder_e2e.py
+        run: pytest tests/ -x -q --tb=short --ignore=tests/ranking/test_model_ladder.py --ignore=tests/ranking/test_training.py --ignore=tests/ranking/test_msclap_adapter.py --ignore=tests/ranking/test_ladder_e2e.py
 
   research-lint:
     runs-on: ubuntu-latest
@@ -37,7 +37,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install ruff
+      - run: pip install "ruff==0.16.10"
       - name: Ruff lint
         run: ruff check .
 
