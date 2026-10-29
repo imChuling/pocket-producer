@@ -106,7 +106,12 @@ _mongo = None
 def get_db():
     global _mongo
     if _mongo is None:
-        _mongo = MongoClient(os.environ["MONGODB_CONNECTION_STRING"], maxPoolSize=10)
+        _mongo = MongoClient(
+            os.environ["MONGODB_CONNECTION_STRING"],
+            maxPoolSize=10,
+            serverSelectionTimeoutMS=5000,
+            socketTimeoutMS=10000,
+        )
     return _mongo["pocketproducer"]
 
 

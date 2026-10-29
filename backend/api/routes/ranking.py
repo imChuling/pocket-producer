@@ -180,8 +180,9 @@ async def session_embed(
             import soundfile
 
             waveform, sample_rate = soundfile.read(io.BytesIO(raw), dtype="float32")
-            vector = clap.encode_audio(
-                np.asarray(waveform, dtype=np.float32), sample_rate
+            vector = await asyncio.to_thread(
+                clap.encode_audio,
+                np.asarray(waveform, dtype=np.float32), sample_rate,
             )
             embeddings.append(vector.tolist())
         except Exception:
