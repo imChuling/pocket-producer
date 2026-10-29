@@ -318,12 +318,24 @@ async def feedback(
     user_id: str = Depends(verify_firebase_token),
 ):
     db = get_db()
+    exposure = await asyncio.to_thread(
+        db["ranking_requests"].find_one,
+        {"request_id": event.request_id, "user_id": user_id},
+        {"_id": 1},
+    )
+    if exposure is None:
+        logger.warning(
+            "feedback references unknown request_id=%s user=%s",
+            event.request_id,
+            user_id,
+        )
     await asyncio.to_thread(
         db["ranking_feedback"].insert_one,
         {
             **event.model_dump(),
             "user_id": user_id,
             "created_at": datetime.now(UTC),
+            "exposure_verified": exposure is not None,
         },
     )
     return {"status": "ok"}

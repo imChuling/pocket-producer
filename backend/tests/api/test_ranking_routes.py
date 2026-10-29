@@ -18,6 +18,12 @@ class StubCollection:
         result.inserted_id = "stub-id"
         return result
 
+    def find_one(self, query, *args, **kwargs):
+        for doc in self.docs:
+            if all(doc.get(k) == v for k, v in query.items()):
+                return doc
+        return None
+
 
 class StubDB:
     def __init__(self):
@@ -362,6 +368,50 @@ def test_rank_applies_parsed_intent_without_llm_call(auth_client):
     }
     # "something moodier" alone matches no tags; the expansion does.
     assert evidence.get("intent_match", 0) > 0
+
+
+def test_feedback_marks_orphan_when_no_exposure(auth_client):
+    payload = {
+        "request_id": "orphan-req",
+        "project_id": "p1",
+        "fragment_id": "f1",
+        "event": "insert",
+        "rank_position": 1,
+        "model_id": "rules-v1",
+    }
+    response = auth_client.post(
+        "/api/ranking/feedback",
+        json=payload,
+        headers={"Authorization": "Bearer fake"},
+    )
+    assert response.status_code == 200
+    doc = _stub_db["ranking_feedback"].docs[0]
+    assert doc["exposure_verified"] is False
+
+
+def test_feedback_marks_verified_when_exposure_exists(auth_client):
+    auth_client.post(
+        "/api/ranking/rank",
+        json=rank_payload(),
+        headers={"Authorization": "Bearer fake"},
+    )
+    request_id = _stub_db["ranking_requests"].docs[0]["request_id"]
+    payload = {
+        "request_id": request_id,
+        "project_id": "p1",
+        "fragment_id": "f1",
+        "event": "insert",
+        "rank_position": 1,
+        "model_id": "rules-v1",
+    }
+    response = auth_client.post(
+        "/api/ranking/feedback",
+        json=payload,
+        headers={"Authorization": "Bearer fake"},
+    )
+    assert response.status_code == 200
+    doc = _stub_db["ranking_feedback"].docs[0]
+    assert doc["exposure_verified"] is True
 
 
 def test_feedback_ignores_user_id_in_body(auth_client):
