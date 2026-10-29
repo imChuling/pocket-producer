@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Send, Loader2 } from "lucide-react";
 import { motion, AnimatePresence, useScroll, useTransform } from "motion/react";
 import { useAuth } from "@/hooks/use-auth";
@@ -988,7 +989,10 @@ function CaptureDashboard() {
    ═══════════════════════════════════════════════════════════════════════ */
 export default function HomePage() {
   const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <LandingPage />;
-  return <CaptureDashboard />;
+  const router = useRouter();
+  useEffect(() => {
+    if (!loading && user) router.replace("/audiotool");
+  }, [loading, user, router]);
+  if (loading || user) return null;
+  return <LandingPage />;
 }
