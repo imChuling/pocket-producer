@@ -1,0 +1,67 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          pip install uv
+          uv pip install --system -r requirements.txt
+          uv pip install --system pytest ruff
+      - name: Ruff lint
+        run: ruff check .
+      - name: Tests
+        run: pytest tests/ -x -q --tb=short --ignore=tests/ranking/test_model_ladder.py --ignore=tests/ranking/test_training.py --ignore=tests/ranking/test_msclap_adapter.py --ignore=tests/ranking/test_msclap_preprocessing.py --ignore=tests/ranking/test_ladder_e2e.py
+
+  research-lint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: research
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff
+      - name: Ruff lint
+        run: ruff check .
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - name: Lint and typecheck
+        run: npx eslint . && npx tsc --noEmit
+      - name: Tests
+        run: npx vitest run
+
+  paper-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python research/check_paper_numbers.py
