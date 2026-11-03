@@ -30,17 +30,21 @@ def _weights_revision(model) -> str:
     return f"msclap-package-{_MSCLAP_VERSION}"
 
 
-def prepare_waveform(waveform: np.ndarray, sample_rate: int) -> np.ndarray:
-    """Downmix multichannel audio to mono and crop to the model window.
+def to_mono(waveform: np.ndarray) -> np.ndarray:
+    """Downmix multichannel audio to mono.
 
     Accepts (frames, channels) as soundfile returns it, or (channels, frames);
     the channel axis is the shorter one.
     """
     audio = np.asarray(waveform, dtype=np.float32)
     if audio.ndim == 2:
-        mono = audio.mean(axis=int(np.argmin(audio.shape)))
-    else:
-        mono = audio.reshape(-1)
+        return audio.mean(axis=int(np.argmin(audio.shape)))
+    return audio.reshape(-1)
+
+
+def prepare_waveform(waveform: np.ndarray, sample_rate: int) -> np.ndarray:
+    """Mono audio cropped to the model window."""
+    mono = to_mono(waveform)
     return np.ascontiguousarray(mono[: int(MAX_SECONDS * sample_rate)])
 
 

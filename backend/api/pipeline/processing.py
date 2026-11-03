@@ -50,6 +50,11 @@ async def process_fragment_background(
 
     db = get_db()
     t0 = time.monotonic()
+    # Ranking needs the CLAP vector and chroma, not the LLM tags. Start that
+    # encoding first so a Gemini outage or quota error cannot leave a
+    # fragment unrankable.
+    if audio_url and audio_url.startswith("gs://") and os.environ.get("POCKET_ENABLE_CLAP") == "1":
+        _spawn_clap_encoding(db, user_id, fragment_id, audio_url)
     try:
         features_task = None
         features = None
@@ -173,13 +178,6 @@ async def process_fragment_background(
                 },
                 {"$set": {"title": ai_title.strip()}},
             )
-
-        if (
-            audio_url
-            and audio_url.startswith("gs://")
-            and os.environ.get("POCKET_ENABLE_CLAP") == "1"
-        ):
-            _spawn_clap_encoding(db, user_id, fragment_id, audio_url)
 
         logger.info(
             "Fragment %s tagged in %.1fs — update=%s",

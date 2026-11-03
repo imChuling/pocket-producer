@@ -64,13 +64,15 @@ class TestAudioCosineRanker:
         assert evidence and evidence[0].code == "model_signal"
         assert "dark bass" in evidence[0].label
 
-    def test_candidates_without_embedding_rank_last_without_fake_evidence(self):
+    def test_candidates_without_embedding_are_left_out(self):
         embedded = candidate("embedded", unit(0, 1, 0))
         bare = candidate("bare", None)
         response = ranker().rank(request([bare, embedded]))
-        assert response.candidates[-1].fragment_id == "bare"
-        assert response.candidates[-1].evidence == []
-        assert response.candidates[-1].score == 0.0
+        assert [c.fragment_id for c in response.candidates] == ["embedded"]
+
+    def test_refuses_when_no_candidate_has_an_embedding(self):
+        with pytest.raises(InsufficientContextError):
+            ranker().rank(request([candidate("bare", None)]))
 
     def test_empty_intent_raises_insufficient_context(self):
         with pytest.raises(InsufficientContextError):

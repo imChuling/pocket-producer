@@ -40,8 +40,3 @@ def _embed_sync(text: str, input_type: str) -> list[float]:
 async def generate_embedding(text: str) -> list[float]:
     """Generate 1024-dim embedding using Voyage AI (MongoDB-provided)."""
     return await asyncio.to_thread(_embed_sync, text, "document")
-
-
-async def generate_query_embedding(query: str) -> list[float]:
-    """Same model but with input_type='query' for search."""
-    return await asyncio.to_thread(_embed_sync, query, "query")

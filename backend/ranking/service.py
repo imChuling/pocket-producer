@@ -77,12 +77,16 @@ def default_service() -> RankingService:
     registry.register(TextCosineRanker(text_encoder=encode_intent_text))
 
     if os.environ.get("POCKET_ENABLE_CLAP") == "1":
-        from ranking.adapters.msclap import MsClapAdapter
+        from functools import lru_cache
+
+        from ranking.adapters import shared as clap
         from ranking.audio_cosine import AudioCosineRanker
         from ranking.role_gap_ranker import RoleGapRanker
 
-        clap = MsClapAdapter()
-
+        # The same intent text is re-ranked on every "Suggest" click; caching
+        # keeps those requests off the shared inference lock, which a
+        # concurrent session-embed call may hold for several seconds.
+        @lru_cache(maxsize=256)
         def encode_intent_audio_space(text: str) -> list[float]:
             return clap.encode_text([text])[0].tolist()
 

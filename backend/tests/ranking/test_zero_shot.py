@@ -26,6 +26,29 @@ class TestStyleScores:
         for value in style_scores(adapter, audio, 16000).values():
             assert -1.0 <= value <= 1.0
 
+    def test_prompt_embeddings_are_encoded_once_per_adapter(self):
+        adapter = FakeAdapter(dims=16)
+        calls = []
+        original = adapter.encode_text
+
+        def counting(texts):
+            calls.append(len(texts))
+            return original(texts)
+
+        adapter.encode_text = counting
+        audio = np.random.default_rng(5).normal(size=8000).astype(np.float32)
+        style_scores(adapter, audio, 16000)
+        style_scores(adapter, audio, 16000)
+        assert calls == [len(STYLE_VOCABULARY)]
+
+    def test_precomputed_audio_vector_matches_encoding_in_place(self):
+        adapter = FakeAdapter(dims=16)
+        audio = np.random.default_rng(6).normal(size=8000).astype(np.float32)
+        vector = adapter.encode_audio(audio, 16000)
+        assert style_scores(adapter, audio, 16000, audio_vector=vector) == style_scores(
+            adapter, audio, 16000
+        )
+
     def test_top_styles_orders_by_score(self):
         adapter = FakeAdapter(dims=16)
         audio = np.random.default_rng(4).normal(size=8000).astype(np.float32)

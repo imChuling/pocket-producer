@@ -1,6 +1,7 @@
 """Shared dependencies used across route modules."""
 
 import asyncio
+import hashlib
 import logging
 import os
 import re
@@ -39,14 +40,23 @@ PROMPT_INJECTION_RE = re.compile(
     re.IGNORECASE,
 )
 
-def _forwarded_key(request) -> str:
+def _rate_limit_key(request) -> str:
+    """Per-user when a bearer token is present, else per forwarded client IP.
+
+    A conference room shares one NAT address, so keying on IP alone would make
+    every attendee share a single quota. The token is hashed, never stored.
+    """
+    authorization = request.headers.get("Authorization", "")
+    if authorization.startswith("Bearer ") and len(authorization) > 20:
+        digest = hashlib.sha256(authorization[7:].encode()).hexdigest()
+        return f"user:{digest[:24]}"
     forwarded = request.headers.get("X-Forwarded-For", "")
     if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+        return f"ip:{forwarded.split(',')[0].strip()}"
+    return f"ip:{request.client.host if request.client else 'unknown'}"
 
 
-limiter = Limiter(key_func=_forwarded_key)
+limiter = Limiter(key_func=_rate_limit_key)
 
 # ---------------------------------------------------------------------------
 # Concurrent pipeline guard — reject (not queue) when too many are running
@@ -105,6 +115,46 @@ async def debounced_dna_update(user_id: str | None = None, delay: float = 2.0):
             await asyncio.to_thread(run_dna, user_id)
         except Exception:
             logger.warning("Debounced DNA update failed", exc_info=True)
+
+# ---------------------------------------------------------------------------
+# Per-user daily quota for LLM-backed actions (uploads, intent parsing).
+# The Gemini bill is ours; this caps what one trial account can spend.
+# ---------------------------------------------------------------------------
+DAILY_LLM_QUOTA = int(os.environ.get("POCKET_DAILY_LLM_QUOTA", "30"))
+
+
+def consume_daily_quota(db, user_id: str, bucket: str, limit: int = DAILY_LLM_QUOTA) -> None:
+    """Count one `bucket` action for today; raise 429 once the user is over `limit`.
+
+    One document per (user, UTC day) with per-bucket counters, incremented
+    atomically. A rejected call is not counted, so the user gets exactly
+    `limit` successful actions per day.
+    """
+    from datetime import UTC, datetime
+
+    from pymongo import ReturnDocument
+
+    day = datetime.now(UTC).strftime("%Y-%m-%d")
+    doc = db["usage_quota"].find_one_and_update(
+        {"user_id": user_id, "day": day},
+        {"$inc": {f"counts.{bucket}": 1}, "$setOnInsert": {"created_at": datetime.now(UTC)}},
+        upsert=True,
+        return_document=ReturnDocument.AFTER,
+    )
+    used = int((doc or {}).get("counts", {}).get(bucket, 0))
+    if used > limit:
+        db["usage_quota"].update_one(
+            {"user_id": user_id, "day": day}, {"$inc": {f"counts.{bucket}": -1}}
+        )
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"Daily trial limit reached ({limit} {bucket} actions per day). "
+                "Ranking, preview, insert and undo keep working; try again tomorrow."
+            ),
+            headers={"Retry-After": "3600"},
+        )
+
 
 _mongo = None
 

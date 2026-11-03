@@ -57,16 +57,17 @@ class RoleGapRanker:
 
         session_roles = self._probe.session_roles(regions)
 
-        scored: list[RankedCandidate] = []
-        for candidate in request.candidates:
-            if candidate.audio_embedding is None:
-                scored.append(
-                    RankedCandidate(
-                        fragment_id=candidate.fragment_id, score=0.0, evidence=[]
-                    )
-                )
-                continue
+        # Candidates without an embedding cannot be placed in any role; leave
+        # them out rather than serving them as zero-score proposals.
+        scorable = [c for c in request.candidates if c.audio_embedding is not None]
+        if not scorable:
+            raise InsufficientContextError(
+                f"role-gap-v1 cannot score any of the {len(request.candidates)} "
+                "candidates (no audio embeddings)"
+            )
 
+        scored: list[RankedCandidate] = []
+        for candidate in scorable:
             gap_role, conf = self._probe.gap_score(
                 candidate.audio_embedding, session_roles
             )

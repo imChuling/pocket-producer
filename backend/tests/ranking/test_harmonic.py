@@ -3,6 +3,7 @@
 import numpy as np
 import pytest
 
+from ranking.audio_cosine import InsufficientContextError
 from ranking.harmonic_probe import (
     CHROMA_BINS,
     chroma_from_audio,
@@ -123,6 +124,17 @@ class TestChromaFromAudio:
         assert len(chroma) == CHROMA_BINS
         assert chroma[9] == max(chroma)  # A is bin 9
 
+    def test_long_audio_is_capped_before_cqt(self):
+        from ranking.harmonic_probe import CHROMA_MAX_SECONDS
+
+        sr = 22050
+        rng = np.random.default_rng(0)
+        head = (0.1 * rng.standard_normal(int(CHROMA_MAX_SECONDS * sr))).astype(np.float32)
+        tail = (0.1 * rng.standard_normal(10 * sr)).astype(np.float32)
+        capped = chroma_from_audio(np.concatenate([head, tail]), sr)
+        assert capped == chroma_from_audio(head, sr)
+        assert capped != chroma_from_audio(np.concatenate([head, tail]), sr, max_seconds=1e9)
+
     def test_empty_waveform(self):
         chroma = chroma_from_audio(np.array([], dtype=np.float32))
         assert chroma == [0.0] * CHROMA_BINS
@@ -199,9 +211,17 @@ class TestHarmonicFitRanker:
             ],
             model_id="harmonic-fit-v1",
         )
+        # No candidate can be scored: refuse so the service falls back to
+        # rules instead of serving an evidence-free zero-score proposal.
+        with pytest.raises(InsufficientContextError):
+            ranker.rank(request)
+
+    def test_candidate_without_chroma_is_left_out(self):
+        ranker = HarmonicFitRanker()
+        c_maj = _c_major_chroma()
+        request = self._make_request([c_maj], [c_maj, None])
         response = ranker.rank(request)
-        assert response.candidates[0].score == 0.0
-        assert response.candidates[0].evidence == []
+        assert [c.fragment_id for c in response.candidates] == ["f0"]
 
     def test_no_regions_raises(self):
         ranker = HarmonicFitRanker()

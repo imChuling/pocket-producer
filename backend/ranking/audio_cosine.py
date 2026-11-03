@@ -3,17 +3,15 @@
 The context vector comes from the user's stated text intent encoded with the
 same frozen audio-text model that produced the candidate audio vectors, so
 "gloomy pad" can match a dark pad even when no tag words overlap. Candidates
-without an audio representation score zero and carry no fabricated evidence.
+without an audio representation are left out rather than served unscored.
 """
 
 from collections.abc import Callable
 
-from ranking.cosine_core import rank_by_cosine
+from ranking.cosine_core import InsufficientContextError, rank_by_cosine
 from ranking.schemas import RankRequest, RankResponse
 
-
-class InsufficientContextError(ValueError):
-    """The request lacks the context this ranker needs (e.g. no text intent)."""
+__all__ = ["AudioCosineRanker", "InsufficientContextError"]
 
 
 class AudioCosineRanker:

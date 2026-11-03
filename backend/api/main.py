@@ -9,6 +9,7 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from slowapi.extension import _rate_limit_exceeded_handler
 from slowapi.middleware import SlowAPIMiddleware
@@ -16,6 +17,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from .auth import verify_firebase_token
 from .deps import (
     acquire_pipeline_slot,
+    consume_daily_quota,
     debounced_dna_update,
     get_db,
     limiter,
@@ -48,12 +50,21 @@ def _warm_clap_in_background() -> None:
 
     def _load() -> None:
         try:
-            from api.routes.ranking import _get_clap
+            from ranking.adapters import shared as clap
 
-            adapter = _get_clap()
-            if adapter is not None:
-                adapter.encode_text(["warmup"])
-                logger.info("CLAP warmup complete")
+            if clap.get_msclap() is None:
+                return
+            clap.encode_text(["warmup"])
+            logger.info("CLAP warmup complete")
+            # role-gap-v1 encodes its role prompts on first use; do it now so
+            # the first request does not pay for it inside the rank timeout.
+            from api.routes.ranking import _service
+
+            for adapter in _service._registry.adapters():
+                ensure = getattr(adapter, "_ensure_probe", None)
+                if ensure is not None:
+                    ensure()
+            logger.info("role probe warmup complete")
         except Exception:
             logger.exception("CLAP warmup failed — will retry on first request")
 
@@ -119,15 +130,43 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/ready")
+async def ready():
+    """Dependency-level readiness: Mongo reachable, CLAP state, rankers registered.
+
+    /health stays shallow for the startup probe; this is what monitoring and a
+    human checking a deploy should look at. CLAP "loading" or "disabled" is
+    reported, not treated as unready, because rules-v1 serves without it.
+    """
+    from api.routes.ranking import registered_models
+    from ranking.adapters import shared as clap
+
+    try:
+        await asyncio.wait_for(asyncio.to_thread(get_db().command, "ping"), timeout=3.0)
+        mongo = "ok"
+    except Exception as error:
+        mongo = f"error: {type(error).__name__}"
+    models = registered_models()
+    payload = {
+        "mongo": mongo,
+        "clap": clap.status(),
+        "models": models,
+        "fusion_registered": "fusion-5sig-v1" in models,
+    }
+    status_code = 200 if mongo == "ok" else 503
+    return JSONResponse(payload, status_code=status_code)
+
+
 # ---------------------------------------------------------------------------
 # Ingest — the core ingestion endpoint stays in main.py
 # ---------------------------------------------------------------------------
 
 _background_tasks: set[asyncio.Task] = set()
+PIPELINE_QUEUE_SECONDS = 900
 
 
 @app.post("/api/ingest", status_code=202)
-@limiter.limit("12/minute")
+@limiter.limit("60/minute")
 async def ingest_fragment(
     request: Request,
     file: UploadFile | None = File(None),
@@ -141,6 +180,7 @@ async def ingest_fragment(
         raise HTTPException(status_code=400, detail="Either file or text required")
     if text is not None and not sanitized_text:
         raise HTTPException(status_code=400, detail="Text cannot be empty")
+    await asyncio.to_thread(consume_daily_quota, get_db(), user_id, "ingest")
 
     audio_url = None
     upload_meta = None
@@ -191,16 +231,27 @@ async def ingest_fragment(
     fragment_id = str(result.inserted_id)
 
     async def _ingest_pipeline():
-        for _ in range(120):
+        # A batch import can queue dozens of fragments behind the pipeline
+        # slots; waiting is cheap, so queue for a long time and say so in
+        # the status instead of failing the upload.
+        queued_note_written = False
+        for elapsed in range(PIPELINE_QUEUE_SECONDS):
             if await acquire_pipeline_slot():
                 break
+            if elapsed == 3 and not queued_note_written:
+                queued_note_written = True
+                await asyncio.to_thread(
+                    db["fragments"].update_one,
+                    {"_id": result.inserted_id},
+                    {"$set": {"pipeline_step": "Queued behind other uploads..."}},
+                )
             await asyncio.sleep(1)
         else:
             logger.error("Pipeline slot timeout for fragment %s", fragment_id)
             await asyncio.to_thread(
                 db["fragments"].update_one,
                 {"_id": result.inserted_id},
-                {"$set": {"status": "error"}},
+                {"$set": {"status": "error", "pipeline_step": "error"}},
             )
             return
         try:

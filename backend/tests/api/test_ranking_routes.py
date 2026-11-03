@@ -24,6 +24,22 @@ class StubCollection:
                 return doc
         return None
 
+    def find_one_and_update(self, query, update, upsert=False, return_document=None):
+        doc = self.find_one(query)
+        if doc is None and upsert:
+            doc = {**query, **update.get("$setOnInsert", {})}
+            self.docs.append(doc)
+        if doc is not None:
+            for path, delta in update.get("$inc", {}).items():
+                head, _, tail = path.partition(".")
+                target = doc.setdefault(head, {}) if tail else doc
+                key = tail or head
+                target[key] = target.get(key, 0) + delta
+        return doc
+
+    def update_one(self, query, update):
+        self.find_one_and_update(query, update)
+
 
 class StubDB:
     def __init__(self):
@@ -33,6 +49,10 @@ class StubDB:
         if name not in self._collections:
             self._collections[name] = StubCollection()
         return self._collections[name]
+
+    def command(self, name):
+        assert name == "ping"
+        return {"ok": 1}
 
 
 _stub_db = StubDB()
@@ -368,6 +388,82 @@ def test_rank_applies_parsed_intent_without_llm_call(auth_client):
     }
     # "something moodier" alone matches no tags; the expansion does.
     assert evidence.get("intent_match", 0) > 0
+
+
+def test_ready_reports_dependencies(anon_client):
+    response = anon_client.get("/ready")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["mongo"] == "ok"
+    assert body["clap"] in {"disabled", "loading", "ready"}
+    assert "rules-v1" in body["models"]
+    assert isinstance(body["fusion_registered"], bool)
+
+
+class _FakeClap:
+    """Stands in for MsClapAdapter: unit vector whose first entry is the RMS."""
+
+    _model = object()
+
+    def encode_audio(self, waveform, sample_rate):
+        import numpy as np
+
+        vector = np.zeros(1024)
+        vector[0] = float(np.sqrt(np.mean(np.square(waveform)))) + 1e-6
+        return vector / np.linalg.norm(vector)
+
+
+def _wav_bytes(seconds=1.0, freq=220.0, sr=22050, stereo=False):
+    import io
+
+    import numpy as np
+    import soundfile
+
+    t = np.linspace(0, seconds, int(sr * seconds), endpoint=False)
+    mono = (0.3 * np.sin(2 * np.pi * freq * t)).astype("float32")
+    data = np.stack([mono, mono], axis=1) if stereo else mono
+    buf = io.BytesIO()
+    soundfile.write(buf, data, sr, format="WAV")
+    return buf.getvalue()
+
+
+def test_session_embed_returns_embeddings_chroma_and_failures(auth_client, monkeypatch):
+    from ranking.adapters import shared
+
+    monkeypatch.setenv("POCKET_ENABLE_CLAP", "1")
+    shared.reset_for_tests(_FakeClap())
+    response = auth_client.post(
+        "/api/ranking/session-embed",
+        files=[
+            ("files", ("a.wav", _wav_bytes(), "audio/wav")),
+            ("files", ("b.wav", _wav_bytes(stereo=True), "audio/wav")),
+            ("files", ("bad.wav", b"not audio at all", "audio/wav")),
+        ],
+        headers={"Authorization": "Bearer fake"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 3 and body["encoded"] == 2
+    assert len(body["embeddings"]) == 2 and all(len(e) == 1024 for e in body["embeddings"])
+    assert len(body["chroma"]) == 2 and all(len(c) == 12 for c in body["chroma"])
+    # a 220 Hz tone is an A: pitch class 9 should dominate the chroma profile
+    assert max(range(12), key=lambda i: body["chroma"][0][i]) == 9
+    assert body["failed"] == [{"file": "bad.wav", "reason": body["failed"][0]["reason"]}]
+    assert body["timed_out"] is False
+    shared.reset_for_tests(None)
+
+
+def test_session_embed_is_503_when_clap_disabled(auth_client, monkeypatch):
+    from ranking.adapters import shared
+
+    monkeypatch.delenv("POCKET_ENABLE_CLAP", raising=False)
+    shared.reset_for_tests(None)
+    response = auth_client.post(
+        "/api/ranking/session-embed",
+        files=[("files", ("a.wav", _wav_bytes(), "audio/wav"))],
+        headers={"Authorization": "Bearer fake"},
+    )
+    assert response.status_code == 503
 
 
 def test_feedback_marks_orphan_when_no_exposure(auth_client):

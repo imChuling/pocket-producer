@@ -1,24 +1,23 @@
 import asyncio
 import io
 import logging
-import os
-import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from typing import Literal
 
-import numpy as np
 from bson import ObjectId
 from bson.errors import InvalidId
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel, Field, field_validator
 
+from ranking.adapters import shared as clap
 from ranking.enrichment import attach_audio_embeddings
 from ranking.intent import apply_parsed_intent, parse_intent
 from ranking.schemas import FeedbackEvent, RankRequest, RankResponse
 from ranking.service import default_service
 
 from ..auth import verify_firebase_token
-from ..deps import get_db, limiter
+from ..deps import consume_daily_quota, get_db, limiter
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +27,10 @@ RANK_TIMEOUT_SECONDS = 2.0
 INTENT_TIMEOUT_SECONDS = 8.0
 
 _service = default_service()
+
+# Ranking gets its own small pool so a slow ranker that outlives its
+# timeout cannot occupy the default executor that DB and encoding calls use.
+_rank_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="rank")
 
 
 @router.get("/model-card")
@@ -49,7 +52,7 @@ async def rank(
     loop = asyncio.get_running_loop()
     try:
         response = await asyncio.wait_for(
-            loop.run_in_executor(None, _service.rank, rank_request),
+            loop.run_in_executor(_rank_executor, _service.rank, rank_request),
             timeout=RANK_TIMEOUT_SECONDS,
         )
     except TimeoutError:
@@ -122,6 +125,13 @@ async def parse_intent_endpoint(
     never an error the user has to see.
     """
     try:
+        await asyncio.to_thread(consume_daily_quota, get_db(), user_id, "intent")
+    except HTTPException as quota:
+        # Over the daily LLM allowance: degrade to raw-text matching, same as
+        # a timeout, instead of surfacing an error for an optional feature.
+        logger.info("intent parsing skipped for %s: %s", user_id, quota.detail)
+        return {"parsed": None, "quota_exhausted": True}
+    try:
         parsed = await asyncio.wait_for(
             asyncio.to_thread(parse_intent, body.text),
             timeout=INTENT_TIMEOUT_SECONDS,
@@ -134,34 +144,30 @@ async def parse_intent_endpoint(
 
 # --- Session audio CLAP encoding ------------------------------------------
 
-_clap_adapter = None
-_clap_lock = threading.Lock()
-_clap_infer_lock = threading.Lock()
-
 EMBED_TIMEOUT_SECONDS = 20.0
+# Each request may hold up to 8 decoded regions in memory while it waits on
+# the inference lock; two at a time keeps the worst case well inside 4 GiB.
+_embed_slots = asyncio.Semaphore(2)
 
 
-def _get_clap():
-    global _clap_adapter
-    if _clap_adapter is not None:
-        return _clap_adapter
-    if os.environ.get("POCKET_ENABLE_CLAP") != "1":
-        return None
-    with _clap_lock:
-        if _clap_adapter is not None:
-            return _clap_adapter
-        import torch
+def _encode_region(waveform, sample_rate):
+    """CLAP vector plus 12-dim chroma for one mono session region.
 
-        torch.set_num_threads(2)
-        from ranking.adapters.msclap import MsClapAdapter
+    CLAP sees the model window (first 7 s); chroma is taken over the region
+    (capped at CHROMA_MAX_SECONDS), matching how candidate chroma is computed
+    at ingest and in the research corpus.
+    """
+    from ranking.adapters.msclap import prepare_waveform
+    from ranking.harmonic_probe import chroma_from_audio
 
-        _clap_adapter = MsClapAdapter()
-    return _clap_adapter
+    return (
+        clap.encode_audio(prepare_waveform(waveform, sample_rate), sample_rate),
+        chroma_from_audio(waveform, sample_rate),
+    )
 
 
-def _encode_audio_serialized(clap, waveform, sample_rate):
-    with _clap_infer_lock:
-        return clap.encode_audio(waveform, sample_rate)
+def registered_models() -> list[str]:
+    return [card.get("id", "?") for card in _service.model_cards()]
 
 
 MAX_SESSION_FILES = 8
@@ -175,8 +181,7 @@ async def session_embed(
     files: list[UploadFile] = File(...),
     user_id: str = Depends(verify_firebase_token),
 ):
-    clap = _get_clap()
-    if clap is None:
+    if clap.get_msclap() is None:
         raise HTTPException(
             status_code=503,
             detail="CLAP encoding is not enabled on this server",
@@ -187,40 +192,53 @@ async def session_embed(
             detail=f"At most {MAX_SESSION_FILES} files per request",
         )
 
+    # Filled incrementally so a timeout still returns what was encoded.
+    embeddings: list[list[float]] = []
+    chromas: list[list[float]] = []
+    failed: list[dict] = []
+
     async def _encode_all():
-        embeddings: list[list[float]] = []
+        from ranking.adapters.msclap import to_mono
+
         for upload in files:
+            name = upload.filename or "sample"
             raw = await upload.read()
             if len(raw) > MAX_FILE_SIZE:
-                embeddings.append([])
+                failed.append({"file": name, "reason": "file larger than 20 MB"})
                 continue
             try:
                 import soundfile
 
-                waveform, sample_rate = soundfile.read(
-                    io.BytesIO(raw), dtype="float32"
-                )
-                vector = await asyncio.to_thread(
-                    _encode_audio_serialized,
-                    clap,
-                    np.asarray(waveform, dtype=np.float32),
-                    sample_rate,
-                )
-                embeddings.append(vector.tolist())
-            except Exception:
-                logger.warning("session-embed: failed to encode %s", upload.filename)
-                embeddings.append([])
-        return embeddings
+                waveform, sample_rate = soundfile.read(io.BytesIO(raw), dtype="float32")
+                del raw
+                mono = to_mono(waveform)
+                del waveform
+                vector, chroma = await asyncio.to_thread(_encode_region, mono, sample_rate)
+            except Exception as error:
+                logger.warning("session-embed: failed to encode %s", name, exc_info=True)
+                failed.append({"file": name, "reason": type(error).__name__})
+                continue
+            embeddings.append(vector.tolist())
+            chromas.append(chroma)
 
+    timed_out = False
     try:
-        embeddings = await asyncio.wait_for(
-            _encode_all(), timeout=EMBED_TIMEOUT_SECONDS
-        )
+        async with _embed_slots:
+            await asyncio.wait_for(_encode_all(), timeout=EMBED_TIMEOUT_SECONDS)
     except TimeoutError:
-        logger.warning("session-embed timed out after %.0fs", EMBED_TIMEOUT_SECONDS)
-        embeddings = []
-    valid = [e for e in embeddings if len(e) > 0]
-    return {"embeddings": valid, "total": len(files), "encoded": len(valid)}
+        timed_out = True
+        logger.warning(
+            "session-embed timed out after %.0fs with %d/%d encoded",
+            EMBED_TIMEOUT_SECONDS, len(embeddings), len(files),
+        )
+    return {
+        "embeddings": embeddings,
+        "chroma": chromas,
+        "total": len(files),
+        "encoded": len(embeddings),
+        "failed": failed,
+        "timed_out": timed_out,
+    }
 
 
 # --- Blind pairwise annotation (research protocol, models hidden) ----------

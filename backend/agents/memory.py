@@ -237,7 +237,8 @@ async def _mcp_vector_search(
 ) -> list[dict]:
     """Execute vector search through the MongoDB MCP server."""
     from mcp import ClientSession
-    from mcp.client.streamable_http import streamablehttp_client
+
+    from ._mcp_client import streamable_http_client
 
     pipeline = [
         {
@@ -258,7 +259,7 @@ async def _mcp_vector_search(
         {"$project": {"embedding": 0}},
     ]
 
-    async with streamablehttp_client(url=mcp_url, auth=_get_mcp_auth(mcp_url)) as (read, write, _):
+    async with streamable_http_client(url=mcp_url, auth=_get_mcp_auth(mcp_url)) as (read, write, _):
         async with ClientSession(read, write) as session:
             await session.initialize()
             result = await session.call_tool(
@@ -347,9 +348,10 @@ async def mongo_mcp_find(collection: str, filter: dict, limit: int = 10) -> str:
     scoped_filter["user_id"] = _user_id()
 
     from mcp import ClientSession
-    from mcp.client.streamable_http import streamablehttp_client
 
-    async with streamablehttp_client(url=mcp_url, auth=_get_mcp_auth(mcp_url)) as (read, write, _):
+    from ._mcp_client import streamable_http_client
+
+    async with streamable_http_client(url=mcp_url, auth=_get_mcp_auth(mcp_url)) as (read, write, _):
         async with ClientSession(read, write) as session:
             await session.initialize()
             result = await session.call_tool(

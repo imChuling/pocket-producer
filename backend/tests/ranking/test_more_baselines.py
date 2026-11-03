@@ -87,12 +87,11 @@ class TestTextCosineRanker:
         assert response.candidates[0].fragment_id == "close"
         assert response.model_id == "text-only-v1"
 
-    def test_missing_text_embedding_scores_zero_without_evidence(self):
+    def test_missing_text_embedding_is_left_out(self):
         bare = candidate("bare")
         embedded = candidate("embedded", text=unit(1, 0, 0))
         response = self.ranker().rank(request([bare, embedded]))
-        assert response.candidates[-1].fragment_id == "bare"
-        assert response.candidates[-1].evidence == []
+        assert [c.fragment_id for c in response.candidates] == ["embedded"]
 
     def test_empty_intent_raises(self):
         with pytest.raises(InsufficientContextError):

@@ -39,7 +39,10 @@ def db() -> StubDB:
             {
                 "_id": ObjectId(OWNED),
                 "user_id": "u1",
-                "representations": {"audio_semantic": {"vector": [0.1, 0.9]}},
+                "representations": {
+                    "audio_semantic": {"vector": [0.1, 0.9]},
+                    "chroma": {"vector": [1.0] + [0.0] * 11},
+                },
                 "embedding": [0.7, 0.3],
             },
             {
@@ -77,6 +80,11 @@ def test_owned_fragment_gets_its_stored_vector():
 def test_legacy_text_embedding_is_attached_as_text_vector():
     enriched = attach_audio_embeddings(db(), "u1", request(OWNED))
     assert enriched.candidates[0].text_embedding == [0.7, 0.3]
+
+
+def test_stored_chroma_is_attached_for_harmonic_fit():
+    enriched = attach_audio_embeddings(db(), "u1", request(OWNED))
+    assert enriched.candidates[0].chroma_vector == [1.0] + [0.0] * 11
 
 
 def test_foreign_fragment_never_leaks_a_vector():

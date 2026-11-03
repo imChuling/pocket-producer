@@ -69,6 +69,18 @@ class StubCollection:
                 count += 1
         return MagicMock(matched_count=count, modified_count=count)
 
+    def find_one_and_update(self, filter, update, upsert=False, return_document=None):
+        for d in self._docs:
+            if self._matches(d, filter):
+                self._apply_update(d, update)
+                return dict(d)
+        if not upsert:
+            return None
+        doc = {**filter, **update.get("$setOnInsert", {})}
+        self._apply_update(doc, {k: v for k, v in update.items() if k != "$setOnInsert"})
+        self._docs.append(doc)
+        return dict(doc)
+
     def delete_one(self, filter):
         for i, d in enumerate(self._docs):
             if self._matches(d, filter):

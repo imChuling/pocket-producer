@@ -16,11 +16,17 @@ SEMITONE_NAMES = [
 ]
 
 
+# A mean chroma profile stabilizes well within a minute of audio; the CQT on
+# a 5-minute upload peaks near 800 MB, so the input is capped before analysis.
+CHROMA_MAX_SECONDS = 60.0
+
+
 def chroma_from_audio(
     waveform: np.ndarray,
     sample_rate: int = 22050,
+    max_seconds: float = CHROMA_MAX_SECONDS,
 ) -> list[float]:
-    """Extract a 12-dim mean chroma profile from a waveform.
+    """Extract a 12-dim mean chroma profile from (at most `max_seconds` of) a waveform.
 
     Uses CQT-based chroma for better frequency resolution at low
     pitches (bass loops, kick patterns with tonal content).
@@ -30,6 +36,7 @@ def chroma_from_audio(
     mono = np.asarray(waveform, dtype=np.float32).reshape(-1)
     if mono.size == 0:
         return [0.0] * CHROMA_BINS
+    mono = mono[: int(max_seconds * sample_rate)]
 
     chroma = librosa.feature.chroma_cqt(y=mono, sr=sample_rate)
     mean_chroma = chroma.mean(axis=1)

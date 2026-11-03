@@ -1,7 +1,7 @@
 [project]
 name = "pocket-producer"
 version = "0.1.0"
-description = "Agentic memory system for music creation"
+description = "Session-conditioned retrieval of a musician's own audio fragments, served as user-controlled proposals inside a DAW"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 dependencies = [

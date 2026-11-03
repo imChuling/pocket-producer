@@ -7,7 +7,7 @@ MCP_PID=$!
 
 # Wait for MCP server to be ready
 for i in $(seq 1 10); do
-  if curl -s http://127.0.0.1:8081/mcp > /dev/null 2>&1; then
+  if curl -sf -o /dev/null http://127.0.0.1:8081/mcp 2>/dev/null; then
     echo "MongoDB MCP server ready on port 8081"
     break
   fi

@@ -15,17 +15,27 @@ import tempfile
 logger = logging.getLogger(__name__)
 
 TARGET_SAMPLE_RATE = 44100
+CHROMA_REVISION = "chroma-cqt-mean-v1"
 
-_adapter = None
+def chroma_record(waveform, sample_rate: int, input_sha256: str) -> dict:
+    """12-dim mean chroma profile for harmonic-fit-v1, with lineage fields."""
+    from ranking.harmonic_probe import chroma_from_audio
+
+    return {
+        "model_id": CHROMA_REVISION,
+        "revision": CHROMA_REVISION,
+        "input_sha256": input_sha256,
+        "vector": chroma_from_audio(waveform, sample_rate),
+    }
 
 
 def _get_adapter():
-    global _adapter
-    if _adapter is None:
-        from ranking.adapters.msclap import MsClapAdapter
+    from ranking.adapters import shared
 
-        _adapter = MsClapAdapter()
-    return _adapter
+    adapter = shared.get_msclap()
+    if adapter is None:
+        raise RuntimeError("CLAP is disabled on this server (POCKET_ENABLE_CLAP != 1)")
+    return adapter
 
 
 def _encode_sync(db, user_id: str, fragment_id: str, gcs_uri: str) -> str:
@@ -48,27 +58,42 @@ def _encode_sync(db, user_id: str, fragment_id: str, gcs_uri: str) -> str:
     doc = db["fragments"].find_one(
         {"_id": oid, "user_id": user_id},
         {"representations.audio_semantic.input_sha256": 1,
-         "representations.audio_semantic.revision": 1},
+         "representations.audio_semantic.revision": 1,
+         "representations.chroma.revision": 1},
     )
     if doc is None:
         return "missing"
 
     adapter = _get_adapter()
     input_hash = audio_sha256(waveform, sample_rate)
-    existing = (doc.get("representations") or {}).get("audio_semantic") or {}
-    if (
+    representations = doc.get("representations") or {}
+    existing = representations.get("audio_semantic") or {}
+    chroma_current = (representations.get("chroma") or {}).get("revision") == CHROMA_REVISION
+    audio_current = (
         existing.get("input_sha256") == input_hash
         and existing.get("revision") == adapter.model_card.revision
-    ):
+    )
+    if audio_current and chroma_current:
         return "skipped"
+    if audio_current:
+        # Only the (cheap, model-free) chroma is missing: do not re-run CLAP.
+        db["fragments"].update_one(
+            {"_id": oid, "user_id": user_id},
+            {"$set": {"representations.chroma": chroma_record(waveform, sample_rate, input_hash)}},
+        )
+        return "encoded"
 
-    record = encode_with_lineage(adapter, waveform, sample_rate)
-    styles = style_scores(adapter, waveform, sample_rate)
+    from ranking.adapters import shared
+
+    with shared.infer_lock:
+        record = encode_with_lineage(adapter, waveform, sample_rate)
+        styles = style_scores(adapter, waveform, sample_rate, audio_vector=record.vector)
     top_styles = sorted(styles.items(), key=lambda kv: -kv[1])[:5]
     db["fragments"].update_one(
         {"_id": oid, "user_id": user_id},
         {"$set": {
             "representations.audio_semantic": record.model_dump(),
+            "representations.chroma": chroma_record(waveform, sample_rate, input_hash),
             "style_scores": {
                 "model_id": record.model_id,
                 "revision": record.revision,

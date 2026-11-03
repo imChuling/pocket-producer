@@ -50,16 +50,18 @@ class HarmonicFitRanker:
 
         sess_chroma = session_chroma(region_chromas)
 
-        scored: list[RankedCandidate] = []
-        for candidate in request.candidates:
-            if candidate.chroma_vector is None:
-                scored.append(
-                    RankedCandidate(
-                        fragment_id=candidate.fragment_id, score=0.0, evidence=[]
-                    )
-                )
-                continue
+        # Candidates without a chroma vector cannot be scored here; leaving
+        # them out matches fusion-5sig-v1 rather than serving evidence-free
+        # zero-score proposals.
+        scorable = [c for c in request.candidates if c.chroma_vector is not None]
+        if not scorable:
+            raise InsufficientContextError(
+                f"harmonic-fit-v1 cannot score any of the {len(request.candidates)} "
+                "candidates (no chroma vectors)"
+            )
 
+        scored: list[RankedCandidate] = []
+        for candidate in scorable:
             score, shift = transpose_invariant_score(
                 sess_chroma, candidate.chroma_vector
             )
