@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FolderOpen, Loader2, Unplug } from "lucide-react";
 
@@ -18,7 +19,10 @@ import {
   type InsertReceipt,
 } from "@/lib/audiotool/insert-fragment";
 import { importProjectAsFragments } from "@/lib/audiotool/import-project";
-import { extractSessionAudio } from "@/lib/audiotool/session-audio";
+import {
+  describeSessionAudio,
+  extractSessionAudio,
+} from "@/lib/audiotool/session-audio";
 import { fingerprintFromDocument } from "@/lib/audiotool/session-fingerprint";
 import { linkAudiotoolInsert, unlinkAudiotoolInsert } from "@/lib/api";
 import { getIdToken } from "@/lib/firebase";
@@ -57,6 +61,8 @@ export default function AudiotoolPage() {
   // Kept as a list (not a flat set) so undoing an insert also retracts
   // its tags from the fusion ranker's context.
   const [insertedTagSets, setInsertedTagSets] = useState<string[][]>([]);
+  // Why audio-based rankers may have fallen back, shown next to the model chip.
+  const [sessionAudioNote, setSessionAudioNote] = useState<string | null>(null);
   const sessionTags = useMemo(
     () => [...new Set(insertedTagSets.flat())],
     [insertedTagSets],
@@ -398,7 +404,11 @@ export default function AudiotoolPage() {
                 Import samples to library
               </button>{" "}
               to turn this project&apos;s sounds into rankable fragments in
-              about a minute — or record and upload ideas on the Capture page.
+              about a minute, or record and upload ideas on the{" "}
+              <Link href="/capture" className="font-medium underline underline-offset-2 hover:text-sky-700">
+                Capture page
+              </Link>
+              .
             </div>
           )}
           {lastInsert && (
@@ -439,25 +449,28 @@ export default function AudiotoolPage() {
                   });
                   if (result.embeddings.length > 0) {
                     fresh.region_audio_embeddings = result.embeddings;
-                  } else {
-                    console.info(
-                      "[session-audio] no embeddings: " +
-                        `samples=${result.sampleCount} failed=${result.failedCount}`,
-                    );
                   }
+                  if (result.chroma.length > 0) {
+                    fresh.region_chroma_vectors = result.chroma;
+                  }
+                  setSessionAudioNote(describeSessionAudio(result));
                 } catch (cause) {
-                  // Session audio is best-effort; rules-v1 ranks without it —
+                  // Session audio is best-effort; rules-v1 ranks without it,
                   // but the reason must be visible, not swallowed.
                   console.warn("[session-audio] extraction failed:", cause);
+                  setSessionAudioNote(
+                    `Session audio unavailable: ${cause instanceof Error ? cause.message : String(cause)}`,
+                  );
                 }
               } else {
-                console.info(
-                  `[session-audio] unavailable: doc=${!!doc} samples=${!!samplesApi}`,
+                setSessionAudioNote(
+                  "Session audio unavailable: no open document or samples API.",
                 );
               }
               return requestRecommendations(fresh, fragments, { limit, modelId });
             }}
             onIntentChange={setIntent}
+            sessionAudioNote={sessionAudioNote}
             parsedIntent={parsedIntent}
             onParsedIntentChange={setParsedIntent}
             onPreview={previewFragment}

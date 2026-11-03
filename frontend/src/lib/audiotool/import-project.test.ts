@@ -118,6 +118,32 @@ describe("importProjectAsFragments", () => {
     ]);
   });
 
+  it("retries an ingest that is rate limited instead of counting it as failed", async () => {
+    const doc = fakeDocument(
+      [{ id: "r1", sampleRef: "s1" }],
+      [{ id: "s1", sampleName: "samples/uuid-1" }],
+    );
+    const download = vi.fn(async () => new Blob(["wav"]));
+    const statuses = [429, 429, 200];
+    const fetchMock = vi.fn(async () => {
+      const status = statuses.shift() ?? 200;
+      return {
+        ok: status === 200,
+        status,
+        headers: { get: (name: string) => (name === "Retry-After" ? "0.01" : null) },
+      };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await importProjectAsFragments(doc, { download }, {
+      projectDisplayName: "Night Sketch",
+      getAuthToken: async () => "tok",
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(result).toEqual({ imported: 1, failed: 0, totalSamples: 1 });
+  });
+
   it("counts failed downloads and failed uploads without aborting the rest", async () => {
     const doc = fakeDocument(
       [

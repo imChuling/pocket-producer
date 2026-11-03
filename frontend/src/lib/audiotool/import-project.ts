@@ -64,19 +64,53 @@ export function listImportableSampleNames(
   return uniqueSampleNames;
 }
 
+export type ImportOptions = {
+  projectDisplayName: string;
+  getAuthToken: () => Promise<string>;
+  onProgress?: (done: number, total: number) => void;
+  signal?: AbortSignal;
+};
+
 export async function importProjectAsFragments(
   document: NexusDocumentPort,
   samplesApi: { download: NexusSamplesPort["download"] },
-  options: {
-    projectDisplayName: string;
-    getAuthToken: () => Promise<string>;
-    onProgress?: (done: number, total: number) => void;
-    signal?: AbortSignal;
-  },
+  options: ImportOptions,
 ): Promise<ProjectImportResult> {
   const sampleNames = listImportableSampleNames(document);
   if (sampleNames.length === 0) {
     return { imported: 0, failed: 0, totalSamples: 0 };
+  }
+
+  const sleep = (ms: number) =>
+    new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+  // A project with many samples can outrun the per-user ingest rate limit;
+  // honor Retry-After (or back off) rather than counting the sample as failed.
+  async function postWithRetry(
+    url: string,
+    body: FormData,
+    opts: ImportOptions,
+    attempts = 4,
+  ): Promise<Response> {
+    let response: Response | null = null;
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      const token = await opts.getAuthToken();
+      response = await fetch(url, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body,
+        signal: opts.signal,
+      });
+      const retryable = response.status === 429 || response.status >= 500;
+      if (!retryable || attempt === attempts - 1) return response;
+      const retryAfter = Number(response.headers.get("Retry-After"));
+      const waitMs = Number.isFinite(retryAfter) && retryAfter > 0
+        ? retryAfter * 1000
+        : 2000 * 2 ** attempt;
+      opts.signal?.throwIfAborted();
+      await sleep(waitMs);
+    }
+    return response as Response;
   }
 
   let imported = 0;
@@ -99,13 +133,7 @@ export async function importProjectAsFragments(
         `Imported from Audiotool project "${options.projectDisplayName}" ` +
           `(sample ${shortName}).`,
       );
-      const token = await options.getAuthToken();
-      const response = await fetch("/api/ingest", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-        signal: options.signal,
-      });
+      const response = await postWithRetry("/api/ingest", formData, options);
       if (response.ok) {
         imported++;
       } else {

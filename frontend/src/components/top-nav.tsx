@@ -8,11 +8,13 @@ import { useNotifications } from "@/hooks/use-notifications";
 import { signOut, signInWithGoogle } from "@/lib/firebase";
 import { Mic, Layers, Dna, LogOut, Bell, Sparkles, Check, Cable } from "lucide-react";
 
+// The session flow comes first; "/" redirects signed-in users there, so the
+// capture (library-building) flow lives at its own route.
 const navLinks = [
-  { href: "/", icon: Mic, label: "Capture" },
+  { href: "/audiotool", icon: Cable, label: "Session" },
+  { href: "/capture", icon: Mic, label: "Capture" },
   { href: "/projects", icon: Layers, label: "Projects" },
   { href: "/dna", icon: Dna, label: "DNA" },
-  { href: "/audiotool", icon: Cable, label: "Audiotool" },
 ] as const;
 
 function timeAgo(dateStr: string): string {
@@ -68,7 +70,7 @@ export function TopNav() {
         {!loading && user && (
           <nav className="flex items-center gap-1">
             {navLinks.map(({ href, icon: Icon, label }) => {
-              const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+              const active = pathname.startsWith(href);
               const tourId = href === "/projects" ? "nav-projects" : href === "/dna" ? "nav-dna" : undefined;
               return (
                 <Link

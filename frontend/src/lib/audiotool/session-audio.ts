@@ -21,8 +21,26 @@ type QueryPort = {
 
 export type SessionAudioResult = {
   embeddings: number[][];
+  /** 12-dim chroma per encoded sample, aligned with `embeddings`. */
+  chroma: number[][];
   sampleCount: number;
+  /** Samples that could not be downloaded from Audiotool. */
   failedCount: number;
+  /** Samples the backend could not decode or encode, with its reason. */
+  encodeFailures: { file: string; reason: string }[];
+  timedOut: boolean;
+  /** Set when the backend refused outright (e.g. CLAP disabled, HTTP 503). */
+  backendError: string | null;
+};
+
+const EMPTY: SessionAudioResult = {
+  embeddings: [],
+  chroma: [],
+  sampleCount: 0,
+  failedCount: 0,
+  encodeFailures: [],
+  timedOut: false,
+  backendError: null,
 };
 
 const MAX_SAMPLES = 8;
@@ -39,13 +57,13 @@ export async function extractSessionAudio(
   const query = document.queryEntities as QueryPort | undefined;
   if (!query) {
     console.info("[session-audio] document has no queryEntities port");
-    return { embeddings: [], sampleCount: 0, failedCount: 0 };
+    return { ...EMPTY };
   }
 
   const regions = query.ofTypes("audioRegion").get();
   if (regions.length === 0) {
     console.info("[session-audio] no audioRegion entities in document");
-    return { embeddings: [], sampleCount: 0, failedCount: 0 };
+    return { ...EMPTY };
   }
 
   // Each audioRegion references a sample entity via the `sample` field.
@@ -94,7 +112,7 @@ export async function extractSessionAudio(
       "regionFieldKeys=",
       Object.keys(regions[0]?.fields ?? {}),
     );
-    return { embeddings: [], sampleCount: 0, failedCount: 0 };
+    return { ...EMPTY };
   }
 
   // Download each sample as WAV and send to the backend for CLAP encoding.
@@ -116,7 +134,7 @@ export async function extractSessionAudio(
   }
 
   if (blobs.length === 0) {
-    return { embeddings: [], sampleCount: 0, failedCount };
+    return { ...EMPTY, failedCount };
   }
 
   const formData = new FormData();
@@ -132,13 +150,43 @@ export async function extractSessionAudio(
   });
 
   if (!response.ok) {
-    return { embeddings: [], sampleCount: blobs.length, failedCount };
+    let detail = `HTTP ${response.status}`;
+    try {
+      const body = (await response.json()) as { detail?: unknown };
+      if (typeof body.detail === "string") detail = body.detail;
+    } catch {
+      // keep the status text
+    }
+    return { ...EMPTY, sampleCount: blobs.length, failedCount, backendError: detail };
   }
 
-  const data = (await response.json()) as { embeddings: number[][] };
+  const data = (await response.json()) as {
+    embeddings: number[][];
+    chroma?: number[][];
+    failed?: { file: string; reason: string }[];
+    timed_out?: boolean;
+  };
   return {
     embeddings: data.embeddings,
+    chroma: data.chroma ?? [],
     sampleCount: blobs.length,
     failedCount,
+    encodeFailures: data.failed ?? [],
+    timedOut: data.timed_out ?? false,
+    backendError: null,
   };
+}
+
+/** One-line explanation of why session audio may be missing, for the UI. */
+export function describeSessionAudio(result: SessionAudioResult): string | null {
+  if (result.backendError) return `Session audio unavailable: ${result.backendError}`;
+  const parts: string[] = [];
+  if (result.failedCount > 0) parts.push(`${result.failedCount} could not be downloaded`);
+  if (result.encodeFailures.length > 0) parts.push(`${result.encodeFailures.length} could not be encoded`);
+  if (result.timedOut) parts.push("encoding timed out");
+  if (result.embeddings.length === 0 && result.sampleCount === 0 && parts.length === 0) {
+    return "No audio regions in this session; audio-based rankers fall back to rules.";
+  }
+  if (parts.length === 0) return null;
+  return `${result.embeddings.length}/${result.sampleCount + result.failedCount} session samples encoded (${parts.join(", ")}).`;
 }

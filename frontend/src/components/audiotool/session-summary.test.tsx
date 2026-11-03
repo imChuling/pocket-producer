@@ -10,8 +10,12 @@ vi.mock("@/lib/ranking-api", () => ({ parseIntent: parseIntentMock }));
 
 afterEach(() => {
   cleanup();
+  // A reset mock returns undefined; the component's debounced parseIntent
+  // call can fire after a test ends and would then hit `.then` on undefined.
   parseIntentMock.mockReset();
+  parseIntentMock.mockResolvedValue(null);
 });
+parseIntentMock.mockResolvedValue(null);
 
 function fingerprint(textIntent = ""): SessionFingerprint {
   return {

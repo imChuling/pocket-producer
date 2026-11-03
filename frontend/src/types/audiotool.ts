@@ -26,6 +26,8 @@ export type SessionFingerprint = {
   context_tags?: string[];
   /** Server-populated when session region audio is available; never set by the browser. */
   region_audio_embeddings?: number[][] | null;
+  /** 12-dim chroma per session region, from the same backend encode call. */
+  region_chroma_vectors?: number[][] | null;
   /** User-approved LLM interpretation of text_intent; null degrades to raw text matching. */
   parsed_intent?: ParsedIntent | null;
 };

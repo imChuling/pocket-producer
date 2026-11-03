@@ -23,7 +23,15 @@ export async function apiFetch<T>(
       if (!res.ok) {
         const body = await res.text().catch(() => "");
         if (res.status === 429) {
-          throw new Error("Too many requests. Please wait a moment and try again.");
+          // The daily trial allowance returns an explanatory detail; plain
+          // rate limiting does not.
+          let detail = "";
+          try {
+            detail = (JSON.parse(body) as { detail?: string }).detail ?? "";
+          } catch {
+            // not JSON
+          }
+          throw new Error(detail || "Too many requests. Please wait a moment and try again.");
         }
         if (attempt === 0 && res.status >= 500) {
           await new Promise((r) => setTimeout(r, 1000));

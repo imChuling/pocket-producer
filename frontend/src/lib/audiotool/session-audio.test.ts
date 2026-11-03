@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { extractSessionAudio } from "./session-audio";
+import { describeSessionAudio, extractSessionAudio } from "./session-audio";
 import type { NexusDocumentPort } from "@/types/audiotool";
 
 function fakeDocument(
@@ -104,6 +104,65 @@ describe("extractSessionAudio", () => {
     expect(result.sampleCount).toBe(2);
 
     vi.unstubAllGlobals();
+  });
+
+  it("carries chroma, encode failures and timeout from the backend", async () => {
+    const doc = fakeDocument(
+      [{ id: "r1", sampleRef: "s1" }],
+      [{ id: "s1", sampleName: "samples/aaa" }],
+    );
+    const download = vi.fn(async () => new Blob(["wav"]));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          embeddings: [[1, 2]],
+          chroma: [[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0]],
+          failed: [{ file: "b.wav", reason: "LibsndfileError" }],
+          timed_out: true,
+        }),
+      })),
+    );
+    try {
+      const result = await extractSessionAudio(doc, { download }, {
+        backendUrl: "/embed",
+        authToken: "tok",
+      });
+      expect(result.chroma).toHaveLength(1);
+      expect(result.encodeFailures).toEqual([{ file: "b.wav", reason: "LibsndfileError" }]);
+      expect(result.timedOut).toBe(true);
+      expect(describeSessionAudio(result)).toMatch(/1 could not be encoded, encoding timed out/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("surfaces a backend refusal as the reason for falling back", async () => {
+    const doc = fakeDocument(
+      [{ id: "r1", sampleRef: "s1" }],
+      [{ id: "s1", sampleName: "samples/aaa" }],
+    );
+    const download = vi.fn(async () => new Blob(["wav"]));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: false,
+        status: 503,
+        json: async () => ({ detail: "CLAP encoding is not enabled on this server" }),
+      })),
+    );
+    try {
+      const result = await extractSessionAudio(doc, { download }, {
+        backendUrl: "/embed",
+        authToken: "tok",
+      });
+      expect(result.embeddings).toEqual([]);
+      expect(result.backendError).toBe("CLAP encoding is not enabled on this server");
+      expect(describeSessionAudio(result)).toMatch(/not enabled/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("counts download failures without crashing", async () => {

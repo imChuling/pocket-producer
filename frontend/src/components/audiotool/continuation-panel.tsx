@@ -57,6 +57,7 @@ export function ContinuationPanel({
   availableModels,
   requestRecommendations,
   onIntentChange,
+  sessionAudioNote,
   parsedIntent,
   onParsedIntentChange,
   onPreview,
@@ -73,6 +74,8 @@ export function ContinuationPanel({
     modelId: string,
   ) => Promise<RankResponse>;
   onIntentChange: (intent: string) => void;
+  /** Why session audio may be missing; explains a fallback to rules. */
+  sessionAudioNote?: string | null;
   /** User-approved LLM reading of the intent; rendered as removable chips. */
   parsedIntent?: ParsedIntent | null;
   onParsedIntentChange?: (parsed: ParsedIntent | null) => void;
@@ -233,7 +236,10 @@ export function ContinuationPanel({
         </button>
         {response &&
           (response.fallback_used ? (
-            <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs text-amber-800">
+            <span
+              title={sessionAudioNote ?? undefined}
+              className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs text-amber-800"
+            >
               Fallback to {response.model_id}
             </span>
           ) : (
@@ -242,6 +248,9 @@ export function ContinuationPanel({
             </span>
           ))}
       </div>
+      {response?.fallback_used && sessionAudioNote && (
+        <p className="text-xs text-amber-800">{sessionAudioNote}</p>
+      )}
       {status === "error" && (
         <div
           role="alert"
