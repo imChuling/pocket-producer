@@ -10,12 +10,145 @@ Pocket Producer runs as two deployed services:
 
 1. **Backend** (Cloud Run): FastAPI app + MongoDB MCP Server in a single
    container. Handles auth, audio storage, Gemini tagging, the ADK agent
-   pipeline, and all database operations.
+   pipeline, session-conditioned ranking, and all database operations.
 2. **Frontend** (Vercel): Next.js 16 PWA with responsive UI for capture,
-   project browsing, Creative DNA visualization, and notifications.
+   project browsing, Creative DNA visualization, notifications, and the
+   Audiotool integration (Nexus SDK runs in the browser).
+
+The codebase has two layers. The **ranking layer** (`backend/ranking/`,
+`/api/ranking/*`, `frontend/src/lib/audiotool/`) is what the ISMIR 2026
+paper describes and is covered first. The **capture and memory layer**
+(ingest pipeline, ADK agents, skills, Rescue Score, Creative DNA) builds the
+fragment library the ranker reads and is documented after it.
 
 Both communicate over HTTPS. Firebase Auth issues ID tokens on the frontend;
 the backend verifies them on every request.
+
+---
+
+## Session-Conditioned Ranking
+
+Given an open Audiotool project and the user's own fragment library, return
+a few fragments that could continue the piece, each with evidence, and let
+the user insert and undo. The ranker never calls Gemini: the only LLM call
+in this layer is the optional intent parser, and it runs off the rank path.
+
+### Request flow
+
+1. **Session fingerprint** (`frontend/src/lib/audiotool/session-fingerprint.ts`).
+   The browser walks the Nexus document: tempo from the `config` entity's
+   `tempoBpm`, the set of active track types (audio, note, pattern,
+   automation), playhead position, up to 20 recently touched entity ids, and
+   the user's free-text intent capped at 240 characters. Audiotool documents
+   carry no key signature, so `key` is always `null`; it is never estimated.
+   Only this fingerprint leaves the browser, never the project.
+2. **Session audio** (optional, `session-audio.ts`). Up to 8 unique samples
+   referenced by audio regions are downloaded through `samples.download()`
+   and posted to `POST /api/ranking/session-embed`, which encodes them with
+   MS-CLAP and returns one vector per sample. These become
+   `region_audio_embeddings` on the fingerprint. The endpoint answers 503
+   unless `POCKET_ENABLE_CLAP=1`; the client then ranks without audio.
+3. **Intent parsing** (optional, `POST /api/ranking/intent`). One Gemini
+   call turns free text ("darker, more cinematic") into a `ParsedIntent`
+   (tags, roles, bpm, key). The client shows the result as removable chips
+   after the user pauses typing for 800 ms and echoes back only what the
+   user left standing. On the rank path `apply_parsed_intent` is a pure
+   function: live session values always win, the parsed values only fill
+   blanks and widen the intent token set.
+4. **Rank** (`POST /api/ranking/rank`). Candidates arrive as ids plus
+   metadata; vectors never travel from the browser. `attach_audio_embeddings`
+   looks up each candidate's `representations.audio_semantic.vector` and
+   legacy text `embedding`, scoped to the authenticated user, so a request
+   cannot rank against another user's representations. The selected ranker
+   runs in a worker thread with a 2 s budget. A timeout, an exception, or an
+   unhealthy adapter all resolve to `rules-v1` with `fallback_used: true`,
+   which the UI surfaces. The served list is written to `ranking_requests`
+   (ids and ranking metadata only: no intent text, no embeddings) so later
+   feedback has a denominator.
+5. **Response.** `request_id`, the `model_id` actually served,
+   `fallback_used`, and the ranked candidates, each with a score and a list
+   of evidence items (`code`, human-readable `label`, numeric
+   `contribution`). Evidence comes from the ranker's own features, not from
+   generated text.
+
+### Ranker registry (`backend/ranking/registry.py`, `service.py`)
+
+Every ranker implements `healthy()` and `rank(request)`. `rules-v1` is
+always registered and is the fallback for any requested model that is
+missing or unhealthy. Rankers whose inputs are absent raise instead of
+scoring on partial signals, and the service degrades to rules.
+
+| Model id | Needs | Notes |
+|---|---|---|
+| `rules-v1` | metadata only | Six deterministic [0,1] features with hand-tuned weights: tempo 0.30, intent 0.25, key 0.20, track gap 0.10, novelty 0.10, recency 0.05 |
+| `recency-v1` | `created_at` | Newest first |
+| `text-only-v1` | Voyage text vectors | Intent encoded with the same frozen `voyage-3` model |
+| `mean-session-v1` | region audio embeddings | Cosine to the mean of the session's CLAP vectors |
+| `harmonic-fit-v1` | 12-dim chroma on regions and candidates | Transpose-invariant cross-correlation; nothing populates chroma online yet, so it falls back in the deployed app |
+| `audio-cosine-v1` | `POCKET_ENABLE_CLAP=1` | Intent text encoded into MS-CLAP audio space, cosine against candidate audio |
+| `role-gap-v1` | `POCKET_ENABLE_CLAP=1`, region audio embeddings | Zero-shot role probe; rewards roles the session lacks |
+| `fusion-5sig-v1` | region audio embeddings, `artifacts/fusion-deploy/weights.json` | BPR-trained weights over audio cosine (mean, max), tempo, key, tag Jaccard; key is always zero online |
+| `linear-v1`, `deepsets-v1`, `pocketrank-context-v1` | `POCKET_LADDER_DIR` checkpoints | Research capacity ladder; not registered in the default deployment |
+
+Evidence codes are a closed set on `RankEvidence`: `tempo_match`,
+`key_match`, `track_gap`, `intent_match`, `novelty`, `recency`,
+`model_signal`, `role_gap_fill`, `harmonic_fit`, `timbral_match`,
+`tag_overlap`.
+
+### Representation contract (`backend/ranking/representations.py`)
+
+No vector is stored without lineage. A `RepresentationRecord` carries
+`modality` (text, audio_semantic, audio_music), `model_id`, `revision`
+(sha256 of the weights), `dims`, `input_sha256`, `sample_rate`,
+`window_policy`, `pooling`, `created_at`, and `license`; dims must match the
+vector length and every value must be finite. Different models never share
+a field. The historical `embedding` field is registered as what it is, a
+`voyage-3` text embedding, regardless of the fragment's media type.
+
+New audio fragments are encoded on upload (`backend/ranking/ingest.py`):
+resampled to 44.1 kHz mono, hashed, and skipped when the stored record
+already has the same input hash and model revision. The same pass stores the
+top five zero-shot style scores under `style_scores`.
+
+### Insert, undo, feedback (`frontend/src/lib/audiotool/insert-fragment.ts`)
+
+Order is strict. The sample is uploaded first and the code waits for the
+server to acknowledge the bytes; only then is the document modified, in a
+single `document.modify` transaction that inserts the sample at the playhead
+(seconds converted to ticks at the project tempo, or the fragment's tempo,
+or 120 BPM). The transaction returns an `InsertReceipt` listing every entity
+id that did not exist before it ran. `undoInsert` removes exactly those ids,
+in reverse creation order, with `removeWithDependencies`, skipping any the
+user already deleted.
+
+Feedback events (`preview`, `accept`, `reject`, `insert`, `undo`) carry the
+`request_id`, `fragment_id`, `rank_position`, and `model_id` of the served
+list and are written to `ranking_feedback`. The client queues them and
+retries on failure so a flaky connection never blocks the editing loop.
+`user_id` comes from the verified Firebase token only; Audiotool OAuth
+tokens stay inside the Nexus client and are never sent to the backend.
+
+### Project import (`frontend/src/lib/audiotool/import-project.ts`)
+
+Each unique sample referenced by an audio region in the open project is
+downloaded through `samples.download()` and posted to the ordinary
+`/api/ingest` path with a provenance note naming the source project. No new
+backend surface: tagging and CLAP encoding reuse the standard pipeline, so
+old projects become rankable material for new sessions.
+
+### Blind pairwise annotation (research only)
+
+`/annotate` (dev builds only; the route returns 404 in production) serves
+pairs from `annotation_pairs` through `GET /api/ranking/pairs/next` and
+records choices (`left`, `right`, `neither`), a closed set of reason codes,
+and a 1–5 confidence in `annotation_labels`. Model identities are hidden
+from the rater and the label is stored with `models_hidden: true`.
+
+### Rate limits
+
+Per IP, via slowapi: `/model-card` 30/min, `/rank` 20/min, `/intent`
+15/min, `/session-embed` 10/min (at most 8 files of 20 MB), `/pairs/*`
+30/min, `/feedback` 30/min.
 
 ---
 
@@ -566,11 +699,15 @@ The frontend runs separately with `pnpm dev`.
 
 | Route | Purpose |
 |---|---|
-| `/` | Home — audio recorder, text input, file dropzone, fragment feed |
+| `/` | Capture — audio recorder, text input, file dropzone, Audiotool import, fragment feed |
+| `/audiotool` | Audiotool integration — connect, session summary, suggestions, preview, insert, undo |
 | `/projects` | Project list sorted by Rescue Score |
 | `/projects/[id]` | Project detail with member fragments |
 | `/dna` | Creative DNA — emotion radar, theme bar, hourly heatmap |
+| `/annotate` | Blind pairwise annotation for the research protocol (dev builds only) |
+| `/figure` | Fixture page used to render the paper's UI figure (dev builds only) |
 | `/login` | Firebase Google sign-in |
+| `/privacy` | Privacy notice |
 
 ### Key Components
 
@@ -580,11 +717,15 @@ The frontend runs separately with `pnpm dev`.
   player, creator notes editor, reanalyze button (hover). Reanalyze re-runs
   the full pipeline including project re-evaluation.
 - `RescueScore` — visual score breakdown with component bars
-- `EmotionRadar` — Recharts radar chart for emotion distribution
+- `EmotionRadar` — radar chart for emotion distribution
 - `HourlyHeatmap` — creation time patterns visualization
 - `ThemeBar` — theme frequency bar chart
-- `AmbientBackground` — generative canvas background
-- `TopNav` / `BottomNav` — responsive navigation
+- `FragmentNetwork` — canvas graph of fragment connections
+- `AudiotoolImporter` — one-click import of an open project's samples
+- `audiotool/ConnectionPanel`, `SessionSummary`, `ContinuationPanel`,
+  `CandidateCard` — the suggest → preview → insert → undo loop
+- `annotate/AnnotatePanel` — blind A/B rater interface
+- `TopNav` — responsive navigation
 - `ServiceWorkerRegister` — PWA service worker setup
 
 ### Design
@@ -602,7 +743,9 @@ The frontend runs separately with `pnpm dev`.
 - `use-fragments.ts` — fragment list with polling for processing status
 - `use-projects.ts` — project list fetching
 - `use-notifications.ts` — notification list with unread count
+- `use-audiotool.ts` — Nexus client lifecycle (OAuth, document open/close)
 - `api.ts` — centralized API client with auth token injection
+- `ranking-api.ts` — `/api/ranking` client with a retrying feedback queue
 
 ---
 

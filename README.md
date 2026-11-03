@@ -89,6 +89,8 @@ contributes. That gap is what the evaluation protocol here targets.
 
 ## The loop
 
+![System overview: the live Audiotool session is fingerprinted, the ranker proposes candidates with per-signal evidence, and the musician previews, inserts, or undoes](docs/system-figure.png)
+
 ```text
 Audiotool project (live, via Nexus SDK)
   → session fingerprint      tempo · track roles · playhead · your stated intent
