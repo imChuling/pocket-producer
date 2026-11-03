@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pair Rating</title>
+<style>
+  :root { --fg: #1c1c1e; --muted: #6b6b70; --line: #d9d9de; --accent: #2a5db0; --bg: #fafafa; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #ececf0; --muted: #9a9aa3; --line: #3a3a42; --accent: #7aa7ff; --bg: #141418; } }
+  body { margin: 0; padding: 24px 16px 48px; background: var(--bg); color: var(--fg); font: 16px/1.5 -apple-system, "Helvetica Neue", Arial, sans-serif; max-width: 720px; margin-inline: auto; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-top: 16px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:disabled { opacity: .45; cursor: default; }
+  button.choice.selected { outline: 3px solid var(--accent); }
+  audio { width: 100%; margin-top: 6px; }
+  label.ctx { display: block; font-size: 13px; color: var(--muted); margin-top: 8px; }
+  input[type=number], textarea { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--fg); }
+  textarea { width: 100%; box-sizing: border-box; min-height: 56px; }
+  .hidden { display: none; }
+  .progress { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<h1>Which candidate fits better as the next loop in this session?</h1>
+<div class="muted">Listen to the session loops, then A and B. Pick one, or "No preference". Pair ids are hidden until export.</div>
+
+<section id="setup" class="card">
+  <div class="row">
+    <label>Session number <input id="session" type="number" min="1" max="9" value="1" style="width:64px"></label>
+    <label>Listener id <input id="rater" type="text" value="self" style="width:100px; font: inherit; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--fg)"></label>
+    <button id="start" class="primary">Start</button>
+  </div>
+  <div class="muted" style="margin-top:8px">Order and A/B sides are seeded by the session number. Open this file from the <code>listening_test/</code> folder so <code>../fsld/previews/</code> resolves.</div>
+</section>
+
+<section id="trial" class="card hidden">
+  <div class="row" style="justify-content:space-between">
+    <span class="progress" id="progress"></span>
+    <span class="muted" id="timer">0 s</span>
+  </div>
+  <div style="margin-top:12px"><strong>Session</strong> <span class="muted">(existing loops)</span></div>
+  <div id="context"></div>
+  <div style="margin-top:16px"><strong>Candidate A</strong><audio id="audioA" controls preload="auto"></audio></div>
+  <div style="margin-top:12px"><strong>Candidate B</strong><audio id="audioB" controls preload="auto"></audio></div>
+  <div class="row" style="margin-top:16px">
+    <button class="choice" data-choice="A">A fits better</button>
+    <button class="choice" data-choice="B">B fits better</button>
+    <button class="choice" data-choice="no_preference">No preference</button>
+  </div>
+  <textarea id="reason" placeholder="Why? (optional)" style="margin-top:12px"></textarea>
+  <div class="row" style="margin-top:12px; justify-content:flex-end">
+    <button id="next" class="primary" disabled>Next</button>
+  </div>
+</section>
+
+<section id="done" class="card hidden">
+  <div><strong>Session complete.</strong> <span id="summary" class="muted"></span></div>
+  <div class="row" style="margin-top:12px">
+    <button id="download" class="primary">Download responses JSON</button>
+  </div>
+  <div class="muted" style="margin-top:8px">Save it as <code>responses/self_s&lt;n&gt;.json</code> next to this file, then run <code>research/analyze_human_eval_v1.py</code>.</div>
+</section>
+
+<script>
+(function () {
+  const PAIRS_URL = "pairs.json";
+  const PREVIEW_DIR = "../fsld/previews/";
+  const fsid = (id) => id.split(":")[1];
+  const src = (id) => PREVIEW_DIR + fsid(id) + ".mp3";
+
+  // Mulberry32: small seeded PRNG so a session is reproducible from its number.
+  function rng(seed) {
+    let a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function shuffle(arr, rand) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  const $ = (id) => document.getElementById(id);
+  let trials = [], index = 0, responses = [], choice = null, t0 = 0, timerId = null, session = 1, rater = "self";
+
+  async function start() {
+    session = parseInt($("session").value, 10) || 1;
+    rater = ($("rater").value || "self").trim();
+    let manifest;
+    try {
+      manifest = await (await fetch(PAIRS_URL)).json();
+    } catch (e) {
+      alert("Could not load pairs.json. Serve this folder over HTTP (e.g. python3 -m http.server) or allow local file access.");
+      return;
+    }
+    const rand = rng(20261017 + session * 1000);
+    trials = shuffle(manifest.pairs.slice(), rand).map((p) => {
+      const positiveSide = rand() < 0.5 ? "A" : "B";
+      return {
+        pair_id: p.pair_id,
+        context_ids: p.context_ids,
+        a: positiveSide === "A" ? p.positive_id : p.negative_id,
+        b: positiveSide === "A" ? p.negative_id : p.positive_id,
+        positive_side: positiveSide,
+      };
+    });
+    index = 0; responses = [];
+    $("setup").classList.add("hidden");
+    $("trial").classList.remove("hidden");
+    show();
+  }
+
+  function stopAll() {
+    document.querySelectorAll("audio").forEach((a) => { a.pause(); });
+  }
+
+  function show() {
+    const t = trials[index];
+    choice = null;
+    $("reason").value = "";
+    $("next").disabled = true;
+    document.querySelectorAll(".choice").forEach((b) => b.classList.remove("selected"));
+    $("progress").textContent = `Pair ${index + 1} / ${trials.length}`;
+    const ctx = $("context");
+    ctx.innerHTML = "";
+    t.context_ids.forEach((id, i) => {
+      const label = document.createElement("label");
+      label.className = "ctx";
+      label.textContent = `Loop ${i + 1}`;
+      const audio = document.createElement("audio");
+      audio.controls = true; audio.preload = "auto"; audio.src = src(id);
+      label.appendChild(audio);
+      ctx.appendChild(label);
+    });
+    $("audioA").src = src(t.a);
+    $("audioB").src = src(t.b);
+    t0 = performance.now();
+    clearInterval(timerId);
+    timerId = setInterval(() => { $("timer").textContent = `${Math.round((performance.now() - t0) / 1000)} s`; }, 1000);
+  }
+
+  document.querySelectorAll(".choice").forEach((b) => {
+    b.addEventListener("click", () => {
+      choice = b.dataset.choice;
+      document.querySelectorAll(".choice").forEach((x) => x.classList.toggle("selected", x === b));
+      $("next").disabled = false;
+    });
+  });
+
+  $("next").addEventListener("click", () => {
+    const t = trials[index];
+    responses.push({
+      pair_id: t.pair_id,
+      choice,
+      positive_side: t.positive_side,
+      reason: $("reason").value.trim(),
+      time_seconds: Math.round((performance.now() - t0) / 1000),
+    });
+    stopAll();
+    index += 1;
+    if (index < trials.length) { show(); return; }
+    clearInterval(timerId);
+    $("trial").classList.add("hidden");
+    $("done").classList.remove("hidden");
+    const noPref = responses.filter((r) => r.choice === "no_preference").length;
+    $("summary").textContent = `${responses.length} pairs, ${noPref} no-preference.`;
+  });
+
+  $("download").addEventListener("click", () => {
+    const payload = {
+      rater_id: `${rater}_s${session}`,
+      session,
+      seed: 20261017 + session * 1000,
+      timestamp: new Date().toISOString(),
+      responses,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${rater}_s${session}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  $("start").addEventListener("click", start);
+})();
+</script>
+</body>
+</html>

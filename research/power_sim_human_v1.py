@@ -1,104 +1,69 @@
-"""Power simulation for prereg_human_v1.md, section 4.1.
+"""Power for prereg_human_v1.md section 4.1 (single-rater, pair-level design).
 
-Simulates the primary analysis (McNemar on paired agreement indicators,
-rater-clustered bootstrap on the delta) under a specified true effect, with
-the actual pair manifest: only pairs where fusion_pick != cosine_pick can
-produce discordant observations, so power is driven by that subset.
+The unit of analysis is the pair: three sessions by one listener are
+collapsed to a majority vote. Only pairs where fusion_pick != cosine_pick
+can separate the two rankers, so the primary test is an exact two-sided
+binomial on that subset. This script reports the critical count and the
+power at several per-session preference strengths, propagating a
+per-session P(side with fusion) through the 3-session majority vote.
 
 Usage:
   backend/.venv/bin/python research/power_sim_human_v1.py \
-    --pairs research/data/listening_test/pairs.json --raters 10
+    --pairs research/data/listening_test/pairs.json
 """
 
 import argparse
 import json
 import pathlib
 
-import numpy as np
-from scipy.stats import chi2 as chi2_dist
+from scipy.stats import binom
 
 ALPHA = 0.05
+SESSIONS = 3
 
 
-def simulate_once(rng, n_disagree, n_agree, n_raters, p_fusion, p_nopref, p_agree_both):
-    """One synthetic study. Returns (delta, mcnemar_p).
+def critical_count(n: int, alpha: float) -> int:
+    """Smallest k with two-sided exact P(X >= k | p = 0.5) <= alpha."""
+    return next(k for k in range(n + 1) if 2 * binom.sf(k - 1, n, 0.5) <= alpha)
 
-    On disagreement pairs a rater sides with fusion's pick with prob p_fusion
-    (else cosine's pick). On agreement pairs both rankers pick the same item
-    and the rater matches it with prob p_agree_both. No-preference answers
-    are dropped, as in the analysis plan.
-    """
-    f, c = [], []
-    for _ in range(n_raters):
-        for _ in range(n_disagree):
-            if rng.random() < p_nopref:
-                continue
-            sides_with_fusion = rng.random() < p_fusion
-            f.append(1.0 if sides_with_fusion else 0.0)
-            c.append(0.0 if sides_with_fusion else 1.0)
-        for _ in range(n_agree):
-            if rng.random() < p_nopref:
-                continue
-            match = 1.0 if rng.random() < p_agree_both else 0.0
-            f.append(match)
-            c.append(match)
-    f = np.array(f)
-    c = np.array(c)
-    a_only = np.sum((f == 1) & (c == 0))
-    b_only = np.sum((f == 0) & (c == 1))
-    n_d = a_only + b_only
-    if n_d == 0:
-        return 0.0, 1.0
-    chi2 = (abs(a_only - b_only) - 1) ** 2 / n_d
-    return float(f.mean() - c.mean()), float(chi2_dist.sf(chi2, df=1))
+
+def majority_prob(p_session: float, sessions: int = SESSIONS) -> float:
+    """P(majority of `sessions` votes side with fusion | per-session p)."""
+    return float(binom.sf(sessions // 2, sessions, p_session))
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--pairs", default="research/data/listening_test/pairs.json")
-    parser.add_argument("--raters", type=int, nargs="+", default=[10, 15])
-    parser.add_argument("--sims", type=int, default=2000)
-    parser.add_argument("--nopref", type=float, default=0.15)
     parser.add_argument("--output", default="artifacts/human-eval-v1/power_sim.json")
     args = parser.parse_args()
 
-    manifest = json.loads(pathlib.Path(args.pairs).read_text())
-    pairs = manifest["pairs"]
-    n_disagree = sum(1 for p in pairs if p["fusion_pick"] != p["cosine_pick"])
-    n_agree = len(pairs) - n_disagree
-    print(f"{len(pairs)} pairs: {n_disagree} discordant-capable, {n_agree} concordant")
+    pairs = json.loads(pathlib.Path(args.pairs).read_text())["pairs"]
+    n = sum(1 for p in pairs if p["fusion_pick"] != p["cosine_pick"])
+    k = critical_count(n, ALPHA)
+    p_crit = 2 * binom.sf(k - 1, n, 0.5)
+    print(f"{len(pairs)} pairs, {n} discordant-capable; reject H0 at >= {k}/{n} "
+          f"(exact two-sided p = {p_crit:.3f})")
 
-    rng = np.random.default_rng(20261018)
-    results = {}
-    for n_raters in args.raters:
-        for p_fusion in (0.55, 0.60, 0.65, 0.70, 0.75):
-            deltas, ps = [], []
-            for _ in range(args.sims):
-                d, p = simulate_once(rng, n_disagree, n_agree, n_raters, p_fusion,
-                                     args.nopref, p_agree_both=0.7)
-                deltas.append(d)
-                ps.append(p)
-            power = float(np.mean(np.array(ps) < ALPHA))
-            mean_delta = float(np.mean(deltas))
-            results[f"raters={n_raters},p_fusion={p_fusion}"] = {
-                "n_raters": n_raters, "p_fusion_on_discordant": p_fusion,
-                "expected_overall_delta_pp": round(mean_delta * 100, 1),
-                "power": round(power, 3),
-            }
-            print(f"  raters={n_raters:2d}  P(side with fusion | discordant)={p_fusion:.2f}  "
-                  f"overall delta={mean_delta * 100:+5.1f} pp  power={power:.2f}")
+    rows = []
+    for p_session in (0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90):
+        p_pair = majority_prob(p_session)
+        power = float(binom.sf(k - 1, n, p_pair))
+        rows.append({"p_session": p_session, "p_pair_majority": round(p_pair, 3),
+                     "power": round(power, 3)})
+        print(f"  per-session P(fusion)={p_session:.2f}  "
+              f"pair-level={p_pair:.3f}  power={power:.2f}")
 
     out = pathlib.Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps({
-        "protocol": "research/prereg_human_v1.md section 4.1",
+        "protocol": "research/prereg_human_v1.md section 4.1 (single rater, pair-level)",
         "pairs_file": args.pairs,
-        "n_pairs": len(pairs), "n_discordant_capable": n_disagree, "n_concordant": n_agree,
-        "no_preference_rate_assumed": args.nopref, "p_agree_both_assumed": 0.7,
-        "sims_per_cell": args.sims, "alpha": ALPHA,
-        "results": results,
-        "note": "McNemar with continuity correction on all valid (rater, pair) observations; "
-                "only discordant-capable pairs contribute to the test statistic.",
+        "n_pairs": len(pairs), "n_discordant_capable": n, "sessions": SESSIONS,
+        "alpha": ALPHA, "critical_count": k, "critical_p_two_sided": round(p_crit, 4),
+        "power": rows,
+        "note": "exact binomial on majority-vote labels over the discordant-capable pairs; "
+                "sessions from one listener are not treated as independent observations",
     }, indent=2))
     print(f"-> {out}")
     return 0

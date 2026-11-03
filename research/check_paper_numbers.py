@@ -43,6 +43,7 @@ MSCLAP_CORRECTION = ROOT / "artifacts" / "msclap-sensitivity-correction" / "sens
 
 failures = []
 passes = []
+skipped = []
 
 
 def check(label, expected, actual, tol=0.0015):
@@ -61,6 +62,9 @@ def _normalize_ws(s):
 
 
 def check_in_tex(label, needle, tex):
+    if not tex:
+        skipped.append(f"  SKIP  tex/{label}: paper source not present")
+        return
     if _normalize_ws(needle) in _normalize_ws(tex):
         passes.append(f"  PASS  tex/{label}: '{needle}' found")
     else:
@@ -68,6 +72,9 @@ def check_in_tex(label, needle, tex):
 
 
 def check_not_in_tex(label, needle, tex):
+    if not tex:
+        skipped.append(f"  SKIP  tex/{label}: paper source not present")
+        return
     if _normalize_ws(needle) not in _normalize_ws(tex):
         passes.append(f"  PASS  tex/{label}: '{needle}' correctly absent")
     else:
@@ -407,7 +414,7 @@ def check_ledger_consistency():
     """Verify claim-evidence ledger references current paper structure."""
     ledger_path = ROOT / "docs" / "ismir2026" / "claim-evidence-ledger.md"
     if not ledger_path.exists():
-        failures.append("  MISS  claim-evidence-ledger.md not found")
+        skipped.append("  SKIP  claim-evidence-ledger.md not present (private paper dir)")
         return
 
     text = ledger_path.read_text()
@@ -473,7 +480,7 @@ def main():
             print(line)
 
     print()
-    print(f"  {len(passes)} passed, {len(failures)} failed")
+    print(f"  {len(passes)} passed, {len(failures)} failed, {len(skipped)} skipped")
     print("=" * 60)
     return 1 if failures else 0
 

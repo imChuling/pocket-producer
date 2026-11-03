@@ -1,7 +1,9 @@
-"""Analyze human listening evaluation results.
+"""Analyze the single-listener pairwise evaluation.
 
-Pre-registered analysis script for prereg_human_v1.md.
-Must be committed before first data collection session.
+Pre-registered analysis script for prereg_human_v1.md (N-of-1 design):
+each file under --responses is one session by the same listener; sessions
+are collapsed to a per-pair majority vote and all primary statistics are
+computed at the pair level. Must be committed before the first session.
 
 Usage:
   python research/analyze_human_eval_v1.py \
@@ -130,50 +132,112 @@ def mcnemar_test(obs_a, obs_b):
     }
 
 
-def bootstrap_delta_ci(obs_a, obs_b, rater_ids, n_bootstrap=10000, alpha=0.05):
-    rng = np.random.default_rng(42)
-    a = np.array(obs_a)
-    b = np.array(obs_b)
-    rids = np.array(rater_ids)
+def majority_votes(sessions, pairs_manifest):
+    """Collapse one listener's sessions to a per-pair label.
 
-    unique_raters = np.unique(rids)
-    n_raters = len(unique_raters)
+    Returns {pair_id: "positive" | "negative" | None}; None when fewer than
+    two sessions expressed a preference or the preferences tie.
+    """
+    votes = {p["pair_id"]: [] for p in pairs_manifest["pairs"]}
+    for session in sessions:
+        for resp in session["responses"]:
+            pid = resp["pair_id"]
+            if pid not in votes or resp["choice"] == "no_preference":
+                continue
+            if "positive_side" not in resp:
+                raise KeyError(f"response for {pid} is missing 'positive_side'")
+            votes[pid].append(resp["choice"] == resp["positive_side"])
+    labels = {}
+    for pid, v in votes.items():
+        pos = sum(v)
+        neg = len(v) - pos
+        labels[pid] = "positive" if pos > neg else "negative" if neg > pos else None
+    return labels
 
-    point_delta = float(a.mean() - b.mean())
-    deltas = np.empty(n_bootstrap)
 
-    for i in range(n_bootstrap):
-        sampled = rng.choice(unique_raters, size=n_raters, replace=True)
-        idx = np.concatenate([np.where(rids == r)[0] for r in sampled])
-        deltas[i] = a[idx].mean() - b[idx].mean()
+def pair_level_test(labels, pairs_manifest, ranker_a="fusion", ranker_b="cosine"):
+    """Exact binomial on pairs where the two rankers pick different candidates."""
+    from scipy.stats import binomtest
 
-    lo = float(np.percentile(deltas, 100 * alpha / 2))
-    hi = float(np.percentile(deltas, 100 * (1 - alpha / 2)))
-
+    pair_lookup = {p["pair_id"]: p for p in pairs_manifest["pairs"]}
+    sides_a = 0
+    n = 0
+    for pid, label in labels.items():
+        pair = pair_lookup[pid]
+        if label is None or pair[f"{ranker_a}_pick"] == pair[f"{ranker_b}_pick"]:
+            continue
+        n += 1
+        sides_a += label == pair[f"{ranker_a}_pick"]
+    if n == 0:
+        return {"n_discordant_pairs": 0}
+    test = binomtest(sides_a, n, 0.5, alternative="two-sided")
+    ci = test.proportion_ci(confidence_level=0.95, method="exact")
     return {
-        "point_delta": round(point_delta, 4),
-        "ci_lo": round(lo, 4),
-        "ci_hi": round(hi, 4),
-        "n_bootstrap": n_bootstrap,
-        "alpha": alpha,
+        "n_discordant_pairs": n,
+        f"sides_with_{ranker_a}": int(sides_a),
+        "p_two_sided": round(float(test.pvalue), 4),
+        "ci95_exact": [round(float(ci.low), 3), round(float(ci.high), 3)],
     }
 
 
-def fleiss_kappa(ratings_matrix):
-    N, k = ratings_matrix.shape
-    n = ratings_matrix.sum(axis=1)
-    if np.any(n == 0):
-        return float("nan")
-    n0 = n[0]
+def pair_level_agreement(labels, pairs_manifest, ranker_name, pair_filter=None):
+    rows = [
+        1.0 if labels[p["pair_id"]] == p[f"{ranker_name}_pick"] else 0.0
+        for p in pairs_manifest["pairs"]
+        if labels[p["pair_id"]] is not None and (pair_filter is None or pair_filter(p))
+    ]
+    return np.array(rows)
 
-    p_j = ratings_matrix.sum(axis=0) / (N * n0)
-    P_i = (np.sum(ratings_matrix ** 2, axis=1) - n0) / (n0 * (n0 - 1))
-    P_bar = P_i.mean()
-    P_e = np.sum(p_j ** 2)
 
-    if P_e == 1.0:
-        return 1.0
-    return float((P_bar - P_e) / (1 - P_e))
+def bootstrap_pair_delta(a, b, n_bootstrap=10000, alpha=0.05):
+    rng = np.random.default_rng(42)
+    idx = np.arange(len(a))
+    deltas = [a[s].mean() - b[s].mean()
+              for s in (rng.choice(idx, size=len(idx), replace=True) for _ in range(n_bootstrap))]
+    return {
+        "point_delta": round(float(a.mean() - b.mean()), 4),
+        "ci_lo": round(float(np.percentile(deltas, 100 * alpha / 2)), 4),
+        "ci_hi": round(float(np.percentile(deltas, 100 * (1 - alpha / 2))), 4),
+        "n_pairs": int(len(a)),
+    }
+
+
+def cohen_kappa(x, y):
+    x = np.asarray(x)
+    y = np.asarray(y)
+    cats = sorted(set(x) | set(y))
+    po = float(np.mean(x == y))
+    pe = sum((np.mean(x == c)) * (np.mean(y == c)) for c in cats)
+    return 1.0 if pe == 1.0 else float((po - pe) / (1 - pe))
+
+
+def intra_rater_reliability(sessions, pairs_manifest):
+    """Unanimity rate and mean pairwise Cohen's kappa across sessions."""
+    per_session = []
+    for s in sessions:
+        coded = {}
+        for resp in s["responses"]:
+            if resp["choice"] == "no_preference":
+                coded[resp["pair_id"]] = "none"
+            else:
+                coded[resp["pair_id"]] = "pos" if resp["choice"] == resp["positive_side"] else "neg"
+        per_session.append(coded)
+    pids = [p["pair_id"] for p in pairs_manifest["pairs"]
+            if all(p["pair_id"] in s for s in per_session)]
+    if len(per_session) < 2 or not pids:
+        return {"n_sessions": len(per_session), "unanimous_fraction": None, "mean_kappa": None}
+    unanimous = sum(1 for pid in pids if len({s[pid] for s in per_session}) == 1)
+    kappas = [
+        cohen_kappa([per_session[i][pid] for pid in pids], [per_session[j][pid] for pid in pids])
+        for i in range(len(per_session)) for j in range(i + 1, len(per_session))
+    ]
+    return {
+        "n_sessions": len(per_session),
+        "n_pairs_in_all_sessions": len(pids),
+        "unanimous_fraction": round(unanimous / len(pids), 3),
+        "pairwise_kappa": [round(k, 3) for k in kappas],
+        "mean_kappa": round(float(np.mean(kappas)), 3),
+    }
 
 
 def main():
@@ -200,105 +264,90 @@ def main():
         print("No valid raters. Exiting.")
         return
 
-    # H1: fusion vs cosine, all 40 pairs
-    print("\n=== H1: Fusion vs Cosine (all pairs) ===")
+    # Single listener: files are sessions, the analysis unit is the pair.
+    labels = majority_votes(raters, pairs_manifest)
+    n_labeled = sum(1 for v in labels.values() if v is not None)
+    print(f"\nPair-level labels from {len(raters)} sessions: {n_labeled}/{len(labels)} pairs")
+
+    # H1 (primary): exact binomial on discordant-capable pairs
+    print("\n=== H1: Fusion vs Cosine, pair level ===")
+    h1 = pair_level_test(labels, pairs_manifest, "fusion", "cosine")
+    print(f"  discordant pairs: {h1['n_discordant_pairs']}", end="")
+    if h1["n_discordant_pairs"]:
+        print(f"  sides with fusion: {h1['sides_with_fusion']}  "
+              f"exact p={h1['p_two_sided']}  CI95={h1['ci95_exact']}")
+    else:
+        print()
+    fusion_pairs = pair_level_agreement(labels, pairs_manifest, "fusion")
+    cosine_pairs = pair_level_agreement(labels, pairs_manifest, "cosine")
+    h1_delta = bootstrap_pair_delta(fusion_pairs, cosine_pairs)
+    print(f"  agreement fusion={fusion_pairs.mean():.3f} cosine={cosine_pairs.mean():.3f} "
+          f"delta={h1_delta['point_delta']:+.4f} "
+          f"CI [{h1_delta['ci_lo']:+.4f}, {h1_delta['ci_hi']:+.4f}] "
+          f"(n={h1_delta['n_pairs']} pairs, descriptive)")
+
+    # H2 (exploratory): same, by stratum
+    print("\n=== H2: By stratum (pair level) ===")
+    h2 = {}
+    for stratum_name in ["disagreement", "hard_similar"]:
+        def sf(p, _s=stratum_name):
+            return p.get("stratum") == _s
+        f_s = pair_level_agreement(labels, pairs_manifest, "fusion", pair_filter=sf)
+        c_s = pair_level_agreement(labels, pairs_manifest, "cosine", pair_filter=sf)
+        if len(f_s):
+            h2[stratum_name] = bootstrap_pair_delta(f_s, c_s)
+            print(f"  [{stratum_name}] fusion={f_s.mean():.3f} cosine={c_s.mean():.3f} "
+                  f"delta={h2[stratum_name]['point_delta']:+.4f} "
+                  f"CI [{h2[stratum_name]['ci_lo']:+.4f}, {h2[stratum_name]['ci_hi']:+.4f}] "
+                  f"n={len(f_s)}")
+
+    # Three-ranker comparison (pair level)
+    print("\n=== Three-ranker comparison (pair level) ===")
+    three = {}
+    for name in ["fusion", "cosine", "rules"]:
+        a = pair_level_agreement(labels, pairs_manifest, name)
+        three[name] = round(float(a.mean()), 4) if len(a) else None
+        print(f"  {name:10s} agreement: {three[name]}")
+
+    # Proxy label accuracy: how often the listener's majority vote picks the same-pack item
+    proxy_agree = np.array(
+        [1.0 if v == "positive" else 0.0 for v in labels.values() if v is not None]
+    )
+    print(f"\n=== Proxy label vs listener: {proxy_agree.mean():.3f} "
+          f"of {len(proxy_agree)} pairs ===")
+
+    # Intra-rater reliability across sessions
+    print("\n=== Intra-rater reliability ===")
+    irr = intra_rater_reliability(raters, pairs_manifest)
+    print(f"  {irr}")
+    if irr.get("mean_kappa") is not None and irr["mean_kappa"] < 0.4:
+        print("  WARNING: mean kappa < 0.4 -- treat all results as descriptive")
+
+    # Secondary, descriptive: per-observation McNemar (sessions are not independent)
     fusion_all = compute_agreement(raters, pairs_manifest, "fusion")
     cosine_all = compute_agreement(raters, pairs_manifest, "cosine")
-
-    print(f"  Fusion agreement: {fusion_all['agreement_rate']:.3f} "
-          f"(n={fusion_all['n_valid']})")
-    print(f"  Cosine agreement: {cosine_all['agreement_rate']:.3f} "
-          f"(n={cosine_all['n_valid']})")
-
     mcnemar = None
-    ci = None
     if fusion_all["observations"] and cosine_all["observations"]:
-        mcnemar = mcnemar_test(fusion_all["observations"],
-                               cosine_all["observations"])
-        print(f"  McNemar: chi2={mcnemar['chi2']:.3f}, p={mcnemar['p_value']:.4f}")
+        mcnemar = mcnemar_test(fusion_all["observations"], cosine_all["observations"])
+        print(f"\n(secondary) per-observation McNemar: chi2={mcnemar['chi2']:.3f} "
+              f"p={mcnemar['p_value']:.4f}  n={fusion_all['n_valid']} observations")
 
-        ci = bootstrap_delta_ci(
-            fusion_all["observations"],
-            cosine_all["observations"],
-            fusion_all["rater_ids"],
-        )
-        print(f"  Delta (fusion - cosine): {ci['point_delta']:+.4f} "
-              f"CI [{ci['ci_lo']:+.4f}, {ci['ci_hi']:+.4f}]")
-
-    # H2: disagreement stratum vs non-disagreement stratum
-    print("\n=== H2: By stratum ===")
-    def _stratum_filter(name):
-        def filt(p):
-            return p.get("stratum") == name
-        return filt
-
-    for stratum_name in ["disagreement", "hard_similar"]:
-        sf = _stratum_filter(stratum_name)
-        f_s = compute_agreement(raters, pairs_manifest, "fusion", pair_filter=sf)
-        c_s = compute_agreement(raters, pairs_manifest, "cosine", pair_filter=sf)
-        print(f"  [{stratum_name}] fusion={f_s['agreement_rate']:.3f} "
-              f"cosine={c_s['agreement_rate']:.3f} n={f_s['n_valid']}")
-        if f_s["observations"] and c_s["observations"]:
-            ci_s = bootstrap_delta_ci(
-                f_s["observations"], c_s["observations"], f_s["rater_ids"],
-            )
-            print(f"    delta={ci_s['point_delta']:+.4f} "
-                  f"CI [{ci_s['ci_lo']:+.4f}, {ci_s['ci_hi']:+.4f}]")
-
-    # Three-ranker comparison
-    print("\n=== Three-ranker comparison ===")
-    for name in ["fusion", "cosine", "rules"]:
-        result = compute_agreement(raters, pairs_manifest, name)
-        print(f"  {name:10s} agreement: {result['agreement_rate']:.3f} "
-              f"(n={result['n_valid']})")
-
-    # Inter-rater reliability
-    print("\n=== Inter-rater reliability ===")
-    pair_ids = [p["pair_id"] for p in pairs_manifest["pairs"]]
-    ratings = np.zeros((len(pair_ids), 3), dtype=int)
-    pid_idx = {pid: i for i, pid in enumerate(pair_ids)}
-
-    for rater in raters:
-        for resp in rater["responses"]:
-            pid = resp["pair_id"]
-            if pid not in pid_idx:
-                continue
-            if "positive_side" not in resp:
-                continue
-            i = pid_idx[pid]
-            if resp["choice"] == "no_preference":
-                ratings[i, 2] += 1
-            elif resp["choice"] == resp["positive_side"]:
-                ratings[i, 0] += 1
-            else:
-                ratings[i, 1] += 1
-
-    rated_rows = ratings.sum(axis=1) > 0
-    if rated_rows.any():
-        kappa = fleiss_kappa(ratings[rated_rows])
-        print(f"  Fleiss' kappa: {kappa:.3f}")
-        if kappa < 0.4:
-            print("  WARNING: kappa < 0.4 -- task may be too subjective")
-    else:
-        print("  No rated pairs found")
-
-    # Save report
     report = {
         "protocol": "research/prereg_human_v1.md",
-        "n_raters": len(raters),
+        "design": "single rater, majority vote over sessions, pair-level analysis",
+        "n_sessions": len(raters),
         "exclusions": exclusions,
-        "h1_all_pairs": {
-            "fusion_agreement": fusion_all["agreement_rate"],
-            "cosine_agreement": cosine_all["agreement_rate"],
-            "n_valid": fusion_all["n_valid"],
-            "n_no_preference": fusion_all["n_no_preference"],
-        },
+        "n_pairs_labeled": n_labeled,
+        "h1_pair_level": {**h1, "agreement_fusion": round(float(fusion_pairs.mean()), 4),
+                          "agreement_cosine": round(float(cosine_pairs.mean()), 4),
+                          "bootstrap_delta": h1_delta},
+        "h2_by_stratum": h2,
+        "three_ranker_agreement": three,
+        "proxy_label_agreement": round(float(proxy_agree.mean()), 4),
+        "intra_rater_reliability": irr,
+        "secondary_per_observation_mcnemar": mcnemar,
+        "n_no_preference_observations": fusion_all["n_no_preference"],
     }
-
-    if mcnemar:
-        report["h1_all_pairs"]["mcnemar"] = mcnemar
-    if ci:
-        report["h1_all_pairs"]["bootstrap_ci"] = ci
 
     with open(out_dir / "human_eval_report.json", "w") as f:
         json.dump(report, f, indent=2, ensure_ascii=False)

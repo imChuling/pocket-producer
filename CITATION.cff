@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use this software or its evaluation, please cite the Late-Breaking Demo abstract below."
+title: "Pocket Producer: Session-Conditioned Retrieval as User-Controlled Proposal"
+type: software
+authors:
+  - family-names: Li
+    given-names: Chuling
+    affiliation: University of Nottingham
+    email: scycl14@nottingham.ac.uk
+repository-code: https://github.com/imChuling/pocket-producer
+url: https://pocketproducer.vercel.app
+license: Apache-2.0
+keywords:
+  - music information retrieval
+  - session-conditioned retrieval
+  - weak supervision
+  - digital audio workstation
+preferred-citation:
+  type: conference-paper
+  title: "Pocket Producer: Session-Conditioned Retrieval as User-Controlled Proposal"
+  authors:
+    - family-names: Li
+      given-names: Chuling
+  collection-title: "Extended Abstracts for the Late-Breaking Demo Session of the 27th International Society for Music Information Retrieval Conference (ISMIR 2026)"
+  year: 2026
+  conference:
+    name: "ISMIR 2026 Late-Breaking Demo"
+    city: Abu Dhabi
+    country: AE
+  notes: "Late-Breaking Demo extended abstract; not part of the ISMIR proceedings."

@@ -1,74 +1,53 @@
 {
-  "protocol": "research/prereg_human_v1.md section 4.1",
+  "protocol": "research/prereg_human_v1.md section 4.1 (single rater, pair-level)",
   "pairs_file": "research/data/listening_test/pairs.json",
   "n_pairs": 40,
   "n_discordant_capable": 17,
-  "n_concordant": 23,
-  "no_preference_rate_assumed": 0.15,
-  "p_agree_both_assumed": 0.7,
-  "sims_per_cell": 1500,
+  "sessions": 3,
   "alpha": 0.05,
-  "results": {
-    "raters=10,p_fusion=0.55": {
-      "n_raters": 10,
-      "p_fusion_on_discordant": 0.55,
-      "expected_overall_delta_pp": 4.2,
-      "power": 0.197
+  "critical_count": 13,
+  "critical_p_two_sided": 0.049,
+  "power": [
+    {
+      "p_session": 0.55,
+      "p_pair_majority": 0.575,
+      "power": 0.088
     },
-    "raters=10,p_fusion=0.6": {
-      "n_raters": 10,
-      "p_fusion_on_discordant": 0.6,
-      "expected_overall_delta_pp": 8.4,
-      "power": 0.636
+    {
+      "p_session": 0.6,
+      "p_pair_majority": 0.648,
+      "power": 0.23
     },
-    "raters=10,p_fusion=0.65": {
-      "n_raters": 10,
-      "p_fusion_on_discordant": 0.65,
-      "expected_overall_delta_pp": 12.7,
-      "power": 0.952
+    {
+      "p_session": 0.65,
+      "p_pair_majority": 0.718,
+      "power": 0.454
     },
-    "raters=10,p_fusion=0.7": {
-      "n_raters": 10,
-      "p_fusion_on_discordant": 0.7,
-      "expected_overall_delta_pp": 16.9,
+    {
+      "p_session": 0.7,
+      "p_pair_majority": 0.784,
+      "power": 0.702
+    },
+    {
+      "p_session": 0.75,
+      "p_pair_majority": 0.844,
+      "power": 0.887
+    },
+    {
+      "p_session": 0.8,
+      "p_pair_majority": 0.896,
+      "power": 0.974
+    },
+    {
+      "p_session": 0.85,
+      "p_pair_majority": 0.939,
       "power": 0.997
     },
-    "raters=10,p_fusion=0.75": {
-      "n_raters": 10,
-      "p_fusion_on_discordant": 0.75,
-      "expected_overall_delta_pp": 21.3,
-      "power": 1.0
-    },
-    "raters=15,p_fusion=0.55": {
-      "n_raters": 15,
-      "p_fusion_on_discordant": 0.55,
-      "expected_overall_delta_pp": 4.2,
-      "power": 0.293
-    },
-    "raters=15,p_fusion=0.6": {
-      "n_raters": 15,
-      "p_fusion_on_discordant": 0.6,
-      "expected_overall_delta_pp": 8.6,
-      "power": 0.839
-    },
-    "raters=15,p_fusion=0.65": {
-      "n_raters": 15,
-      "p_fusion_on_discordant": 0.65,
-      "expected_overall_delta_pp": 12.7,
-      "power": 0.994
-    },
-    "raters=15,p_fusion=0.7": {
-      "n_raters": 15,
-      "p_fusion_on_discordant": 0.7,
-      "expected_overall_delta_pp": 17.0,
-      "power": 1.0
-    },
-    "raters=15,p_fusion=0.75": {
-      "n_raters": 15,
-      "p_fusion_on_discordant": 0.75,
-      "expected_overall_delta_pp": 21.1,
+    {
+      "p_session": 0.9,
+      "p_pair_majority": 0.972,
       "power": 1.0
     }
-  },
-  "note": "McNemar with continuity correction on all valid (rater, pair) observations; only discordant-capable pairs contribute to the test statistic."
+  ],
+  "note": "exact binomial on majority-vote labels over the discordant-capable pairs; sessions from one listener are not treated as independent observations"
 }

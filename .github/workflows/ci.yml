@@ -64,4 +64,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      # The paper source (docs/ismir2026/) may be kept out of the public tree;
+      # the artifact-side assertions still run, the tex presence checks skip.
       - run: python research/check_paper_numbers.py

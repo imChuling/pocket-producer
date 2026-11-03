@@ -87,12 +87,16 @@ contributes. That gap is what the evaluation protocol here targets.
 
 ```text
 Audiotool project (live, via Nexus SDK)
-  → session fingerprint      tempo · track roles · playhead · your stated intent
-  → retrieval                per-representation-space search, fused by RRF
-  → compatibility ranking    rules → linear → DeepSets → 401K attention reranker
-  → three grounded suggestions
+  → session fingerprint      tempo · tags of inserted fragments · up to 8 region
+                             samples encoded with MS-CLAP (+ chroma) · stated intent
+  → five signals φ(s,x)      mean/max CLAP cosine · tempo · key (0 online) · tag Jaccard
+  → ranker                   rules-v1 (default, 7 non-audio signals)
+                             fusion-5sig-v1 (selectable, w⊤φ trained by BPR)
+                             + mean-session · audio-cosine · role-gap · harmonic-fit
+  → proposals with evidence  per-signal chips, relative to the served set
   → preview · insert at playhead · exact undo
-  → preference feedback      (research signal, propensity-aware)
+  → exposure + decision log  served signals and accept/reject, the path to
+                             replacing the cold-start proxy with real preference
 ```
 
 Every recommendation shows **structured evidence** ("121 BPM is close to the
@@ -208,22 +212,27 @@ redistribution, and NC items never enter commercial paths. See
 ## Architecture
 
 ```text
-Browser                          Backend (FastAPI)              Offline
-─────────                        ─────────────────              ───────
-Nexus SDK  ──documents──▶  session fingerprint
+Browser                          Backend (FastAPI)                   Offline
+─────────                        ─────────────────                   ───────
+Nexus SDK ──documents──▶ session fingerprint
+   │        + region audio ──▶ /session-embed (MS-CLAP + chroma,
+   │                           one shared instance, serialized)
    │                              │
-   │                       retrieval (exact cosine)      CLAP embedding worker
-   │                              │  + RRF fusion         (frozen, cached by
-   │                              ▼                        audio sha256)
-   │                       ranker registry ──────────▶  capacity ladder
-   │                              │  (rules fallback)     artifacts + model card
-   ◀──── three suggestions ───────┘
+   │                       ranker registry ─────────────────▶ FSLD pack co-membership
+   │                        rules-v1 (default) ◀── fallback      → LOO pairs → BPR
+   │                        fusion-5sig-v1 (w from JSON)          → weights.json
+   │                        mean-session · audio-cosine
+   │                        role-gap · harmonic-fit
+   ◀──── proposals + evidence ────┘
    │
-   └── preview / insert / undo ──▶ feedback log (exposure + rank position)
+   └── preview / accept / insert / undo ──▶ ranking_requests (served signals)
+                                           ranking_feedback (decisions)
+                                           → finetune_from_feedback.py
 ```
 
-Foundation encoders are frozen and stay off the click path. Embeddings are
-computed offline and cached; the online ranker is a sub-500K CPU model.
+Foundation encoders are frozen and never trained online. Candidate vectors
+are computed once at ingest and stored with lineage; the online ranker is a
+five-weight linear model, so a rank request is a few milliseconds of NumPy.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -247,11 +256,15 @@ uploading audio on the Capture page works too.)
 ```bash
 # Backend
 cd backend
-python -m venv .venv && ./.venv/bin/pip install -e ".[dev]"
+python -m venv .venv && ./.venv/bin/pip install -r requirements.txt && ./.venv/bin/pip install pytest ruff
 cp .env.example .env          # fill in credentials
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 ./.venv/bin/pytest -q
-./.venv/bin/uvicorn api.main:app --reload --port 8000
+./.venv/bin/pytest -q && ./.venv/bin/ruff check .
+POCKET_ENABLE_CLAP=1 ./.venv/bin/uvicorn api.main:app --reload --port 8080
+curl localhost:8080/ready     # mongo, CLAP state, registered rankers
 ```
+
+`POCKET_ENABLE_CLAP=1` loads MS-CLAP (about 60 s on first start; it is shared
+by every ranker). Without it only the non-audio rankers serve.
 
 ```bash
 # Frontend
@@ -270,18 +283,31 @@ pnpm run dev                   # → http://127.0.0.1:3000/audiotool
 > then reports `auth/unauthorized-domain`, add `127.0.0.1` under
 > Authentication → Settings → Authorized domains.
 
-Reproduce the research artifacts:
+Deploy the backend (env vars, secrets and scaling are versioned, so a deploy
+can never silently drop configuration):
 
 ```bash
-python research/build_fsld_manifest.py                    # per-item licenses
-python research/embed_fsld_subset.py --adapter msclap-2023
-python research/benchmark_backbones.py --items msclap-2023=research/data/fsld/items.jsonl
-python research/build_weak_pairs.py --items-file research/data/fsld/items.jsonl
-python research/train_context_ranker.py --weak-data research/data/weak_pairs.jsonl
-python research/evaluate.py --dataset research/data/heldout.jsonl
+backend/deploy/deploy.sh            # build + deploy to Cloud Run
+backend/deploy/deploy.sh --config   # re-apply configuration only
 ```
 
-Every artifact carries a dataset hash and the commit that produced it.
+---
+
+## Reproducing the paper
+
+Every number in the ISMIR LBD abstract maps to a versioned JSON under
+[`artifacts/`](artifacts/), produced by the scripts in
+[`research/`](research/) and cross-checked by
+[`research/check_paper_numbers.py`](research/check_paper_numbers.py)
+(151 assertions, run in CI). The command for each table and figure is in
+[`research/README.md`](research/README.md); the deployed fusion weights
+([`artifacts/fusion-deploy/weights.json`](artifacts/fusion-deploy/weights.json))
+retrain to within 1e-6 from the frozen split. Follow-up checks that did
+not make the paper (standardization, seven signals, key masking, a MERT
+representation column, mining negatives in an independent space) are
+documented there too, including the ones that came out negative.
+
+Cite with [`CITATION.cff`](CITATION.cff).
 
 ---
 
@@ -290,9 +316,9 @@ Every artifact carries a dataset hash and the commit that produced it.
 | Layer | Choice |
 |---|---|
 | DAW integration | [`@audiotool/nexus`](https://developer.audiotool.com/js-package-documentation/) 0.0.17 (exact pin) |
-| Audio representations | MS-CLAP 2023 (default) · LAION-CLAP music (challenger), both frozen |
+| Audio representations | MS-CLAP 2023 (deployed, one shared CPU instance) · LAION-CLAP music and MERT-v1-95M (offline sensitivity columns), all frozen |
 | Text representation | Voyage `voyage-3` (legacy fragments, kept as a baseline) |
-| Ranking | PyTorch, exported to safetensors; ONNX targeted for serving |
+| Ranking | Five-signal linear fusion in NumPy, BPR-trained offline, weights shipped as JSON; capacity-ladder models (linear, DeepSets, attention) kept as offline challengers |
 | Backend | FastAPI · MongoDB Atlas · Firebase Auth · Google Cloud Storage |
 | Frontend | Next.js 16 · React 19 · Tailwind v4 · Vitest |
 | License | Apache 2.0 |
