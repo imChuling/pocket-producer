@@ -251,7 +251,7 @@ uploading audio on the Capture page works too.)
 ```bash
 # Backend
 cd backend
-python -m venv .venv && ./.venv/bin/pip install -e ".[dev]"
+python -m venv .venv && ./.venv/bin/pip install -e . --group dev
 cp .env.example .env            # fill in credentials
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 ./.venv/bin/pytest -q
 ./.venv/bin/uvicorn api.main:app --reload --port 8000

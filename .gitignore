@@ -19,6 +19,8 @@ artifacts/cocola-audio/
 .ruff_cache/
 .vercel
 ~$*
+~$*.pptx
+*\[Auto-saved\]*.pptx
 
 # Paper source and private notes stay out of the public tree
 CHANGELOG.md
