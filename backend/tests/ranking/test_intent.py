@@ -32,7 +32,8 @@ def _fake_client(payload: dict) -> MagicMock:
 
 class TestNormalize:
     def test_lowercases_dedupes_and_caps_tags(self):
-        parsed = _normalize({"tags": ["Dark", "dark", "Cinematic"] + [f"t{i}" for i in range(10)], "roles": []})
+        tags = ["Dark", "dark", "Cinematic"] + [f"t{i}" for i in range(10)]
+        parsed = _normalize({"tags": tags, "roles": []})
         assert parsed.tags[:2] == ["dark", "cinematic"]
         assert len(parsed.tags) == intent_mod.MAX_TAGS
 

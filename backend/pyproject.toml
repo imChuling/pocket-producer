@@ -35,12 +35,10 @@ research = [
     "torchvision>=0.20,<1",
     "matplotlib>=3.9,<4",
 ]
+dev = ["pytest", "pytest-cov", "pytest-asyncio", "ruff", "httpx", "python-dotenv"]
 
 [tool.setuptools.packages.find]
 include = ["agents*", "tools*", "api*", "jobs*", "ranking*"]
-
-[dependency-groups]
-dev = ["pytest", "pytest-cov", "pytest-asyncio", "ruff", "httpx", "python-dotenv"]
 
 [tool.ruff]
 line-length = 100

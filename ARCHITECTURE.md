@@ -149,10 +149,8 @@ Catcher as a full agent added ~3-5s of overhead without improving tag quality
 pipeline uses a direct Gemini call for tagging and only runs the
 Producer → Memory pipeline as real ADK agents.
 
-The Catcher Agent is still defined in `backend/agents/catcher.py` for:
-- Full Agent Engine deployment (via `PRODUCER_RESOURCE_NAME` env var)
-- Batch reprocessing where latency is not critical
-- Demonstrating the complete architectural design
+The Catcher role is therefore not an agent in the codebase; its tagging
+responsibilities live in `backend/api/pipeline.py` (Phase 2).
 
 ---
 
@@ -246,14 +244,14 @@ recommendations to the Producer Agent.
 }
 ```
 
-### Catcher Agent (`backend/agents/catcher.py`)
+### Catcher (perception layer)
 
-- **Role**: Perception layer — fragment tagging and feature extraction
-- **Model**: `gemini-3-flash-preview` (configurable via `CATCHER_MODEL`)
-- **Skills**: `music-tagging`, `refusal-rules`
-- **Tools**: `extract_audio_features`, `transcribe_audio`, `generate_embedding`
-- **Status**: defined but bypassed in the live pipeline (direct Gemini call
-  is 3x faster). Used for Agent Engine deployment and batch reprocessing.
+The original design had a third agent, Catcher, owning tagging and feature
+extraction. It no longer exists as an agent: the live pipeline calls Gemini
+directly with the `music-tagging` skill as system context (Phase 2 above),
+which produced equivalent tags about 3x faster. The three-step
+Catcher → Memory → Producer decision flow survives only as an offline
+harness in `backend/tests/test_producer_decision.py`.
 
 ### Relationship Classification
 
@@ -538,7 +536,7 @@ Environment variables:
 - `MCP_SERVER_URL=http://127.0.0.1:8081/mcp` — internal MCP endpoint
 - `PRODUCER_RESOURCE_NAME` (optional) — if set, uses remote Agent Engine
   instead of local ADK Runner
-- `PRODUCER_MODEL`, `MEMORY_MODEL`, `CATCHER_MODEL` (optional) — override
+- `PRODUCER_MODEL`, `MEMORY_MODEL` (optional) — override
   Gemini model (default: `gemini-3-flash-preview`)
 - `JOB_TRIGGER_SECRET` — shared secret for Cloud Scheduler job auth
 - `SERVICE_URL` + `JOB_INVOKER_SA` (optional) — enable OIDC verification for

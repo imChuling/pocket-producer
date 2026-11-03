@@ -1,4 +1,4 @@
-# Draft issue for github.com/audiotool/nexus (post after user approval)
+# Issue report for github.com/audiotool/nexus
 
 Title: insertSample crashes in any minified production build: "Cannot read
 properties of undefined (reading 'slice')"

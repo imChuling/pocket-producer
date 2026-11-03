@@ -1,8 +1,9 @@
 # FSLD data directory
 
-Large derived files are gitignored; only `manifest.jsonl` (item metadata,
-licenses, pack grouping) is tracked. Everything below is reproducible from
-the FSL10K archive plus the scripts in `research/`.
+Derived files, including `manifest.jsonl` (item metadata, licenses, pack
+grouping), are gitignored; only `role_prompts.json` is tracked. Everything
+below is reproducible from the FSL10K archive plus the scripts in
+`research/`.
 
 ## Source
 

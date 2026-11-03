@@ -11,23 +11,18 @@ firebase-admin-key.json
 *.m4a
 *.wav
 *.webm
-landing-redesign/
 frontend/test-results/
 tmp/
+landing-redesign/
 artifacts/cocola-audio/
-~$*
-artifacts/editable_figure1/node_modules
 .pytest_cache/
 .ruff_cache/
-~$*.pptx
-*\[Auto-saved\]*.pptx
 .vercel
+~$*
 
-# Internal tooling / private docs
+# Paper source and private notes stay out of the public tree
 CHANGELOG.md
 docs/_archive/
 docs/ismir2026/
 docs/security/
-
-
 

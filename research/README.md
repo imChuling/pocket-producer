@@ -1,10 +1,11 @@
 # Reproducing the ISMIR 2026 LBD Results
 
-Every number in the paper (`docs/ismir2026/lbd.tex`) is derived from
-versioned artifacts in `artifacts/`. This document maps each claim to the
-script that produced it and the command to re-run it. The mapping is
-enforced by `research/check_paper_numbers.py` (151 assertions), which runs
-before every PDF build.
+Every number in the paper is derived from versioned artifacts in
+`artifacts/`. This document maps each claim to the script that produced it
+and the command to re-run it. The mapping is enforced by
+`research/check_paper_numbers.py` (151 assertions), which runs before every
+PDF build; it expects the LaTeX source at `docs/ismir2026/lbd.tex`, which is
+not distributed with this repository.
 
 ## Prerequisites
 
