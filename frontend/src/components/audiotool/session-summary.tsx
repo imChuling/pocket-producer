@@ -100,10 +100,6 @@ export function SessionSummary({
               : "none yet"
           }
         />
-        <SummaryItem
-          label="Playhead"
-          value={`${fingerprint.playhead_seconds.toFixed(1)}s`}
-        />
       </dl>
       <label className="block text-sm text-gravel">
         <span className="mb-1 block">What are you going for? (optional)</span>

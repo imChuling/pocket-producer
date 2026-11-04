@@ -38,9 +38,11 @@ in this layer is the optional intent parser, and it runs off the rank path.
 1. **Session fingerprint** (`frontend/src/lib/audiotool/session-fingerprint.ts`).
    The browser walks the Nexus document: tempo from the `config` entity's
    `tempoBpm`, the set of active track types (audio, note, pattern,
-   automation), playhead position, up to 20 recently touched entity ids, and
+   automation), up to 20 recently touched entity ids, and
    the user's free-text intent capped at 240 characters. Audiotool documents
    carry no key signature, so `key` is always `null`; it is never estimated.
+   Nexus 0.0.17 exposes no playhead either, so `playhead_seconds` is always
+   0 and inserts land at the start of the timeline.
    Only this fingerprint leaves the browser, never the project.
 2. **Session audio** (optional, `session-audio.ts`). Up to 8 unique samples
    referenced by audio regions are downloaded through `samples.download()`
@@ -125,9 +127,9 @@ tagging, so a tagging failure never leaves a fragment unrankable;
 
 Order is strict. The sample is uploaded first and the code waits for the
 server to acknowledge the bytes; only then is the document modified, in a
-single `document.modify` transaction that inserts the sample at the playhead
-(seconds converted to ticks at the project tempo, or the fragment's tempo,
-or 120 BPM). The transaction returns an `InsertReceipt` listing every entity
+single `document.modify` transaction that inserts the sample at the start of
+the timeline (the insert position is converted to ticks at the project tempo,
+or the fragment's tempo, or 120 BPM; the SDK exposes no playhead). The transaction returns an `InsertReceipt` listing every entity
 id that did not exist before it ran. `undoInsert` removes exactly those ids,
 in reverse creation order, with `removeWithDependencies`, skipping any the
 user already deleted.

@@ -414,9 +414,8 @@ export default function AudiotoolPage() {
           {lastInsert && (
             <div className="flex items-center justify-between rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
               <span>
-                Inserted “{lastInsert.title}” at{" "}
-                {lastInsert.receipt.insertedAtSeconds.toFixed(1)}s — check your
-                Audiotool timeline.
+                Inserted “{lastInsert.title}” at the start of the timeline;
+                check your Audiotool project.
               </span>
               <button
                 type="button"
