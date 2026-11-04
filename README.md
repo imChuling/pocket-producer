@@ -1,7 +1,8 @@
 # Pocket Producer
 
-[![ISMIR 2026 LBD](https://img.shields.io/badge/ISMIR%202026-Late--Breaking%20Demo-a0b5eb?style=flat&labelColor=1a1a2e)](https://ismir.net/)
-[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-ff9473?style=flat&labelColor=1a1a2e)](https://creativecommons.org/licenses/by-nc/4.0/)
+[![ISMIR 2026 LBD](https://img.shields.io/badge/ISMIR%202026-Late--Breaking%20Demo-a0b5eb?style=flat&labelColor=1a1a2e)](https://ismir2026.ismir.net/)
+[![Code: Apache 2.0](https://img.shields.io/badge/Code-Apache%202.0-cfdaf5?style=flat&labelColor=1a1a2e)](LICENSE)
+[![Paper: CC BY-NC 4.0](https://img.shields.io/badge/Paper-CC%20BY--NC%204.0-ff9473?style=flat&labelColor=1a1a2e)](https://creativecommons.org/licenses/by-nc/4.0/)
 [![Try it](https://img.shields.io/badge/Try%20it-pocketproducer.vercel.app-ffa773?style=flat&labelColor=1a1a2e)](https://pocketproducer.vercel.app)
 
 > **A session-aware retrieval instrument for unfinished music.** It reads the
@@ -17,6 +18,9 @@ You stay in charge. It just retrieves.
 **Demo video:** [youtu.be/s56Rp_1M9OE](https://youtu.be/s56Rp_1M9OE)
 
 Built for [Audiotool Let's Build 2026](https://www.audiotool.com/LetsBuild/).
+Accepted as a Late-Breaking Demo at [ISMIR 2026](https://ismir2026.ismir.net/):
+*Pocket Producer: Session-Conditioned Retrieval as User-Controlled Proposal*
+(see [CITATION.cff](CITATION.cff)).
 Ranking evaluation on the Freesound Loop Dataset in `research/`.
 
 ### What it does
@@ -84,6 +88,8 @@ contributes. That gap is what the evaluation protocol here targets.
 ---
 
 ## The loop
+
+![System overview: the live Audiotool session is fingerprinted, the ranker proposes candidates with per-signal evidence, and the musician previews, inserts, or undoes](docs/system-figure.png)
 
 ```text
 Audiotool project (live, via Nexus SDK)
@@ -366,6 +372,6 @@ Single author. Across both phases:
 
 ## License
 
-[Apache 2.0](LICENSE), including all domain skills.
+Code and domain skills: [Apache 2.0](LICENSE).
 The accompanying ISMIR 2026 Late-Breaking/Demo paper is licensed under
 [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).
