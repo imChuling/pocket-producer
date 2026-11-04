@@ -27,7 +27,17 @@ export function SessionSummary({
 }) {
   const [interpreting, setInterpreting] = useState(false);
   const lastParsedRef = useRef("");
+  // Only the newest request may report: a slow reading of an older text
+  // must not overwrite the chips for what the user has typed since, and
+  // nothing may report after unmount.
+  const requestSeq = useRef(0);
   const text = fingerprint.text_intent;
+
+  useEffect(() => {
+    return () => {
+      requestSeq.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     if (!onParsedIntentChange) return;
@@ -41,17 +51,21 @@ export function SessionSummary({
     }
     if (trimmed.toLowerCase() === lastParsedRef.current) return;
     const timer = setTimeout(() => {
+      const seq = ++requestSeq.current;
       setInterpreting(true);
       parseIntent(trimmed)
         .then((parsed) => {
+          if (seq !== requestSeq.current) return;
           lastParsedRef.current = trimmed.toLowerCase();
           onParsedIntentChange(parsed);
         })
         .catch(() => {
           // Interpretation is an enhancement; raw text still ranks.
-          onParsedIntentChange(null);
+          if (seq === requestSeq.current) onParsedIntentChange(null);
         })
-        .finally(() => setInterpreting(false));
+        .finally(() => {
+          if (seq === requestSeq.current) setInterpreting(false);
+        });
     }, 800);
     return () => clearTimeout(timer);
   }, [text, onParsedIntentChange]);
