@@ -21,7 +21,7 @@ function keyRoot(key: string): string {
   return key.replace(/\s*(major|minor|maj|min)\s*/gi, "").trim();
 }
 
-export function ProjectIntelligence({ fragments, connectionReasons, connectionTypes }: Props) {
+export function ProjectIntelligence({ fragments }: Props) {
   const analysis = useMemo(() => {
     const audioFragments = fragments.filter((f) => f.type === "audio");
     const keys = audioFragments.map((f) => f.key).filter(Boolean) as string[];
