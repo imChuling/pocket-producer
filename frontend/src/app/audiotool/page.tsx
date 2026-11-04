@@ -22,6 +22,7 @@ import { importProjectAsFragments } from "@/lib/audiotool/import-project";
 import {
   describeSessionAudio,
   extractSessionAudio,
+  type SessionAudioCache,
 } from "@/lib/audiotool/session-audio";
 import { fingerprintFromDocument } from "@/lib/audiotool/session-fingerprint";
 import { linkAudiotoolInsert, unlinkAudiotoolInsert } from "@/lib/api";
@@ -69,6 +70,9 @@ export default function AudiotoolPage() {
   );
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previewUrlRef = useRef<string | null>(null);
+  // Session vectors keyed by the regions' sample set, so asking again for
+  // an unchanged session does not re-download and re-encode its audio.
+  const sessionAudioCacheRef = useRef<SessionAudioCache>(new Map());
 
   const releasePreview = useCallback(() => {
     audioRef.current?.pause();
@@ -445,6 +449,7 @@ export default function AudiotoolPage() {
                   const result = await extractSessionAudio(doc, samplesApi, {
                     backendUrl: "/api/ranking/session-embed",
                     authToken: token,
+                    cache: sessionAudioCacheRef.current,
                   });
                   if (result.embeddings.length > 0) {
                     fresh.region_audio_embeddings = result.embeddings;

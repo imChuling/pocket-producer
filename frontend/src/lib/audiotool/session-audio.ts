@@ -45,6 +45,16 @@ const EMPTY: SessionAudioResult = {
 
 const MAX_SAMPLES = 8;
 
+/**
+ * Results keyed by the sorted set of sample names they were computed from.
+ * A session whose regions did not change re-uses its vectors instead of
+ * downloading and re-encoding up to eight samples on every request, which
+ * also kept `/session-embed`'s 10/min allowance from being spent on repeats.
+ */
+export type SessionAudioCache = Map<string, SessionAudioResult>;
+
+const CACHE_MAX_ENTRIES = 8;
+
 export async function extractSessionAudio(
   document: NexusDocumentPort,
   samplesApi: { download: NexusSamplesPort["download"] },
@@ -52,6 +62,7 @@ export async function extractSessionAudio(
     backendUrl: string;
     authToken: string;
     signal?: AbortSignal;
+    cache?: SessionAudioCache;
   },
 ): Promise<SessionAudioResult> {
   const query = document.queryEntities as QueryPort | undefined;
@@ -115,6 +126,12 @@ export async function extractSessionAudio(
     return { ...EMPTY };
   }
 
+  const cacheKey = [...uniqueSampleNames].sort().join("|");
+  const cached = options.cache?.get(cacheKey);
+  if (cached) {
+    return { ...cached, embeddings: cached.embeddings.map((v) => [...v]), chroma: cached.chroma.map((v) => [...v]) };
+  }
+
   // Download each sample as WAV and send to the backend for CLAP encoding.
   let failedCount = 0;
   const blobs: Blob[] = [];
@@ -166,7 +183,7 @@ export async function extractSessionAudio(
     failed?: { file: string; reason: string }[];
     timed_out?: boolean;
   };
-  return {
+  const result: SessionAudioResult = {
     embeddings: data.embeddings,
     chroma: data.chroma ?? [],
     sampleCount: blobs.length,
@@ -175,6 +192,22 @@ export async function extractSessionAudio(
     timedOut: data.timed_out ?? false,
     backendError: null,
   };
+  // Only a complete, successful encode is worth re-using; a partial one
+  // should be retried next time.
+  if (
+    options.cache &&
+    result.embeddings.length > 0 &&
+    failedCount === 0 &&
+    result.encodeFailures.length === 0 &&
+    !result.timedOut
+  ) {
+    if (options.cache.size >= CACHE_MAX_ENTRIES) {
+      const oldest = options.cache.keys().next().value;
+      if (oldest !== undefined) options.cache.delete(oldest);
+    }
+    options.cache.set(cacheKey, result);
+  }
+  return result;
 }
 
 /** One-line explanation of why session audio may be missing, for the UI. */
