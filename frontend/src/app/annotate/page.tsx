@@ -34,8 +34,12 @@ export default function AnnotatePage() {
     if (!authLoading && !user) router.replace("/login");
   }, [authLoading, user, router]);
 
+  const mountedRef = useRef(true);
   useEffect(() => {
-    return () => releasePreview();
+    return () => {
+      mountedRef.current = false;
+      releasePreview();
+    };
   }, [releasePreview]);
 
   const fetchNext = useCallback(
@@ -54,7 +58,9 @@ export default function AnnotatePage() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) return;
-    const url = URL.createObjectURL(await response.blob());
+    const blob = await response.blob();
+    if (!mountedRef.current) return;
+    const url = URL.createObjectURL(blob);
     releasePreview();
     const audio = new Audio(url);
     audioRef.current = audio;

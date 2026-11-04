@@ -102,8 +102,10 @@ export default function AudiotoolPage() {
     };
   }, [user]);
 
+  const mountedRef = useRef(true);
   useEffect(() => {
     return () => {
+      mountedRef.current = false;
       releasePreview();
     };
   }, [releasePreview]);
@@ -128,7 +130,9 @@ export default function AudiotoolPage() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) throw new Error("Could not load preview audio");
-    const url = URL.createObjectURL(await response.blob());
+    const blob = await response.blob();
+    if (!mountedRef.current) return;
+    const url = URL.createObjectURL(blob);
     releasePreview();
     const audio = new Audio(url);
     audioRef.current = audio;
