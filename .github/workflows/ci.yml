@@ -21,11 +21,13 @@ jobs:
         run: |
           pip install uv
           uv pip install --system -r requirements.txt
-          uv pip install --system pytest "ruff==0.16.10"
+          uv pip install --system pytest "ruff==0.16.10" httpx python-dotenv
       - name: Ruff lint
         run: ruff check .
+      # torch is a research-only dependency; tests that need it skip themselves
+      # (see tests/conftest.py) so this job covers the deployed surface.
       - name: Tests
-        run: pytest tests/ -x -q --tb=short --ignore=tests/ranking/test_model_ladder.py --ignore=tests/ranking/test_training.py --ignore=tests/ranking/test_msclap_adapter.py --ignore=tests/ranking/test_ladder_e2e.py
+        run: pytest tests/ -q --tb=short
 
   research-lint:
     runs-on: ubuntu-latest
@@ -48,14 +50,20 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - run: npm ci
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      # pnpm applies patches/ to @audiotool/nexus; npm would skip them.
+      - run: pnpm install --frozen-lockfile
       - name: Lint and typecheck
-        run: npx eslint . && npx tsc --noEmit
+        run: pnpm exec eslint src && pnpm exec tsc --noEmit
       - name: Tests
-        run: npx vitest run
+        run: pnpm exec vitest run
 
   paper-check:
     runs-on: ubuntu-latest
