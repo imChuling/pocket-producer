@@ -64,6 +64,16 @@ jobs:
         run: pnpm exec eslint src && pnpm exec tsc --noEmit
       - name: Tests
         run: pnpm exec vitest run
+      # Firebase initialises at import, so the build needs a web config even
+      # though nothing is called; placeholders keep a broken build out of Vercel.
+      - name: Production build
+        run: pnpm exec next build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8080
+          NEXT_PUBLIC_FIREBASE_API_KEY: ci-placeholder
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ci-placeholder.firebaseapp.com
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ci-placeholder
+          NEXT_PUBLIC_AUDIOTOOL_CLIENT_ID: ci-placeholder
 
   paper-check:
     runs-on: ubuntu-latest

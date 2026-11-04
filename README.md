@@ -270,13 +270,19 @@ curl localhost:8080/ready     # mongo, CLAP state, registered rankers
 ```
 
 `POCKET_ENABLE_CLAP=1` loads MS-CLAP (about 60 s on first start; it is shared
-by every ranker). Without it only the non-audio rankers serve.
+by every ranker). Without it only the non-audio rankers serve. The CLAP stack
+is not in `requirements.txt`; install it the way the Dockerfile does:
+
+```bash
+./.venv/bin/pip install --index-url https://download.pytorch.org/whl/cpu "torch>=2.6,<3" torchaudio
+./.venv/bin/pip install "msclap>=1.3,<2"
+```
 
 ```bash
 # Frontend
 cd frontend
 pnpm install               # pnpm required: applies patches/ to @audiotool/nexus
-echo "NEXT_PUBLIC_AUDIOTOOL_CLIENT_ID=your-client-id" >> .env.local
+cp .env.example .env.local     # API URL, Firebase web config, Audiotool client id
 pnpm run check                 # eslint + tsc + vitest
 pnpm run dev                   # → http://127.0.0.1:3000/audiotool
 ```

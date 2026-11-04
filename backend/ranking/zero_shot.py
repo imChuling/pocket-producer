@@ -6,6 +6,8 @@ reproducible, unlike free-form LLM tagging. The vocabulary is part of the
 experiment configuration: changing it is a versioned change.
 """
 
+import weakref
+
 import numpy as np
 
 from ranking.adapters.base import AudioRepresentationAdapter
@@ -33,12 +35,13 @@ STYLE_PROMPT_TEMPLATE = "a {style} music recording"
 
 # Prompt embeddings depend only on the (frozen) text tower, so they are
 # encoded once per adapter instead of on every ingest.
-_prompt_cache: dict[int, np.ndarray] = {}
+# Keyed on the adapter object itself: an id()-keyed dict would hand a new
+# adapter the prompts of a dead one whose address was reused.
+_prompt_cache: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
 
 
 def _prompt_embeddings(adapter: AudioRepresentationAdapter) -> np.ndarray:
-    key = id(adapter)
-    cached = _prompt_cache.get(key)
+    cached = _prompt_cache.get(adapter)
     if cached is not None:
         return cached
     prompts = [STYLE_PROMPT_TEMPLATE.format(style=style) for style in STYLE_VOCABULARY]
@@ -50,7 +53,7 @@ def _prompt_embeddings(adapter: AudioRepresentationAdapter) -> np.ndarray:
         )
     texts = np.asarray(texts, dtype=np.float64)
     texts = texts / np.linalg.norm(texts, axis=1, keepdims=True)
-    _prompt_cache[key] = texts
+    _prompt_cache[adapter] = texts
     return texts
 
 
