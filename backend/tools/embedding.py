@@ -8,6 +8,12 @@ import voyageai
 logger = logging.getLogger(__name__)
 
 _client = None
+_query_client = None
+
+# The rank path calls Voyage from a two-thread pool under a 2 s budget; the
+# library default is a 600 s timeout, so one outage could pin both workers
+# for half an hour while every /rank fell back to rules.
+QUERY_TIMEOUT_SECS = 5.0
 
 
 def _get_client() -> voyageai.Client:
@@ -15,6 +21,21 @@ def _get_client() -> voyageai.Client:
     if _client is None:
         _client = voyageai.Client(api_key=os.environ["VOYAGE_API_KEY"])
     return _client
+
+
+def _get_query_client() -> voyageai.Client:
+    global _query_client
+    if _query_client is None:
+        _query_client = voyageai.Client(
+            api_key=os.environ["VOYAGE_API_KEY"], max_retries=0, timeout=QUERY_TIMEOUT_SECS
+        )
+    return _query_client
+
+
+def embed_query(text: str) -> list[float]:
+    """One attempt, short timeout: for ranking, where failure means rules."""
+    result = _get_query_client().embed([text], model="voyage-3", input_type="query")
+    return result.embeddings[0]
 
 
 def _embed_sync(text: str, input_type: str) -> list[float]:
