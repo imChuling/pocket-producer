@@ -6,6 +6,16 @@ import { useAuth } from "./use-auth";
 import type { Fragment } from "@/types";
 
 const POLL_INTERVAL = 10_000;
+// After this long a "processing" fragment is stuck (the capture page shows
+// the same threshold with a fix-up action); polling it would never end.
+const STUCK_AFTER_MS = 2 * 60 * 1000;
+
+function stillProcessing(fragment: Fragment): boolean {
+  if (fragment.status !== "processing") return false;
+  if (fragment.tags && fragment.tags.length > 0) return false;
+  const started = new Date(fragment.created_at).getTime();
+  return !Number.isFinite(started) || Date.now() - started < STUCK_AFTER_MS;
+}
 
 export function useFragments() {
   const { user } = useAuth();
@@ -33,13 +43,17 @@ export function useFragments() {
     return () => window.clearTimeout(id);
   }, [refresh]);
 
-  // Auto-poll while any fragment is still processing
+  // Auto-poll while any fragment can still finish processing
   useEffect(() => {
-    const hasProcessing = fragments.some((f) => f.status === "processing");
+    const hasProcessing = fragments.some(stillProcessing);
 
     if (hasProcessing) {
       if (!timerRef.current) {
-        timerRef.current = setInterval(refresh, POLL_INTERVAL);
+        timerRef.current = setInterval(() => {
+          // A background tab gets the fresh list when it comes back.
+          if (document.visibilityState === "hidden") return;
+          void refresh();
+        }, POLL_INTERVAL);
       }
     } else if (timerRef.current) {
       clearInterval(timerRef.current);
