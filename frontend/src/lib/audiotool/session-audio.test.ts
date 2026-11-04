@@ -106,6 +106,60 @@ describe("extractSessionAudio", () => {
     vi.unstubAllGlobals();
   });
 
+  it("re-uses a complete result for the same sample set", async () => {
+    const doc = fakeDocument(
+      [{ id: "r1", sampleRef: "s1" }],
+      [{ id: "s1", sampleName: "samples/aaa" }],
+    );
+    const download = vi.fn(async () => new Blob(["wav"]));
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ embeddings: [[1, 2]], chroma: [[0.5]] }),
+    }));
+    vi.stubGlobal("fetch", fetchSpy);
+    const cache = new Map();
+
+    const first = await extractSessionAudio(doc, { download }, {
+      backendUrl: "/embed",
+      authToken: "tok",
+      cache,
+    });
+    const second = await extractSessionAudio(doc, { download }, {
+      backendUrl: "/embed",
+      authToken: "tok",
+      cache,
+    });
+
+    expect(download).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(second.embeddings).toEqual(first.embeddings);
+    expect(second.chroma).toEqual(first.chroma);
+
+    vi.unstubAllGlobals();
+  });
+
+  it("does not cache a partial encode", async () => {
+    const doc = fakeDocument(
+      [{ id: "r1", sampleRef: "s1" }],
+      [{ id: "s1", sampleName: "samples/aaa" }],
+    );
+    const download = vi.fn(async () => new Blob(["wav"]));
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ embeddings: [[1, 2]], timed_out: true }),
+    }));
+    vi.stubGlobal("fetch", fetchSpy);
+    const cache = new Map();
+
+    await extractSessionAudio(doc, { download }, { backendUrl: "/embed", authToken: "tok", cache });
+    await extractSessionAudio(doc, { download }, { backendUrl: "/embed", authToken: "tok", cache });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(cache.size).toBe(0);
+
+    vi.unstubAllGlobals();
+  });
+
   it("carries chroma, encode failures and timeout from the backend", async () => {
     const doc = fakeDocument(
       [{ id: "r1", sampleRef: "s1" }],

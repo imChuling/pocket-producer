@@ -26,12 +26,13 @@ Ranking evaluation on the Freesound Loop Dataset in `research/`.
 ### What it does
 
 1. **Reads** your open Audiotool session through the Nexus SDK: tempo, track
-   roles, playhead position
+   roles, the samples already on the timeline
 2. **Ranks** your own fragment library by session compatibility (tempo, role
    gaps, intent overlap), beyond plain audio similarity
 3. **Shows evidence** for every suggestion ("121 BPM close to project's 120",
    "adds a role this session doesn't have yet")
-4. **Inserts** the chosen fragment at the playhead in one Nexus transaction
+4. **Inserts** the chosen fragment at the start of the timeline in one Nexus
+   transaction (the SDK does not expose the playhead)
 5. **Undoes** cleanly: restores the exact prior entity set
 6. **Imports** an existing Audiotool project's samples into your library in
    one click, so your own back catalog becomes searchable creative memory
@@ -46,7 +47,7 @@ weak-supervision labels are constructed.
 Full read-write cycle against live Audiotool documents.
 
 - **Session fingerprinting.** Walks the document entity tree to pull out
-  tempo, track types, playhead position. No manual input needed.
+  tempo, track types, region samples. No manual input needed.
 - **Transactional insert.** Uploads the sample, waits for the server to
   confirm, then writes the region in a single `document.modify` call.
   The document stays consistent even if the network drops mid-flow.
@@ -100,7 +101,7 @@ Audiotool project (live, via Nexus SDK)
                              fusion-5sig-v1 (selectable, w⊤φ trained by BPR)
                              + mean-session · audio-cosine · role-gap · harmonic-fit
   → proposals with evidence  per-signal chips, relative to the served set
-  → preview · insert at playhead · exact undo
+  → preview · insert at bar 1 · exact undo
   → exposure + decision log  served signals and accept/reject, the path to
                              replacing the cold-start proxy with real preference
 ```

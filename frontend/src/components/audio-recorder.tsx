@@ -42,6 +42,8 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const recordingRef = useRef(false);
+  const mountedRef = useRef(true);
+  const elapsedRef = useRef(0);
 
   useEffect(() => {
     recordingRef.current = recording;
@@ -176,6 +178,7 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
   // take — the parent is gone, so there is nowhere to deliver the blob.
   useEffect(() => {
     return () => {
+      mountedRef.current = false;
       const recorder = mediaRecorder.current;
       if (recorder && recorder.state !== "inactive") {
         recorder.onstop = null;
@@ -195,6 +198,11 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
     setError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (!mountedRef.current) {
+        // The permission prompt outlived the page: nobody owns this stream.
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
       streamRef.current = stream;
 
       const audioCtx = new AudioContext();
@@ -234,15 +242,19 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
       recorder.start();
       setRecording(true);
       setSeconds(0);
+      elapsedRef.current = 0;
+      // The cap is enforced from the interval, not inside the state updater:
+      // updaters must stay pure (StrictMode runs them twice in development,
+      // and stopping an already-inactive recorder throws).
       timerRef.current = setInterval(() => {
-        setSeconds((s) => {
-          if (s + 1 >= MAX_DURATION) {
-            recorder.stop();
-            setRecording(false);
-            if (timerRef.current) clearInterval(timerRef.current);
-          }
-          return s + 1;
-        });
+        elapsedRef.current += 1;
+        setSeconds(elapsedRef.current);
+        if (elapsedRef.current >= MAX_DURATION) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          timerRef.current = null;
+          if (recorder.state !== "inactive") recorder.stop();
+          setRecording(false);
+        }
       }, 1000);
     } catch (err) {
       audioCtxRef.current?.close().catch(() => {});

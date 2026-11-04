@@ -40,6 +40,7 @@ export function AudioPlayer({
   const [dragging, setDragging] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const objectUrlRef = useRef<string | null>(null);
+  const mountedRef = useRef(true);
   const playingRef = useRef(false);
   const progressBarRef = useRef<HTMLDivElement | null>(null);
   const draggingRef = useRef(false);
@@ -48,6 +49,7 @@ export function AudioPlayer({
 
   useEffect(() => {
     return () => {
+      mountedRef.current = false;
       dragCleanupRef.current?.();
       const audio = audioRef.current;
       if (audio) {
@@ -137,6 +139,9 @@ export function AudioPlayer({
       });
       if (!res.ok) throw new Error("Failed to load audio");
       const blob = await res.blob();
+      // The card may have gone while the audio loaded; a clip that starts
+      // now would play with no UI to stop it and hold its blob until unload.
+      if (!mountedRef.current) return;
       const url = URL.createObjectURL(blob);
       objectUrlRef.current = url;
 

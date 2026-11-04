@@ -70,9 +70,9 @@ def default_service() -> RankingService:
     def encode_intent_text(text: str) -> list[float]:
         # Same frozen Voyage model that produced the stored text vectors;
         # any API failure degrades to rules via the service fallback.
-        from tools.embedding import _embed_sync
+        from tools.embedding import embed_query
 
-        return _embed_sync(text, "query")
+        return embed_query(text)
 
     registry.register(TextCosineRanker(text_encoder=encode_intent_text))
 

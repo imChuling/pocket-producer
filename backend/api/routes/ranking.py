@@ -150,20 +150,25 @@ EMBED_TIMEOUT_SECONDS = 20.0
 _embed_slots = asyncio.Semaphore(2)
 
 
-def _encode_region(waveform, sample_rate):
+def _encode_region(waveform, sample_rate, abandoned: dict):
     """CLAP vector plus 12-dim chroma for one mono session region.
 
     CLAP sees the model window (first 7 s); chroma is taken over the region
     (capped at CHROMA_MAX_SECONDS), matching how candidate chroma is computed
     at ingest and in the research corpus.
+
+    A thread cannot be interrupted once the request has timed out, so it
+    checks `abandoned` before each expensive step and returns None instead.
     """
     from ranking.adapters.msclap import prepare_waveform
     from ranking.harmonic_probe import chroma_from_audio
 
-    return (
-        clap.encode_audio(prepare_waveform(waveform, sample_rate), sample_rate),
-        chroma_from_audio(waveform, sample_rate),
-    )
+    if abandoned["value"]:
+        return None
+    vector = clap.encode_audio(prepare_waveform(waveform, sample_rate), sample_rate)
+    if abandoned["value"]:
+        return None
+    return vector, chroma_from_audio(waveform, sample_rate)
 
 
 def registered_models() -> list[str]:
@@ -196,8 +201,11 @@ async def session_embed(
     embeddings: list[list[float]] = []
     chromas: list[list[float]] = []
     failed: list[dict] = []
+    abandoned = {"value": False}
+    inflight: asyncio.Future | None = None
 
     async def _encode_all():
+        nonlocal inflight
         from ranking.adapters.msclap import to_mono
 
         for upload in files:
@@ -213,7 +221,15 @@ async def session_embed(
                 del raw
                 mono = to_mono(waveform)
                 del waveform
-                vector, chroma = await asyncio.to_thread(_encode_region, mono, sample_rate)
+                # Shielded so a timeout cancels this coroutine, not the thread's
+                # future: the future is what tells us when the thread is done.
+                inflight = asyncio.ensure_future(
+                    asyncio.to_thread(_encode_region, mono, sample_rate, abandoned)
+                )
+                outcome = await asyncio.shield(inflight)
+                if outcome is None:
+                    continue
+                vector, chroma = outcome
             except Exception as error:
                 logger.warning("session-embed: failed to encode %s", name, exc_info=True)
                 failed.append({"file": name, "reason": type(error).__name__})
@@ -222,15 +238,31 @@ async def session_embed(
             chromas.append(chroma)
 
     timed_out = False
+    await _embed_slots.acquire()
+    slot_follows_thread = False
     try:
-        async with _embed_slots:
-            await asyncio.wait_for(_encode_all(), timeout=EMBED_TIMEOUT_SECONDS)
+        await asyncio.wait_for(_encode_all(), timeout=EMBED_TIMEOUT_SECONDS)
     except TimeoutError:
         timed_out = True
+        abandoned["value"] = True
+        if inflight is not None and not inflight.done():
+            # The encode thread keeps running; let it keep the slot until it
+            # returns so abandoned work cannot stack up behind the CLAP lock.
+            slot_follows_thread = True
+
+            def _release(done: asyncio.Future) -> None:
+                if not done.cancelled():
+                    done.exception()  # retrieved, so the loop does not log it
+                _embed_slots.release()
+
+            inflight.add_done_callback(_release)
         logger.warning(
             "session-embed timed out after %.0fs with %d/%d encoded",
             EMBED_TIMEOUT_SECONDS, len(embeddings), len(files),
         )
+    finally:
+        if not slot_follows_thread:
+            _embed_slots.release()
     return {
         "embeddings": embeddings,
         "chroma": chromas,

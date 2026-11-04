@@ -1,4 +1,8 @@
-const CACHE_NAME = "pocket-producer-shell-v1";
+// The registration URL carries the build id (?v=...), so each deployment
+// installs a fresh worker whose activate step drops the previous build's
+// cache instead of accumulating every build's hashed chunks forever.
+const BUILD = new URL(self.location.href).searchParams.get("v") || "dev";
+const CACHE_NAME = `pocket-producer-shell-${BUILD}`;
 const SHELL_ASSETS = [
   "/",
   "/manifest.webmanifest",

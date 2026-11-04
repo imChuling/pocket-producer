@@ -52,8 +52,8 @@ export function useAudiotool(options?: { authorize?: NexusAuthorize }) {
     }, 0);
 
     // Release the synced document, but keep the controller usable: React
-    // StrictMode remounts with the same instance, and `dispose()` is terminal.
-    // Subscriptions are already torn down by useSyncExternalStore.
+    // StrictMode remounts with the same instance. Subscriptions are already
+    // torn down by useSyncExternalStore.
     return () => {
       window.clearTimeout(timer);
       void controller.closeProject();

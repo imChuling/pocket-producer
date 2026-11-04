@@ -7,7 +7,6 @@
 
 import {
   audiotool,
-  audiotoolPopup,
   createAudiotoolClient,
   createServerAuth,
 } from "@audiotool/nexus";
@@ -33,7 +32,6 @@ export type AudiotoolController = {
   restore: () => Promise<void>;
   openProject: (projectName: string) => Promise<void>;
   closeProject: () => Promise<void>;
-  dispose: () => Promise<void>;
   state: () => AudiotoolControllerState;
   subscribe: (
     listener: (state: AudiotoolControllerState) => void,
@@ -59,7 +57,6 @@ export function createAudiotoolController(deps: {
   let client: NexusClientPort | null = null;
   let openDocument: NexusDocumentPort | null = null;
   let authorizing: Promise<void> | null = null;
-  let disposed = false;
   const listeners = new Set<(state: AudiotoolControllerState) => void>();
 
   function setState(patch: Partial<AudiotoolControllerState>) {
@@ -85,7 +82,6 @@ export function createAudiotoolController(deps: {
   }
 
   async function connect(): Promise<void> {
-    if (disposed) throw new Error("Audiotool controller has been disposed");
     if (state.status === "connected" || state.status === "project-open") return;
     if (authorizing) return authorizing;
 
@@ -113,7 +109,7 @@ export function createAudiotoolController(deps: {
   }
 
   async function restore(): Promise<void> {
-    if (disposed || authorizing) return;
+    if (authorizing) return;
     if (state.status !== "idle") return;
     let result: NexusAuthResult;
     try {
@@ -122,12 +118,11 @@ export function createAudiotoolController(deps: {
       // No session to restore; stay idle so the user can start one.
       return;
     }
-    if (result.status !== "authenticated" || disposed) return;
+    if (result.status !== "authenticated") return;
     await adoptClient(result);
   }
 
   async function openProject(projectName: string): Promise<void> {
-    if (disposed) throw new Error("Audiotool controller has been disposed");
     if (client === null || state.status === "idle" || state.status === "authorizing") {
       throw new Error("Not connected to Audiotool yet");
     }
@@ -163,29 +158,11 @@ export function createAudiotoolController(deps: {
     }
   }
 
-  async function dispose(): Promise<void> {
-    if (disposed) return;
-    disposed = true;
-    const doc = openDocument;
-    openDocument = null;
-    if (doc !== null) {
-      try {
-        await doc.stop();
-      } catch {
-        // Shutting down regardless.
-      }
-    }
-    setState({ ...INITIAL_STATE });
-    listeners.clear();
-    client = null;
-  }
-
   return {
     connect,
     restore,
     openProject,
     closeProject,
-    dispose,
     state: () => state,
     subscribe: (listener) => {
       listeners.add(listener);
@@ -310,33 +287,6 @@ export function createRedirectAuthorize(config: {
     if (result.status !== "authenticated") {
       // Navigates away; the promise below never settles in practice.
       if (interactive) result.login();
-      return { status: "unauthenticated", error: result.error };
-    }
-    return adaptAuthenticated(
-      result as unknown as AuthenticatedNexus,
-      config.clientId,
-    );
-  };
-}
-
-/**
- * Popup-based authorize, kept for embedded (iframe) contexts where a full-page
- * redirect is impossible. Not the default — see createRedirectAuthorize.
- *
- * `audiotoolPopup` is imported statically on purpose: a dynamic `await
- * import()` here would yield before opening the window, the browser would no
- * longer see a user gesture, and the popup would be blocked.
- */
-export function createPopupAuthorize(config: {
-  clientId: string;
-  scope?: string;
-}): NexusAuthorize {
-  return async () => {
-    const result = await audiotoolPopup({
-      clientId: config.clientId,
-      scope: config.scope ?? "project:write sample:write",
-    });
-    if (result.status !== "authenticated") {
       return { status: "unauthenticated", error: result.error };
     }
     return adaptAuthenticated(

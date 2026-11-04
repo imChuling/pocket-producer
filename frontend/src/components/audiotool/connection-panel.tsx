@@ -34,13 +34,6 @@ export function ConnectionPanel({
           className="rounded-lg border border-red-200 bg-red-50 p-3 text-left text-sm text-red-700"
         >
           <p>{error}</p>
-          {/^popup was blocked/i.test(error) && (
-            <p className="mt-2 text-red-600">
-              Your browser blocked the sign-in window. Allow pop-ups for this
-              site (the blocked-pop-up icon sits at the right of the address
-              bar), then press Connect again.
-            </p>
-          )}
         </div>
       )}
       <button

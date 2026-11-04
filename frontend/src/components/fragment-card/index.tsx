@@ -61,18 +61,23 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
 
   useEffect(() => {
     if (!isProcessing) return;
-    let cancelled = false;
+    // Aborting closes the HTTP stream itself; a bare flag would leave the
+    // connection open server-side until the next event and then update a
+    // card that is no longer mounted.
+    const controller = new AbortController();
+    const { signal } = controller;
     (async () => {
       try {
         const { getIdToken } = await import("@/lib/firebase");
         const token = await getIdToken();
+        if (signal.aborted) return;
         const url = `${process.env.NEXT_PUBLIC_API_URL || ""}/api/fragments/${fragment._id}/status-stream`;
-        const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal });
         if (!res.body) return;
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buf = "";
-        while (!cancelled) {
+        while (!signal.aborted) {
           const { value, done } = await reader.read();
           if (done) break;
           buf += decoder.decode(value, { stream: true });
@@ -92,7 +97,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
         }
       } catch {}
     })();
-    return () => { cancelled = true; };
+    return () => controller.abort();
   }, [isProcessing, fragment._id]);
 
   async function handleDelete() {

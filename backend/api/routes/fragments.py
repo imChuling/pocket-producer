@@ -645,9 +645,6 @@ async def reanalyze_fragment(
 
     oid = parse_object_id(fragment_id, "fragment_id")
 
-    if not await acquire_pipeline_slot():
-        raise HTTPException(429, "Too many fragments processing, please try again shortly")
-
     db = get_db()
     frag = await asyncio.to_thread(
         db["fragments"].find_one,
@@ -655,14 +652,22 @@ async def reanalyze_fragment(
         {"_id": 1, "audio_url": 1, "text": 1},
     )
     if not frag:
-        await release_pipeline_slot()
         raise HTTPException(404, "Fragment not found")
 
-    await asyncio.to_thread(
-        db["fragments"].update_one,
-        {"_id": oid, "user_id": user_id},
-        {"$set": {"status": "processing"}},
-    )
+    if not await acquire_pipeline_slot():
+        raise HTTPException(429, "Too many fragments processing, please try again shortly")
+
+    # From here on the slot is held: every exit path must release it, or
+    # two failures would block uploads for the rest of the process.
+    try:
+        await asyncio.to_thread(
+            db["fragments"].update_one,
+            {"_id": oid, "user_id": user_id},
+            {"$set": {"status": "processing"}},
+        )
+    except Exception:
+        await release_pipeline_slot()
+        raise
 
     import json as _json
 

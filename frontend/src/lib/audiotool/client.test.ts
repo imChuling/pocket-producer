@@ -152,23 +152,6 @@ describe("createAudiotoolController", () => {
     expect(controller.state().openProjectName).toBeNull();
   });
 
-  it("dispose stops any open document and unsubscribes listeners", async () => {
-    const { client, doc } = fakeAuthenticated();
-    const controller = createAudiotoolController({
-      authorize: authorizeWith({ ...client }),
-    });
-    const listener = vi.fn();
-    const unsubscribe = controller.subscribe(listener);
-    await controller.connect();
-    await controller.openProject("projects/p1");
-    const callsBefore = listener.mock.calls.length;
-    await controller.dispose();
-    expect(doc.stop).toHaveBeenCalledTimes(1);
-    unsubscribe();
-    await controller.connect().catch(() => {});
-    expect(listener.mock.calls.length).toBe(callsBefore + 1); // only dispose notified
-  });
-
   describe("restore (OAuth redirect return)", () => {
     it("adopts an existing session without asking to log in", async () => {
       const { client } = fakeAuthenticated();

@@ -77,7 +77,7 @@ Revision pinning: every stored vector carries `model_id`, `revision` (sha256 of 
 ## Limitations
 
 - **No personalization**: the system does not adapt to individual user preferences over time. This is a deliberate design constraint; the preregistered protocol requires temporal held-out learning curve support before enabling adaptation.
-- **Session representation is flat**: the current `SessionFingerprint` captures tempo, track count/types, playhead, and mean audio embedding but not per-region role, temporal position, or pitch class structure.
+- **Session representation is flat**: the current `SessionFingerprint` captures tempo, track count/types, and mean audio embedding but not per-region role, temporal position, or pitch class structure.
 - **Small evaluation scale**: human pairwise labels are in pilot quantities. Statistical power is limited; results are reported honestly with sample sizes.
 - **Backbone audit incomplete**: LAION-CLAP music training data provenance has not been fully verified for commercial deployment.
 

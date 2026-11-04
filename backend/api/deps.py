@@ -5,6 +5,7 @@ import hashlib
 import logging
 import os
 import re
+import weakref
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -83,7 +84,9 @@ async def release_pipeline_slot():
 
 # Per-user agent-pipeline serialization — two fragments uploaded close
 # together must not both create a project for the same neighborhood.
-_user_agent_locks: dict[str, asyncio.Lock] = {}
+# Weak values: a lock lives only while a pipeline holds it, so the map does
+# not grow by one entry per user ever seen for the life of the process.
+_user_agent_locks: weakref.WeakValueDictionary[str, asyncio.Lock] = weakref.WeakValueDictionary()
 _user_agent_locks_guard = asyncio.Lock()
 
 
@@ -96,20 +99,25 @@ async def get_user_agent_lock(user_id: str) -> asyncio.Lock:
         return lock
 
 
-# DNA update debounce — collapse rapid successive triggers into one run
+# DNA update debounce — collapse rapid successive triggers into one run.
+# Pending-ness is tracked per user: one user's debounce window must not
+# swallow another user's trigger, and a caller cancelled mid-wait (a
+# reanalyze stream the client closed) must not leave the flag set forever.
 _dna_lock = asyncio.Lock()
-_dna_pending = False
+_dna_pending: set[str] = set()
 
 
 async def debounced_dna_update(user_id: str | None = None, delay: float = 2.0):
     """Schedule a DNA update for one user, collapsing rapid triggers."""
-    global _dna_pending
-    if _dna_pending:
+    key = user_id or ""
+    if key in _dna_pending:
         return
-    _dna_pending = True
-    await asyncio.sleep(delay)
+    _dna_pending.add(key)
+    try:
+        await asyncio.sleep(delay)
+    finally:
+        _dna_pending.discard(key)
     async with _dna_lock:
-        _dna_pending = False
         try:
             from jobs.dna_insights import run as run_dna
             await asyncio.to_thread(run_dna, user_id)

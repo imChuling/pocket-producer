@@ -37,29 +37,36 @@ def _extract_sync(audio_url: str) -> dict[str, Any]:
     import librosa
     import numpy as np
 
-    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-        if audio_url.startswith("gs://"):
-            parts = audio_url.replace("gs://", "").split("/", 1)
-            bucket_name, blob_name = parts[0], parts[1]
-            from api._clients import get_gcs_client
-            get_gcs_client().bucket(bucket_name).blob(blob_name).download_to_filename(tmp.name)
-        else:
-            _validate_audio_url(audio_url)
-            r = requests.get(audio_url, timeout=30, stream=True)
-            r.raise_for_status()
-            total = 0
-            for chunk in r.iter_content(chunk_size=1024 * 1024):
-                total += len(chunk)
-                if total > _MAX_DOWNLOAD_BYTES:
-                    raise ValueError("Remote audio exceeds 50 MB download cap")
-                tmp.write(chunk)
-        tmp.flush()
-        tmp_path = tmp.name
-
+    # The temp file lives on Cloud Run's memory-backed disk, so it must go
+    # on every path, including a download that fails halfway.
+    tmp_path = ""
     try:
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            tmp_path = tmp.name
+            if audio_url.startswith("gs://"):
+                parts = audio_url.replace("gs://", "").split("/", 1)
+                bucket_name, blob_name = parts[0], parts[1]
+                from api._clients import get_gcs_client
+                get_gcs_client().bucket(bucket_name).blob(blob_name).download_to_filename(tmp.name)
+            else:
+                _validate_audio_url(audio_url)
+                with requests.get(audio_url, timeout=30, stream=True) as r:
+                    r.raise_for_status()
+                    total = 0
+                    for chunk in r.iter_content(chunk_size=1024 * 1024):
+                        total += len(chunk)
+                        if total > _MAX_DOWNLOAD_BYTES:
+                            raise ValueError("Remote audio exceeds 50 MB download cap")
+                        tmp.write(chunk)
+            tmp.flush()
+
         y, sr = librosa.load(tmp_path, sr=22050, mono=True)
     finally:
-        os.unlink(tmp_path)
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except FileNotFoundError:
+                pass
 
     duration = float(librosa.get_duration(y=y, sr=sr))
 

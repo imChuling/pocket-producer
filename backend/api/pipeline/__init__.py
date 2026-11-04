@@ -5,7 +5,7 @@ Re-exports preserve backward-compatible ``from .pipeline import X`` usage.
 
 from .._clients import get_genai_client
 from .grouping import generate_next_action_for_project as _generate_next_action
-from .grouping import memory_and_project, run_agent
+from .grouping import memory_and_project
 from .processing import process_fragment_background
 from .tagging import build_fallback_tags, tag_fragment_direct
 from .validation import validate_audio_upload
@@ -18,5 +18,4 @@ __all__ = [
     "tag_fragment_direct",
     "build_fallback_tags",
     "_generate_next_action",
-    "run_agent",
 ]

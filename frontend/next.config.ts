@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
+// Build id for the service-worker cache name: the deploy's commit on Vercel,
+// the build time elsewhere. Any value that changes per build will do.
+const buildId =
+  process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) ?? String(Date.now());
+
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_BUILD_ID: buildId,
+  },
   // Audiotool rejects `localhost` in OAuth redirect URIs, so development runs
   // on 127.0.0.1. Next.js treats that as a cross-origin dev host and blocks
   // its dev resources (HMR, fonts) by default, which stops the client from

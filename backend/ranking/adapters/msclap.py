@@ -25,8 +25,13 @@ def _weights_revision(model) -> str:
     for attribute in ("model_fp", "weights_path", "ckpt_path"):
         path = getattr(model, attribute, None)
         if path and Path(str(path)).exists():
-            digest = hashlib.sha256(Path(str(path)).read_bytes()).hexdigest()
-            return f"sha256:{digest}"
+            # Chunked: read_bytes() would hold the whole 658 MB checkpoint
+            # next to the loaded model during warmup.
+            digest = hashlib.sha256()
+            with open(str(path), "rb") as handle:
+                for chunk in iter(lambda: handle.read(1 << 20), b""):
+                    digest.update(chunk)
+            return f"sha256:{digest.hexdigest()}"
     return f"msclap-package-{_MSCLAP_VERSION}"
 
 

@@ -22,6 +22,7 @@ import { importProjectAsFragments } from "@/lib/audiotool/import-project";
 import {
   describeSessionAudio,
   extractSessionAudio,
+  type SessionAudioCache,
 } from "@/lib/audiotool/session-audio";
 import { fingerprintFromDocument } from "@/lib/audiotool/session-fingerprint";
 import { linkAudiotoolInsert, unlinkAudiotoolInsert } from "@/lib/api";
@@ -69,6 +70,9 @@ export default function AudiotoolPage() {
   );
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previewUrlRef = useRef<string | null>(null);
+  // Session vectors keyed by the regions' sample set, so asking again for
+  // an unchanged session does not re-download and re-encode its audio.
+  const sessionAudioCacheRef = useRef<SessionAudioCache>(new Map());
 
   const releasePreview = useCallback(() => {
     audioRef.current?.pause();
@@ -98,8 +102,10 @@ export default function AudiotoolPage() {
     };
   }, [user]);
 
+  const mountedRef = useRef(true);
   useEffect(() => {
     return () => {
+      mountedRef.current = false;
       releasePreview();
     };
   }, [releasePreview]);
@@ -124,7 +130,9 @@ export default function AudiotoolPage() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) throw new Error("Could not load preview audio");
-    const url = URL.createObjectURL(await response.blob());
+    const blob = await response.blob();
+    if (!mountedRef.current) return;
+    const url = URL.createObjectURL(blob);
     releasePreview();
     const audio = new Audio(url);
     audioRef.current = audio;
@@ -414,9 +422,8 @@ export default function AudiotoolPage() {
           {lastInsert && (
             <div className="flex items-center justify-between rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
               <span>
-                Inserted “{lastInsert.title}” at{" "}
-                {lastInsert.receipt.insertedAtSeconds.toFixed(1)}s — check your
-                Audiotool timeline.
+                Inserted “{lastInsert.title}” at the start of the timeline;
+                check your Audiotool project.
               </span>
               <button
                 type="button"
@@ -446,6 +453,7 @@ export default function AudiotoolPage() {
                   const result = await extractSessionAudio(doc, samplesApi, {
                     backendUrl: "/api/ranking/session-embed",
                     authToken: token,
+                    cache: sessionAudioCacheRef.current,
                   });
                   if (result.embeddings.length > 0) {
                     fresh.region_audio_embeddings = result.embeddings;
