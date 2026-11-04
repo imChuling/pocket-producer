@@ -5,6 +5,7 @@ import hashlib
 import logging
 import os
 import re
+import weakref
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -83,7 +84,9 @@ async def release_pipeline_slot():
 
 # Per-user agent-pipeline serialization — two fragments uploaded close
 # together must not both create a project for the same neighborhood.
-_user_agent_locks: dict[str, asyncio.Lock] = {}
+# Weak values: a lock lives only while a pipeline holds it, so the map does
+# not grow by one entry per user ever seen for the life of the process.
+_user_agent_locks: weakref.WeakValueDictionary[str, asyncio.Lock] = weakref.WeakValueDictionary()
 _user_agent_locks_guard = asyncio.Lock()
 
 
