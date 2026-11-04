@@ -96,20 +96,25 @@ async def get_user_agent_lock(user_id: str) -> asyncio.Lock:
         return lock
 
 
-# DNA update debounce — collapse rapid successive triggers into one run
+# DNA update debounce — collapse rapid successive triggers into one run.
+# Pending-ness is tracked per user: one user's debounce window must not
+# swallow another user's trigger, and a caller cancelled mid-wait (a
+# reanalyze stream the client closed) must not leave the flag set forever.
 _dna_lock = asyncio.Lock()
-_dna_pending = False
+_dna_pending: set[str] = set()
 
 
 async def debounced_dna_update(user_id: str | None = None, delay: float = 2.0):
     """Schedule a DNA update for one user, collapsing rapid triggers."""
-    global _dna_pending
-    if _dna_pending:
+    key = user_id or ""
+    if key in _dna_pending:
         return
-    _dna_pending = True
-    await asyncio.sleep(delay)
+    _dna_pending.add(key)
+    try:
+        await asyncio.sleep(delay)
+    finally:
+        _dna_pending.discard(key)
     async with _dna_lock:
-        _dna_pending = False
         try:
             from jobs.dna_insights import run as run_dna
             await asyncio.to_thread(run_dna, user_id)
