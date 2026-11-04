@@ -105,12 +105,29 @@ async function sendFeedback(payload: FeedbackPayload): Promise<void> {
 }
 
 // Feedback must never block creating: failed events queue locally and are
-// retried in the background, in order.
+// retried in the background, in order. The queue is bounded (oldest events
+// drop first), retries back off up to five minutes, and an event the server
+// rejects outright (4xx other than 429) or that belongs to a signed-out
+// session is dropped instead of blocking everything behind it.
+const MAX_QUEUED_FEEDBACK = 200;
+const RETRY_BASE_MS = 5_000;
+const RETRY_MAX_MS = 5 * 60_000;
 const feedbackQueue: FeedbackPayload[] = [];
 let flushing = false;
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
+let retryDelayMs = RETRY_BASE_MS;
+
+function isPermanentFeedbackError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.startsWith("Not authenticated")) return true;
+  const status = /^API (\d{3})/.exec(message);
+  if (!status) return false;
+  const code = Number(status[1]);
+  return code >= 400 && code < 500 && code !== 429;
+}
 
 export function sendFeedbackQueued(payload: FeedbackPayload): void {
+  if (feedbackQueue.length >= MAX_QUEUED_FEEDBACK) feedbackQueue.shift();
   feedbackQueue.push(payload);
   void flushFeedbackQueue();
 }
@@ -123,12 +140,18 @@ async function flushFeedbackQueue(): Promise<void> {
       try {
         await sendFeedback(feedbackQueue[0]);
         feedbackQueue.shift();
-      } catch {
+        retryDelayMs = RETRY_BASE_MS;
+      } catch (error) {
+        if (isPermanentFeedbackError(error)) {
+          feedbackQueue.shift();
+          continue;
+        }
         if (retryTimer === null) {
           retryTimer = setTimeout(() => {
             retryTimer = null;
             void flushFeedbackQueue();
-          }, 5000);
+          }, retryDelayMs);
+          retryDelayMs = Math.min(retryDelayMs * 2, RETRY_MAX_MS);
         }
         return;
       }
