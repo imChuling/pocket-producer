@@ -5,7 +5,6 @@ import json
 import logging
 
 from bson import ObjectId
-from google.genai import types
 
 logger = logging.getLogger(__name__)
 
@@ -241,66 +240,3 @@ async def generate_next_action_for_project(db, user_id: str, project_id: str) ->
     finally:
         producer_db_var.reset(db_token)
         producer_user_var.reset(user_token)
-
-
-async def run_agent(runner, user_id: str, message: str, is_remote: bool) -> dict:
-    import time
-
-    if is_remote:
-        result = None
-        async for event in runner.async_stream_query(
-            user_id=user_id, message=message,
-        ):
-            if isinstance(event, dict):
-                content = event.get("content")
-                if content:
-                    parts = content.get("parts", [])
-                    result = parts[0].get("text") if parts else str(content)
-            elif hasattr(event, "content") and event.content:
-                result = event.content
-        if result is None:
-            logger.warning("Agent produced no response for user %s (remote)", user_id)
-        return {"result": result}
-
-    t0 = time.monotonic()
-    logger.info("Creating session for user %s", user_id)
-    session = await runner.session_service.create_session(
-        app_name="pocket_producer", user_id=user_id,
-    )
-    logger.info("Session created in %.1fs, starting agent run", time.monotonic() - t0)
-
-    content = types.Content(
-        role="user", parts=[types.Part(text=message)],
-    )
-    result = None
-    event_count = 0
-    async for event in runner.run_async(
-        user_id=user_id, session_id=session.id, new_message=content,
-    ):
-        event_count += 1
-        elapsed = time.monotonic() - t0
-        agent_name = getattr(event, "author", "?")
-        is_final = event.is_final_response() if hasattr(event, "is_final_response") else False
-        has_content = bool(event.content and event.content.parts) if hasattr(event, "content") else False
-        actions = ""
-        if hasattr(event, "content") and event.content and event.content.parts:
-            for part in event.content.parts:
-                if hasattr(part, "function_call") and part.function_call:
-                    actions += f" call:{part.function_call.name}"
-                if hasattr(part, "function_response") and part.function_response:
-                    actions += f" resp:{part.function_response.name}"
-        logger.info(
-            "Event #%d [%.1fs] agent=%s final=%s content=%s%s",
-            event_count, elapsed, agent_name, is_final, has_content, actions,
-        )
-        if is_final and has_content:
-            texts = [p.text for p in event.content.parts if getattr(p, "text", None)]
-            result = "\n".join(texts) if texts else None
-
-    logger.info(
-        "Agent run complete: %d events in %.1fs, result=%s",
-        event_count, time.monotonic() - t0, "yes" if result else "no",
-    )
-    if result is None:
-        logger.warning("Agent produced no response for user %s (local)", user_id)
-    return {"result": result}
