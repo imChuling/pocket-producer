@@ -150,7 +150,10 @@ def main() -> int:
     failures = 0
     print(f"{'step':16} {'time':>7}  {'max |diff|':>11}  result")
     for step in steps:
-        fmt = {"data": str(DATA), "out": str(out), "art": str(ART)}
+        # Inputs are passed as repo-relative paths (the subprocess runs with
+        # cwd=ROOT) because the artifacts record them verbatim; absolute paths
+        # would show up as a spurious difference in items_file / split_file.
+        fmt = {"data": "research/data/fsld", "out": str(out), "art": "artifacts"}
         cmd = [sys.executable, str(ROOT / "research" / step["script"])]
         cmd += [a.format(**fmt) for a in step["args"]]
         started = time.time()
