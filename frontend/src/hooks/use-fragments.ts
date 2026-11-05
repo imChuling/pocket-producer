@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { apiFetch } from "@/lib/api";
+import { shouldPoll } from "@/lib/idle";
 import { useAuth } from "./use-auth";
 import type { Fragment } from "@/types";
 
@@ -50,8 +51,8 @@ export function useFragments() {
     if (hasProcessing) {
       if (!timerRef.current) {
         timerRef.current = setInterval(() => {
-          // A background tab gets the fresh list when it comes back.
-          if (document.visibilityState === "hidden") return;
+          // A hidden or idle tab gets the fresh list when the user is back.
+          if (!shouldPoll()) return;
           void refresh();
         }, POLL_INTERVAL);
       }

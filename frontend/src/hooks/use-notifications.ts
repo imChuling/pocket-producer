@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { apiFetch, apiPost } from "@/lib/api";
+import { onActive, shouldPoll } from "@/lib/idle";
 import { useAuth } from "./use-auth";
 import type { Notification } from "@/types";
 
-const POLL_INTERVAL = 30_000; // 30 seconds
+const POLL_INTERVAL = 30_000; // 30 seconds, only while the tab is visible and in use
 
 export function useNotifications() {
   const { user } = useAuth();
@@ -39,12 +40,17 @@ export function useNotifications() {
     return () => window.clearTimeout(id);
   }, [user, refresh]);
 
-  // Poll periodically for new notifications
+  // Poll periodically for new notifications. A hidden or idle tab skips the
+  // request (see lib/idle.ts) and catches up once the user is back.
   useEffect(() => {
     if (!user) return;
-    timerRef.current = setInterval(refresh, POLL_INTERVAL);
+    timerRef.current = setInterval(() => {
+      if (shouldPoll()) void refresh();
+    }, POLL_INTERVAL);
+    const stop = onActive(() => void refresh());
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      stop();
     };
   }, [user, refresh]);
 
