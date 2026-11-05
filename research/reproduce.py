@@ -1,11 +1,13 @@
 """Re-run the paper's result chain and compare it with the committed artifacts.
 
-Runs, in order, the scripts behind every paper-facing artifact (see
-research/README.md for what each one is), writes their outputs to a scratch
-directory, and reports the largest numeric difference against the versions
-committed under artifacts/. Standard library only, so it runs the same on
-macOS, Linux and Windows; the scripts it calls need numpy and the backend
-package (research/README.md, "Prerequisites").
+Needs the embedding files in research/data/fsld/ (research/README.md says
+how to build them from the Freesound Loop Dataset). Runs, in order, the
+scripts behind every paper-facing artifact (see research/README.md for what
+each one is), writes their outputs to a scratch directory, and reports the
+largest numeric difference against the versions committed under artifacts/.
+Standard library only, so it runs the same on macOS, Linux and Windows; the
+scripts it calls need numpy and the backend package (research/README.md,
+"Prerequisites").
 
     python research/reproduce.py                 # everything, about 20 minutes
     python research/reproduce.py --only fusion   # one step
@@ -132,10 +134,18 @@ def main() -> int:
     parser.add_argument("--tolerance", type=float, default=TOLERANCE)
     args = parser.parse_args()
 
-    missing = [p for p in DATA.glob("items_*.jsonl")]
-    if not missing:
-        print("no embedding files in research/data/fsld; run research/fetch_embeddings.py first",
-              file=sys.stderr)
+    needed = [
+        "items_laion-clap-music_packonly.jsonl",
+        "items_laion-clap-music_packonly_train.jsonl",
+        "items_msclap_packonly.jsonl",
+        "items_msclap_packonly_train.jsonl",
+        "chroma.jsonl",
+    ]
+    absent = [n for n in needed if not (DATA / n).is_file()]
+    if absent:
+        print("missing in research/data/fsld: " + ", ".join(absent), file=sys.stderr)
+        print("build them from FSL10K first; see research/README.md, "
+              "'Regenerating the embeddings'", file=sys.stderr)
         return 2
 
     tmp = None

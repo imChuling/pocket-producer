@@ -18,7 +18,7 @@ research/data/
 ├── README.md                  # this file
 ├── human_pairs.jsonl          # blind pairwise labels (A / B), hashed participant ids
 ├── human_pairs_neither.jsonl  # same protocol, "neither" responses
-└── fsld/                      # FSLD manifest + embeddings, fetched by research/fetch_embeddings.py (git-ignored)
+└── fsld/                      # FSLD manifest + embeddings, regenerated locally (git-ignored)
     ├── README.md
     └── role_prompts.json
 ```

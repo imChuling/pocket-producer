@@ -309,35 +309,38 @@ backend/deploy/deploy.sh --config   # re-apply configuration only
 ## Reproducing the paper
 
 Every number in the ISMIR LBD abstract maps to a versioned JSON under
-[`artifacts/`](artifacts/). Four commands rebuild all of them on macOS,
-Linux or Windows with Python 3.11 or newer, no GPU:
+[`artifacts/`](artifacts/), and `python research/check_paper_numbers.py`
+checks the artifacts against each other with no data download at all.
 
-```bash
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-python -m pip install -r backend/requirements.txt
-python research/fetch_embeddings.py                  # 72 MB, sha256-verified
-python research/reproduce.py                         # about 20 minutes on a laptop
-```
+Rebuilding the artifacts themselves takes two stages, on macOS, Linux or
+Windows with Python 3.11 or newer and no GPU:
 
-`reproduce.py` re-runs the six paper-facing scripts and prints the largest
-numeric difference against each committed artifact (tolerance 1e-6); the
-deployed fusion weights come out identical. What is distributed and what is
-not:
+1. **Get the audio and embed it.** The corpus is the Freesound Loop Dataset
+   ([Zenodo 3967852](https://zenodo.org/records/3967852), 8.8 GB). It is
+   other people's audio under per-loop Creative Commons licenses, so neither
+   it nor anything derived from it (embeddings, chroma, manifests) is in
+   this repository. [`research/README.md`](research/README.md) gives the
+   download location and the commands that turn it into the embedding
+   files, with runtimes.
+2. **Re-run the result chain.**
 
-- Distributed: the CLAP, MS-CLAP and MERT embedding vectors the paper was
-  computed from, the frozen split, all result JSONs, every script. The
-  embedding step itself is not deterministic (the model picks its analysis
-  window at random), which is why the vectors are shipped rather than
-  regenerated.
-- Not distributed: the Freesound Loop Dataset audio (fetch it from
-  [Zenodo 3967852](https://zenodo.org/record/3967852) if you want to
-  re-embed), the paper's LaTeX source, and my own fragment library.
-  `research/check_paper_numbers.py` skips its LaTeX assertions when the
-  source is absent and still checks the artifacts.
+   ```bash
+   python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+   python -m pip install -r backend/requirements.txt
+   python research/reproduce.py                         # about 20 minutes on a laptop
+   ```
 
-The per-table commands, expected runtimes and the follow-up checks that did
-not make the paper (standardization, seven signals, key masking, a MERT
-column, mining negatives in an independent space, including the negative
+   `reproduce.py` runs the six paper-facing scripts and prints the largest
+   numeric difference against each committed artifact. From the original
+   embedding files it matches to 1e-6 (verified in a clean virtualenv; the
+   deployed fusion weights come out identical). From freshly regenerated
+   embeddings expect small differences, because the embedding models pick
+   their analysis window at random inside loops longer than it; the
+   research README explains which step is affected and by how much.
+
+Not distributed: the FSLD audio and everything derived from it, the paper's
+LaTeX source, and my own fragment library. The per-table commands and the
+follow-up checks that did not make the paper (including the negative
 results) are in [`research/README.md`](research/README.md).
 
 Cite with [`CITATION.cff`](CITATION.cff).

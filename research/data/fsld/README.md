@@ -1,10 +1,11 @@
 # FSLD data directory
 
-Derived files are gitignored; only `role_prompts.json` is tracked. The
-embedding files the paper used come from `python research/fetch_embeddings.py`
-(see the hash table below). Everything can also be regenerated from the
-FSL10K archive plus the scripts in `research/`, but the embedding step picks
-its analysis window at random, so regenerated vectors will not be identical.
+Derived files are gitignored; only `role_prompts.json` is tracked. Nothing
+derived from the FSLD audio is distributed with this repository. Everything
+is regenerated from the FSL10K archive plus the scripts in `research/`
+(step-by-step in `research/README.md`, "Regenerating the embeddings from
+FSL10K"); the embedding step picks its analysis window at random, so
+regenerated vectors will not be bit-identical to the paper's.
 
 ## Source
 
@@ -30,11 +31,11 @@ python research/embed_fsld_subset.py \
   --out research/data/fsld/items_laion-clap-music.jsonl
 ```
 
-## Content hashes (sha256)
+## Content hashes of the files behind the paper (sha256)
 
-These are the files `research/fetch_embeddings.py` installs here from the
-`fsld-embeddings-v1` release bundle (72 MB, bundle sha256
-`c08ecb191daec0efe3667efb5b79bfca536f1d3bb1289c2bc88709824dd4945c`); the script verifies each one.
+For the record, and for anyone who receives the original files from the
+author: these are the exact inputs the committed artifacts were computed
+from.
 
 | File | sha256 |
 |---|---|

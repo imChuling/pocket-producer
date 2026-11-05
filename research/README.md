@@ -9,49 +9,29 @@ not distributed with this repository.
 
 ## Prerequisites
 
-Python 3.11 or newer on macOS, Linux or Windows. Everything the result chain
-needs is in `backend/requirements.txt` (numpy and the `ranking` package; no
-GPU, no torch).
+Python 3.11 or newer on macOS, Linux or Windows.
 
 ```bash
 git clone https://github.com/imChuling/pocket-producer && cd pocket-producer
 python -m venv .venv
 source .venv/bin/activate            # Windows: .venv\Scripts\activate
 python -m pip install -r backend/requirements.txt
-python research/fetch_embeddings.py  # 72 MB bundle, sha256-verified
 ```
 
-`fetch_embeddings.py` downloads the exact embedding files the paper was
-computed from (the embedding step itself is not deterministic, see below)
-into `research/data/fsld/` and checks every file against the manifest
-shipped inside the bundle:
-
-| File | Contents |
-|------|----------|
-| `items_laion-clap-music.jsonl` | LAION-CLAP Music embeddings, full mixed-label corpus (2,558 items) |
-| `items_laion-clap-music_packonly.jsonl` | pack-only corpus (1,797 items, 605 packs) |
-| `items_laion-clap-music_packonly_train.jsonl` | train side of the frozen split (484 sources) |
-| `items_msclap_packonly.jsonl` / `..._train.jsonl` | same corpus in MS-CLAP 2023 space |
-| `items_mert_packonly.jsonl` | same corpus in MERT-v1-95M space (supporting column) |
-| `chroma.jsonl` | 12-dim chroma per item, for the harmonic signal |
-| `manifest.jsonl` | per-item Freesound id, uploader, pack and license |
-
-The files are feature vectors, not audio. The audio itself (FSL10K, Zenodo
-record 3967852) is not redistributed; 263 of the 1,797 pack-only items are
-CC BY-NC or Sampling+ and their vectors are included for non-commercial
-reproduction only, with the license of every item in `manifest.jsonl`.
-
-### One command
+That is enough for every result script (numpy and the `ranking` package; no
+GPU, no torch). The scripts start from embedding files in
+`research/data/fsld/`, which are **not in this repository**: they are derived
+from other people's audio (the Freesound Loop Dataset) and nothing derived
+from it is redistributed here. Build them once as described in the next
+section, then:
 
 ```bash
 python research/reproduce.py
 ```
 
 re-runs every paper-facing script below into a scratch directory and prints
-the largest numeric difference against the committed artifact for each one
-(tolerance 1e-6). The same check runs on Linux, macOS and Windows runners
-from the `reproduce` workflow in `.github/workflows/`. Expected wall-clock on
-a laptop CPU:
+the largest numeric difference against the committed artifact for each one.
+Expected wall-clock on a laptop CPU, once the embedding files exist:
 
 | Step | Script | Time |
 |------|--------|------|
@@ -61,6 +41,63 @@ a laptop CPU:
 | heldout-laion | `run_heldout_correction.py --mode laion` | about 1.5 min |
 | heldout-msclap | `run_heldout_correction.py --mode msclap` | about 1.5 min |
 | weights | `export_fusion_weights.py` | about 1.5 min |
+
+## Regenerating the embeddings from FSL10K
+
+The paper's corpus is the Freesound Loop Dataset (FSL10K), Zenodo record
+[3967852](https://zenodo.org/records/3967852), CC BY 4.0 as a collection
+with a per-loop license inside. Download `FSL10K.zip` (8.8 GB) and
+`annotations.zip` from that record into `research/data/fsld/`. Then install
+the two audio models and run the chain:
+
+```bash
+python -m pip install -e "backend[research]"   # torch, msclap, laion-clap
+# Linux without a GPU: install torch from https://download.pytorch.org/whl/cpu first
+
+# 1. Per-loop license manifest (reads metadata.json out of the zip, needs network
+#    only if the zip is not local)
+python research/build_fsld_manifest.py
+
+# 2. Embed the annotated, well-cut, research_ok subset (2,558 loops) in both spaces
+python research/embed_fsld_subset.py --zip research/data/fsld/FSL10K.zip \
+  --adapter msclap-2023 --out research/data/fsld/items.jsonl
+python research/embed_fsld_subset.py --zip research/data/fsld/FSL10K.zip \
+  --adapter laion-clap-music --out research/data/fsld/items_laion-clap-music.jsonl
+
+# 3. Chroma for the harmonic signal (role_prompts.json is already tracked)
+python research/extract_fsld_features.py --items research/data/fsld/items_laion-clap-music.jsonl
+
+# 4. Pack-only corpus and the train side of the frozen split, in both spaces
+python research/filter_pack_only.py --items research/data/fsld/items_laion-clap-music.jsonl \
+  --output research/data/fsld/items_laion-clap-music_packonly.jsonl
+python research/filter_pack_only.py --items research/data/fsld/items_laion-clap-music_packonly.jsonl \
+  --train-only artifacts/heldout-split-packonly/split.json \
+  --output research/data/fsld/items_laion-clap-music_packonly_train.jsonl
+python research/filter_pack_only.py --items research/data/fsld/items.jsonl \
+  --output research/data/fsld/items_msclap_packonly.jsonl
+python research/filter_pack_only.py --items research/data/fsld/items_msclap_packonly.jsonl \
+  --train-only artifacts/heldout-split-packonly/split.json \
+  --output research/data/fsld/items_msclap_packonly_train.jsonl
+```
+
+Step 2 is the slow one: on a laptop CPU the model alone costs about 0.14 s per loop for
+MS-CLAP and 0.68 s for LAION-CLAP, so with audio decoding expect roughly 20
+minutes for the MS-CLAP pass and 45 minutes for the LAION-CLAP pass, after the
+model weights download on first use. `embed_fsld_subset.py` is resumable, so
+an interrupted run continues where it stopped.
+
+**What to expect.** The corpus, split and every downstream computation are
+deterministic, but the embedding step was not when the paper's files were
+made: MS-CLAP picked its 7 s analysis window at random inside longer loops
+(51% of the pack-only loops exceed 7 s), and LAION-CLAP truncates to 10 s the
+same way. The MS-CLAP adapter has since been changed to crop the first 7 s,
+so a regenerated MS-CLAP file is stable run to run, but neither regenerated
+file is identical to the ones behind the paper, and `reproduce.py` will
+report small differences (the conclusions, not the third decimal). The exact
+files the paper used have the sha256 hashes listed in
+`research/data/fsld/README.md`; I will share them with anyone who asks, for
+non-commercial research use, since 263 of the 1,797 pack-only loops are
+CC BY-NC or Sampling+ licensed.
 
 The commands below are what `reproduce.py` runs, one table at a time. Run
 them from the repository root with the virtual environment activated.
@@ -168,8 +205,8 @@ python research/export_fusion_weights.py \
 
 ## Embedding-stage determinism (caveat)
 
-The numbers above are reproducible from the distributed `items_*.jsonl`
-embedding files onward. The embedding step itself is not: `msclap` embeds a
+The numbers above are reproducible from the `items_*.jsonl` embedding
+files onward. The embedding step itself is not: `msclap` embeds a
 7 s window and picks it at random from longer clips (`CLAPWrapper.py`,
 `random.randrange`), and `embed_fsld_subset.py` set no seed. 51% of the
 pack-only loops exceed 7 s (27% exceed 14 s), so re-running
