@@ -24,6 +24,11 @@ const nextConfig: NextConfig = {
         source: "/api/:path*",
         destination: `${apiUrl}/api/:path*`,
       },
+      // Readiness probe, used by the login page to wake a scaled-to-zero backend.
+      {
+        source: "/ready",
+        destination: `${apiUrl}/ready`,
+      },
     ];
   },
 };

@@ -14,6 +14,12 @@ export default function LoginPage() {
     if (!loading && user) router.replace("/");
   }, [user, loading, router]);
 
+  // The backend scales to zero and loads the audio model on demand. Waking it
+  // here, while the visitor signs in, hides most of that minute.
+  useEffect(() => {
+    void fetch("/ready", { cache: "no-store" }).catch(() => {});
+  }, []);
+
   async function handleLogin() {
     await signInWithGoogle();
     router.replace("/");
@@ -47,8 +53,13 @@ export default function LoginPage() {
         <h1 className="font-heading text-5xl font-light mb-3 tracking-tight leading-tight shimmer-heading">
           Welcome back
         </h1>
-        <p className="text-sm text-gravel mb-14">
+        <p className="text-sm text-gravel mb-3">
           Sign in to access your creative memory.
+        </p>
+        <p className="mb-14 max-w-sm text-center text-xs text-slate">
+          The audio model loads on demand. After a quiet period the first
+          session takes about a minute to warm up; non-audio ranking works
+          right away.
         </p>
         <button
           onClick={handleLogin}
