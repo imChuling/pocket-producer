@@ -69,6 +69,13 @@ read its name and docstring before editing it.
   `deploy/cloudrun.env.yaml` and binds secrets explicitly. A bare
   `gcloud run deploy` drops configuration.
 - `deploy.sh --config` re-applies env and scaling without a rebuild.
+- Every `deploy.sh` build stores a 2 GB image in Artifact Registry
+  (`cloud-run-source-deploy`), billed monthly. The repository has a cleanup
+  policy (`deploy/artifact-cleanup-policy.json`: keep the 3 newest per
+  service, delete anything older than 30 days); re-apply it with
+  `gcloud artifacts repositories set-cleanup-policies cloud-run-source-deploy
+  --location us-central1 --policy backend/deploy/artifact-cleanup-policy.json
+  --no-dry-run` if the repository is ever recreated.
 - Frontend: deploy by hand with `vercel --prod` from `frontend/` (the Vercel
   project is `pocketproducer`). Nothing deploys on push: the GitHub
   integration is not connected, so a green CI run on `main` says nothing
