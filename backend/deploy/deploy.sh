@@ -15,9 +15,13 @@ PROJECT=pocket-producer-ce3e9
 HERE="$(cd "$(dirname "$0")" && pwd)"
 BACKEND="$(cd "$HERE/.." && pwd)"
 
-# Conference / demo profile: one warm instance so the first visitor does not
-# wait ~60 s for CLAP to load; two instances max to absorb a burst.
-MIN_INSTANCES="${MIN_INSTANCES:-1}"
+# Scale to zero by default: a warm 2-vCPU/4Gi instance costs about USD 4 a
+# day, so pay for it only on demo days. The first visitor after an idle
+# period waits ~60 s for CLAP to load; before a poster session either open
+# the site yourself a few minutes early or run
+#   MIN_INSTANCES=1 backend/deploy/deploy.sh --config
+# in the morning and set it back to 0 in the evening.
+MIN_INSTANCES="${MIN_INSTANCES:-0}"
 MAX_INSTANCES="${MAX_INSTANCES:-2}"
 
 COMMON=(
