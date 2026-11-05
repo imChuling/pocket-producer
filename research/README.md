@@ -9,21 +9,61 @@ not distributed with this repository.
 
 ## Prerequisites
 
+Python 3.11 or newer on macOS, Linux or Windows. Everything the result chain
+needs is in `backend/requirements.txt` (numpy and the `ranking` package; no
+GPU, no torch).
+
 ```bash
-cd backend && python -m venv .venv && .venv/bin/pip install -r requirements.txt
+git clone https://github.com/imChuling/pocket-producer && cd pocket-producer
+python -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
+python -m pip install -r backend/requirements.txt
+python research/fetch_embeddings.py  # 72 MB bundle, sha256-verified
 ```
 
-Embedding files live in `research/data/fsld/` (~200 MB total):
+`fetch_embeddings.py` downloads the exact embedding files the paper was
+computed from (the embedding step itself is not deterministic, see below)
+into `research/data/fsld/` and checks every file against the manifest
+shipped inside the bundle:
 
 | File | Contents |
 |------|----------|
-| `items_laion-clap-music.jsonl` | LAION-CLAP Music embeddings, full mixed-label corpus |
+| `items_laion-clap-music.jsonl` | LAION-CLAP Music embeddings, full mixed-label corpus (2,558 items) |
 | `items_laion-clap-music_packonly.jsonl` | pack-only corpus (1,797 items, 605 packs) |
 | `items_laion-clap-music_packonly_train.jsonl` | train side of the frozen split (484 sources) |
 | `items_msclap_packonly.jsonl` / `..._train.jsonl` | same corpus in MS-CLAP 2023 space |
+| `items_mert_packonly.jsonl` | same corpus in MERT-v1-95M space (supporting column) |
+| `chroma.jsonl` | 12-dim chroma per item, for the harmonic signal |
+| `manifest.jsonl` | per-item Freesound id, uploader, pack and license |
 
-All commands below run from the repo root with
-`backend/.venv/bin/python`.
+The files are feature vectors, not audio. The audio itself (FSL10K, Zenodo
+record 3967852) is not redistributed; 263 of the 1,797 pack-only items are
+CC BY-NC or Sampling+ and their vectors are included for non-commercial
+reproduction only, with the license of every item in `manifest.jsonl`.
+
+### One command
+
+```bash
+python research/reproduce.py
+```
+
+re-runs every paper-facing script below into a scratch directory and prints
+the largest numeric difference against the committed artifact for each one
+(tolerance 1e-6). The same check runs on Linux, macOS and Windows runners
+from the `reproduce` workflow in `.github/workflows/`. Expected wall-clock on
+a laptop CPU:
+
+| Step | Script | Time |
+|------|--------|------|
+| split | `make_heldout_split.py` | 10 s |
+| fusion | `run_fusion.py` | about 10 min |
+| ablation | `run_ablation.py` | about 5 min |
+| heldout-laion | `run_heldout_correction.py --mode laion` | about 1.5 min |
+| heldout-msclap | `run_heldout_correction.py --mode msclap` | about 1.5 min |
+| weights | `export_fusion_weights.py` | about 1.5 min |
+
+The commands below are what `reproduce.py` runs, one table at a time. Run
+them from the repository root with the virtual environment activated.
 
 ## Corpus and split (§3)
 
@@ -31,7 +71,7 @@ Pack-only filtering (drops `user:`-grouped sources; keeps true Freesound
 packs → 1,797 items, 605 packs):
 
 ```bash
-backend/.venv/bin/python research/filter_pack_only.py \
+python research/filter_pack_only.py \
   --items research/data/fsld/items_laion-clap-music.jsonl \
   --output research/data/fsld/items_laion-clap-music_packonly.jsonl
 ```
@@ -40,7 +80,7 @@ Frozen held-out split (seed 20260810, 121 held-out / 484 train sources;
 committed before any evaluation touched it):
 
 ```bash
-backend/.venv/bin/python research/make_heldout_split.py \
+python research/make_heldout_split.py \
   --items research/data/fsld/items_laion-clap-music_packonly.jsonl \
   --seed 20260810 --fraction 0.2 \
   --output artifacts/heldout-split-packonly/split.json
@@ -52,7 +92,7 @@ Five-signal fusion vs frozen cosine, 5 source-grouped splits on the
 train side only:
 
 ```bash
-backend/.venv/bin/python research/run_fusion.py \
+python research/run_fusion.py \
   --items research/data/fsld/items_laion-clap-music_packonly_train.jsonl \
   --output artifacts/fusion-packonly
 ```
@@ -69,7 +109,7 @@ hard_similar delta to show the gain vanishes under pack-only labels.
 ### Regime dependence (LOSO: tempo −0.96 pp / +0.68 pp)
 
 ```bash
-backend/.venv/bin/python research/run_ablation.py \
+python research/run_ablation.py \
   --items research/data/fsld/items_laion-clap-music_packonly_train.jsonl \
   --output artifacts/ablation-packonly
 ```
@@ -83,14 +123,14 @@ training-protocol mismatch.
 
 ```bash
 # LAION-CLAP column
-backend/.venv/bin/python research/run_heldout_correction.py \
+python research/run_heldout_correction.py \
   --items research/data/fsld/items_laion-clap-music_packonly.jsonl \
   --split artifacts/heldout-split-packonly/split.json \
   --output artifacts/heldout-eval-correction \
   --mode laion
 
 # MS-CLAP + source-weighted BPR column
-backend/.venv/bin/python research/run_heldout_correction.py \
+python research/run_heldout_correction.py \
   --items research/data/fsld/items_msclap_packonly.jsonl \
   --split artifacts/heldout-split-packonly/split.json \
   --output artifacts/msclap-sensitivity-correction \
@@ -106,7 +146,7 @@ Trains fusion-5sig on the full pack-only train side in MS-CLAP space
 with source-weighted BPR and exports the shipped weights:
 
 ```bash
-backend/.venv/bin/python research/export_fusion_weights.py \
+python research/export_fusion_weights.py \
   --items research/data/fsld/items_msclap_packonly_train.jsonl \
   --output artifacts/fusion-deploy/weights.json
 ```
@@ -128,7 +168,7 @@ backend/.venv/bin/python research/export_fusion_weights.py \
 
 ## Embedding-stage determinism (caveat)
 
-The numbers above are reproducible from the committed `items_*.jsonl`
+The numbers above are reproducible from the distributed `items_*.jsonl`
 embedding files onward. The embedding step itself is not: `msclap` embeds a
 7 s window and picks it at random from longer clips (`CLAPWrapper.py`,
 `random.randrange`), and `embed_fsld_subset.py` set no seed. 51% of the
@@ -150,7 +190,7 @@ python research/check_paper_numbers.py
 Unit tests (signal functions):
 
 ```bash
-backend/.venv/bin/python -m pytest backend/tests/ranking/ -v
+python -m pytest backend/tests/ranking -q
 ```
 
 Build the paper (runs the number check first):

@@ -55,5 +55,6 @@
     "msclap-2023"
   ],
   "trained_on": "pack-only train split (protocol-heldout-v2), pack co-membership weak labels, source-weighted BPR (hard_similar\u00d72.0), mean over 5 seeds",
+  "key_masked": false,
   "items_file": "research/data/fsld/items_msclap_packonly_train.jsonl"
 }

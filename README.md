@@ -309,16 +309,36 @@ backend/deploy/deploy.sh --config   # re-apply configuration only
 ## Reproducing the paper
 
 Every number in the ISMIR LBD abstract maps to a versioned JSON under
-[`artifacts/`](artifacts/), produced by the scripts in
-[`research/`](research/) and cross-checked by
-[`research/check_paper_numbers.py`](research/check_paper_numbers.py)
-(151 assertions, run in CI). The command for each table and figure is in
-[`research/README.md`](research/README.md); the deployed fusion weights
-([`artifacts/fusion-deploy/weights.json`](artifacts/fusion-deploy/weights.json))
-retrain to within 1e-6 from the frozen split. Follow-up checks that did
+[`artifacts/`](artifacts/). Four commands rebuild all of them on macOS,
+Linux or Windows with Python 3.11 or newer, no GPU:
+
+```bash
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+python -m pip install -r backend/requirements.txt
+python research/fetch_embeddings.py                  # 72 MB, sha256-verified
+python research/reproduce.py                         # about 20 minutes on a laptop
+```
+
+`reproduce.py` re-runs the six paper-facing scripts and prints the largest
+numeric difference against each committed artifact (tolerance 1e-6); the
+deployed fusion weights come out identical. What is distributed and what is
+not:
+
+- Distributed: the CLAP, MS-CLAP and MERT embedding vectors the paper was
+  computed from, the frozen split, all result JSONs, every script. The
+  embedding step itself is not deterministic (the model picks its analysis
+  window at random), which is why the vectors are shipped rather than
+  regenerated.
+- Not distributed: the Freesound Loop Dataset audio (fetch it from
+  [Zenodo 3967852](https://zenodo.org/record/3967852) if you want to
+  re-embed), the paper's LaTeX source, and my own fragment library.
+  `research/check_paper_numbers.py` skips its LaTeX assertions when the
+  source is absent and still checks the artifacts.
+
+The per-table commands, expected runtimes and the follow-up checks that did
 not make the paper (standardization, seven signals, key masking, a MERT
-representation column, mining negatives in an independent space) are
-documented there too, including the ones that came out negative.
+column, mining negatives in an independent space, including the negative
+results) are in [`research/README.md`](research/README.md).
 
 Cite with [`CITATION.cff`](CITATION.cff).
 

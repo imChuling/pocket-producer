@@ -1,0 +1,30 @@
+name: reproduce
+
+# Re-runs the paper's result chain from the released embedding bundle on all
+# three operating systems and checks every artifact against the committed
+# version. Manual: it takes about an hour per OS, so it is not part of the
+# per-push CI. Run it from the Actions tab after changing anything under
+# research/ or backend/ranking/.
+on:
+  workflow_dispatch:
+
+jobs:
+  reproduce:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the backend package dependencies
+        run: |
+          pip install uv
+          uv pip install --system -r backend/requirements.txt
+      - name: Fetch the embedding bundle
+        run: python research/fetch_embeddings.py
+      - name: Reproduce and compare
+        run: python research/reproduce.py

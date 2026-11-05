@@ -69,9 +69,18 @@ read its name and docstring before editing it.
   `deploy/cloudrun.env.yaml` and binds secrets explicitly. A bare
   `gcloud run deploy` drops configuration.
 - `deploy.sh --config` re-applies env and scaling without a rebuild.
-- Frontend: Vercel deploys `main` automatically on push.
+- Frontend: deploy by hand with `vercel --prod` from `frontend/` (the Vercel
+  project is `pocketproducer`). Nothing deploys on push: the GitHub
+  integration is not connected, so a green CI run on `main` says nothing
+  about what pocketproducer.vercel.app is serving.
 - After a backend deploy, check `/ready` and the logs for
   "CLAP warmup complete" and "role probe warmup complete".
+- The backend scales to zero and bills per instance-second with CPU always
+  allocated. Anything that hits it every few minutes keeps one instance alive
+  around the clock (a tab polling `/api/notifications` every 30 s cost 201
+  instance-hours in October 2026). Every browser poller goes through
+  `frontend/src/lib/idle.ts` so hidden and idle tabs stay quiet; never add an
+  uptime check or keep-warm cron without deciding to pay for a warm instance.
 - Automated sessions do not deploy and do not touch Cloud Run, Vercel,
   Firebase, Mongo Atlas or Audiotool developer settings.
 
