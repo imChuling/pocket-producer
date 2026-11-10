@@ -14,11 +14,6 @@ export default function LoginPage() {
     if (!loading && user) router.replace("/");
   }, [user, loading, router]);
 
-  // The backend scales to zero and loads the audio model on demand. Waking it
-  // here, while the visitor signs in, hides most of that minute.
-  useEffect(() => {
-    void fetch("/ready", { cache: "no-store" }).catch(() => {});
-  }, []);
 
   async function handleLogin() {
     await signInWithGoogle();
@@ -57,9 +52,10 @@ export default function LoginPage() {
           Sign in to access your creative memory.
         </p>
         <p className="mb-14 max-w-sm text-center text-xs text-slate">
-          The audio model loads on demand. After a quiet period the first
-          session takes about a minute to warm up; non-audio ranking works
-          right away.
+          Because of deployment limits this demo scales to zero when idle:
+          after a quiet period the first visit waits one to two minutes while
+          the backend starts and loads the audio model. The notice above
+          disappears when it is ready.
         </p>
         <button
           onClick={handleLogin}

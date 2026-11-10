@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Cormorant, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
+import { BackendStatus } from "@/components/backend-status";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { TopNav } from "@/components/top-nav";
 
@@ -69,6 +70,7 @@ export default function RootLayout({
         <AuthProvider>
           <ServiceWorkerRegister />
           <TopNav />
+          <BackendStatus />
           <main className="flex-1 w-full">
             {children}
           </main>
