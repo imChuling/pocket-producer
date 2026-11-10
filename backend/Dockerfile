@@ -20,8 +20,13 @@ RUN uv pip install --system -r requirements.txt
 # CLAP stack (runtime-gated by POCKET_ENABLE_CLAP): CPU-only torch keeps the
 # image lean; msclap pulls its remaining deps against it. Weights are baked
 # at build time so a fresh instance never downloads them mid-request.
+# Pinned to the trio verified on the dev machine: torchaudio >= 2.9 decodes
+# through torchcodec, and an unpinned install on 2026-11-05 pulled a
+# torchaudio that required torchcodec without installing it, so every CLAP
+# encode at ingest failed with ImportError until 2026-11-10.
 RUN uv pip install --system --index-url https://download.pytorch.org/whl/cpu \
-    "torch>=2.6,<3" "torchaudio" \
+    --extra-index-url https://pypi.org/simple --index-strategy unsafe-best-match \
+    "torch==2.13.0" "torchaudio==2.11.0" "torchcodec==0.15.0" \
     && uv pip install --system "msclap>=1.3,<2" "soundfile>=0.12,<1"
 ENV HF_HOME=/opt/hf-cache
 RUN python -c "from huggingface_hub import hf_hub_download; hf_hub_download('microsoft/msclap', 'CLAP_weights_2023.pth')" \
