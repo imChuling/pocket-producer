@@ -144,6 +144,28 @@ describe("importProjectAsFragments", () => {
     expect(result).toEqual({ imported: 1, failed: 0, totalSamples: 1 });
   });
 
+  it("gives up at once when the daily allowance is exhausted instead of waiting an hour", async () => {
+    const doc = fakeDocument(
+      [{ id: "r1", sampleRef: "s1" }],
+      [{ id: "s1", sampleName: "samples/uuid-1" }],
+    );
+    const download = vi.fn(async () => new Blob(["wav"]));
+    const fetchMock = vi.fn(async () => ({
+      ok: false,
+      status: 429,
+      headers: { get: (name: string) => (name === "Retry-After" ? "3600" : null) },
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await importProjectAsFragments(doc, { download }, {
+      projectDisplayName: "Night Sketch",
+      getAuthToken: async () => "tok",
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ imported: 0, failed: 1, totalSamples: 1 });
+  });
+
   it("counts failed downloads and failed uploads without aborting the rest", async () => {
     const doc = fakeDocument(
       [

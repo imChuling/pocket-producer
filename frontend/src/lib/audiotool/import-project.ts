@@ -86,6 +86,8 @@ export async function importProjectAsFragments(
 
   // A project with many samples can outrun the per-user ingest rate limit;
   // honor Retry-After (or back off) rather than counting the sample as failed.
+  const MAX_RETRY_AFTER_SECONDS = 60;
+
   async function postWithRetry(
     url: string,
     body: FormData,
@@ -104,6 +106,10 @@ export async function importProjectAsFragments(
       const retryable = response.status === 429 || response.status >= 500;
       if (!retryable || attempt === attempts - 1) return response;
       const retryAfter = Number(response.headers.get("Retry-After"));
+      // A Retry-After beyond a minute is the daily allowance, not the
+      // per-minute rate limit: waiting it out would hang the import for an
+      // hour per sample, so report the sample as failed instead.
+      if (Number.isFinite(retryAfter) && retryAfter > MAX_RETRY_AFTER_SECONDS) return response;
       const waitMs = Number.isFinite(retryAfter) && retryAfter > 0
         ? retryAfter * 1000
         : 2000 * 2 ** attempt;
