@@ -11,10 +11,10 @@ import { Mic, Layers, Dna, LogOut, Bell, Sparkles, Check, Cable } from "lucide-r
 // The session flow comes first; "/" redirects signed-in users there, so the
 // capture (library-building) flow lives at its own route.
 const navLinks = [
-  { href: "/audiotool", icon: Cable, label: "Session" },
   { href: "/capture", icon: Mic, label: "Capture" },
   { href: "/projects", icon: Layers, label: "Projects" },
   { href: "/dna", icon: Dna, label: "DNA" },
+  { href: "/audiotool", icon: Cable, label: "Session" },
 ] as const;
 
 function timeAgo(dateStr: string): string {

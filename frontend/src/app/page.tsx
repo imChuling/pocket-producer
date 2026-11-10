@@ -707,7 +707,7 @@ export default function HomePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   useEffect(() => {
-    if (!loading && user) router.replace("/audiotool");
+    if (!loading && user) router.replace("/capture");
   }, [loading, user, router]);
   if (loading || user) return null;
   return <LandingPage />;

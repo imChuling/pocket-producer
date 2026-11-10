@@ -172,10 +172,21 @@ def _parse_iso(value: str) -> datetime | None:
         return None
 
 
+def _as_utc(value):
+    """Timestamps arrive both naive (Mongo returns UTC without tzinfo) and
+    aware (ISO strings with an offset); subtracting one from the other raises."""
+    from datetime import UTC
+
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
 def recency(created_at_iso: str, newest_iso: str) -> float:
     created = _parse_iso(created_at_iso)
     newest = _parse_iso(newest_iso)
     if created is None or newest is None:
         return 0.0
+    created, newest = _as_utc(created), _as_utc(newest)
     age_days = max(0.0, (newest - created).total_seconds() / 86400.0)
     return 1.0 / (1.0 + age_days / _RECENCY_HALF_LIFE_DAYS)

@@ -56,7 +56,7 @@ read its name and docstring before editing it.
   they never serve a zero-score, evidence-free proposal.
 - Rate limits are per signed-in user. LLM-backed actions have a 30/day
   allowance per user (`POCKET_DAILY_LLM_QUOTA`).
-- `/` redirects signed-in users to `/audiotool`; the capture flow is `/capture`.
+- `/` redirects signed-in users to `/capture`; the Audiotool session flow is `/audiotool`, the last tab.
 - The paper source (`docs/ismir2026/`) and `CHANGELOG.md` are gitignored on
   purpose. `check_paper_numbers.py` skips tex assertions when they are
   absent; do not "fix" that.
