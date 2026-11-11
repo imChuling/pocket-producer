@@ -2,21 +2,12 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Link2 } from "lucide-react";
+import { ArrowLeft, Check, SkipForward } from "lucide-react";
 import { FragmentCard } from "@/components/fragment-card";
+import { ProjectIntelligence } from "@/components/project-intelligence";
+import { RescueScore } from "@/components/rescue-score";
 import { useDemoToast } from "../../demo-context";
-import type { Fragment } from "@/types";
-
-interface DemoProjectDetail {
-  _id: string;
-  title: string;
-  rescue_score: number | null;
-  fragment_ids: string[];
-  fragments: Fragment[];
-  sections: string[];
-  connection_reasons?: string[];
-  connection_types?: string[];
-}
+import type { ProjectDetail } from "@/types";
 
 function scoreColor(score: number | null) {
   if (score === null) return "text-slate";
@@ -33,7 +24,7 @@ export default function DemoProjectDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const showToast = useDemoToast();
-  const [project, setProject] = useState<DemoProjectDetail | null>(null);
+  const [project, setProject] = useState<ProjectDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,8 +54,10 @@ export default function DemoProjectDetailPage({
     );
   }
 
+  const score = project.rescue_score ?? null;
   const reasons = project.connection_reasons ?? [];
   const types = project.connection_types ?? [];
+  const sections = project.sections ?? [];
 
   return (
     <div className="relative min-h-[calc(100vh-56px-44px)]">
@@ -72,39 +65,66 @@ export default function DemoProjectDetailPage({
 
       <div className="relative z-10 max-w-[1100px] mx-auto px-6 py-10 space-y-6 animate-page-enter">
         {/* Back + Title */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push("/demo/projects")}
-            className="p-2 -ml-2 rounded-full hover:bg-powder cursor-pointer transition-colors btn-press"
-            aria-label="Back"
-          >
-            <ArrowLeft size={18} className="text-gravel" />
-          </button>
-          <h1 className="font-heading text-2xl font-light text-obsidian flex-1 tracking-tight">
-            {project.title}
-          </h1>
-          {project.rescue_score !== null && (
-            <span
-              className={`font-mono text-3xl font-light animate-count-up ${scoreColor(project.rescue_score)}`}
-            >
-              {project.rescue_score}
-            </span>
+        <div className="relative">
+          {score !== null && score >= 60 && (
+            <div
+              className="absolute -top-4 -right-4 w-24 h-24 rounded-full pointer-events-none opacity-30"
+              style={{
+                background: "radial-gradient(circle, rgba(160,181,235,0.5) 0%, transparent 70%)",
+              }}
+            />
           )}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push("/demo/projects")}
+              className="p-2 -ml-2 rounded-full hover:bg-powder cursor-pointer transition-colors btn-press"
+              aria-label="Back"
+            >
+              <ArrowLeft size={18} className="text-gravel" />
+            </button>
+            <h1 className="font-heading text-2xl font-light text-obsidian flex-1 tracking-tight">
+              {project.title}
+            </h1>
+            {score !== null && (
+              <span className={`font-mono text-3xl font-light animate-count-up ${scoreColor(score)}`}>
+                {score}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Two-column layout */}
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left sidebar */}
+          {/* Left: score, analysis, connections, next action */}
           <div className="lg:w-[340px] flex-shrink-0">
             <div className="lg:sticky lg:top-[calc(56px+44px+20px)] space-y-5">
-              {/* Connection info */}
+              {project.score_breakdown && (
+                <div
+                  className="backdrop-blur-sm rounded-[24px] p-5 shadow-hairline animate-card-enter"
+                  style={{
+                    animationDelay: "80ms",
+                    background: "linear-gradient(135deg, rgba(255,255,255,0.7), rgba(160,181,235,0.05))",
+                  }}
+                >
+                  <span className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-slate block mb-4">
+                    Rescue Score
+                  </span>
+                  <RescueScore breakdown={project.score_breakdown} />
+                </div>
+              )}
+
+              <ProjectIntelligence
+                fragments={project.fragments}
+                connectionReasons={reasons}
+                connectionTypes={types}
+              />
+
               {reasons.length > 0 && (
                 <div
                   className="backdrop-blur-sm rounded-[24px] p-5 space-y-3 shadow-hairline animate-card-enter"
                   style={{
                     animationDelay: "120ms",
-                    background:
-                      "linear-gradient(135deg, rgba(255,255,255,0.7), rgba(160,181,235,0.06))",
+                    background: "linear-gradient(135deg, rgba(255,255,255,0.7), rgba(160,181,235,0.06))",
                   }}
                 >
                   <span className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-slate">
@@ -115,9 +135,8 @@ export default function DemoProjectDetailPage({
                       {types.map((t) => (
                         <span
                           key={t}
-                          className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-gravel px-2 py-0.5 rounded-full bg-powder/60"
+                          className="text-[10px] font-mono uppercase tracking-wider text-gravel px-2 py-0.5 rounded-full bg-powder/60"
                         >
-                          <Link2 size={8} />
                           {t.replace(/_/g, " ")}
                         </span>
                       ))}
@@ -133,10 +152,43 @@ export default function DemoProjectDetailPage({
                 </div>
               )}
 
-              {/* Sections */}
-              {(project.sections ?? []).length > 0 && (
+              {project.next_action && (
+                <div
+                  className="backdrop-blur-sm rounded-[24px] p-5 space-y-3 shadow-hairline gradient-border animate-card-enter"
+                  style={{
+                    animationDelay: "160ms",
+                    background: "linear-gradient(135deg, rgba(255,255,255,0.7), rgba(226,193,97,0.04))",
+                  }}
+                >
+                  <span className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-slate">
+                    Next Action
+                  </span>
+                  <p className="text-xs text-gravel/80 italic">{project.next_action.action}</p>
+                  {project.next_action.estimated_time && (
+                    <p className="text-xs text-gravel">~{project.next_action.estimated_time}</p>
+                  )}
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={() => showToast()}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-obsidian text-white text-[11px] font-medium tracking-wide hover:bg-obsidian/85 transition-colors cursor-pointer"
+                    >
+                      <Check size={12} />
+                      Done
+                    </button>
+                    <button
+                      onClick={() => showToast()}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-chalk text-gravel text-[11px] font-medium tracking-wide hover:border-slate/40 transition-colors cursor-pointer"
+                    >
+                      <SkipForward size={12} />
+                      Skip
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {sections.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 animate-card-enter" style={{ animationDelay: "240ms" }}>
-                  {project.sections.map((s) => (
+                  {sections.map((s) => (
                     <span
                       key={s}
                       className="text-[11px] font-medium px-3 py-1.5 rounded-full bg-powder text-gravel"
@@ -146,22 +198,10 @@ export default function DemoProjectDetailPage({
                   ))}
                 </div>
               )}
-
-              {/* Demo info */}
-              <div
-                className="rounded-xl px-4 py-3 text-[13px] text-gravel leading-relaxed"
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgba(160,181,235,0.1), rgba(226,193,97,0.06))",
-                }}
-              >
-                This is a read-only demo. In a real account, each project also
-                gets a rescue score and a suggested next action.
-              </div>
             </div>
           </div>
 
-          {/* Right -- Fragments list */}
+          {/* Right: fragments */}
           <div className="flex-1 min-w-0">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -170,7 +210,7 @@ export default function DemoProjectDetailPage({
                 </span>
                 <div className="flex-1 h-px bg-gradient-to-r from-chalk to-transparent" />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
                 {project.fragments.map((f) => (
                   <FragmentCard
                     key={f._id}

@@ -270,14 +270,19 @@ export function FragmentCard({ fragment, onDeleted, onUpdated, readOnly, onReadO
       )}
       </div>
 
-      {/* Tags */}
-      <TagEditor fragment={fragment} onUpdated={onUpdated} />
-
-      {/* Creator notes */}
-      <NotesEditor fragmentId={fragment._id} notes={fragment.notes} onUpdated={onUpdated} />
-
-      {/* Creator comments — timestamped thoughts over time */}
-      <CommentsEditor fragmentId={fragment._id} comments={fragment.comments} onUpdated={onUpdated} />
+      {/* Tags, notes and comments; a read-only card answers every click with its notice */}
+      <div
+        className="space-y-3"
+        onClickCapture={readOnly ? (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onReadOnlyAction?.();
+        } : undefined}
+      >
+        <TagEditor fragment={fragment} onUpdated={onUpdated} />
+        <NotesEditor fragmentId={fragment._id} notes={fragment.notes} onUpdated={onUpdated} />
+        <CommentsEditor fragmentId={fragment._id} comments={fragment.comments} onUpdated={onUpdated} />
+      </div>
 
       {/* AI suggestion */}
       {fragment.suggestion && (

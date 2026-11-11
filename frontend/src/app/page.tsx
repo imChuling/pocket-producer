@@ -316,9 +316,10 @@ function LandingPage() {
               </button>
               <Link
                 href="/demo"
-                className="block font-mono text-[10px] uppercase tracking-[0.2em] text-slate hover:text-gravel transition-colors mt-3"
+                className="group inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-obsidian border border-obsidian/25 rounded-full px-5 py-2.5 bg-white/40 backdrop-blur-sm hover:border-obsidian/60 hover:bg-white/70 transition-colors"
               >
-                or explore demo account
+                Explore the demo account
+                <span className="transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
               </Link>
             </motion.div>
           </div>
@@ -668,6 +669,7 @@ function LandingPage() {
           >
             The song is waiting.
           </h2>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <motion.button
             onClick={() => signInWithGoogle()}
             whileHover={{ scale: 1.04, boxShadow: "0 0 40px rgba(160,181,235,0.3), 0 0 80px rgba(255,148,115,0.15)" }}
@@ -683,10 +685,12 @@ function LandingPage() {
           </motion.button>
           <Link
             href="/demo"
-            className="block font-mono text-[11px] uppercase tracking-[0.2em] text-slate hover:text-gravel transition-colors mt-5"
+            className="group inline-flex items-center gap-3 font-mono text-[12px] uppercase tracking-[0.2em] text-obsidian px-10 py-5 rounded-full border border-obsidian/25 bg-white/50 backdrop-blur-sm hover:border-obsidian/60 hover:bg-white/80 transition-colors"
           >
-            or explore the demo account
+            Explore the demo account
+            <span className="transition-transform duration-500 group-hover:translate-x-1">&rarr;</span>
           </Link>
+          </div>
         </Reveal>
       </section>
 

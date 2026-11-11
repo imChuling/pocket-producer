@@ -71,7 +71,7 @@ async def demo_projects(request: Request):
         lambda: list(
             db["projects"]
             .find({"user_id": DEMO_USER_ID}, {"embedding": 0})
-            .sort("_id", 1)
+            .sort([("rescue_score", -1), ("_id", 1)])
             .limit(20)
         )
     )

@@ -214,9 +214,10 @@ export function TopNav() {
             <>
               <Link
                 href="/demo"
-                className="font-mono text-[11px] uppercase tracking-[0.15em] text-gravel hover:text-obsidian transition-colors px-3 py-1.5 rounded-full hover:bg-powder btn-press whitespace-nowrap"
+                className="text-sm font-medium text-obsidian px-4 py-2 rounded-full border border-obsidian/20 hover:border-obsidian/50 hover:bg-powder transition-colors btn-press whitespace-nowrap"
               >
-                Demo
+                <span className="sm:hidden">Demo</span>
+                <span className="hidden sm:inline">Try the demo</span>
               </Link>
               <button
                 onClick={() => signInWithGoogle()}

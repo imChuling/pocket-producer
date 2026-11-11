@@ -60,8 +60,9 @@ export default function DemoLayout({ children }: { children: ReactNode }) {
         >
           Looperman
         </a>
-        . Lyrics, suggestions and project groupings are AI-generated sample text.
-        Key and tempo are measured from the audio; tags are rule-based estimates.
+        . Lyrics, tags, suggestions, project groupings and next actions are
+        AI-generated sample text. Key and tempo are measured from the audio, and
+        rescue scores use the app&apos;s own formula.
       </p>
 
       {children}
