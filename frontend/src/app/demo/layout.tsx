@@ -51,7 +51,7 @@ export default function DemoLayout({ children }: { children: ReactNode }) {
       </div>
 
       <p className="px-6 pt-4 text-center text-[11px] leading-relaxed text-slate">
-        Demo content: the audio is royalty-free loops from{" "}
+        Fragment audio is royalty-free loops from{" "}
         <a
           href="https://www.looperman.com"
           target="_blank"
@@ -60,9 +60,7 @@ export default function DemoLayout({ children }: { children: ReactNode }) {
         >
           Looperman
         </a>
-        . Lyrics, tags, suggestions, project groupings and next actions are
-        AI-generated sample text. Key and tempo are measured from the audio, and
-        rescue scores use the app&apos;s own formula.
+        . Lyrics are AI-generated samples.
       </p>
 
       {children}
