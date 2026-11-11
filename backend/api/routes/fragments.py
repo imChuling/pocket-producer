@@ -553,8 +553,6 @@ async def stream_audio(
     user_id: str = Depends(verify_firebase_token),
     range: str | None = Header(None),
 ):
-    from fastapi.responses import StreamingResponse
-
     db = get_db()
     oid = parse_object_id(fragment_id, "fragment_id")
     fragment = await asyncio.to_thread(
@@ -565,7 +563,14 @@ async def stream_audio(
     if not fragment or not fragment.get("audio_url"):
         raise HTTPException(status_code=404, detail="Audio not found")
 
-    gcs_uri = fragment["audio_url"]
+    return await gcs_audio_response(fragment["audio_url"], range)
+
+
+async def gcs_audio_response(
+    gcs_uri: str, range: str | None, cache_control: str = "private, max-age=3600"
+):
+    from fastapi.responses import StreamingResponse
+
     parts = gcs_uri.replace("gs://", "").split("/", 1)
     bucket_name, blob_name = parts[0], parts[1]
 
@@ -614,7 +619,7 @@ async def stream_audio(
                 "Content-Range": f"bytes {range_start}-{range_end}/{file_size}",
                 "Accept-Ranges": "bytes",
                 "Content-Length": str(content_length),
-                "Cache-Control": "private, max-age=3600",
+                "Cache-Control": cache_control,
             },
         )
 
@@ -629,7 +634,7 @@ async def stream_audio(
         headers={
             "Accept-Ranges": "bytes",
             "Content-Length": str(file_size),
-            "Cache-Control": "private, max-age=3600",
+            "Cache-Control": cache_control,
         },
     )
 

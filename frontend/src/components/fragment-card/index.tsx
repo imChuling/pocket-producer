@@ -29,9 +29,11 @@ interface FragmentCardProps {
   fragment: Fragment;
   onDeleted?: () => void;
   onUpdated?: () => void;
+  readOnly?: boolean;
+  onReadOnlyAction?: () => void;
 }
 
-export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardProps) {
+export function FragmentCard({ fragment, onDeleted, onUpdated, readOnly, onReadOnlyAction }: FragmentCardProps) {
   const [deleting, setDeleting] = useState(false);
   const [reanalyzing, setReanalyzing] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -101,6 +103,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
   }, [isProcessing, fragment._id]);
 
   async function handleDelete() {
+    if (readOnly) { onReadOnlyAction?.(); return; }
     setDeleting(true);
     try {
       await apiPost(`/fragments/${fragment._id}/delete`, {});
@@ -113,6 +116,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
   const [reanalyzeError, setReanalyzeError] = useState<string | null>(null);
 
   async function handleReanalyze() {
+    if (readOnly) { onReadOnlyAction?.(); return; }
     setReanalyzing(true);
     setReanalyzeError(null);
     try {
@@ -149,6 +153,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
   }
 
   function startEditing() {
+    if (readOnly) { onReadOnlyAction?.(); return; }
     setEditTitle(displayTitle);
     setEditing(true);
     setTimeout(() => inputRef.current?.select(), 0);
@@ -233,6 +238,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
       {/* Content */}
       <div className="pt-5">
       {isAudio ? (
+        <>
         <AudioPlayer
           fragmentId={fragment._id}
           displayTitle={displayTitle}
@@ -246,7 +252,14 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
           onSaveTitle={saveTitle}
           onCancelEditing={() => setEditing(false)}
           inputRef={inputRef}
+          demo={readOnly}
         />
+        {fragment.text && (
+          <p className="text-sm text-gravel/80 leading-relaxed mt-2 whitespace-pre-line italic">
+            {fragment.text}
+          </p>
+        )}
+        </>
       ) : fragment.text ? (
         <TextContent fragment={fragment} onUpdated={onUpdated} />
       ) : (
@@ -321,7 +334,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated }: FragmentCardPro
       <div className="text-xs text-slate flex items-center gap-1.5">
         {fragment.project_id && fragment.project_title && (
           <Link
-            href={`/projects/${fragment.project_id}`}
+            href={`${readOnly ? "/demo/projects" : "/projects"}/${fragment.project_id}`}
             className="text-obsidian hover:text-gravel transition-colors"
           >
             &rarr; {fragment.project_title}

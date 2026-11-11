@@ -211,12 +211,20 @@ export function TopNav() {
               </button>
             </>
           ) : !loading ? (
-            <button
-              onClick={() => signInWithGoogle()}
-              className="btn-gradient text-white px-5 py-2 rounded-full text-sm font-medium hover:opacity-90 transition-opacity btn-press cursor-pointer whitespace-nowrap"
-            >
-              Sign in
-            </button>
+            <>
+              <Link
+                href="/demo"
+                className="font-mono text-[11px] uppercase tracking-[0.15em] text-gravel hover:text-obsidian transition-colors px-3 py-1.5 rounded-full hover:bg-powder btn-press whitespace-nowrap"
+              >
+                Demo
+              </Link>
+              <button
+                onClick={() => signInWithGoogle()}
+                className="btn-gradient text-white px-5 py-2 rounded-full text-sm font-medium hover:opacity-90 transition-opacity btn-press cursor-pointer whitespace-nowrap"
+              >
+                Sign in
+              </button>
+            </>
           ) : (
             <div className="w-16" />
           )}

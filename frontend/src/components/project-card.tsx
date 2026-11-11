@@ -20,7 +20,7 @@ function scoreBarStyle(score: number | null): React.CSSProperties {
   return { background: "#a59f97" };
 }
 
-export function ProjectCard({ project }: { project: Project }) {
+export function ProjectCard({ project, basePath = "/projects" }: { project: Project; basePath?: string }) {
   const score = project.rescue_score;
   const pct = score !== null ? score : 0;
   const fragmentCount = (project.fragment_ids ?? []).length;
@@ -28,7 +28,7 @@ export function ProjectCard({ project }: { project: Project }) {
   const types = project.connection_types ?? [];
 
   return (
-    <Link href={`/projects/${project._id}`} className="block cursor-pointer group">
+    <Link href={`${basePath}/${project._id}`} className="block cursor-pointer group">
       <div
         className="backdrop-blur-sm rounded-[24px] p-5 space-y-4 shadow-hairline card-3d gradient-border h-full flex flex-col"
         style={{

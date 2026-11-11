@@ -17,6 +17,7 @@ interface AudioPlayerProps {
   onSaveTitle: () => void;
   onCancelEditing: () => void;
   inputRef: React.RefObject<HTMLInputElement | null>;
+  demo?: boolean;
 }
 
 export function AudioPlayer({
@@ -32,6 +33,7 @@ export function AudioPlayer({
   onSaveTitle,
   onCancelEditing,
   inputRef,
+  demo = false,
 }: AudioPlayerProps) {
   const [playing, setPlaying] = useState(false);
   const [loadingAudio, setLoadingAudio] = useState(false);
@@ -133,10 +135,11 @@ export function AudioPlayer({
 
     setLoadingAudio(true);
     try {
-      const token = await getIdToken();
-      const res = await fetch(`/api/fragments/${fragmentId}/audio`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = demo
+        ? await fetch(`/api/demo/fragments/${fragmentId}/audio`)
+        : await fetch(`/api/fragments/${fragmentId}/audio`, {
+            headers: { Authorization: `Bearer ${await getIdToken()}` },
+          });
       if (!res.ok) throw new Error("Failed to load audio");
       const blob = await res.blob();
       // The card may have gone while the audio loaded; a clip that starts
@@ -211,7 +214,7 @@ export function AudioPlayer({
     } finally {
       setLoadingAudio(false);
     }
-  }, [fragmentId]);
+  }, [fragmentId, demo]);
 
   return (
     <div className="space-y-2.5">

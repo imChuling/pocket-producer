@@ -316,7 +316,7 @@ function LandingPage() {
               </button>
               <Link
                 href="/demo"
-                className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate hover:text-gravel transition-colors"
+                className="block font-mono text-[10px] uppercase tracking-[0.2em] text-slate hover:text-gravel transition-colors mt-3"
               >
                 or explore demo account
               </Link>
@@ -683,7 +683,7 @@ function LandingPage() {
           </motion.button>
           <Link
             href="/demo"
-            className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate hover:text-gravel transition-colors mt-4"
+            className="block font-mono text-[11px] uppercase tracking-[0.2em] text-slate hover:text-gravel transition-colors mt-5"
           >
             or explore the demo account
           </Link>
