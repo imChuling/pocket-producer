@@ -191,6 +191,16 @@ def test_audio_honours_range_requests(client, db):
     assert res.content == AUDIO_BYTES[10:20]
 
 
+def test_audio_is_never_shared_cacheable(client, db):
+    fragment = add_fragment(db)
+    url = f"/api/demo/fragments/{fragment['_id']}/audio"
+
+    for headers in ({}, {"Range": "bytes=0-9"}):
+        cache_control = client.get(url, headers=headers).headers["cache-control"]
+        assert "private" in cache_control
+        assert "public" not in cache_control
+
+
 def test_audio_refuses_fragments_outside_the_seed_account(client, db):
     private = add_fragment(db, user_id="real-user")
 

@@ -58,9 +58,9 @@ async def demo_fragment_audio(
     if not fragment or not fragment.get("audio_url"):
         raise HTTPException(status_code=404, detail="Audio not found")
 
-    return await gcs_audio_response(
-        fragment["audio_url"], range, cache_control="public, max-age=3600"
-    )
+    # Private on purpose: a shared cache in front of the API stored a partial
+    # (206) body and replayed it to every later full request.
+    return await gcs_audio_response(fragment["audio_url"], range)
 
 
 @router.get("/projects")
