@@ -102,7 +102,7 @@ export default function PrivacyPage() {
             <h2 className="font-heading text-base font-medium text-obsidian mb-2">Contact</h2>
             <p>
               For privacy questions or data requests, contact us at{" "}
-              <span className="text-obsidian">privacy@pocketproducer.app</span>.
+              <span className="text-obsidian">chuling.li.cs@gmail.com</span>.
             </p>
           </section>
         </div>

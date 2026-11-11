@@ -21,8 +21,8 @@ uploads for twelve days.
 - One topic per branch. Docs-only branches are fine; keep code out of
   them, and keep docs out of code branches when they can be separated.
 - Rebase on `origin/main` before merging if main moved.
-- `main` is pushed only from the maintainer's machine. Automated sessions
-  push a branch and stop; they do not push `main`. Never force-push.
+- `main` is pushed only from the maintainer's machine. Work from any other
+  checkout goes to a branch and stops there. Never force-push.
 - CI runs on pull requests into `main` and on `main` itself, not on a bare
   branch push; open a pull request to get a run.
 
@@ -88,8 +88,8 @@ read its name and docstring before editing it.
   instance-hours in October 2026). Every browser poller goes through
   `frontend/src/lib/idle.ts` so hidden and idle tabs stay quiet; never add an
   uptime check or keep-warm cron without deciding to pay for a warm instance.
-- Automated sessions do not deploy and do not touch Cloud Run, Vercel,
-  Firebase, Mongo Atlas or Audiotool developer settings.
+- Nothing but the maintainer's own machine deploys or touches Cloud Run,
+  Vercel, Firebase, Mongo Atlas or Audiotool developer settings.
 
 ## Evaluation rules
 
