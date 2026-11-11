@@ -4,6 +4,10 @@ Status: FROZEN upon commit. Any change after the freeze commit requires a
 new version file; results obtained under a modified protocol must be
 labeled exploratory.
 
+> Note (November 2026): the human-rater study described below was never run.
+> Human evaluation was redesigned as a single-rater pre-registered pilot,
+> see `research/prereg_human_v1.md`; the offline evaluation sections stand.
+
 Motivation: the post-hoc exploratory analysis of 2026-08-07
 (`artifacts/human-signal-alignment/alignment.json`) found that on
 rater-consensus pairs, transpose-invariant harmonic compatibility matched

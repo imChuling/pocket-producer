@@ -4,6 +4,10 @@ Status: **FROZEN** upon commit `3726d0a9`. Any change after the freeze
 commit requires a new version file (`protocol-heldout-v2.md`); results
 obtained under a modified protocol must be labeled exploratory.
 
+> Note (November 2026): the human-rater study described below was never run.
+> Human evaluation was redesigned as a single-rater pre-registered pilot,
+> see `research/prereg_human_v1.md`; the offline evaluation sections stand.
+
 Frozen date: 2026-08-09
 
 ## Motivation
