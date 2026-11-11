@@ -55,7 +55,7 @@ if (t.T.typeName === q.typeName) {
 `q.typeName` is `"audiotool.document.v1.Pointer"`, set via the generated
 `o(d, "typeName", "audiotool.document.v1.Pointer")`.
 
-We ship this as a pnpm patch in our hackathon project and have verified
+We ship this as a pnpm patch in this project and have verified
 the full insert/undo flow works in production with it:
 https://github.com/imChuling/pocket-producer/blob/main/frontend/patches/@audiotool__nexus.patch
 
