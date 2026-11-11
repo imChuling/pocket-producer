@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, useScroll, useTransform } from "motion/react";
 import { useAuth } from "@/hooks/use-auth";
@@ -313,6 +314,12 @@ function LandingPage() {
                 />
                 Begin
               </button>
+              <Link
+                href="/demo"
+                className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate hover:text-gravel transition-colors"
+              >
+                or explore demo account
+              </Link>
             </motion.div>
           </div>
         </motion.div>
@@ -674,6 +681,12 @@ function LandingPage() {
               style={{ background: "linear-gradient(135deg, rgba(160,181,235,0.2), rgba(255,148,115,0.15), rgba(226,193,97,0.1))" }}
             />
           </motion.button>
+          <Link
+            href="/demo"
+            className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate hover:text-gravel transition-colors mt-4"
+          >
+            or explore the demo account
+          </Link>
         </Reveal>
       </section>
 

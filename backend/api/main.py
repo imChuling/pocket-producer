@@ -27,6 +27,7 @@ from .deps import (
 from .pipeline import get_genai_client, process_fragment_background, validate_audio_upload
 from .routes import (
     admin_router,
+    demo_router,
     fragments_router,
     notifications_router,
     projects_router,
@@ -119,6 +120,7 @@ app.include_router(projects_router)
 app.include_router(notifications_router)
 app.include_router(admin_router)
 app.include_router(ranking_router)
+app.include_router(demo_router)
 
 
 # ---------------------------------------------------------------------------
