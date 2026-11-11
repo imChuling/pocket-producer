@@ -274,7 +274,7 @@ file I/O cost.
 
 ---
 
-## Contributing
+## Reusing the skills
 
 Skills are designed to be independently useful. If you're building music-related
 agents, you can use these skills in your own ADK project:

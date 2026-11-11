@@ -95,7 +95,6 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
 _default_origins = [
-    "https://pocketproducer.app",
     "https://pocketproducer.vercel.app",
     "http://localhost:3000",
     "https://pocket-producer-25253422868.us-central1.run.app",

@@ -22,7 +22,7 @@ artifacts/cocola-audio/
 ~$*.pptx
 *\[Auto-saved\]*.pptx
 
-# Paper source and private notes stay out of the public tree
+# Local-only files
 CHANGELOG.md
 docs/_archive/
 docs/ismir2026/

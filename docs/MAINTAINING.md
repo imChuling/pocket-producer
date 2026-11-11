@@ -40,7 +40,7 @@ Ranking behaviour is covered by tests that encode design decisions, not
 just regressions. If a change makes one fail, the test is probably right;
 read its name and docstring before editing it.
 
-## Facts about the system that documents keep getting wrong
+## System facts
 
 - `rules-v1` has seven signals (tempo, key, role gap, intent, tag novelty,
   tag overlap, recency) and is the default. The offline stand-in used in the
@@ -54,12 +54,12 @@ read its name and docstring before editing it.
   Never construct `MsClapAdapter()` elsewhere.
 - Rankers skip candidates they cannot score and raise when none remain;
   they never serve a zero-score, evidence-free proposal.
-- Rate limits are per signed-in user. LLM-backed actions have a 30/day
-  allowance per user (`POCKET_DAILY_LLM_QUOTA`).
+- Rate limits are per signed-in user. LLM-backed actions have a per-user
+  daily allowance (`POCKET_DAILY_LLM_QUOTA`, set in `deploy/cloudrun.env.yaml`).
 - `/` redirects signed-in users to `/capture`; the Audiotool session flow is `/audiotool`, the last tab.
 - The paper source (`docs/ismir2026/`) and `CHANGELOG.md` are gitignored on
   purpose. `check_paper_numbers.py` skips tex assertions when they are
-  absent; do not "fix" that.
+  absent by design.
 - Numbers in README, MODEL_CARD and VERIFICATION must match
   `artifacts/`. Do not round or restate a number without checking its JSON.
 
