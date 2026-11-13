@@ -81,29 +81,14 @@ and `other` the easiest (`fusion_plus_classic_onset` 0.79).
    combinations after the behavioural report on these recordings, so this
    is an observation to be confirmed on other data, not a tested claim.
 
-## The main caveat
-
-The rhythm scorers are helped by how the candidates are presented. A true
-stem is locked to its context in time: it was played with it. A distractor
-arrives with its own tempo and with its window starting at an arbitrary
-point in its bar. `onset_pattern` and `rhythm_on_grid` therefore mostly
-detect whether a candidate is synchronised with this recording. The
-tempo-matched pool narrows tempo to within 2% and does nothing about where
-in the beat a distractor starts.
-
-In a session a fragment is stretched to the tempo and placed on the grid
-before anyone judges it. These figures do not show how the rhythm scorers
-would rank candidates after that, and should not be read as "finds the
-right part 53% of the time". The same applies, less sharply, to `cocola`,
-which was trained on time-aligned windows.
-
-The store holds each candidate's frames and its own track's grid, so a
-pool in which every candidate is first mapped beat for beat onto the
-query's grid can be scored without touching audio. That is the next
-protocol, not a reading of this one.
-
 ## Limits
 
 As in the protocol: 10 s windows and small pools, not comparable with
 published whole-track figures; one known-good target per query, so Recall@1
 understates every scorer; COCOLA lists MUSDB18-HQ among its training sets.
+
+Candidates are scored as they are. A distractor keeps its own tempo and
+starts wherever its window falls in the bar, while the true stem is in time
+with its context, which favours the rhythm scorers and, to a lesser degree,
+`cocola`. Scoring candidates after mapping them onto the query's grid is
+possible from the stored features and is left for later work.
