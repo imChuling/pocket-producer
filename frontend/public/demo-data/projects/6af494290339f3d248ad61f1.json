@@ -1,0 +1,191 @@
+{
+ "_id": "6af494290339f3d248ad61f1",
+ "user_id": "demo-seed-user",
+ "title": "Golden Hour",
+ "fragment_ids": [
+  "6af3b546952b2b2330ab4685",
+  "6af3b506952b2b2330ab4682",
+  "6af3b6de46bd0f5f90c8341d"
+ ],
+ "connection_reasons": [
+  "Unhurried, warm material: a sunrise drive, a night of doing nothing, and an instrumental bed that fits under both.",
+  "'Chilling' at 68 BPM is exact half-time against 'delight ft ultradiolet' at 136 BPM, and 'laid back beat' shares A minor with 'delight'."
+ ],
+ "connection_types": [
+  "related_theme",
+  "similar_emotion"
+ ],
+ "next_action": {
+  "action": "'Chilling' at 68 BPM is exact half-time against 'delight' at 136. Loop the 'Chilling' bed under the 'delight' verse and sing the road-trip lines in a half-time feel. Check G major against A minor by ear before committing.",
+  "estimated_time": "25 min"
+ },
+ "last_activity_at": "2026-11-11T16:13:29.102000",
+ "created_at": "2026-11-11T16:13:29.102000",
+ "rescue_score": 61,
+ "score_breakdown": {
+  "richness": 16,
+  "structure_completeness": 15,
+  "emotional_coherence": 10,
+  "freshness": 20
+ },
+ "sections": [
+  "hook",
+  "loop",
+  "verse"
+ ],
+ "fragments": [
+  {
+   "_id": "6af3b546952b2b2330ab4685",
+   "user_id": "demo-seed-user",
+   "type": "audio",
+   "title": "delight ft ultradiolet",
+   "text": "sunrise on the dash we kept driving\nwindows down since the state line\nyour playlist ran out somewhere in Nevada\nso we just listened to the wind\nand the sound of tires on nothing\npulled over at a gas station\nthat only sold jerky and hope\nkept driving anyway",
+   "raw_text": "sunrise on the dash we kept driving\nwindows down since the state line\nyour playlist ran out somewhere in Nevada\nso we just listened to the wind\nand the sound of tires on nothing\npulled over at a gas station\nthat only sold jerky and hope\nkept driving anyway",
+   "tags": [
+    "lyric",
+    "imagery",
+    "narrative"
+   ],
+   "emotions": [
+    "hopeful",
+    "wistful"
+   ],
+   "themes": [
+    "road trip",
+    "freedom"
+   ],
+   "style": [
+    "electronic",
+    "indie-pop"
+   ],
+   "key": "Am",
+   "bpm": 136.0,
+   "audio_features": {
+    "bpm": 136.0,
+    "key": "Am",
+    "estimated_key": "A",
+    "estimated_mode": "minor",
+    "duration_sec": 154.78,
+    "energy_mean": 0.1543,
+    "brightness": 2616.6,
+    "onset_density": 2.67,
+    "spectral_flatness": 0.0347
+   },
+   "status": "ready",
+   "created_at": "2026-11-11T00:22:30.087000",
+   "seed": true,
+   "suggestion": "The imagery is vivid and specific. Sunrise, a car dashboard, forward motion. This has a visual quality that translates well to music. Write a second section set at night to contrast the sunrise opening: 'headlights cutting through nothing' or something equally concrete. The warmth of the audio bed matches the visual warmth of the lyric, which is a good instinct. Consider structuring the song as a journey from dawn to dark, with the musical arrangement following the same arc, brighter instruments giving way to deeper ones. The phrase 'we kept driving' has an open-ended quality that resists closure, which is exactly where a fade-out would work.",
+   "potential": "high",
+   "structure_hint": "verse_candidate",
+   "agent_narrative": "Sets the visual tone for the whole collection. Sunrise, warmth, motion.",
+   "connection_reason": "Unhurried, warm material: a sunrise drive, a night of doing nothing, and an instrumental bed that fits under both.",
+   "connection_types": [
+    "related_theme",
+    "similar_emotion"
+   ],
+   "project_id": "6af494290339f3d248ad61f1",
+   "project_title": "Golden Hour"
+  },
+  {
+   "_id": "6af3b506952b2b2330ab4682",
+   "user_id": "demo-seed-user",
+   "type": "audio",
+   "title": "Chilling",
+   "text": "no plans tonight just the ceiling fan\nphone on silent since like 10\nthinking bout nothing and everything\nthe fridge hums louder than my thoughts\nmaybe I'll make tea or maybe not\nthis is the song for doing absolutely nothing",
+   "raw_text": "no plans tonight just the ceiling fan\nphone on silent since like 10\nthinking bout nothing and everything\nthe fridge hums louder than my thoughts\nmaybe I'll make tea or maybe not\nthis is the song for doing absolutely nothing",
+   "tags": [
+    "lyric",
+    "mundane detail",
+    "humor"
+   ],
+   "emotions": [
+    "calm",
+    "content"
+   ],
+   "themes": [
+    "solitude",
+    "doing nothing"
+   ],
+   "style": [
+    "lo-fi"
+   ],
+   "key": "G",
+   "bpm": 68.0,
+   "audio_features": {
+    "bpm": 68.0,
+    "key": "G",
+    "estimated_key": "G",
+    "estimated_mode": "major",
+    "duration_sec": 28.44,
+    "energy_mean": 0.1204,
+    "brightness": 695.7,
+    "onset_density": 1.93,
+    "spectral_flatness": 0.0001
+   },
+   "status": "ready",
+   "created_at": "2026-11-11T00:21:26.235000",
+   "seed": true,
+   "suggestion": "There is a strong late-night atmosphere here, the kind of piece that works best at low volume with headphones. The lyric matches it: the ceiling fan, the phone on silent, the fridge humming louder than the thoughts. 'This is the song for doing absolutely nothing' is the hook, and it is funny because it is accurate. Keep the vocal in a narrow melodic range, almost spoken, to fit the understated energy. Some vinyl crackle or light tape hiss would push the bed further into lo-fi territory. Repeat the last line twice at the end and let the second one trail off unfinished.",
+   "potential": "medium",
+   "structure_hint": "hook_candidate",
+   "agent_narrative": "The night-time counterpart to 'delight', at exactly half its tempo.",
+   "connection_reason": "Unhurried, warm material: a sunrise drive, a night of doing nothing, and an instrumental bed that fits under both.",
+   "connection_types": [
+    "related_theme",
+    "similar_emotion"
+   ],
+   "project_id": "6af494290339f3d248ad61f1",
+   "project_title": "Golden Hour"
+  },
+  {
+   "_id": "6af3b6de46bd0f5f90c8341d",
+   "user_id": "demo-seed-user",
+   "type": "audio",
+   "title": "laid back beat",
+   "text": null,
+   "raw_text": null,
+   "tags": [
+    "instrumental",
+    "groove",
+    "beat"
+   ],
+   "emotions": [
+    "calm",
+    "warm"
+   ],
+   "themes": [
+    "late night"
+   ],
+   "style": [
+    "lo-fi"
+   ],
+   "key": "Am",
+   "bpm": 107.7,
+   "audio_features": {
+    "bpm": 107.7,
+    "key": "Am",
+    "estimated_key": "A",
+    "estimated_mode": "minor",
+    "duration_sec": 118.57,
+    "energy_mean": 0.094,
+    "brightness": 1454.0,
+    "onset_density": 2.91,
+    "spectral_flatness": 0.0071
+   },
+   "status": "ready",
+   "created_at": "2026-11-11T00:29:18.270000",
+   "seed": true,
+   "suggestion": "This groove speaks for itself and does not need much help. The rhythmic pocket is relaxed but not sloppy, which is hard to achieve. Try writing a mumbled scratch vocal over it, nothing polished, just vibes and melodic shapes. The point is to find where a voice naturally wants to sit in the mix. The low end is warm and round, which leaves the mid and high frequencies open for melodic content. A Rhodes piano playing sustained chords on beats two and four would complement the existing texture without competing. This has strong playlist energy as-is, but a bridge section with a key change would elevate it from a loop to a composition.",
+   "potential": "medium",
+   "structure_hint": "loop_candidate",
+   "agent_narrative": "Pure instrumental mood-setter. Glues the vocal pieces together.",
+   "connection_reason": "Unhurried, warm material: a sunrise drive, a night of doing nothing, and an instrumental bed that fits under both.",
+   "connection_types": [
+    "related_theme",
+    "similar_emotion"
+   ],
+   "project_id": "6af494290339f3d248ad61f1",
+   "project_title": "Golden Hour"
+  }
+ ]
+}

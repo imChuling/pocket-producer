@@ -7,8 +7,7 @@ import { StyleBubbles } from "@/components/style-bubbles";
 import { ThemeBar } from "@/components/theme-bar";
 import { HourlyHeatmap } from "@/components/hourly-heatmap";
 import type { DNAData } from "@/types";
-
-const API_BASE = "/api";
+import { loadDemo } from "../demo-data";
 
 function CreativePersonalityDemo({ dna }: { dna: DNAData }) {
   const emotionEntries = Object.entries(dna.emotions ?? {}).sort((a, b) => b[1] - a[1]);
@@ -109,8 +108,7 @@ export default function DemoDNAPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_BASE}/demo/dna`)
-      .then((r) => r.json())
+    loadDemo<Partial<DNAData>>("dna", "dna")
       .then((data) => {
         if (data && data.emotions) {
           setDna(data as DNAData);

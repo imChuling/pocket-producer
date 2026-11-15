@@ -7,6 +7,7 @@ import { FragmentCard } from "@/components/fragment-card";
 import { ProjectIntelligence } from "@/components/project-intelligence";
 import { RescueScore } from "@/components/rescue-score";
 import { useDemoToast } from "../../demo-context";
+import { loadDemo } from "../../demo-data";
 import type { ProjectDetail } from "@/types";
 
 function scoreColor(score: number | null) {
@@ -28,11 +29,7 @@ export default function DemoProjectDetailPage({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/demo/projects/${id}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("not found");
-        return r.json();
-      })
+    loadDemo<ProjectDetail>(`projects/${id}`, `projects/${id}`)
       .then(setProject)
       .catch(() => {})
       .finally(() => setLoading(false));

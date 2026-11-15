@@ -5,9 +5,8 @@ import { Mic, Send, Upload } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { FragmentCard } from "@/components/fragment-card";
 import { useDemoToast } from "../demo-context";
+import { loadDemo } from "../demo-data";
 import type { Fragment } from "@/types";
-
-const API_BASE = "/api";
 
 export default function DemoCapturePage() {
   const showToast = useDemoToast();
@@ -15,8 +14,7 @@ export default function DemoCapturePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_BASE}/demo/fragments?limit=100`)
-      .then((r) => r.json())
+    loadDemo<{ fragments?: Fragment[] }>("fragments", "fragments?limit=100")
       .then((data) => setFragments(data.fragments ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));

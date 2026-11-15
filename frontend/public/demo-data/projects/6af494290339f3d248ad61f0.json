@@ -1,0 +1,193 @@
+{
+ "_id": "6af494290339f3d248ad61f0",
+ "user_id": "demo-seed-user",
+ "title": "Bounce Session",
+ "fragment_ids": [
+  "6af3b6eb46bd0f5f90c83420",
+  "6af3b6a646bd0f5f90c83416",
+  "6af3b53c952b2b2330ab4684"
+ ],
+ "connection_reasons": [
+  "Three pieces built on groove first and words second, all with a playful, confident attitude.",
+  "'somewhat bouncy bass' (129.2 BPM) and 'damn right' (136 BPM) sit within a small tempo stretch of each other."
+ ],
+ "connection_types": [
+  "similar_emotion",
+  "related_theme"
+ ],
+ "next_action": {
+  "action": "Set the session to 129 BPM around the 'somewhat bouncy bass' loop and deliver the 'damn right' verse over it; 136 down to 129 is a small stretch. Keep 'Funkyy' (95.7 BPM) aside as a slower breakdown idea.",
+  "estimated_time": "20 min"
+ },
+ "last_activity_at": "2026-11-11T16:13:29.102000",
+ "created_at": "2026-11-11T16:13:29.102000",
+ "rescue_score": 69,
+ "score_breakdown": {
+  "richness": 19,
+  "structure_completeness": 20,
+  "emotional_coherence": 10,
+  "freshness": 20
+ },
+ "sections": [
+  "chorus",
+  "loop",
+  "verse"
+ ],
+ "fragments": [
+  {
+   "_id": "6af3b6eb46bd0f5f90c83420",
+   "user_id": "demo-seed-user",
+   "type": "audio",
+   "title": "somewhat bouncy bass",
+   "text": "one more time from the top\nyeah bring it back bring it back\nthe bass hits different the second time\nwhen you know where the drop is\nbounce with me don't be shy\neven your shadow's got rhythm\none more time from the top\nwe ain't done yet",
+   "raw_text": "one more time from the top\nyeah bring it back bring it back\nthe bass hits different the second time\nwhen you know where the drop is\nbounce with me don't be shy\neven your shadow's got rhythm\none more time from the top\nwe ain't done yet",
+   "tags": [
+    "bassline",
+    "groove",
+    "chant vocal"
+   ],
+   "emotions": [
+    "playful",
+    "confident"
+   ],
+   "themes": [
+    "dance",
+    "repetition"
+   ],
+   "style": [
+    "bounce",
+    "pop"
+   ],
+   "key": "Gm",
+   "bpm": 129.2,
+   "audio_features": {
+    "bpm": 129.2,
+    "key": "Gm",
+    "estimated_key": "G",
+    "estimated_mode": "minor",
+    "duration_sec": 20.0,
+    "energy_mean": 0.1715,
+    "brightness": 295.9,
+    "onset_density": 3.5,
+    "spectral_flatness": 0.0002
+   },
+   "status": "ready",
+   "created_at": "2026-11-11T00:29:31.078000",
+   "seed": true,
+   "suggestion": "The bass bounce is infectious and immediately physical. The pattern has a call-and-response quality built into it, with the bass phrase asking a question that the space between phrases answers. The chant fits that shape: 'one more time from the top' is both the lyric and the instruction, so let the crowd-style vocal answer the bass instead of sitting on top of it. The energy is high and consistent, which is a strength for a loop but means the contrast has to come from somewhere else. A breakdown that strips to just the bass and a single voice on 'we ain't done yet' would reset the energy before the bounce returns.",
+   "potential": "medium",
+   "structure_hint": "loop_candidate",
+   "agent_narrative": "The bassline is the backbone. Everything else in this group rides on top of it.",
+   "connection_reason": "Three pieces built on groove first and words second, all with a playful, confident attitude.",
+   "connection_types": [
+    "similar_emotion",
+    "related_theme"
+   ],
+   "project_id": "6af494290339f3d248ad61f0",
+   "project_title": "Bounce Session"
+  },
+  {
+   "_id": "6af3b6a646bd0f5f90c83416",
+   "user_id": "demo-seed-user",
+   "type": "audio",
+   "title": "Funkyy",
+   "text": "move your feet don't think about it\nthe bass knows what your body doesn't\nslide to the left now bring it back\nevery time I try to stop\nmy shoes just won't cooperate\nhip hip and away we go\nfunky like your grandma's kitchen",
+   "raw_text": "move your feet don't think about it\nthe bass knows what your body doesn't\nslide to the left now bring it back\nevery time I try to stop\nmy shoes just won't cooperate\nhip hip and away we go\nfunky like your grandma's kitchen",
+   "tags": [
+    "groove",
+    "bassline",
+    "chant vocal"
+   ],
+   "emotions": [
+    "playful",
+    "joyful"
+   ],
+   "themes": [
+    "dance",
+    "letting go"
+   ],
+   "style": [
+    "funk"
+   ],
+   "key": "A#m",
+   "bpm": 95.7,
+   "audio_features": {
+    "bpm": 95.7,
+    "key": "A#m",
+    "estimated_key": "A#",
+    "estimated_mode": "minor",
+    "duration_sec": 20.21,
+    "energy_mean": 0.1414,
+    "brightness": 1150.5,
+    "onset_density": 3.66,
+    "spectral_flatness": 0.0324
+   },
+   "status": "ready",
+   "created_at": "2026-11-11T00:28:22.753000",
+   "seed": true,
+   "suggestion": "The groove locks in immediately and the rhythmic pocket is tight. The bass pattern has a syncopation that pulls the listener forward, which is exactly what a funk-adjacent piece needs. The lyric knows its job: 'the bass knows what your body doesn't' is the line to build the chorus around, and 'funky like your grandma's kitchen' is the kind of odd image people remember. Shout the 'hip hip' line as a group vocal. A bass fill every four bars would break up the repetition without losing the pocket, and a B-section that drops the drums to half-time for four bars would make the main groove hit harder on the return.",
+   "potential": "medium",
+   "structure_hint": "chorus_candidate",
+   "agent_narrative": "Shares the bounce, but sits slower at 95.7 BPM, so it needs a tempo decision before it can be layered.",
+   "connection_reason": "Three pieces built on groove first and words second, all with a playful, confident attitude.",
+   "connection_types": [
+    "similar_emotion",
+    "related_theme"
+   ],
+   "project_id": "6af494290339f3d248ad61f0",
+   "project_title": "Bounce Session"
+  },
+  {
+   "_id": "6af3b53c952b2b2330ab4684",
+   "user_id": "demo-seed-user",
+   "type": "audio",
+   "title": "damn right",
+   "text": "damn right I did and I'd do it again\nlooked him dead in the eye and said no\nthey said I was crazy for walking away\nfrom that kind of money that kind of safe\nbut safe was killing me slow\nso yeah damn right\nI burned the bridge and danced in the light\nno regrets just a little smoke",
+   "raw_text": "damn right I did and I'd do it again\nlooked him dead in the eye and said no\nthey said I was crazy for walking away\nfrom that kind of money that kind of safe\nbut safe was killing me slow\nso yeah damn right\nI burned the bridge and danced in the light\nno regrets just a little smoke",
+   "tags": [
+    "lyric",
+    "attitude",
+    "hook idea"
+   ],
+   "emotions": [
+    "defiant",
+    "confident"
+   ],
+   "themes": [
+    "independence",
+    "no regrets"
+   ],
+   "style": [
+    "electronic",
+    "hip-hop"
+   ],
+   "key": "Em",
+   "bpm": 136.0,
+   "audio_features": {
+    "bpm": 136.0,
+    "key": "Em",
+    "estimated_key": "E",
+    "estimated_mode": "minor",
+    "duration_sec": 14.22,
+    "energy_mean": 0.0995,
+    "brightness": 950.1,
+    "onset_density": 4.71,
+    "spectral_flatness": 0.0001
+   },
+   "status": "ready",
+   "created_at": "2026-11-11T00:22:20.933000",
+   "seed": true,
+   "suggestion": "This has swagger and rhythmic confidence. 'Damn right I did and I'd do it again' opens the verse like a hook, and the story behind it follows fast: the money, the safe choice, the bridge burned. 'But safe was killing me slow' is the line that earns the defiance, so give it space and let the beat thin out under it. The consonants in 'damn' and 'right' are percussive enough to work as rhythmic hits, and a bass note that drops on 'damn' would reinforce that. Lift the title phrase out as a chorus of its own and keep this as the verse that explains it.",
+   "potential": "high",
+   "structure_hint": "verse_candidate",
+   "agent_narrative": "Brings the lyrical attitude the groove needs.",
+   "connection_reason": "Three pieces built on groove first and words second, all with a playful, confident attitude.",
+   "connection_types": [
+    "similar_emotion",
+    "related_theme"
+   ],
+   "project_id": "6af494290339f3d248ad61f0",
+   "project_title": "Bounce Session"
+  }
+ ]
+}

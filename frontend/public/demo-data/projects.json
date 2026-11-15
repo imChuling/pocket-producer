@@ -1,0 +1,116 @@
+{
+ "projects": [
+  {
+   "_id": "6af494290339f3d248ad61ef",
+   "user_id": "demo-seed-user",
+   "title": "Late Night Feels",
+   "fragment_ids": [
+    "6af3b6ca46bd0f5f90c8341a",
+    "6af3b6d246bd0f5f90c8341b",
+    "6af3b6e346bd0f5f90c8341e",
+    "6af3b6b546bd0f5f90c83418"
+   ],
+   "connection_reasons": [
+    "Four lyrics circle the same breakup from different distances: the sweater, the toothbrush, the replayed conversations, the sinking.",
+    "'broken heart' and 'illusion' are both in A at 117.5 BPM, which makes them same-song candidates and not only thematic neighbours.",
+    "'lake bottoms' (A minor, 136 BPM) shares the tonic and reads as the low point of the same story."
+   ],
+   "connection_types": [
+    "related_theme",
+    "same_song_candidate",
+    "similar_emotion"
+   ],
+   "next_action": {
+    "action": "Start from the shared ground: 'broken heart' and 'illusion' are both in A at 117.5 BPM. Sing the 'illusion' chorus over the 'broken heart' verse bed at that tempo, then try the 'Wanna' lines as a second verse, transposed from D minor.",
+    "estimated_time": "30 min"
+   },
+   "last_activity_at": "2026-11-11T16:13:29.102000",
+   "created_at": "2026-11-11T16:13:29.102000",
+   "rescue_score": 86,
+   "score_breakdown": {
+    "richness": 26,
+    "structure_completeness": 25,
+    "emotional_coherence": 15,
+    "freshness": 20
+   },
+   "sections": [
+    "bridge",
+    "chorus",
+    "verse"
+   ]
+  },
+  {
+   "_id": "6af494290339f3d248ad61f0",
+   "user_id": "demo-seed-user",
+   "title": "Bounce Session",
+   "fragment_ids": [
+    "6af3b6eb46bd0f5f90c83420",
+    "6af3b6a646bd0f5f90c83416",
+    "6af3b53c952b2b2330ab4684"
+   ],
+   "connection_reasons": [
+    "Three pieces built on groove first and words second, all with a playful, confident attitude.",
+    "'somewhat bouncy bass' (129.2 BPM) and 'damn right' (136 BPM) sit within a small tempo stretch of each other."
+   ],
+   "connection_types": [
+    "similar_emotion",
+    "related_theme"
+   ],
+   "next_action": {
+    "action": "Set the session to 129 BPM around the 'somewhat bouncy bass' loop and deliver the 'damn right' verse over it; 136 down to 129 is a small stretch. Keep 'Funkyy' (95.7 BPM) aside as a slower breakdown idea.",
+    "estimated_time": "20 min"
+   },
+   "last_activity_at": "2026-11-11T16:13:29.102000",
+   "created_at": "2026-11-11T16:13:29.102000",
+   "rescue_score": 69,
+   "score_breakdown": {
+    "richness": 19,
+    "structure_completeness": 20,
+    "emotional_coherence": 10,
+    "freshness": 20
+   },
+   "sections": [
+    "chorus",
+    "loop",
+    "verse"
+   ]
+  },
+  {
+   "_id": "6af494290339f3d248ad61f1",
+   "user_id": "demo-seed-user",
+   "title": "Golden Hour",
+   "fragment_ids": [
+    "6af3b546952b2b2330ab4685",
+    "6af3b506952b2b2330ab4682",
+    "6af3b6de46bd0f5f90c8341d"
+   ],
+   "connection_reasons": [
+    "Unhurried, warm material: a sunrise drive, a night of doing nothing, and an instrumental bed that fits under both.",
+    "'Chilling' at 68 BPM is exact half-time against 'delight ft ultradiolet' at 136 BPM, and 'laid back beat' shares A minor with 'delight'."
+   ],
+   "connection_types": [
+    "related_theme",
+    "similar_emotion"
+   ],
+   "next_action": {
+    "action": "'Chilling' at 68 BPM is exact half-time against 'delight' at 136. Loop the 'Chilling' bed under the 'delight' verse and sing the road-trip lines in a half-time feel. Check G major against A minor by ear before committing.",
+    "estimated_time": "25 min"
+   },
+   "last_activity_at": "2026-11-11T16:13:29.102000",
+   "created_at": "2026-11-11T16:13:29.102000",
+   "rescue_score": 61,
+   "score_breakdown": {
+    "richness": 16,
+    "structure_completeness": 15,
+    "emotional_coherence": 10,
+    "freshness": 20
+   },
+   "sections": [
+    "hook",
+    "loop",
+    "verse"
+   ]
+  }
+ ],
+ "demo": true
+}

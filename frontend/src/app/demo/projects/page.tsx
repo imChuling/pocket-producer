@@ -3,10 +3,9 @@
 import { useState, useEffect } from "react";
 import { Layers, RefreshCw } from "lucide-react";
 import { useDemoToast } from "../demo-context";
+import { loadDemo } from "../demo-data";
 import { ProjectCard } from "@/components/project-card";
 import type { Project } from "@/types";
-
-const API_BASE = "/api";
 
 export default function DemoProjectsPage() {
   const showToast = useDemoToast();
@@ -14,8 +13,7 @@ export default function DemoProjectsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_BASE}/demo/projects`)
-      .then((r) => r.json())
+    loadDemo<{ projects?: Project[] }>("projects", "projects")
       .then((data) => setProjects(data.projects ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));

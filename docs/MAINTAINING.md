@@ -70,12 +70,20 @@ read its name and docstring before editing it.
   `gcloud run deploy` drops configuration.
 - `deploy.sh --config` re-applies env and scaling without a rebuild.
 - Every `deploy.sh` build stores a 2 GB image in Artifact Registry
-  (`cloud-run-source-deploy`), billed monthly. The repository has a cleanup
-  policy (`deploy/artifact-cleanup-policy.json`: keep the 3 newest per
-  service, delete anything older than 30 days); re-apply it with
-  `gcloud artifacts repositories set-cleanup-policies cloud-run-source-deploy
-  --location us-central1 --policy backend/deploy/artifact-cleanup-policy.json
-  --no-dry-run` if the repository is ever recreated.
+  (`cloud-run-source-deploy`), billed monthly. The cleanup policy in
+  `deploy/artifact-cleanup-policy.json` keeps the 3 newest images per
+  service and deletes the rest once they are a day old (a keep rule never
+  deletes anything, so the delete rule must not wait 30 days). Re-apply it
+  with `gcloud artifacts repositories set-cleanup-policies
+  cloud-run-source-deploy --location us-central1 --policy
+  backend/deploy/artifact-cleanup-policy.json --no-dry-run`.
+- Pages that anyone can open (`/`, `/privacy`, `/figure`, `/demo/*`) must
+  not call the backend on load: each wake-up bills an instance for 15
+  minutes or more. The readiness banner skips them (`isPublicPath` in
+  `frontend/src/components/backend-status.tsx`), and the demo pages read
+  static snapshots from `frontend/public/demo-data/`. After reseeding the
+  demo account, re-export them with
+  `cd backend && .venv/bin/python -m scripts.export_demo_snapshot`.
 - Frontend: deploy by hand with `vercel --prod` from `frontend/` (the Vercel
   project is `pocketproducer`). Nothing deploys on push: the GitHub
   integration is not connected, so a green CI run on `main` says nothing

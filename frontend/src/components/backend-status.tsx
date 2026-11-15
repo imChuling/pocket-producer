@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 // The backend scales to zero between visitors (a deployment-cost choice, see
 // docs/MAINTAINING.md), so the first visit after a quiet period waits while
@@ -35,10 +36,26 @@ async function probe(): Promise<Phase> {
   }
 }
 
+// Pages that never call the backend on load. Probing /ready from them would
+// start an instance (billed for at least 15 minutes) for every visitor and
+// crawler; the demo reads static snapshots and wakes the backend only to play audio.
+export function isPublicPath(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return (
+    pathname === "/" ||
+    pathname === "/privacy" ||
+    pathname === "/figure" ||
+    pathname === "/demo" ||
+    pathname.startsWith("/demo/")
+  );
+}
+
 export function BackendStatus() {
   const [phase, setPhase] = useState<Phase>("checking");
+  const quiet = isPublicPath(usePathname());
 
   useEffect(() => {
+    if (quiet) return;
     let cancelled = false;
     const started = Date.now();
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -71,9 +88,9 @@ export function BackendStatus() {
       clearTimeout(reveal);
       if (timer) clearTimeout(timer);
     };
-  }, []);
+  }, [quiet]);
 
-  if (phase === "ready" || phase === "checking") return null;
+  if (quiet || phase === "ready" || phase === "checking") return null;
 
   return (
     <div

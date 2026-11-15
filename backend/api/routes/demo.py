@@ -1,4 +1,9 @@
-"""Read-only demo endpoints: serve the seed account without authentication."""
+"""Read-only demo endpoints: serve the seed account without authentication.
+
+The list views are also exported as static files by
+`scripts/export_demo_snapshot.py`, so the demo pages render without waking
+the backend; only audio playback reaches these routes in normal use.
+"""
 
 import asyncio
 from collections import Counter
@@ -23,110 +28,61 @@ _FRAGMENT_PROJECTION = {
 }
 
 
-@router.get("/fragments")
-@limiter.limit("30/minute")
-async def demo_fragments(request: Request, limit: int = 50):
+def fragments_payload(db, limit: int = 50) -> dict:
     limit = max(1, min(limit, MAX_FRAGMENTS))
-    db = get_db()
-    fragments = await asyncio.to_thread(
-        lambda: list(
-            db["fragments"]
-            .find({"user_id": DEMO_USER_ID}, _FRAGMENT_PROJECTION)
-            .sort("created_at", -1)
-            .limit(limit)
-        )
+    fragments = list(
+        db["fragments"]
+        .find({"user_id": DEMO_USER_ID}, _FRAGMENT_PROJECTION)
+        .sort("created_at", -1)
+        .limit(limit)
     )
     for f in fragments:
         f["_id"] = str(f["_id"])
     return {"fragments": fragments, "demo": True}
 
 
-@router.get("/fragments/{fragment_id}/audio")
-@limiter.limit("60/minute")
-async def demo_fragment_audio(
-    request: Request,
-    fragment_id: str,
-    range: str | None = Header(None),
-):
-    db = get_db()
-    oid = parse_object_id(fragment_id, "fragment_id")
-    fragment = await asyncio.to_thread(
-        db["fragments"].find_one,
-        {"_id": oid, "user_id": DEMO_USER_ID},
-        {"audio_url": 1},
-    )
-    if not fragment or not fragment.get("audio_url"):
-        raise HTTPException(status_code=404, detail="Audio not found")
-
-    # Private on purpose: a shared cache in front of the API stored a partial
-    # (206) body and replayed it to every later full request.
-    return await gcs_audio_response(fragment["audio_url"], range)
-
-
-@router.get("/projects")
-@limiter.limit("30/minute")
-async def demo_projects(request: Request):
-    db = get_db()
-    projects = await asyncio.to_thread(
-        lambda: list(
-            db["projects"]
-            .find({"user_id": DEMO_USER_ID}, {"embedding": 0})
-            .sort([("rescue_score", -1), ("_id", 1)])
-            .limit(20)
-        )
+def projects_payload(db) -> dict:
+    projects = list(
+        db["projects"]
+        .find({"user_id": DEMO_USER_ID}, {"embedding": 0})
+        .sort([("rescue_score", -1), ("_id", 1)])
+        .limit(20)
     )
     for p in projects:
         p["_id"] = str(p["_id"])
     return {"projects": projects, "demo": True}
 
 
-@router.get("/projects/{project_id}")
-@limiter.limit("30/minute")
-async def demo_project_detail(request: Request, project_id: str):
-    db = get_db()
-    oid = parse_object_id(project_id, "project_id")
-    project = await asyncio.to_thread(
-        db["projects"].find_one,
-        {"_id": oid, "user_id": DEMO_USER_ID},
-        {"embedding": 0},
-    )
+def project_detail_payload(db, oid) -> dict | None:
+    project = db["projects"].find_one({"_id": oid, "user_id": DEMO_USER_ID}, {"embedding": 0})
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        return None
     project["_id"] = str(project["_id"])
 
     fragment_ids = project.get("fragment_ids") or []
     oids = [parse_object_id(fid, "fragment_id") for fid in fragment_ids]
     fragments = []
     if oids:
-        fragments = await asyncio.to_thread(
-            lambda: list(
-                db["fragments"].find(
-                    {"_id": {"$in": oids}, "user_id": DEMO_USER_ID},
-                    _FRAGMENT_PROJECTION,
-                )
+        fragments = list(
+            db["fragments"].find(
+                {"_id": {"$in": oids}, "user_id": DEMO_USER_ID}, _FRAGMENT_PROJECTION
             )
         )
     for f in fragments:
         f["_id"] = str(f["_id"])
     order = {fid: i for i, fid in enumerate(fragment_ids)}
     fragments.sort(key=lambda f: order.get(f["_id"], len(order)))
-
     project["fragments"] = fragments
     return project
 
 
-@router.get("/dna")
-@limiter.limit("30/minute")
-async def demo_dna(request: Request):
-    """Compute a DNA summary from the seed fragments on the fly."""
-    db = get_db()
-    fragments = await asyncio.to_thread(
-        lambda: list(
-            db["fragments"].find(
-                {"user_id": DEMO_USER_ID},
-                {"emotions": 1, "themes": 1, "style": 1, "created_at": 1,
-                 "project_id": 1, "connection_types": 1},
-            )
+def dna_payload(db) -> dict:
+    """DNA summary computed from the seed fragments."""
+    fragments = list(
+        db["fragments"].find(
+            {"user_id": DEMO_USER_ID},
+            {"emotions": 1, "themes": 1, "style": 1, "created_at": 1,
+             "project_id": 1, "connection_types": 1},
         )
     )
     if not fragments:
@@ -163,3 +119,53 @@ async def demo_dna(request: Request):
         ),
         "demo": True,
     }
+
+
+@router.get("/fragments")
+@limiter.limit("30/minute")
+async def demo_fragments(request: Request, limit: int = 50):
+    return await asyncio.to_thread(fragments_payload, get_db(), limit)
+
+
+@router.get("/fragments/{fragment_id}/audio")
+@limiter.limit("60/minute")
+async def demo_fragment_audio(
+    request: Request,
+    fragment_id: str,
+    range: str | None = Header(None),
+):
+    db = get_db()
+    oid = parse_object_id(fragment_id, "fragment_id")
+    fragment = await asyncio.to_thread(
+        db["fragments"].find_one,
+        {"_id": oid, "user_id": DEMO_USER_ID},
+        {"audio_url": 1},
+    )
+    if not fragment or not fragment.get("audio_url"):
+        raise HTTPException(status_code=404, detail="Audio not found")
+
+    # Private on purpose: a shared cache in front of the API stored a partial
+    # (206) body and replayed it to every later full request.
+    return await gcs_audio_response(fragment["audio_url"], range)
+
+
+@router.get("/projects")
+@limiter.limit("30/minute")
+async def demo_projects(request: Request):
+    return await asyncio.to_thread(projects_payload, get_db())
+
+
+@router.get("/projects/{project_id}")
+@limiter.limit("30/minute")
+async def demo_project_detail(request: Request, project_id: str):
+    oid = parse_object_id(project_id, "project_id")
+    project = await asyncio.to_thread(project_detail_payload, get_db(), oid)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return project
+
+
+@router.get("/dna")
+@limiter.limit("30/minute")
+async def demo_dna(request: Request):
+    return await asyncio.to_thread(dna_payload, get_db())

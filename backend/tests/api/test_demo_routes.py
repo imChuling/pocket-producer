@@ -17,7 +17,9 @@ class StubCursor:
         self._docs = docs
 
     def sort(self, key, direction=1):
-        self._docs.sort(key=lambda d: d.get(key), reverse=direction < 0)
+        keys = key if isinstance(key, list) else [(key, direction)]
+        for field, order in reversed(keys):
+            self._docs.sort(key=lambda d: (d.get(field) is None, d.get(field)), reverse=order < 0)
         return self
 
     def limit(self, n):
@@ -248,3 +250,40 @@ def test_dna_counts_seed_fragments_and_invents_no_capture_rhythm(client, db):
     assert body["emotions"] == {"calm": 2, "bright": 1}
     assert body["hourly_distribution"] == {}
     assert "peak_hours" not in body
+
+
+def test_project_list_serves_only_the_seed_account(client, db):
+    add_project(db, [add_fragment(db)])
+    add_project(db, [add_fragment(db, user_id="real-user")], user_id="real-user")
+
+    body = client.get("/api/demo/projects").json()
+
+    assert [p["title"] for p in body["projects"]] == ["Late Night Feels"]
+
+
+def test_snapshot_matches_the_routes_and_keeps_storage_paths_private(client, db, tmp_path):
+    import json
+
+    from scripts.export_demo_snapshot import export
+
+    first = add_fragment(db, title="first")
+    second = add_fragment(db, title="second")
+    project = add_project(db, [second, first])
+    add_fragment(db, user_id="real-user", title="private")
+
+    written = export(db, tmp_path)
+
+    names = sorted(p.relative_to(tmp_path).as_posix() for p in written)
+    assert names == sorted(
+        ["dna.json", "fragments.json", "projects.json", f"projects/{project['_id']}.json"]
+    )
+    for name, route in (
+        ("fragments.json", f"/api/demo/fragments?limit={MAX_FRAGMENTS}"),
+        ("projects.json", "/api/demo/projects"),
+        ("dna.json", "/api/demo/dna"),
+        (f"projects/{project['_id']}.json", f"/api/demo/projects/{project['_id']}"),
+    ):
+        assert json.loads((tmp_path / name).read_text()) == client.get(route).json(), name
+    text = "".join(p.read_text() for p in written)
+    assert "gs://" not in text
+    assert "private" not in text

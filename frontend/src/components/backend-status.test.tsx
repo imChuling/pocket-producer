@@ -1,7 +1,10 @@
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { BackendStatus } from "./backend-status";
+import { BackendStatus, isPublicPath } from "./backend-status";
+
+const pathname = vi.hoisted(() => ({ current: "/capture" }));
+vi.mock("next/navigation", () => ({ usePathname: () => pathname.current }));
 
 function readyResponse(body: object, status = 200) {
   return { status, json: async () => body };
@@ -10,6 +13,7 @@ function readyResponse(body: object, status = 200) {
 describe("BackendStatus", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    pathname.current = "/capture";
   });
 
   afterEach(() => {
@@ -61,5 +65,27 @@ describe("BackendStatus", () => {
       await vi.advanceTimersByTimeAsync(0);
     });
     expect(screen.getByRole("status").textContent).toMatch(/starting now/);
+  });
+
+  it.each(["/", "/privacy", "/demo", "/demo/capture", "/demo/projects/abc"])(
+    "never probes the backend from the public page %s",
+    async (path) => {
+      pathname.current = path;
+      const fetchMock = vi.fn(async () => readyResponse({ mongo: "ok", clap: "ready" }));
+      vi.stubGlobal("fetch", fetchMock);
+      render(<BackendStatus />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30_000);
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(screen.queryByRole("status")).toBeNull();
+    },
+  );
+
+  it("treats only the landing, privacy, figure and demo pages as public", () => {
+    expect(isPublicPath("/login")).toBe(false);
+    expect(isPublicPath("/capture")).toBe(false);
+    expect(isPublicPath("/demonstration")).toBe(false);
+    expect(isPublicPath(null)).toBe(false);
   });
 });

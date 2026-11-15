@@ -1,0 +1,120 @@
+{
+ "emotions": {
+  "playful": 5,
+  "confident": 3,
+  "restless": 1,
+  "hopeful": 3,
+  "melancholy": 4,
+  "exhaustion": 1,
+  "calm": 3,
+  "warm": 1,
+  "flirtatious": 2,
+  "disillusionment": 1,
+  "longing": 2,
+  "vulnerability": 2,
+  "bittersweet": 1,
+  "wistful": 2,
+  "driving": 1,
+  "tense": 1,
+  "joyful": 1,
+  "reflective": 1,
+  "carefree": 1,
+  "energetic": 1,
+  "defiant": 1,
+  "reverent": 1,
+  "content": 1
+ },
+ "themes": {
+  "dance": 2,
+  "repetition": 1,
+  "escape": 1,
+  "fresh start": 1,
+  "burnout": 1,
+  "drowning": 1,
+  "late night": 1,
+  "attraction": 2,
+  "boredom": 1,
+  "heartbreak": 3,
+  "performance": 1,
+  "memory": 1,
+  "goodbye": 1,
+  "avoidance": 1,
+  "absence": 1,
+  "momentum": 1,
+  "letting go": 1,
+  "rebuilding": 1,
+  "imperfection": 1,
+  "work in progress": 1,
+  "status": 1,
+  "ambition": 1,
+  "road trip": 1,
+  "freedom": 1,
+  "independence": 1,
+  "no regrets": 1,
+  "stillness": 1,
+  "solitude": 1,
+  "doing nothing": 1,
+  "chase": 1
+ },
+ "top_styles": [
+  {
+   "_id": "pop",
+   "count": 8
+  },
+  {
+   "_id": "electronic",
+   "count": 6
+  },
+  {
+   "_id": "hip-hop",
+   "count": 3
+  },
+  {
+   "_id": "indie-pop",
+   "count": 2
+  },
+  {
+   "_id": "lo-fi",
+   "count": 2
+  },
+  {
+   "_id": "bounce",
+   "count": 1
+  },
+  {
+   "_id": "alt-pop",
+   "count": 1
+  },
+  {
+   "_id": "singer-songwriter",
+   "count": 1
+  },
+  {
+   "_id": "funk",
+   "count": 1
+  },
+  {
+   "_id": "vocal",
+   "count": 1
+  }
+ ],
+ "hourly_distribution": {},
+ "structure_distribution": [
+  {
+   "_id": "similar_emotion",
+   "count": 10
+  },
+  {
+   "_id": "related_theme",
+   "count": 10
+  },
+  {
+   "_id": "same_song_candidate",
+   "count": 4
+  }
+ ],
+ "total_fragments": 19,
+ "total_projects": 3,
+ "updated_at": "2026-11-11T00:29:31.078000",
+ "demo": true
+}

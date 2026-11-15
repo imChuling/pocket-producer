@@ -1,0 +1,253 @@
+{
+ "_id": "6af494290339f3d248ad61ef",
+ "user_id": "demo-seed-user",
+ "title": "Late Night Feels",
+ "fragment_ids": [
+  "6af3b6ca46bd0f5f90c8341a",
+  "6af3b6d246bd0f5f90c8341b",
+  "6af3b6e346bd0f5f90c8341e",
+  "6af3b6b546bd0f5f90c83418"
+ ],
+ "connection_reasons": [
+  "Four lyrics circle the same breakup from different distances: the sweater, the toothbrush, the replayed conversations, the sinking.",
+  "'broken heart' and 'illusion' are both in A at 117.5 BPM, which makes them same-song candidates and not only thematic neighbours.",
+  "'lake bottoms' (A minor, 136 BPM) shares the tonic and reads as the low point of the same story."
+ ],
+ "connection_types": [
+  "related_theme",
+  "same_song_candidate",
+  "similar_emotion"
+ ],
+ "next_action": {
+  "action": "Start from the shared ground: 'broken heart' and 'illusion' are both in A at 117.5 BPM. Sing the 'illusion' chorus over the 'broken heart' verse bed at that tempo, then try the 'Wanna' lines as a second verse, transposed from D minor.",
+  "estimated_time": "30 min"
+ },
+ "last_activity_at": "2026-11-11T16:13:29.102000",
+ "created_at": "2026-11-11T16:13:29.102000",
+ "rescue_score": 86,
+ "score_breakdown": {
+  "richness": 26,
+  "structure_completeness": 25,
+  "emotional_coherence": 15,
+  "freshness": 20
+ },
+ "sections": [
+  "bridge",
+  "chorus",
+  "verse"
+ ],
+ "fragments": [
+  {
+   "_id": "6af3b6ca46bd0f5f90c8341a",
+   "user_id": "demo-seed-user",
+   "type": "audio",
+   "title": "broken heart",
+   "text": "still got your sweater the grey one\nstill smells like you and cheap laundry soap\nI wore it to the grocery store Tuesday\nsome lady asked if I was okay\nI said yeah I'm fine just cold\nbut it's August\nI should probably throw it out\nbut probably is doing a lot of work there",
+   "raw_text": "still got your sweater the grey one\nstill smells like you and cheap laundry soap\nI wore it to the grocery store Tuesday\nsome lady asked if I was okay\nI said yeah I'm fine just cold\nbut it's August\nI should probably throw it out\nbut probably is doing a lot of work there",
+   "tags": [
+    "lyric",
+    "imagery",
+    "narrative"
+   ],
+   "emotions": [
+    "melancholy",
+    "longing",
+    "vulnerability"
+   ],
+   "themes": [
+    "heartbreak",
+    "memory"
+   ],
+   "style": [
+    "pop",
+    "singer-songwriter"
+   ],
+   "key": "A",
+   "bpm": 117.5,
+   "audio_features": {
+    "bpm": 117.5,
+    "key": "A",
+    "estimated_key": "A",
+    "estimated_mode": "major",
+    "duration_sec": 145.35,
+    "energy_mean": 0.0632,
+    "brightness": 2587.6,
+    "onset_density": 1.51,
+    "spectral_flatness": 0.0314
+   },
+   "status": "ready",
+   "created_at": "2026-11-11T00:28:58.738000",
+   "seed": true,
+   "suggestion": "The details carry this verse. The grey sweater, the cheap laundry soap and the grocery store on a Tuesday do more emotional work than any abstract statement could. 'I said yeah I'm fine just cold, but it's August' is the turn: the excuse falls apart inside the line, and you never have to say the word heartbreak. Keep the delivery close to spoken and let the bed stay sparse underneath. The last two lines already work as a button, so resist adding a moral after them. What is missing is a chorus that steps back from the objects and says the feeling plainly, once.",
+   "potential": "high",
+   "structure_hint": "verse_candidate",
+   "agent_narrative": "The raw vulnerability here anchors the whole collection. Every other piece in this group circles back to this feeling.",
+   "connection_reason": "Four lyrics circle the same breakup from different distances: the sweater, the toothbrush, the replayed conversations, the sinking.",
+   "connection_types": [
+    "related_theme",
+    "same_song_candidate",
+    "similar_emotion"
+   ],
+   "project_id": "6af494290339f3d248ad61ef",
+   "project_title": "Late Night Feels"
+  },
+  {
+   "_id": "6af3b6d246bd0f5f90c8341b",
+   "user_id": "demo-seed-user",
+   "type": "audio",
+   "title": "illusion",
+   "text": "was any of it real or just mirrors\nI keep replaying conversations\ntrying to find the moment it shifted\nfrom honest to performance\nmaybe it was always a show\nand I just bought a front row ticket\nclapped at all the right moments\nand called it love",
+   "raw_text": "was any of it real or just mirrors\nI keep replaying conversations\ntrying to find the moment it shifted\nfrom honest to performance\nmaybe it was always a show\nand I just bought a front row ticket\nclapped at all the right moments\nand called it love",
+   "tags": [
+    "lyric",
+    "metaphor",
+    "hook idea"
+   ],
+   "emotions": [
+    "melancholy",
+    "disillusionment"
+   ],
+   "themes": [
+    "heartbreak",
+    "performance"
+   ],
+   "style": [
+    "pop"
+   ],
+   "key": "A",
+   "bpm": 117.5,
+   "audio_features": {
+    "bpm": 117.5,
+    "key": "A",
+    "estimated_key": "A",
+    "estimated_mode": "major",
+    "duration_sec": 183.38,
+    "energy_mean": 0.0764,
+    "brightness": 899.7,
+    "onset_density": 4.02,
+    "spectral_flatness": 0.0022
+   },
+   "status": "ready",
+   "created_at": "2026-11-11T00:29:06.963000",
+   "seed": true,
+   "suggestion": "The question 'was any of it real or just mirrors' has a lyrical sophistication that the arrangement should match. The mirror image runs into the theatre image, the show, the front row ticket, the clapping, and the last line, 'and called it love', closes the trap neatly. That makes this a strong chorus: it states the whole idea and ends on the phrase worth remembering. Try the first line close to a whisper before the full voice comes in, so the scale grows across the section. Reversed or echoed melodic phrases would suit the mirror idea. Leave a bar of silence after 'called it love' before anything else enters.",
+   "potential": "high",
+   "structure_hint": "chorus_candidate",
+   "agent_narrative": "Asks the question the other pieces are afraid to. Same key and tempo as 'broken heart', so it can sit as that song's chorus.",
+   "connection_reason": "Four lyrics circle the same breakup from different distances: the sweater, the toothbrush, the replayed conversations, the sinking.",
+   "connection_types": [
+    "related_theme",
+    "same_song_candidate",
+    "similar_emotion"
+   ],
+   "project_id": "6af494290339f3d248ad61ef",
+   "project_title": "Late Night Feels"
+  },
+  {
+   "_id": "6af3b6e346bd0f5f90c8341e",
+   "user_id": "demo-seed-user",
+   "type": "audio",
+   "title": "lake bottoms",
+   "text": "sinking slow forgetting how to float\nused to be good at this\nused to be able to hold my breath\nfor the length of a whole song\nnow I can't even make it\nthrough the chorus\nthe water's not cold it's just heavy\nand I'm just tired of swimming",
+   "raw_text": "sinking slow forgetting how to float\nused to be good at this\nused to be able to hold my breath\nfor the length of a whole song\nnow I can't even make it\nthrough the chorus\nthe water's not cold it's just heavy\nand I'm just tired of swimming",
+   "tags": [
+    "lyric",
+    "water imagery",
+    "atmospheric"
+   ],
+   "emotions": [
+    "melancholy",
+    "exhaustion"
+   ],
+   "themes": [
+    "burnout",
+    "drowning"
+   ],
+   "style": [
+    "electronic",
+    "alt-pop"
+   ],
+   "key": "Am",
+   "bpm": 136.0,
+   "audio_features": {
+    "bpm": 136.0,
+    "key": "Am",
+    "estimated_key": "A",
+    "estimated_mode": "minor",
+    "duration_sec": 28.44,
+    "energy_mean": 0.0504,
+    "brightness": 946.8,
+    "onset_density": 2.74,
+    "spectral_flatness": 0.0005
+   },
+   "status": "ready",
+   "created_at": "2026-11-11T00:29:23.216000",
+   "seed": true,
+   "suggestion": "Dark, atmospheric, and submerged. The title and the lyric work together to create a sinking feeling that the audio bed reinforces. Reverse a section of the audio and layer it underneath the forward version for an underwater drowning effect. The phrase 'forgetting how to float' is the strongest image because it implies a skill that was once known and is being lost, which carries more emotional weight than simply drowning. The minor key and the heavy, submerged feel create a consistent mood. Consider breaking that consistency once, a single moment of brightness, maybe a major chord, that represents the surface before the song returns to depth.",
+   "potential": "medium",
+   "structure_hint": "bridge_candidate",
+   "agent_narrative": "The darkest corner of this set. Works as a bridge between the softer pieces.",
+   "connection_reason": "Four lyrics circle the same breakup from different distances: the sweater, the toothbrush, the replayed conversations, the sinking.",
+   "connection_types": [
+    "related_theme",
+    "same_song_candidate",
+    "similar_emotion"
+   ],
+   "project_id": "6af494290339f3d248ad61ef",
+   "project_title": "Late Night Feels"
+  },
+  {
+   "_id": "6af3b6b546bd0f5f90c83418",
+   "user_id": "demo-seed-user",
+   "type": "audio",
+   "title": "Wanna",
+   "text": "I just wanna know why you left like that\nno note on the counter no text back\nI keep checking the door like maybe\nyou forgot something and you're coming back\nbut it's been three weeks now\nand your toothbrush is still here\nI should probably move it\nbut then it's really real",
+   "raw_text": "I just wanna know why you left like that\nno note on the counter no text back\nI keep checking the door like maybe\nyou forgot something and you're coming back\nbut it's been three weeks now\nand your toothbrush is still here\nI should probably move it\nbut then it's really real",
+   "tags": [
+    "lyric",
+    "vocal idea",
+    "narrative"
+   ],
+   "emotions": [
+    "longing",
+    "melancholy",
+    "vulnerability"
+   ],
+   "themes": [
+    "heartbreak",
+    "absence"
+   ],
+   "style": [
+    "pop"
+   ],
+   "key": "Dm",
+   "bpm": 129.2,
+   "audio_features": {
+    "bpm": 129.2,
+    "key": "Dm",
+    "estimated_key": "D",
+    "estimated_mode": "minor",
+    "duration_sec": 40.42,
+    "energy_mean": 0.0396,
+    "brightness": 1298.6,
+    "onset_density": 2.33,
+    "spectral_flatness": 0.0011
+   },
+   "status": "ready",
+   "created_at": "2026-11-11T00:28:37.179000",
+   "seed": true,
+   "suggestion": "The emotional directness here is the strongest quality. 'I just wanna know why you left like that' carries real vulnerability without overplaying it, and the toothbrush detail does the rest: moving it would make the leaving real, so it stays. The phrasing lands naturally on the beat, which means this verse could sit over a wide range of instrumental beds. The word 'know' wants to be held longer than the syllables around it. Melodically, try approaching the opening line from a higher register and stepping down into it, which would mirror the emotional descent of the question. Save the biggest note for 'really real'.",
+   "potential": "high",
+   "structure_hint": "verse_candidate",
+   "agent_narrative": "Direct and unguarded. Could open the sequence before the mood deepens.",
+   "connection_reason": "Four lyrics circle the same breakup from different distances: the sweater, the toothbrush, the replayed conversations, the sinking.",
+   "connection_types": [
+    "related_theme",
+    "same_song_candidate",
+    "similar_emotion"
+   ],
+   "project_id": "6af494290339f3d248ad61ef",
+   "project_title": "Late Night Feels"
+  }
+ ]
+}
