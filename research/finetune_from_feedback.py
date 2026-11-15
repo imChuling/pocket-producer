@@ -13,11 +13,20 @@ few dozen decisions nudge the fusion rather than replace it. Accuracy is
 reported on the same pairs that were trained on (train fit, not a held-out
 estimate) and the output artifact says so.
 
+Signals logged after the base five (for example chroma_beat_aligned and
+onset_pattern) are named with --extra-signals and start at weight zero.
+The result must then pass the behavioural guardrail
+(research/compat_tests/guardrail.py) on a stored feature set; if it does
+not, no weights file is written. The verdict is always written next to the
+output as guardrail.json.
+
 Usage:
   backend/.venv/bin/python research/finetune_from_feedback.py \
     --requests requests.jsonl --feedback feedback.jsonl \
     --weights artifacts/fusion-deploy/weights.json \
-    --output artifacts/fusion-feedback/weights.json
+    --output artifacts/fusion-feedback/weights.json \
+    [--extra-signals chroma_beat_aligned,onset_pattern] \
+    [--guardrail-store /Volumes/Shirlene/Pocket_Producer/cache/musdb18_v1]
 """
 
 import argparse
@@ -28,7 +37,9 @@ import sys
 
 import numpy as np
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "backend"))
+REPO = pathlib.Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO / "backend"))
+sys.path.insert(0, str(REPO))
 
 from ranking.fusion_ranker import SIGNAL_NAMES, load_weights  # noqa: E402
 from ranking.research.feedback_pairs import (  # noqa: E402
@@ -59,13 +70,28 @@ def main() -> int:
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--l2", type=float, default=1.0)
     parser.add_argument("--min-pairs", type=int, default=MIN_PAIRS)
+    parser.add_argument("--extra-signals", default="",
+                        help="comma-separated signals logged after the base ones")
+    parser.add_argument("--guardrail-store", type=pathlib.Path, default=None,
+                        help="behavioural feature store (default: the MUSDB18-HQ store)")
     args = parser.parse_args()
 
+    from research.compat_tests import guardrail
+
     base = load_weights(args.weights)
-    w0 = np.asarray(base["weights"], dtype=np.float64)
+    names = list(base.get("signals") or SIGNAL_NAMES)
+    names += [s for s in args.extra_signals.split(",") if s]
+    w0 = np.zeros(len(names))
+    w0[: len(base["weights"])] = base["weights"]
+    store = args.guardrail_store or guardrail.DEFAULT_STORE
+    if not store.is_dir():
+        print(f"ABORT: guardrail feature store not found at {store}; nothing written.")
+        return 1
     requests = load_jsonl(args.requests)
     feedback = load_jsonl(args.feedback)
     pairs = build_feedback_pairs(requests, feedback, model_id=base["model_id"])
+    # Lists logged before the extra signals existed have shorter vectors.
+    pairs = [p for p in pairs if len(p["pos"]) == len(names) == len(p["neg"])]
     n_requests = len({p["request_id"] for p in pairs})
     print(f"{len(requests)} served lists, {len(feedback)} events -> "
           f"{len(pairs)} decision pairs from {n_requests} lists", flush=True)
@@ -87,9 +113,24 @@ def main() -> int:
 
     out = pathlib.Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
+    verdict = guardrail.check(
+        guardrail.WeightSet.of(names, mean_w),
+        guardrail.iter_store(store),
+        guardrail.WeightSet.of(base.get("signals") or SIGNAL_NAMES, base["weights"]),
+    )
+    verdict["store"] = str(store)
+    (out.parent / "guardrail.json").write_text(json.dumps(verdict, indent=2))
+    if verdict["verdict"] != "accept":
+        print("REJECTED by the behavioural guardrail; weights not written:")
+        for reason in verdict["reasons"]:
+            print(f"  - {reason}")
+        print(f"-> {out.parent / 'guardrail.json'}")
+        return 2
+    print(f"guardrail: accept ({verdict['n_pairs']} stored pairs)")
+
     out.write_text(json.dumps({
         "model_id": base["model_id"],
-        "signals": SIGNAL_NAMES,
+        "signals": names,
         "weights": [round(float(x), 6) for x in mean_w],
         "per_seed_weights": {
             str(s): [round(float(x), 6) for x in w] for s, w in zip(SEEDS, per_seed)
@@ -109,6 +150,7 @@ def main() -> int:
         "served_lists_with_decisions": n_requests,
         "train_fit_pairwise_accuracy": {"before": acc_before, "after": acc_after},
         "caveat": "train-fit accuracy on the decision pairs themselves, not a held-out estimate",
+        "guardrail": {"verdict": verdict["verdict"], "store": str(store)},
     }, indent=2))
     print(f"-> {out}")
     return 0
