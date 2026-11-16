@@ -93,11 +93,11 @@ Revision pinning: every stored vector carries `model_id`, `revision` (sha256 of 
 | `deepsets-v1` | 0.720 | 1,236 | 519 |
 | `pocketrank-context-v1` | 0.743 | 1,236 | 519 |
 
-**Key finding**: the two-parameter cosine-plus-bias baseline beats both learned models on weak labels. The benchmark predominantly rewards embedding proximity, so it cannot establish validity for continuation utility — which is why the preregistered human evaluation exists. Whether learned capacity helps on the real task is decided by human labels, not these numbers.
+**Key finding**: the two-parameter cosine-plus-bias baseline beats both learned models on weak labels. The benchmark predominantly rewards embedding proximity, so it cannot establish validity for continuation utility. A single-rater listening protocol was designed (`research/prereg_human_v1.md`) and, by the author's choice, not run, so whether learned capacity helps on the real task remains open.
 
 ## Limitations
 
-- **No personalization**: the system does not adapt to individual user preferences over time. This is a deliberate design constraint; the preregistered protocol requires temporal held-out learning curve support before enabling adaptation.
+- **No personalization**: the system does not adapt to individual user preferences over time. This is a deliberate design constraint: adaptation would first need a temporal held-out evaluation on logged decisions, and learned weights must pass the behavioural guardrail (`research/compat_tests/guardrail.py`).
 - **Session representation limits**: the existing fusion uses pooled region audio and metadata. The local, undeployed beat-fit prototype adds approximate timeline placement and chroma/onset structure; it does not reproduce offsets, loops, mixing or effects of real DAW playback.
 - **Small evaluation scale**: human pairwise labels are in pilot quantities. Statistical power is limited; results are reported honestly with sample sizes.
 - **Backbone audit incomplete**: LAION-CLAP music training data provenance has not been fully verified for commercial deployment.

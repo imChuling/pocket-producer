@@ -109,9 +109,9 @@ read its name and docstring before editing it.
 
 ## Evaluation rules
 
-- No human evaluation with external participants. The only human
-  evaluation is the author's own pre-registered N-of-1 rating
-  (`research/prereg_human_v1.md`).
+- No human evaluation with external participants. The author's own N-of-1
+  rating protocol (`research/prereg_human_v1.md`) was designed and not
+  run; do not describe any result as listener-validated.
 - Pre-registered documents are frozen once data collection starts; record
   any later change in their deviations log, never silently.
 - Negative results are kept and documented (`research/README.md`,

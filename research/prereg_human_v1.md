@@ -1,6 +1,7 @@
 # Pre-registration: Human Preference vs Proxy Labels (v1)
 
-Status: **DRAFT -- freeze before first data collection session.**
+Status: **not run.** On 2026-11-16 the author decided not to run this
+study; the protocol is kept as a design record. No ratings were collected.
 Date drafted: 2026-10-17
 Author: Chuling Li
 
