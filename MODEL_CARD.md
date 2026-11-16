@@ -99,7 +99,7 @@ Revision pinning: every stored vector carries `model_id`, `revision` (sha256 of 
 
 - **No personalization**: the system does not adapt to individual user preferences over time. This is a deliberate design constraint: adaptation would first need a temporal held-out evaluation on logged decisions, and learned weights must pass the behavioural guardrail (`research/compat_tests/guardrail.py`).
 - **Session representation limits**: the existing fusion uses pooled region audio and metadata. The local, undeployed beat-fit prototype adds approximate timeline placement and chroma/onset structure; it does not reproduce offsets, loops, mixing or effects of real DAW playback.
-- **Intent in the fusion rankers**: `fusion-5sig-v1` and `beat-fit-v1` read the typed intent only through a BPM or key parsed from it when the session lacks one. Role words such as "replace the drums" or "add a synth hook" do not change their ranking; `rules-v1` and the text and audio cosine rankers do read them.
+- **Intent in the fusion rankers**: `fusion-5sig-v1` is affected by the typed intent only through a BPM or key parsed from it when the session lacks one; role words such as "replace the drums" or "add a synth hook" do not change its ranking. `beat-fit-v1` reads only the precomputed `session_beats` and not the parsed intent. `rules-v1` and the text and audio cosine rankers do read role words.
 - **Small evaluation scale**: human pairwise labels are in pilot quantities. Statistical power is limited; results are reported honestly with sample sizes.
 - **Backbone audit incomplete**: LAION-CLAP music training data provenance has not been fully verified for commercial deployment.
 
@@ -107,7 +107,7 @@ Revision pinning: every stored vector carries `model_id`, `revision` (sha256 of 
 
 - The system ranks only within a user's own library; it never surfaces other users' content.
 - No creativity claims: short-term retrieval experiments cannot support assertions about enhancing creativity (per ICCC 2018 evaluation guidelines).
-- Audio from user sessions is CLAP-encoded for ranking only; raw audio is never stored by the backend or sent to third parties.
+- Audio from user sessions is CLAP-encoded for ranking only. The application does not save the raw session audio or send it to third parties; it decodes the upload in memory, though the web framework may spool a large upload to a temporary file while parsing the request.
 - Feedback data export uses an allowlist of named fields; user IDs are one-way hashed before leaving the database.
 
 ## Intended Use
