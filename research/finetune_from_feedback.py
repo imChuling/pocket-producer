@@ -3,10 +3,13 @@
 Replaces (part of) the cold-start pack co-membership proxy with the evidence
 the prototype was built to collect: within one served proposal list, an
 accepted or inserted fragment is preferred over a rejected one. Pairs come
-from the exposure log and feedback events as JSONL dumps:
+from the exposure log and feedback events, as the JSONL files written by
+the export script (allowlisted fields, user IDs replaced by a salted hash):
 
-  mongoexport --collection ranking_requests --out requests.jsonl
-  mongoexport --collection ranking_feedback --out feedback.jsonl
+  cd backend && FEEDBACK_EXPORT_SALT=... .venv/bin/python -m scripts.export_feedback \
+    --out ../artifacts/feedback-export
+
+Do not dump the raw collections: they hold user IDs. Keep the export local.
 
 Training warm-starts at the shipped weights and is L2-anchored to them, so a
 few dozen decisions nudge the fusion rather than replace it. Accuracy is
@@ -31,7 +34,8 @@ serialized without decimal rounding, preserving the exact gated vector.
 
 Usage:
   backend/.venv/bin/python research/finetune_from_feedback.py \
-    --requests requests.jsonl --feedback feedback.jsonl \
+    --requests artifacts/feedback-export/requests.jsonl \
+    --feedback artifacts/feedback-export/feedback.jsonl \
     --weights artifacts/fusion-deploy/weights.json \
     --output artifacts/fusion-feedback/weights.json \
     [--extra-signals chroma_beat_aligned,onset_pattern] \

@@ -1,10 +1,13 @@
 """Aggregate proposal telemetry into per-model acceptance metrics.
 
 Joins the served-list log (ranking_requests) with interaction events
-(ranking_feedback), both as JSONL dumps produced by mongoexport:
+(ranking_feedback), both as the JSONL files written by the export script,
+which keeps only allowlisted fields and replaces user IDs with a salted hash:
 
-  mongoexport --collection ranking_requests --out requests.jsonl
-  mongoexport --collection ranking_feedback --out feedback.jsonl
+  cd backend && FEEDBACK_EXPORT_SALT=... .venv/bin/python -m scripts.export_feedback \
+    --out ../artifacts/feedback-export
+
+Do not dump the raw collections: they hold user IDs. Keep the export local.
 
 Per model_id_served:
   n_requests            served lists (the exposure denominator)
@@ -19,7 +22,8 @@ list_acceptance and undo_per_insert.
 
 Usage:
   backend/.venv/bin/python research/analyze_feedback.py \
-    --requests requests.jsonl --feedback feedback.jsonl \
+    --requests artifacts/feedback-export/requests.jsonl \
+    --feedback artifacts/feedback-export/feedback.jsonl \
     --output artifacts/telemetry-pilot/metrics.json
 """
 

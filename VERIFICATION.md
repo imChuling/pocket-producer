@@ -42,7 +42,7 @@ materials are not part of this revision.
 
 | Component | What the tests prove | Test file |
 |---|---|---|
-| Offline eval | Rules scores a constructed example; audio cosine uses precomputed intent embedding; missing intent is a reported skip (not a silent zero); per-participant grouping; unknown model rejected; non-pairwise labels rejected; mean session skips/scores correctly; all preregistered comparison models are scorable; learned models skip without context; ladder IDs without scorers rejected | `test_offline_eval.py` |
+| Offline eval | Rules scores a constructed example; audio cosine uses precomputed intent embedding; missing intent is a reported skip (not a silent zero); per-participant grouping; unknown model rejected; non-pairwise labels rejected; mean session skips/scores correctly; every comparison model, baselines and learned, is scorable on one dataset; learned models skip without context; ladder IDs without scorers rejected | `test_offline_eval.py` |
 | Metrics | Pairwise accuracy: counts correct orderings, tie=0.5, empty rejected. Log loss: bounds enforced, uniform probability is log2. nDCG: graded labels required/computed, perfect order is 1. MRR: requires single positive, computes | `test_metrics.py` |
 
 ### Verified (representation/embedding layer)
@@ -70,7 +70,7 @@ materials are not part of this revision.
 
 | Component | What the tests prove | Test file |
 |---|---|---|
-| Feedback export | Identity and auth fields stripped; participant ID hashed one-way and stably; research fields kept | `test_feedback_export.py` |
+| Feedback export | Identity and auth fields stripped; participant ID hashed one-way and stably; an empty salt is refused; research fields kept for both feedback events and served lists. The export script asks the database only for allowlisted fields, writes no raw user ID or free text even if the database returned whole documents, and its output feeds the feedback pair builder | `test_feedback_export.py`, `test_export_feedback_script.py` |
 | Zero-shot style scoring | Scores cover fixed vocabulary only; deterministic; scores are cosines in valid range; top styles ordered by score | `test_zero_shot.py` |
 | Retrieval | Returns ranked matches for owner only; deleted fragments hard-filtered; k truncates; empty library returns empty; dimension mismatch raises; scores are descending cosines | `test_retrieval.py` |
 | Intent parsing | Lowercases/dedupes/caps tags; roles restricted to vocabulary; out-of-range BPM dropped; unparseable key dropped; empty result is none; parses structured response; empty text returns none without API call; failure returns none; cache hits skip second call. Apply: no parsed intent = identity; expands text intent with new tokens only; LLM fills blank BPM/key only; live session values always win; original request not mutated | `test_intent.py` |

@@ -148,8 +148,8 @@ def ladder_dir(tmp_path):
 
 
 class TestLadderScorers:
-    def test_all_preregistered_comparison_models_are_scorable(self, ladder_dir):
-        """The full comparison set — baselines plus every learned model —
+    def test_all_comparison_models_are_scorable(self, ladder_dir):
+        """The full comparison set (baselines plus every learned model)
         must evaluate on one dataset without unknown-model errors."""
         adapters = load_ladder_adapters(ladder_dir)
         assert set(adapters) == set(LADDER_MODEL_IDS)

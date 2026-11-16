@@ -70,18 +70,18 @@ Revision pinning: every stored vector carries `model_id`, `revision` (sha256 of 
 - Three negative types: easy random, hard tempo/key match, hard cosine-similar
 - Split: 1,236 train / 519 val (per-source grouped, deterministic seed 20260725)
 - Label type: **weak** (same-pack membership as proxy for continuation utility)
-- Per-item licenses classified from metadata: cc-by 4,827 / cc0 3,230 / cc-by-nc 1,215 / sampling-plus 221
+- Per-item licenses classified from metadata, counted over the full 9,493-item manifest (`DATA_CREDITS.md`), not over the 2,558 annotated items or the pack-only training subset: cc-by 4,827 / cc0 3,230 / cc-by-nc 1,215 / sampling-plus 221. The license mix of the training subset has not been counted.
 
-### Human labels
+### Human labels (history; none in the current results)
 
-- Pairwise annotation protocol preregistered (research/protocol.md)
-- Annotation interface: blind A/B comparison with structured reason codes and confidence scale
-- Gate criterion: L2 must exceed cosine baseline on human pairwise accuracy to deploy
+A blind A/B annotation interface (dev builds only) and a pairwise annotation protocol were built early on, with a planned rule that a learned model would need to beat the cosine baseline on human pairwise accuracy before deployment. An early small signal-alignment analysis was later withdrawn because its raw vote matrix is no longer available, and the author then decided not to run human studies, so that rule no longer applies. A single-rater listening protocol (`research/prereg_human_v1.md`) was committed to the repository but not run.
+
+The only check now wired into code is narrower: when fusion weights are refit from logged feedback, the new weights must pass the behavioural guardrail (`research/compat_tests/guardrail.py`), or `research/finetune_from_feedback.py` writes no weights. It covers that one flow only, not other models or deployment paths, and it does not stand in for human preference data.
 
 ## Evaluation
 
-- **Primary metric**: pairwise accuracy (fraction of pairs where the model ranks the human-preferred candidate higher)
-- **Grouping**: per-participant, to prevent a single prolific annotator from dominating
+- **Metric**: pairwise accuracy (fraction of pairs where the model ranks the preferred candidate higher). All results below use weak labels; no human pairwise labels are in them.
+- **Grouping**: the harness can group by participant so one prolific annotator would not dominate; this is unused while there are no human labels
 - **Label-type enforcement**: code raises `ValueError` if labels are not `pairwise`
 - **Honest skips**: models that cannot score an example (missing embeddings, no session context) skip it; skips are counted, not zeroed
 
@@ -100,7 +100,7 @@ Revision pinning: every stored vector carries `model_id`, `revision` (sha256 of 
 - **No personalization**: the system does not adapt to individual user preferences over time. This is a deliberate design constraint: adaptation would first need a temporal held-out evaluation on logged decisions, and learned weights must pass the behavioural guardrail (`research/compat_tests/guardrail.py`).
 - **Session representation limits**: the existing fusion uses pooled region audio and metadata. The local, undeployed beat-fit prototype adds approximate timeline placement and chroma/onset structure; it does not reproduce offsets, loops, mixing or effects of real DAW playback.
 - **Intent in the fusion rankers**: `fusion-5sig-v1` is affected by the typed intent only through a BPM or key parsed from it when the session lacks one; role words such as "replace the drums" or "add a synth hook" do not change its ranking. `beat-fit-v1` reads only the precomputed `session_beats` and not the parsed intent. `rules-v1` and the text and audio cosine rankers do read role words.
-- **Small evaluation scale**: human pairwise labels are in pilot quantities. Statistical power is limited; results are reported honestly with sample sizes.
+- **No human evaluation**: every reported result uses proxy labels (pack co-membership, controlled perturbations); none measures whether musicians prefer the suggestions. Sample sizes are reported with each result.
 - **Backbone audit incomplete**: LAION-CLAP music training data provenance has not been fully verified for commercial deployment.
 
 ## Ethical Considerations
@@ -108,7 +108,7 @@ Revision pinning: every stored vector carries `model_id`, `revision` (sha256 of 
 - The system ranks only within a user's own library; it never surfaces other users' content.
 - No creativity claims: short-term retrieval experiments cannot support assertions about enhancing creativity (per ICCC 2018 evaluation guidelines).
 - Audio from user sessions is CLAP-encoded for ranking only. The application does not save the raw session audio or send it to third parties; it decodes the upload in memory, though the web framework may spool a large upload to a temporary file while parsing the request.
-- Feedback data export uses an allowlist of named fields; user IDs are one-way hashed before leaving the database.
+- Feedback data is exported for analysis with `backend/scripts/export_feedback.py`, which fetches and writes only allowlisted fields and replaces user IDs with a salted one-way hash. The raw collections hold user IDs and are not dumped. Exports stay on the author's machine.
 
 ## Intended Use
 

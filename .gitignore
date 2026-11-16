@@ -15,6 +15,7 @@ frontend/test-results/
 tmp/
 landing-redesign/
 artifacts/cocola-audio/
+artifacts/feedback-export/
 .pytest_cache/
 .ruff_cache/
 .vercel
