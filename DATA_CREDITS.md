@@ -23,6 +23,29 @@ Weak-pretraining audio loops with per-item licenses.
 - **Voyage voyage-3** — API text representation (legacy). Existing vectors are frozen as the `text-only-v1` baseline; new usage is limited to intent query encoding.
 - **Gemini (Vertex AI)** — Legacy ingestion tagging. Outputs are retained as historical metadata, not used as ranking ground truth. Not on the competition critical path.
 
+## Multitrack datasets (behavioural tests and retrieval)
+
+Used for evaluation only. No audio, stems or features from these datasets
+are distributed in this repository; it holds aggregate results and, for
+MUSDB18-HQ, the track names and file hashes that identify the evaluated set.
+
+- **MUSDB18-HQ** (Rafii, Liutkus, Stöter, Mimilakis and Bittner, 2019),
+  Zenodo record 3338373. Released for educational and non-commercial use;
+  see the record for the terms of the individual tracks.
+- **BabySlakh**, a 20-track subset of **Slakh2100** (Manilow, Wichern,
+  Seetharaman and Le Roux, 2019), Zenodo record 4603870, CC BY 4.0. Used as
+  the development set.
+- **COCOLA** (Ciranni et al., 2025): the released `COCOLA_HP_v1` checkpoint
+  is loaded from a separate checkout of the authors' repository and is not
+  included here.
+
+## Demo account audio
+
+The read-only demo account plays royalty-free loops from Looperman, named by
+their original titles. The audio is not part of this repository. The lyrics,
+tags, suggestions, project groupings and next actions shown with them are
+sample text written for the demo.
+
 ## Free Music Archive (FMA)
 
 Audio metadata (track titles, genres, BPM, key, energy, danceability, etc.)
