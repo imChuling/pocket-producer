@@ -293,6 +293,43 @@ describe("extractSessionAudio", () => {
     vi.unstubAllGlobals();
   });
 
+  it("re-analyses when two samples swap positions", async () => {
+    const samples = [
+      { id: "s1", sampleName: "samples/a" },
+      { id: "s2", sampleName: "samples/b" },
+    ];
+    const before = fakeDocument(
+      [
+        { id: "r1", sampleRef: "s1", positionTicks: 0, durationTicks: 3840 },
+        { id: "r2", sampleRef: "s2", positionTicks: 4 * 3840, durationTicks: 3840 },
+      ],
+      samples,
+    );
+    const swapped = fakeDocument(
+      [
+        { id: "r1", sampleRef: "s2", positionTicks: 0, durationTicks: 3840 },
+        { id: "r2", sampleRef: "s1", positionTicks: 4 * 3840, durationTicks: 3840 },
+      ],
+      samples,
+    );
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ embeddings: [[1], [2]], chroma: [[], []], session_beats: null }),
+    }));
+    vi.stubGlobal("fetch", fetchSpy);
+    const cache = new Map();
+    const options = { backendUrl: "/embed", authToken: "tok", bpm: 120, cache };
+    const download = vi.fn(async () => new Blob(["wav"]));
+
+    await extractSessionAudio(before, { download }, options);
+    await extractSessionAudio(swapped, { download }, options);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+    await extractSessionAudio(swapped, { download }, options);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    vi.unstubAllGlobals();
+  });
+
   it("sends no beat data without a project tempo", async () => {
     const doc = fakeDocument(
       [{ id: "r1", sampleRef: "s1", positionTicks: 0, durationTicks: 3840 }],

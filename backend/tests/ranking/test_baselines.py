@@ -145,3 +145,30 @@ def test_evidence_contributions_are_bounded():
     for e in top.evidence:
         assert 0.0 <= e.contribution <= 1.0
         assert e.label
+
+
+def test_role_gap_is_not_scored_when_no_role_is_known():
+    # A freshly opened project reports only track kinds and no tagged
+    # fragments; it may already have drums, so none can be called missing.
+    unknown = session(active_track_types=["audio"], text_intent="", context_tags=[])
+    result = RulesRanker().rank(
+        RankRequest(session=unknown, candidates=[candidate("drums", tags=["drums"])])
+    )
+    assert "track_gap" not in {e.code for e in result.candidates[0].evidence}
+
+
+def test_role_gap_label_names_what_was_observed():
+    label = next(
+        e.label
+        for c in RulesRanker().rank(
+            RankRequest(
+                session=session(
+                    active_track_types=["audio"], text_intent="", context_tags=["drums"]
+                ),
+                candidates=[candidate("bass", tags=["bass"])],
+            )
+        ).candidates
+        for e in c.evidence
+        if e.code == "track_gap"
+    )
+    assert label == "Adds a role not among the fragments added so far"

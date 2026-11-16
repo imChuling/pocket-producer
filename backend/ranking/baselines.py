@@ -42,7 +42,7 @@ OFFLINE_STANDIN_WEIGHTS = {
 _LABELS = {
     "tempo_match": "Tempo close to the project's BPM",
     "key_match": "Same key as the project",
-    "track_gap": "Adds a role the session doesn't have yet",
+    "track_gap": "Adds a role not among the fragments added so far",
     "intent_match": "Matches your stated intent",
     "novelty": "Brings new material into the session",
     "tag_overlap": "Shares tags with fragments in this session",
@@ -92,9 +92,15 @@ class RulesRanker:
         values = {
             "tempo_match": features.tempo_match(session.bpm, candidate.bpm),
             "key_match": features.key_match(session.key, candidate.key),
+            # With no role observed, a role cannot be called missing: the
+            # host reports track kinds, and the context tags cover only the
+            # fragments added from this page, so an open project may already
+            # hold drums nobody tagged. Unknown scores nothing.
             "track_gap": features.track_gap(
                 session.active_track_types, candidate.tags, session.context_tags
-            ),
+            )
+            if features.session_roles(session.active_track_types, session.context_tags)
+            else 0.0,
             "intent_match": features.intent_match(
                 session.text_intent, candidate.tags
             ),

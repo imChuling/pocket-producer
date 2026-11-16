@@ -225,6 +225,26 @@ class TestHarmonicFitRanker:
         response = ranker.rank(request)
         assert [c.fragment_id for c in response.candidates] == ["f0"]
 
+    def test_silent_candidate_is_left_out(self):
+        # An all-zero chroma (silence) carries no pitch evidence; it must not
+        # be served with a label claiming a match as played.
+        ranker = HarmonicFitRanker()
+        c_maj = _c_major_chroma()
+        response = ranker.rank(self._make_request([c_maj], [c_maj, [0.0] * CHROMA_BINS]))
+        assert [c.fragment_id for c in response.candidates] == ["f0"]
+
+    def test_only_silent_candidates_raise(self):
+        ranker = HarmonicFitRanker()
+        request = self._make_request([_c_major_chroma()], [[0.0] * CHROMA_BINS])
+        with pytest.raises(InsufficientContextError):
+            ranker.rank(request)
+
+    def test_silent_session_raises(self):
+        ranker = HarmonicFitRanker()
+        request = self._make_request([[0.0] * CHROMA_BINS], [_c_major_chroma()])
+        with pytest.raises(InsufficientContextError):
+            ranker.rank(request)
+
     def test_no_regions_raises(self):
         ranker = HarmonicFitRanker()
         request = RankRequest(

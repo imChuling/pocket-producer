@@ -13,6 +13,8 @@ Requires pre-computed 12-dim chroma vectors on session regions and candidates.
 
 import uuid
 
+import numpy as np
+
 from ranking.audio_cosine import InsufficientContextError
 from ranking.harmonic_probe import (
     session_chroma,
@@ -25,6 +27,10 @@ from ranking.schemas import (
     RankRequest,
     RankResponse,
 )
+
+
+def _has_pitch(chroma: list[float] | None) -> bool:
+    return chroma is not None and float(np.linalg.norm(chroma)) >= 1e-10
 
 
 class HarmonicFitRanker:
@@ -54,15 +60,20 @@ class HarmonicFitRanker:
             )
 
         sess_chroma = session_chroma(region_chromas)
+        if not _has_pitch(sess_chroma):
+            raise InsufficientContextError(
+                "harmonic-fit-v1 found no pitch content in the session regions"
+            )
 
-        # Candidates without a chroma vector cannot be scored here; leaving
-        # them out matches fusion-5sig-v1 rather than serving evidence-free
-        # zero-score proposals.
-        scorable = [c for c in request.candidates if c.chroma_vector is not None]
+        # Candidates without pitch content (no chroma vector, or an all-zero
+        # one from silence) cannot be scored here; leaving them out matches
+        # fusion-5sig-v1 rather than serving evidence-free proposals with a
+        # label that would describe a match that was never measured.
+        scorable = [c for c in request.candidates if _has_pitch(c.chroma_vector)]
         if not scorable:
             raise InsufficientContextError(
                 f"harmonic-fit-v1 cannot score any of the {len(request.candidates)} "
-                "candidates (no chroma vectors)"
+                "candidates (no pitch content)"
             )
 
         scored: list[RankedCandidate] = []

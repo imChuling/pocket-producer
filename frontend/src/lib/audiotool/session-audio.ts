@@ -162,11 +162,14 @@ export async function extractSessionAudio(
   }
 
   // Moving a region or changing the tempo changes the beat data, not the vectors,
-  // but both live in one result, so either invalidates it.
+  // but both live in one result, so either invalidates it. Each sample keeps
+  // its own placements in the key: sorting names on their own would let two
+  // samples swap positions and still hit the old beat data.
   const cacheKey = JSON.stringify([
-    [...uniqueSampleNames].sort(),
     bpm,
-    uniqueSampleNames.map((name) => placementsBySample.get(name) ?? []),
+    [...uniqueSampleNames]
+      .sort()
+      .map((name) => [name, placementsBySample.get(name) ?? []]),
   ]);
   const cached = options.cache?.get(cacheKey);
   if (cached) {
