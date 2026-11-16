@@ -194,12 +194,12 @@ python research/export_fusion_weights.py \
 
 | Artifact | Script | Purpose |
 |----------|--------|---------|
-| `artifacts/factorial/factorial.json` | `run_factorial.py` | 2×2 representation × training decomposition (dev side only) |
+| `artifacts/factorial/factorial.json` | `run_factorial.py` | 2×2 representation × training comparison (dev side only); the representation factor also changes the mined test negatives, and dev negatives cross the split (protocol errata, 2026-11-16) |
 | `artifacts/heldout-eval-packonly/` | `run_heldout_eval.py` | superseded first held-out run (kept for the corrective-disclosure audit trail) |
 | `artifacts/human-signal-alignment/alignment.json` | `human_signal_alignment.py` | pilot signal-alignment analysis (removed from the paper; raw vote matrix unavailable) |
 | `artifacts/ablation-7sig-packonly/ablation.json` | `run_ablation_7sig.py` | 7-signal LOSO on the pack-only train side; role_gap and harmonic add nothing over fusion-5sig |
 | `artifacts/standardize-check/` | `run_standardize_check.py` | per-signal standardization before BPR; worse on both LAION and MS-CLAP dev splits, not adopted |
-| `artifacts/keymask-check/keymask_msclap.json` | `run_keymask_check.py` | train/serve key mismatch: serving the shipped weights with key = 0 costs nothing on dev (+0.5 pp overall); retraining with key masked recovers +0.02 pp, so the shipped weights stay |
+| `artifacts/keymask-check/keymask_msclap.json` | `run_keymask_check.py` | train/serve key mismatch: serving the shipped weights with key = 0 costs nothing on dev (+0.5 pp overall); retraining with key masked recovers +0.02 pp, so the shipped weights stay. Dev negatives cross the split, as in the factorial errata |
 | `artifacts/heldout-eval-mert/sensitivity.json` | `embed_mert_from_previews.py` + `run_heldout_correction.py --mode mert` | third representation column (MERT-v1-95M from Freesound preview MP3s); fusion advantage persists but the MERT cosine baseline is weaker (0.848 overall) |
 | `artifacts/heldout-eval-decoupled/sensitivity.json` | `run_heldout_correction.py --mode decoupled --items-mining items_mert_packonly.jsonl` | hard_similar mined in MERT space, signals scored in LAION-CLAP space: CLAP cosine on hard_similar rises to 0.957 and the fusion advantage shrinks to +1.4 pp, so most of the CLAP-mined hard_similar gain comes from mining negatives in the scored space |
 | `artifacts/human-eval-v1/power_sim.json` | `power_sim_human_v1.py` | power simulation for the single-rater listening protocol (`prereg_human_v1.md`, not run), driven by the 17 discordant-capable pairs in `data/listening_test/pairs.json` |

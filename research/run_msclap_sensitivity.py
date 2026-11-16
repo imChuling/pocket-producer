@@ -107,7 +107,11 @@ def bootstrap_delta(by_source, baseline_a, baseline_b, neg_types, n_boot, rng):
 
 
 def run_dev_cv(examples, aux):
-    """Dev-set 5-fold source-grouped CV with three baselines."""
+    """Five random source holdouts on the dev side, three baselines.
+
+    Negatives are mined before the split and can cross it; see the
+    errata in protocol-factorial-v1.md.
+    """
     conditions = {
         "rules": (RULES_IDX, RULES_WEIGHTS, False),
         "cosine": (COSINE_IDX, np.ones(1), False),

@@ -81,3 +81,33 @@ observed sensitivity, not a new significance claim.
 - Source-weighted BPR and hard_similar upweighting are bundled as one
   "training recipe" factor; further disentangling would require a
   2x2x2 design.
+
+## Errata (2026-11-16)
+
+Found in an external review and recounted on the frozen inputs. No result
+was re-run or changed; these correct how the results may be read.
+
+1. **Training effect formula.** The line above reads
+   `mean(B,D) - mean(A,D)`. The intended and computed main effect is
+   `mean(B,D) - mean(A,C)` (`run_factorial.py`); the reported numbers use
+   the correct formula.
+2. **Not 5-fold CV.** The five seeds are five independent random
+   source-level holdouts (val_fraction 0.25), not five mutually exclusive
+   folds. Validation sources overlap across seeds.
+3. **Validation is source-disjoint for queries, not for candidates.**
+   Negatives are mined from the whole dev pool before the split, so
+   training queries meet negatives from validation sources: at seed
+   20260725, 383 of 680 training queries under LAION-CLAP and 393 of 680
+   under MS-CLAP. The fusion never sees a source ID, but these dev numbers
+   do not measure generalisation to unseen candidate sources. The
+   held-out evaluation splits items before building pairs and is not
+   affected.
+4. **The representation factor also changes the test.** Each condition
+   re-mines `hard_similar` in its own embedding space: of 981 queries
+   present in both, 778 get a different `hard_similar` candidate under
+   LAION-CLAP than under MS-CLAP. The "representation effect" therefore
+   mixes the embedding change with a change of test negatives. Read it as
+   the difference between two pipelines, not as the effect of the
+   representation alone. Isolating it would need candidates frozen across
+   conditions. The paper states this gap only as configuration
+   sensitivity.

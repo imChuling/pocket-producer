@@ -1,6 +1,6 @@
 """2x2 factorial: representation (LAION vs MS-CLAP) x training (uniform vs source-weighted BPR).
 
-Runs on the 484 train sources only (dev-set 5-fold CV). Does NOT touch
+Runs on the 484 train sources only (five random source holdouts). Does NOT touch
 the 121 held-out sources.
 
 Protocol: research/protocol-factorial-v1.md
@@ -42,7 +42,11 @@ RULES_IDX, RULES_WEIGHTS = rules_standin()
 
 
 def run_condition(items, condition_name, use_source_weighting, seeds, pair_seed):
-    """Run 5-fold CV for one condition, return per-seed val results."""
+    """Five random source holdouts for one condition; per-seed val results.
+
+    Negatives are mined before the split, so they can cross it (protocol
+    errata, 2026-11-16).
+    """
     examples = build_feature_examples(items, seed=pair_seed, aux={})
     print(f"\n{'='*60}")
     print(f"  Condition: {condition_name}")

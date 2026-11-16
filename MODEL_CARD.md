@@ -41,8 +41,8 @@ Measured on Apple M-series CPU, batch size 32, 32 context tokens, from the exact
 
 | Baseline | Description |
 |---|---|
-| `rules-v1` | Weighted combination of 7 deterministic [0,1] features (tempo match, key match, role gap, intent match, tag novelty, tag overlap with the session's inserted fragments, recency). Roles already in the session are inferred from the tags of inserted fragments, since the host DAW reports track kinds, not musical roles. Always-available fallback and the default. |
-| `harmonic-fit-v1` | Transpose-invariant cross-correlation between the session's mean chroma and each candidate's 12-dim chroma; both computed at encode time (session) and ingest (candidate). It measures similarity after the best transposition, not fit as played: it is blind to transposition in the behavioural tests (P2 0.49), and the product never transposes. |
+| `rules-v1` | Weighted combination of 7 deterministic [0,1] features (tempo match, key match, role gap, intent match, tag novelty, tag overlap with the session's inserted fragments, recency). Roles already in the session are inferred from the tags of inserted fragments, since the host DAW reports track kinds, not musical roles; when no role is known, as in a freshly opened project that may already hold untagged parts, role gap is not scored. Always-available fallback and the default. |
+| `harmonic-fit-v1` | Transpose-invariant cross-correlation between the session's mean chroma and each candidate's 12-dim chroma; both computed at encode time (session) and ingest (candidate). It measures similarity after the best transposition, not fit as played: it is blind to transposition in the behavioural tests (P2 0.49), and the product never transposes. Silent candidates or sessions (all-zero chroma) are not scored. |
 | `role-gap-v1` | Zero-shot CLAP instrument-role probe; scores candidates that fill a role the session regions lack. |
 | `recency-v1` | Most-recently-created first. |
 | `text-only-v1` | Voyage voyage-3 cosine between intent text and candidate text embedding. |
@@ -99,6 +99,7 @@ Revision pinning: every stored vector carries `model_id`, `revision` (sha256 of 
 
 - **No personalization**: the system does not adapt to individual user preferences over time. This is a deliberate design constraint: adaptation would first need a temporal held-out evaluation on logged decisions, and learned weights must pass the behavioural guardrail (`research/compat_tests/guardrail.py`).
 - **Session representation limits**: the existing fusion uses pooled region audio and metadata. The local, undeployed beat-fit prototype adds approximate timeline placement and chroma/onset structure; it does not reproduce offsets, loops, mixing or effects of real DAW playback.
+- **Intent in the fusion rankers**: `fusion-5sig-v1` and `beat-fit-v1` read the typed intent only through a BPM or key parsed from it when the session lacks one. Role words such as "replace the drums" or "add a synth hook" do not change their ranking; `rules-v1` and the text and audio cosine rankers do read them.
 - **Small evaluation scale**: human pairwise labels are in pilot quantities. Statistical power is limited; results are reported honestly with sample sizes.
 - **Backbone audit incomplete**: LAION-CLAP music training data provenance has not been fully verified for commercial deployment.
 

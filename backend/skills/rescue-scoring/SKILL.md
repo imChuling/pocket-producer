@@ -11,10 +11,13 @@ license: Apache-2.0
 
 # Rescue Scoring
 
-Interpret the Rescue Score for a project — a 0–100 indicator of how likely
-the project is to be completed into a finished song if the user invests
-another 30–60 minutes. The score drives project ranking, surfacing,
-next-action suggestions, and user-facing explanations.
+Interpret the Rescue Score for a project: a 0–100 heuristic for which
+projects are worth picking up next, built as a fixed sum of points for
+material, structure, coherence and recent activity. It is not a
+probability of finishing and has not been calibrated against completed
+projects, so never present it as a chance or a percentage likelihood. The
+score drives project ranking, surfacing, next-action suggestions, and
+user-facing explanations.
 
 This is **not a quality judgment**. A low score does not mean the song is
 bad. It means the project has less material, less structural completeness,

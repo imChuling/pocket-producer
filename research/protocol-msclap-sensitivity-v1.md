@@ -77,3 +77,10 @@ as such and must not claim confirmatory status.
 - Signal set and hyperparameters designed on the LAION-CLAP corpus.
 - MS-CLAP produces 1024-dim vectors vs LAION-CLAP 512-dim; the
   cosine geometry differs.
+
+## Errata (2026-11-16)
+
+The development step is five random source-level holdouts, not 5-fold
+CV, and its negatives are mined before the split, so they can come from
+validation sources. Details and counts in the errata of
+`protocol-factorial-v1.md`. The held-out step is not affected.

@@ -436,9 +436,12 @@ without realizing."
 
 ## Rescue Score
 
-The Rescue Score is a 0–100 number estimating how likely a project is to be
-completed if the user invests another 30–60 minutes. Implemented in pure
-Python (`backend/tools/rescue_score.py`), no LLM calls.
+The Rescue Score is a 0–100 heuristic for which projects to pick up next:
+a fixed sum of material, structure, coherence and recent-activity points.
+It is not a probability and has not been calibrated against whether
+projects actually get finished, so a score of 78 does not mean a 78%
+chance. Implemented in pure Python (`backend/tools/rescue_score.py`), no
+LLM calls.
 
 ### Components (100 points total)
 
