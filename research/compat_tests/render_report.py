@@ -140,7 +140,7 @@ ENDPOINTS = [
     ("P3", "Tape-speed\nchange", lambda r, s: _pooled(r, "varispeed", s)),
     (
         "P4",
-        "One bar late\n(harmony moves)",
+        "Four beats late\n(harmony moves)",
         lambda r, s: _test_summary(r, "beatshift4", s, "harmony_moves"),
     ),
     ("P5", "0.37 beat late", lambda r, s: _test_summary(r, "beatshift0.37", s, "vs_original")),

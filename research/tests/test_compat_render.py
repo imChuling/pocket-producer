@@ -152,6 +152,12 @@ def test_out_of_scope_table_names_real_scorers_and_columns():
         assert general not in render_report.OUT_OF_SCOPE
 
 
+def test_p4_column_names_the_shift_in_beats():
+    # The shift is four beats, which is one bar only in 4/4.
+    labels = {key: label for key, label, _ in render_report.ENDPOINTS}
+    assert labels["P4"] == "Four beats late\n(harmony moves)"
+
+
 def test_hatched_cells_render(tmp_path):
     report = _report()
     report["scorers"].append("onset_pattern")
