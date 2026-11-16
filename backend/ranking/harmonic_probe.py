@@ -94,7 +94,14 @@ def session_chroma(region_chromas: list[list[float]]) -> list[float]:
 
 
 def shift_label(semitones: int) -> str:
-    """Human-readable label for the optimal transposition."""
-    if semitones == 0:
-        return "in original key"
-    return f"transpose +{semitones} ({SEMITONE_NAMES[semitones % CHROMA_BINS]})"
+    """When the candidate resembles the session: as played, or only if transposed.
+
+    `semitones` is the upward shift from transpose_invariant_score; shifts
+    above a tritone are stated as the shorter move down. The product never
+    transposes a fragment, so a non-zero shift is a condition, not an action.
+    """
+    up = semitones % CHROMA_BINS
+    if up == 0:
+        return "as played"
+    direction, size = ("up", up) if up <= CHROMA_BINS // 2 else ("down", CHROMA_BINS - up)
+    return f"if transposed {direction} {size} semitone{'s' if size > 1 else ''}"

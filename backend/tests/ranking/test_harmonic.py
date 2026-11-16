@@ -101,16 +101,15 @@ class TestSessionChroma:
 
 class TestShiftLabel:
     def test_zero_shift(self):
-        assert shift_label(0) == "in original key"
+        assert shift_label(0) == "as played"
 
-    def test_nonzero_shift(self):
-        label = shift_label(5)
-        assert "+5" in label
-        assert "F" in label
+    def test_small_shift_is_stated_as_a_condition(self):
+        assert shift_label(5) == "if transposed up 5 semitones"
+        assert shift_label(1) == "if transposed up 1 semitone"
 
-    def test_sharp_note(self):
-        label = shift_label(1)
-        assert "C♯" in label
+    def test_large_shift_is_the_shorter_move_down(self):
+        assert shift_label(7) == "if transposed down 5 semitones"
+        assert shift_label(11) == "if transposed down 1 semitone"
 
 
 class TestChromaFromAudio:
@@ -187,7 +186,10 @@ class TestHarmonicFitRanker:
         request = self._make_request([c_maj], [f_maj])
         response = ranker.rank(request)
         label = response.candidates[0].evidence[0].label
-        assert "transpose" in label
+        # F major matches C major only a fourth lower; the label must not
+        # claim compatibility as played.
+        assert label == "Pitch classes resemble the session if transposed down 5 semitones"
+        assert "compatible" not in label
 
     def test_missing_chroma_scores_zero(self):
         ranker = HarmonicFitRanker()

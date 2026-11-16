@@ -6,7 +6,7 @@ whether a candidate could fit after transposing it, not whether it fits as
 played: an untransposed candidate and a copy a semitone away score alike.
 The behavioural tests confirm it (research/results-behavioral-v1.md, P2:
 0.49, blind). The product never transposes a fragment, so a shift other
-than 0 in the evidence label means the candidate would need transposing.
+than 0 in the evidence label is stated as a condition ("if transposed").
 
 Requires pre-computed 12-dim chroma vectors on session regions and candidates.
 """
@@ -78,7 +78,7 @@ class HarmonicFitRanker:
                     evidence=[
                         RankEvidence(
                             code="harmonic_fit",
-                            label=f"Harmonically compatible ({shift_label(shift)})",
+                            label=f"Pitch classes resemble the session {shift_label(shift)}",
                             contribution=score,
                         )
                     ],
