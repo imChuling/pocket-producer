@@ -1,16 +1,14 @@
 # Reproduce the submission revision
 
 This describes a local source revision; it is not a statement of what is
-deployed. Do not combine branch tips to
-reproduce it. Demo and recording production are excluded by the user.
+deployed. Video recording and demo materials are not part of it.
 
 ## Local regression checks
 
 Use Python 3.11+ with the backend and research dependencies from
 `backend/pyproject.toml`, plus lightning and efficientnet_pytorch for COCOLA.
-Use a compatible Torch/torchvision pair. The global interpreter on the
-remediation machine contained an incompatible pair and failed collection;
-the project's existing virtual environment is recorded in the receipt.
+Use a compatible Torch/torchvision pair; an incompatible pair fails at
+test collection.
 A writable Numba cache is needed under restricted filesystem permissions.
 
 ```bash
@@ -42,7 +40,8 @@ python -m research.compat_tests.run_retrieval \
   --store /path/to/musdb18_v1 --output /tmp/retrieval-rerun --dataset musdb18hq
 ```
 
-Compare SHA256 with the receipt. This reproduces cache-to-report computation,
+Compare each regenerated `report.json` with the committed one by SHA256.
+This reproduces cache-to-report computation,
 not original-audio-to-feature extraction. The external COCOLA source commit
 and checkpoint hash are recorded; the full historical extraction environment
 and per-window raw-audio manifest were not independently reconstructed.

@@ -15,7 +15,7 @@ Beat-fit and feedback-training changes in this checkout are local implementation
 not verified live deployments. Online fusion still scores five signals; extended
 feedback weights are research-only and refused by that loader. Frozen behavioural
 and retrieval JSON are preserved, with dated protocol errata and corrected
-interpretations. Recording and demo production are outside this remediation.
+interpretations. Video recording and demo materials are not part of this revision.
 
 Audio similarity is not the same as musical compatibility: two fragments can
 sound alike and never belong in the same track. The ranker measures particular

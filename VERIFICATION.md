@@ -8,8 +8,8 @@ availability, research-only extended weights, artifact-to-loader scoring,
 beat-fit ties and negative correlation, corrupt-record isolation and bounded
 finite beat inputs. Function-level agreement with frozen research signals
 does not validate real DAW rendering with offsets/loops/effects; no live DAW
-test, deployment or production backfill is claimed. Recording and demo work
-are excluded at the user's request.
+test, deployment or production backfill is claimed. Video recording and demo
+materials are not part of this revision.
 
 ## Ranking pipeline
 

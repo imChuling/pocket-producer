@@ -117,7 +117,7 @@ tempo the helper returns no grid; malformed API input is rejected.
 
 | Capability | State |
 |---|---|
-| Five-signal fusion and reversible DAW insert | Existing implementation; current live revision not verified in this remediation |
+| Five-signal fusion and reversible DAW insert | Existing implementation; live revision not re-verified on 2026-11-16 |
 | Beat-fit, frame ingest, bounded grid, availability/evidence fixes | Local implementation and tests; not deployed |
 | Existing-fragment frame backfill | Script exists; not run on production |
 | Five-signal feedback training | Offline research workflow, tested artifact-to-loader-to-score; not automatic online learning |
