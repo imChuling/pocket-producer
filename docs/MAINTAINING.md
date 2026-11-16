@@ -48,8 +48,13 @@ read its name and docstring before editing it.
 - `fusion-5sig-v1` is user-selectable, not default. Its five signals are
   mean CLAP cosine, max CLAP cosine, tempo, key (always 0 online), tag Jaccard.
 - `harmonic-fit-v1` is wired online: chroma is computed in `/session-embed`
-  and at ingest (`representations.chroma`). All eight registered rankers
-  serve without fallback given full inputs.
+  and at ingest (`representations.chroma`).
+- `beat-fit-v1` is user-selectable, not default: beat-synchronous chroma
+  agreement plus onset-pattern correlation on the project's beat grid
+  (`ranking/beat_sync.py`, design in `research/design-online-signals.md`).
+  It needs the project tempo and `representations.beat_frames`; fusion logs
+  the same two signals but does not score with them. All nine registered
+  rankers serve without fallback given full inputs.
 - MS-CLAP is one shared instance (`backend/ranking/adapters/shared.py`).
   Never construct `MsClapAdapter()` elsewhere.
 - Rankers skip candidates they cannot score and raise when none remain;

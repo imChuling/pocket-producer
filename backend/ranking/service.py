@@ -97,6 +97,10 @@ def default_service() -> RankingService:
 
     registry.register(HarmonicFitRanker())
 
+    from ranking.beat_fit_ranker import BeatFitRanker
+
+    registry.register(BeatFitRanker())
+
     from pathlib import Path as _Path
 
     fusion_weights = _Path(

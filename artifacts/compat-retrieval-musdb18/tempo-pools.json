@@ -1,0 +1,11 @@
+{
+  "included_queries": 545,
+  "included_with_fewer_than_nine_eligible_tracks": 88,
+  "pools_with_repeated_distractor_track": 483,
+  "example": {
+    "query": "test/AM Contra - Heart Peripheral:bass",
+    "eligible_candidates": 15,
+    "eligible_tracks": 6,
+    "drawn_distinct_tracks": 5
+  }
+}

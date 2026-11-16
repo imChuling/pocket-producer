@@ -9,9 +9,18 @@ Audiotool project you are working on, ranks your own audio fragments by how
 well they could fit that piece of music, shows the evidence behind each
 suggestion, and lets you preview, insert, and undo.
 
+**Revision of 2026-11-16:** start with the short
+[project note](docs/portfolio/PROJECT_NOTE.md).
+Beat-fit and feedback-training changes in this checkout are local implementations,
+not verified live deployments. Online fusion still scores five signals; extended
+feedback weights are research-only and refused by that loader. Frozen behavioural
+and retrieval JSON are preserved, with dated protocol errata and corrected
+interpretations. Recording and demo production are outside this remediation.
+
 Audio similarity is not the same as musical compatibility: two fragments can
-sound alike and never belong in the same track. The ranker scores
-compatibility with the session, and the musician makes the call.
+sound alike and never belong in the same track. The ranker measures particular
+relationships with the session; these scores do not establish musician
+preference. The musician makes the call.
 
 - **Live demo:** [pocketproducer.vercel.app](https://pocketproducer.vercel.app)
   (needs an Audiotool account; the backend scales to zero, so the first

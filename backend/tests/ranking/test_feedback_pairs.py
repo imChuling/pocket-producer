@@ -1,7 +1,9 @@
 """Decision pairs from proposal logs, and anchored fine-tuning of the fusion."""
 
 import numpy as np
+import pytest
 
+from ranking.fusion_ranker import LOGGED_SIGNAL_NAMES, SIGNAL_NAMES
 from ranking.research.feedback_pairs import (
     build_feedback_pairs,
     finetune_weights,
@@ -106,3 +108,68 @@ def test_pairwise_accuracy_counts_ties_as_half():
     pairs = [{"request_id": "r", "positive": "p", "negative": "n", "pos": SIG_A, "neg": SIG_A}]
     assert pairwise_accuracy(np.ones(5), pairs) == 0.5
     assert pairwise_accuracy(np.ones(5), []) is None
+
+
+
+def test_named_vectors_are_reordered_by_requested_signal_identity():
+    req = served("r", ["a", "b"], [[1, 2, 3, 4, 5, 0.25, 0.75], [0] * 7])
+    req["candidate_signal_names"] = LOGGED_SIGNAL_NAMES
+    req["candidate_signal_available"] = [[True] * 7, [True] * 7]
+    requested = [*SIGNAL_NAMES, "onset_pattern", "chroma_beat_aligned"]
+    pairs = build_feedback_pairs(
+        [req], [event("r", "a", "insert"), event("r", "b", "reject")], signal_names=requested
+    )
+    assert pairs[0]["pos"] == [1, 2, 3, 4, 5, 0.75, 0.25]
+
+
+@pytest.mark.parametrize(
+    "names",
+    [
+        None,
+        [*SIGNAL_NAMES, "mystery", "onset_pattern"],
+        [*SIGNAL_NAMES, "onset_pattern", "onset_pattern"],
+        SIGNAL_NAMES,
+    ],
+)
+def test_ambiguous_or_invalid_extended_signal_logs_are_rejected(names):
+    req = served("r", ["a", "b"], [[1] * 7, [0] * 7])
+    if names is not None:
+        req["candidate_signal_names"] = names
+    with pytest.raises(ValueError, match="signal"):
+        build_feedback_pairs(
+            [req],
+            [event("r", "a", "insert"), event("r", "b", "reject")],
+            signal_names=LOGGED_SIGNAL_NAMES,
+        )
+
+
+def test_missing_requested_names_are_rejected_and_legacy_five_remains_canonical():
+    req = served("r", ["a", "b"], [SIG_A, SIG_B])
+    req["candidate_signal_names"] = SIGNAL_NAMES[:-1] + ["onset_pattern"]
+    with pytest.raises(ValueError, match="missing"):
+        build_feedback_pairs([req], [], signal_names=SIGNAL_NAMES)
+    del req["candidate_signal_names"]
+    pairs = build_feedback_pairs([req], [event("r", "a", "insert"), event("r", "b", "reject")])
+    assert pairs[0]["pos"] == SIG_A
+
+
+def test_nonfinite_feedback_vectors_are_rejected():
+    req = served("r", ["a", "b"], [[float("nan"), *SIG_A[1:]], SIG_B])
+    with pytest.raises(ValueError, match="finite"):
+        build_feedback_pairs([req], [])
+
+
+@pytest.mark.parametrize("mask", [None, [[True] * 5 + [False, True], [True] * 7]])
+def test_extended_pairs_without_available_training_signals_are_skipped(mask):
+    req = served("r", ["a", "b"], [[1] * 7, [0] * 7])
+    req["candidate_signal_names"] = LOGGED_SIGNAL_NAMES
+    if mask is not None:
+        req["candidate_signal_available"] = mask
+    assert (
+        build_feedback_pairs(
+            [req],
+            [event("r", "a", "insert"), event("r", "b", "reject")],
+            signal_names=LOGGED_SIGNAL_NAMES,
+        )
+        == []
+    )

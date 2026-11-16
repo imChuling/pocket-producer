@@ -18,6 +18,7 @@ def attach_audio_embeddings(db, user_id: str, request: RankRequest) -> RankReque
             candidate.audio_embedding is not None
             and candidate.text_embedding is not None
             and candidate.chroma_vector is not None
+            and candidate.beat_frames is not None
         ):
             continue
         try:
@@ -31,17 +32,20 @@ def attach_audio_embeddings(db, user_id: str, request: RankRequest) -> RankReque
         {
             "representations.audio_semantic.vector": 1,
             "representations.chroma.vector": 1,
+            "representations.beat_frames": 1,
             "embedding": 1,
         },
     )
     audio_vectors: dict[str, list[float] | None] = {}
     chroma_vectors: dict[str, list[float] | None] = {}
+    beat_frames: dict[str, dict | None] = {}
     text_vectors: dict[str, list[float] | None] = {}
     for doc in docs:
         fragment_id = str(doc["_id"])
         representations = doc.get("representations") or {}
         audio_vectors[fragment_id] = (representations.get("audio_semantic") or {}).get("vector")
         chroma_vectors[fragment_id] = (representations.get("chroma") or {}).get("vector")
+        beat_frames[fragment_id] = representations.get("beat_frames")
         # The legacy `embedding` field is the voyage-3 TEXT representation.
         text_vectors[fragment_id] = doc.get("embedding")
     for candidate in request.candidates:
@@ -53,6 +57,10 @@ def attach_audio_embeddings(db, user_id: str, request: RankRequest) -> RankReque
             vector = chroma_vectors.get(candidate.fragment_id)
             if vector:
                 candidate.chroma_vector = list(vector)
+        if candidate.beat_frames is None:
+            record = beat_frames.get(candidate.fragment_id)
+            if record:
+                candidate.beat_frames = dict(record)
         if candidate.text_embedding is None:
             vector = text_vectors.get(candidate.fragment_id)
             if vector:

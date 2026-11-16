@@ -299,7 +299,8 @@ def test_rank_logs_signal_vectors_for_fusion(auth_client):
     assert body["candidates"][0]["fragment_id"] == "same"
     doc = _stub_db["ranking_requests"].docs[0]
     assert doc["candidate_signals"] == [c["signals"] for c in body["candidates"]]
-    assert all(len(sig) == 5 for sig in doc["candidate_signals"])
+    assert all(len(sig) == 7 for sig in doc["candidate_signals"])
+    assert doc["candidate_signal_names"][-2:] == ["chroma_beat_aligned", "onset_pattern"]
     assert doc["candidate_signals"][0][0] == pytest.approx(1.0)
 
 
@@ -453,6 +454,52 @@ def test_session_embed_returns_embeddings_chroma_and_failures(auth_client, monke
     shared.reset_for_tests(None)
 
 
+def test_session_embed_places_regions_on_the_project_grid(auth_client, monkeypatch):
+    import json
+
+    from ranking.adapters import shared
+
+    monkeypatch.setenv("POCKET_ENABLE_CLAP", "1")
+    shared.reset_for_tests(_FakeClap())
+    try:
+        response = auth_client.post(
+            "/api/ranking/session-embed",
+            files=[("files", ("a.wav", _wav_bytes(seconds=6.0), "audio/wav"))],
+            data={
+                "bpm": "120",
+                # One region from beat 4 for 4 beats (2 s to 4 s at 120 BPM).
+                "placements": json.dumps([[{"start_beats": 4, "duration_beats": 4}]]),
+            },
+            headers={"Authorization": "Bearer fake"},
+        )
+        assert response.status_code == 200
+        beats = response.json()["session_beats"]
+        assert beats["bpm"] == 120.0
+        assert len(beats["beat_times"]) == 21 and len(beats["beat_chroma"]) == 20
+        assert len(beats["onsets"]) == 20 * 8
+        sounding = [any(v > 0 for v in row) for row in beats["beat_chroma"]]
+        assert sounding[4:8] == [True] * 4
+        assert not any(sounding[:4]) and not any(sounding[8:])
+
+        no_tempo = auth_client.post(
+            "/api/ranking/session-embed",
+            files=[("files", ("a.wav", _wav_bytes(), "audio/wav"))],
+            data={"placements": json.dumps([[{"start_beats": 0, "duration_beats": 4}]])},
+            headers={"Authorization": "Bearer fake"},
+        )
+        assert no_tempo.status_code == 200 and no_tempo.json()["session_beats"] is None
+
+        malformed = auth_client.post(
+            "/api/ranking/session-embed",
+            files=[("files", ("a.wav", _wav_bytes(), "audio/wav"))],
+            data={"bpm": "120", "placements": json.dumps([])},
+            headers={"Authorization": "Bearer fake"},
+        )
+        assert malformed.status_code == 400
+    finally:
+        shared.reset_for_tests(None)
+
+
 def test_session_embed_is_503_when_clap_disabled(auth_client, monkeypatch):
     from ranking.adapters import shared
 
@@ -527,3 +574,23 @@ def test_feedback_ignores_user_id_in_body(auth_client):
     )
     assert response.status_code == 200
     assert _stub_db["ranking_feedback"].docs[0]["user_id"] == FAKE_USER_ID
+
+
+@pytest.mark.parametrize("bpm", ["nan", "inf", "1000000000", "0", "19.9", "360.1"])
+def test_session_embed_rejects_unsupported_tempo_before_encoding(auth_client, bpm):
+    response = auth_client.post(
+        "/api/ranking/session-embed", data={"bpm": bpm},
+        files=[("files", ("clip.wav", b"unused", "audio/wav"))],
+        headers={"Authorization": "Bearer fake"},
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize("value", ['NaN', 'Infinity', '-Infinity'])
+def test_region_positions_refuse_nonfinite_values(value):
+    from fastapi import HTTPException
+
+    from api.routes.ranking import _parse_placements
+
+    with pytest.raises(HTTPException):
+        _parse_placements('[[{"start_beats": ' + value + '}]]', 1)

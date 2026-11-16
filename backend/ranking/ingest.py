@@ -29,6 +29,17 @@ def chroma_record(waveform, sample_rate: int, input_sha256: str) -> dict:
     }
 
 
+def beat_frames_record(waveform, sample_rate: int) -> dict:
+    """Frame analysis of the fragment's first 10 s for beat-fit-v1.
+
+    The opening is used, not the busiest part, because fragments are
+    inserted at the start of the timeline and heard from their first beat.
+    """
+    from ranking import beat_sync
+
+    return beat_sync.encode_frames(beat_sync.frames(waveform, sample_rate))
+
+
 def _get_adapter():
     from ranking.adapters import shared
 
@@ -59,7 +70,8 @@ def _encode_sync(db, user_id: str, fragment_id: str, gcs_uri: str) -> str:
         {"_id": oid, "user_id": user_id},
         {"representations.audio_semantic.input_sha256": 1,
          "representations.audio_semantic.revision": 1,
-         "representations.chroma.revision": 1},
+         "representations.chroma.revision": 1,
+         "representations.beat_frames.revision": 1},
     )
     if doc is None:
         return "missing"
@@ -69,18 +81,25 @@ def _encode_sync(db, user_id: str, fragment_id: str, gcs_uri: str) -> str:
     representations = doc.get("representations") or {}
     existing = representations.get("audio_semantic") or {}
     chroma_current = (representations.get("chroma") or {}).get("revision") == CHROMA_REVISION
+    from ranking.beat_sync import BEAT_FRAMES_REVISION
+
+    beats_current = (
+        (representations.get("beat_frames") or {}).get("revision") == BEAT_FRAMES_REVISION
+    )
     audio_current = (
         existing.get("input_sha256") == input_hash
         and existing.get("revision") == adapter.model_card.revision
     )
-    if audio_current and chroma_current:
+    if audio_current and chroma_current and beats_current:
         return "skipped"
     if audio_current:
-        # Only the (cheap, model-free) chroma is missing: do not re-run CLAP.
-        db["fragments"].update_one(
-            {"_id": oid, "user_id": user_id},
-            {"$set": {"representations.chroma": chroma_record(waveform, sample_rate, input_hash)}},
-        )
+        # Only cheap, model-free records are missing: do not re-run CLAP.
+        updates = {}
+        if not chroma_current:
+            updates["representations.chroma"] = chroma_record(waveform, sample_rate, input_hash)
+        if not beats_current:
+            updates["representations.beat_frames"] = beat_frames_record(waveform, sample_rate)
+        db["fragments"].update_one({"_id": oid, "user_id": user_id}, {"$set": updates})
         return "encoded"
 
     from ranking.adapters import shared
@@ -94,6 +113,7 @@ def _encode_sync(db, user_id: str, fragment_id: str, gcs_uri: str) -> str:
         {"$set": {
             "representations.audio_semantic": record.model_dump(),
             "representations.chroma": chroma_record(waveform, sample_rate, input_hash),
+            "representations.beat_frames": beat_frames_record(waveform, sample_rate),
             "style_scores": {
                 "model_id": record.model_id,
                 "revision": record.revision,

@@ -12,6 +12,8 @@ const EVIDENCE_STYLE: Record<string, string> = {
   track_gap: "bg-[#c8e6d0]/60 text-[#3d7a4f]",
   role_gap_fill: "bg-[#c8e6d0]/60 text-[#3d7a4f]",
   harmonic_fit: "bg-[#d8cee8]/60 text-[#6b5a8a]",
+  beat_harmony: "bg-[#d8cee8]/60 text-[#6b5a8a]",
+  beat_rhythm: "bg-[#e8dfd3]/60 text-[#7a6b56]",
   intent_match: "bg-[#c8daf0]/60 text-[#4a6a8a]",
   novelty: "bg-[#f0e4c8]/60 text-[#8a7a3e]",
   recency: "bg-[#f0e4c8]/60 text-[#8a7a3e]",

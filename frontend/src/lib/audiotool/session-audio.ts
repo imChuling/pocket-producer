@@ -7,13 +7,31 @@
 // CLAP-encodes them, and returns float vectors. Deduplication is by sampleName
 // so a sample used in multiple regions is only downloaded and encoded once.
 
-import type { NexusDocumentPort, NexusSamplesPort } from "@/types/audiotool";
+import type { NexusDocumentPort, NexusSamplesPort, SessionBeats } from "@/types/audiotool";
 
 type EntityLike = {
   id: string;
   entityType: string;
-  fields: Record<string, { value: unknown } | undefined>;
+  fields: Record<string, { value?: unknown; fields?: Record<string, { value?: unknown }> } | undefined>;
 };
+
+/** Nexus timeline resolution: ticks in one quarter-note beat. */
+const TICKS_PER_BEAT = 3840;
+
+export type RegionPlacement = { start_beats: number; duration_beats: number | null };
+
+/** Where a region sits on the timeline, in beats from zero; null if unreadable. */
+function regionPlacement(region: EntityLike): RegionPlacement | null {
+  const span = region.fields.region?.fields;
+  const start = span?.positionTicks?.value;
+  const duration = span?.durationTicks?.value;
+  if (typeof start !== "number" || !Number.isFinite(start) || start < 0) return null;
+  return {
+    start_beats: start / TICKS_PER_BEAT,
+    duration_beats:
+      typeof duration === "number" && duration > 0 ? duration / TICKS_PER_BEAT : null,
+  };
+}
 
 type QueryPort = {
   ofTypes: (...types: string[]) => { get: () => EntityLike[] };
@@ -31,6 +49,8 @@ export type SessionAudioResult = {
   timedOut: boolean;
   /** Set when the backend refused outright (e.g. CLAP disabled, HTTP 503). */
   backendError: string | null;
+  /** The session on its beat grid; null without a project tempo or region positions. */
+  sessionBeats: SessionBeats | null;
 };
 
 const EMPTY: SessionAudioResult = {
@@ -41,6 +61,7 @@ const EMPTY: SessionAudioResult = {
   encodeFailures: [],
   timedOut: false,
   backendError: null,
+  sessionBeats: null,
 };
 
 const MAX_SAMPLES = 8;
@@ -63,6 +84,8 @@ export async function extractSessionAudio(
     authToken: string;
     signal?: AbortSignal;
     cache?: SessionAudioCache;
+    /** Project tempo; with it the backend places regions on the beat grid. */
+    bpm?: number | null;
   },
 ): Promise<SessionAudioResult> {
   const query = document.queryEntities as QueryPort | undefined;
@@ -91,6 +114,7 @@ export async function extractSessionAudio(
   // Deduplicate: collect unique sampleNames referenced by audioRegions.
   const seen = new Set<string>();
   const uniqueSampleNames: string[] = [];
+  const placementsBySample = new Map<string, RegionPlacement[]>();
   for (const region of regions) {
     // The live Nexus SDK returns entity references as objects
     // ({ entityId, entityType }); older fixtures use plain string ids.
@@ -103,11 +127,22 @@ export async function extractSessionAudio(
           : null;
     if (!sampleRef) continue;
     const sampleName = sampleNameById.get(sampleRef);
-    if (!sampleName || seen.has(sampleName)) continue;
+    if (!sampleName) continue;
+    const placement = regionPlacement(region);
+    if (placement) {
+      const list = placementsBySample.get(sampleName) ?? [];
+      list.push(placement);
+      placementsBySample.set(sampleName, list);
+    }
+    if (seen.has(sampleName)) continue;
+    if (uniqueSampleNames.length >= MAX_SAMPLES) continue;
     seen.add(sampleName);
     uniqueSampleNames.push(sampleName);
-    if (uniqueSampleNames.length >= MAX_SAMPLES) break;
   }
+  const bpm =
+    typeof options.bpm === "number" && Number.isFinite(options.bpm) && options.bpm > 0
+      ? options.bpm
+      : null;
 
   if (uniqueSampleNames.length === 0) {
     console.info(
@@ -126,10 +161,20 @@ export async function extractSessionAudio(
     return { ...EMPTY };
   }
 
-  const cacheKey = [...uniqueSampleNames].sort().join("|");
+  // Moving a region or changing the tempo changes the beat data, not the vectors,
+  // but both live in one result, so either invalidates it.
+  const cacheKey = JSON.stringify([
+    [...uniqueSampleNames].sort(),
+    bpm,
+    uniqueSampleNames.map((name) => placementsBySample.get(name) ?? []),
+  ]);
   const cached = options.cache?.get(cacheKey);
   if (cached) {
-    return { ...cached, embeddings: cached.embeddings.map((v) => [...v]), chroma: cached.chroma.map((v) => [...v]) };
+    return {
+      ...cached,
+      embeddings: cached.embeddings.map((v) => [...v]),
+      chroma: cached.chroma.map((v) => [...v]),
+    };
   }
 
   // Download each sample as WAV and send to the backend for CLAP encoding.
@@ -158,6 +203,13 @@ export async function extractSessionAudio(
   for (let i = 0; i < blobs.length; i++) {
     formData.append("files", blobs[i], `${names[i].replace(/\//g, "_")}.wav`);
   }
+  if (bpm !== null) {
+    formData.append("bpm", String(bpm));
+    formData.append(
+      "placements",
+      JSON.stringify(names.map((name) => placementsBySample.get(name) ?? [])),
+    );
+  }
 
   const response = await fetch(options.backendUrl, {
     method: "POST",
@@ -182,6 +234,7 @@ export async function extractSessionAudio(
     chroma?: number[][];
     failed?: { file: string; reason: string }[];
     timed_out?: boolean;
+    session_beats?: SessionBeats | null;
   };
   const result: SessionAudioResult = {
     embeddings: data.embeddings,
@@ -191,6 +244,7 @@ export async function extractSessionAudio(
     encodeFailures: data.failed ?? [],
     timedOut: data.timed_out ?? false,
     backendError: null,
+    sessionBeats: data.session_beats ?? null,
   };
   // Only a complete, successful encode is worth re-using; a partial one
   // should be retried next time.

@@ -4,9 +4,12 @@ Once frontend integration starts these models may only gain
 backward-compatible fields; renames and removals are breaking.
 """
 
+import math
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, FiniteFloat, model_validator
+
+from ranking.beat_sync import MAX_BEATS, MAX_BPM, MIN_BPM, ONSET_SUBDIVISIONS, WINDOW_SECONDS
 
 
 class ParsedIntent(BaseModel):
@@ -22,6 +25,37 @@ class ParsedIntent(BaseModel):
     roles: list[str] = []
     bpm: float | None = Field(default=None, gt=0)
     key: str | None = None
+
+
+class SessionBeats(BaseModel):
+    """The session's first 10 s on its own beat grid (ranking/beat_sync.py).
+
+    Built by /api/ranking/session-embed from the project tempo and each
+    region's timeline position, and echoed back by the browser.
+    """
+
+    bpm: FiniteFloat = Field(ge=MIN_BPM, le=MAX_BPM)
+    beat_times: list[FiniteFloat] = Field(min_length=2, max_length=MAX_BEATS + 1)
+    beat_chroma: list[list[FiniteFloat]] = Field(max_length=MAX_BEATS)
+    onsets: list[FiniteFloat] = Field(max_length=MAX_BEATS * ONSET_SUBDIVISIONS)
+
+    @model_validator(mode="after")
+    def _shapes(self):
+        beats = len(self.beat_times) - 1
+        if len(self.beat_chroma) != beats or any(len(row) != 12 for row in self.beat_chroma):
+            raise ValueError("beat_chroma must have one 12-bin row per beat")
+        if len(self.onsets) != beats * ONSET_SUBDIVISIONS:
+            raise ValueError("onsets must hold eight slots per beat")
+        if self.beat_times[0] != 0 or self.beat_times[-1] > WINDOW_SECONDS:
+            raise ValueError("beat grid must start at zero and stay within ten seconds")
+        if any(not math.isclose(b - a, 60 / self.bpm, abs_tol=2e-6)
+               for a, b in zip(self.beat_times, self.beat_times[1:])):
+            raise ValueError("beat boundaries must increase at the specified tempo")
+        if any(not 0 <= value <= 1.000001 for row in self.beat_chroma for value in row):
+            raise ValueError("beat chroma must be normalised and nonnegative")
+        if any(not 0 <= value <= 1.000001 for value in self.onsets):
+            raise ValueError("onsets must be scaled to [0, 1]")
+        return self
 
 
 class SessionFingerprint(BaseModel):
@@ -44,6 +78,9 @@ class SessionFingerprint(BaseModel):
     # LLM interpretation of text_intent (user-reviewed). Backward-compatible
     # addition; absent means intent matching falls back to raw token overlap.
     parsed_intent: ParsedIntent | None = None
+    # Beat-synchronous chroma and onsets for beat-fit-v1 and logging.
+    # Backward-compatible addition; absent when the tempo is unknown.
+    session_beats: SessionBeats | None = None
 
 
 class FragmentCandidate(BaseModel):
@@ -57,6 +94,9 @@ class FragmentCandidate(BaseModel):
     audio_embedding: list[float] | None = None
     text_embedding: list[float] | None = None
     chroma_vector: list[float] | None = None
+    # Stored frame analysis of the fragment's first 10 s
+    # (representations.beat_frames), attached server-side.
+    beat_frames: dict | None = None
 
 
 class RankRequest(BaseModel):
@@ -70,10 +110,12 @@ class RankEvidence(BaseModel):
     code: Literal[
         "tempo_match", "key_match", "track_gap", "intent_match",
         "novelty", "recency", "model_signal", "role_gap_fill", "harmonic_fit",
-        "timbral_match", "tag_overlap",
+        "timbral_match", "tag_overlap", "beat_harmony", "beat_rhythm",
     ]
     label: str
     contribution: float
+    # Absolute measurement is separate from the relative score contribution.
+    raw_value: float | None = None
 
 
 class RankedCandidate(BaseModel):
@@ -84,6 +126,8 @@ class RankedCandidate(BaseModel):
     # exposes one; logged with the served list so musician decisions can
     # later supervise the fusion weights. Backward-compatible addition.
     signals: list[float] | None = None
+    # False marks missing/unusable input, distinct from a measured zero.
+    signal_available: list[bool] | None = None
 
 
 class RankResponse(BaseModel):
@@ -91,6 +135,8 @@ class RankResponse(BaseModel):
     model_id: str
     fallback_used: bool
     candidates: list[RankedCandidate]
+    # Names of the entries in each candidate's `signals`, when present.
+    signal_names: list[str] | None = None
 
 
 class FeedbackEvent(BaseModel):

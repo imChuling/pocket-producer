@@ -1,13 +1,14 @@
 import asyncio
 import io
 import logging
+import math
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from typing import Literal
 
 from bson import ObjectId
 from bson.errors import InvalidId
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from pydantic import BaseModel, Field, field_validator
 
 from ranking.adapters import shared as clap
@@ -78,8 +79,8 @@ def _log_exposure(db, user_id: str, rank_request: RankRequest, response: RankRes
 
     Ids and ranking metadata only: no text_intent, no embeddings, no OAuth
     material. candidate_signals holds the per-candidate signal vector
-    (five scalars) when the serving ranker exposes one, so later decisions
-    can supervise the fusion weights. A failed write must never fail the
+    when the serving ranker exposes one, named by candidate_signal_names,
+    so later decisions can supervise the fusion weights. A failed write must never fail the
     rank request itself.
     """
     try:
@@ -93,6 +94,8 @@ def _log_exposure(db, user_id: str, rank_request: RankRequest, response: RankRes
                 "fallback_used": response.fallback_used,
                 "fragment_ids": [c.fragment_id for c in response.candidates],
                 "candidate_signals": [c.signals for c in response.candidates],
+                "candidate_signal_names": response.signal_names,
+                "candidate_signal_available": [c.signal_available for c in response.candidates],
                 "n_candidates_in": len(rank_request.candidates),
                 "created_at": datetime.now(UTC),
             }
@@ -151,7 +154,7 @@ _embed_slots = asyncio.Semaphore(2)
 
 
 def _encode_region(waveform, sample_rate, abandoned: dict):
-    """CLAP vector plus 12-dim chroma for one mono session region.
+    """CLAP vector, 12-dim chroma and beat frames for one mono session region.
 
     CLAP sees the model window (first 7 s); chroma is taken over the region
     (capped at CHROMA_MAX_SECONDS), matching how candidate chroma is computed
@@ -168,7 +171,72 @@ def _encode_region(waveform, sample_rate, abandoned: dict):
     vector = clap.encode_audio(prepare_waveform(waveform, sample_rate), sample_rate)
     if abandoned["value"]:
         return None
-    return vector, chroma_from_audio(waveform, sample_rate)
+    chroma = chroma_from_audio(waveform, sample_rate)
+    if abandoned["value"]:
+        return None
+    from ranking import beat_sync
+
+    return vector, chroma, beat_sync.frames(waveform, sample_rate)
+
+
+def _parse_placements(text: str | None, n_files: int) -> list[list[dict]] | None:
+    """Region positions per uploaded file, in beats from timeline zero."""
+    if not text:
+        return None
+    import json
+
+    try:
+        data = json.loads(text)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="placements must be JSON") from None
+    if not isinstance(data, list) or len(data) != n_files:
+        raise HTTPException(status_code=400, detail="placements: one list per uploaded file")
+    parsed = []
+    for regions in data:
+        if not isinstance(regions, list) or len(regions) > 256:
+            raise HTTPException(status_code=400, detail="placements: a list of regions per file")
+        rows = []
+        for region in regions:
+            try:
+                start = float(region["start_beats"])
+                length = region.get("duration_beats")
+                length = float(length) if length is not None else None
+            except (KeyError, TypeError, ValueError):
+                raise HTTPException(
+                    status_code=400, detail="placements: start_beats and duration_beats"
+                ) from None
+            if (not math.isfinite(start) or start < 0 or
+                    (length is not None and (not math.isfinite(length) or length <= 0))):
+                raise HTTPException(status_code=400, detail="placements: invalid region")
+            rows.append({"start_beats": start, "duration_beats": length})
+        parsed.append(rows)
+    return parsed
+
+
+def _session_beats(bpm, region_positions, frames_by_file) -> dict | None:
+    """Beat data over the session's first 10 s; None without a tempo or positions.
+
+    The grid comes from the project tempo, starting at timeline zero, and is
+    never estimated from the audio.
+    """
+    from ranking import beat_sync
+
+    if bpm is None or bpm <= 0 or region_positions is None:
+        return None
+    seconds_per_beat = 60.0 / bpm
+    placed = [
+        beat_sync.Placement(
+            clip,
+            region["start_beats"] * seconds_per_beat,
+            region["duration_beats"] * seconds_per_beat if region["duration_beats"] else None,
+        )
+        for index, clip in frames_by_file.items()
+        if clip is not None
+        for region in region_positions[index]
+    ]
+    if not placed:
+        return None
+    return beat_sync.session_beats(placed, bpm)
 
 
 def registered_models() -> list[str]:
@@ -184,6 +252,8 @@ MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 async def session_embed(
     request: Request,
     files: list[UploadFile] = File(...),
+    bpm: float | None = Form(None, ge=20, le=360, allow_inf_nan=False),
+    placements: str | None = Form(None),
     user_id: str = Depends(verify_firebase_token),
 ):
     if clap.get_msclap() is None:
@@ -197,7 +267,9 @@ async def session_embed(
             detail=f"At most {MAX_SESSION_FILES} files per request",
         )
 
+    region_positions = _parse_placements(placements, len(files))
     # Filled incrementally so a timeout still returns what was encoded.
+    frames_by_file: dict[int, object] = {}
     embeddings: list[list[float]] = []
     chromas: list[list[float]] = []
     failed: list[dict] = []
@@ -208,7 +280,7 @@ async def session_embed(
         nonlocal inflight
         from ranking.adapters.msclap import to_mono
 
-        for upload in files:
+        for index, upload in enumerate(files):
             name = upload.filename or "sample"
             raw = await upload.read()
             if len(raw) > MAX_FILE_SIZE:
@@ -229,7 +301,8 @@ async def session_embed(
                 outcome = await asyncio.shield(inflight)
                 if outcome is None:
                     continue
-                vector, chroma = outcome
+                vector, chroma, beat_frames = outcome
+                frames_by_file[index] = beat_frames
             except Exception as error:
                 logger.warning("session-embed: failed to encode %s", name, exc_info=True)
                 failed.append({"file": name, "reason": type(error).__name__})
@@ -266,6 +339,7 @@ async def session_embed(
     return {
         "embeddings": embeddings,
         "chroma": chromas,
+        "session_beats": _session_beats(bpm, region_positions, frames_by_file),
         "total": len(files),
         "encoded": len(embeddings),
         "failed": failed,

@@ -1,8 +1,29 @@
 # Model Card — Pocket Producer Ranking System
 
+## Local submission revision, 2026-11-16
+
+The capacity-ladder descriptions below document earlier research models;
+they do not establish that every model is deployed or preference-validated.
+The product default remains `rules-v1`; the shipped fusion scores five
+signals. Beat-fit is implemented locally and not deployed; production frame
+backfill has not run. Offline feedback training is not automatic online
+adaptation. Seven-signal artifacts are explicitly research-only and rejected
+by the online five-signal loader. See [capability boundaries and evidence
+semantics](research/design-online-signals.md) and the [project note](docs/portfolio/PROJECT_NOTE.md).
+
+Controlled perturbation and as-is synchronized-stem retrieval results do
+not establish musician preference or improved creativity. The two-signal
+chroma/onset choice has no demonstrated incremental retrieval benefit over
+onset alone. COCOLA_HP_v1's official training sets are MoisesDB, Slakh2100
+and CocoChorales; the older MUSDB18-HQ assertion is corrected in the dated
+protocol errata. No independent training-file reconstruction excludes overlap.
+
 ## Overview
 
-Pocket Producer ranks a user's personal audio fragments by **continuation utility**: how useful each fragment would be as the next creative step in a live music production session. The system is _not_ a general-purpose music recommender — it operates over a single user's private library, conditioned on the state of an open Audiotool project.
+Pocket Producer proposes fragments from a user's private library for an open
+Audiotool session. Its intended goal is continuation utility; the implemented
+similarity and musical-feature scores are proxies, and current experiments
+do not establish how useful musicians will find the recommendations.
 
 ## Capacity Ladder
 
@@ -77,7 +98,7 @@ Revision pinning: every stored vector carries `model_id`, `revision` (sha256 of 
 ## Limitations
 
 - **No personalization**: the system does not adapt to individual user preferences over time. This is a deliberate design constraint; the preregistered protocol requires temporal held-out learning curve support before enabling adaptation.
-- **Session representation is flat**: the current `SessionFingerprint` captures tempo, track count/types, and mean audio embedding but not per-region role, temporal position, or pitch class structure.
+- **Session representation limits**: the existing fusion uses pooled region audio and metadata. The local, undeployed beat-fit prototype adds approximate timeline placement and chroma/onset structure; it does not reproduce offsets, loops, mixing or effects of real DAW playback.
 - **Small evaluation scale**: human pairwise labels are in pilot quantities. Statistical power is limited; results are reported honestly with sample sizes.
 - **Backbone audit incomplete**: LAION-CLAP music training data provenance has not been fully verified for commercial deployment.
 

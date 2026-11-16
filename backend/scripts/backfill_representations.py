@@ -1,9 +1,9 @@
 """Re-encode stored fragments so every rank-ready representation exists.
 
 Fragments uploaded while CLAP was disabled have no audio_semantic vector;
-fragments uploaded before chroma was added have no chroma vector. Both make
-their rankers (fusion, mean-session, role-gap, harmonic-fit) silently skip
-the fragment. This walks every audio fragment and runs the same encoder the
+fragments uploaded before chroma or beat frames were added lack those. Each
+makes its rankers (fusion, mean-session, role-gap, harmonic-fit, beat-fit)
+silently skip the fragment. This walks every audio fragment and runs the same encoder the
 ingest path uses, which writes both representations and skips fragments that
 are already current.
 
@@ -44,6 +44,7 @@ def main() -> int:
 
     _load_env()
     from api.deps import get_db
+    from ranking.beat_sync import BEAT_FRAMES_REVISION
     from ranking.ingest import CHROMA_REVISION, _encode_sync
 
     db = get_db()
@@ -53,19 +54,20 @@ def main() -> int:
     docs = list(db["fragments"].find(
         query,
         {"user_id": 1, "audio_url": 1, "representations.audio_semantic.revision": 1,
-         "representations.chroma.revision": 1},
+         "representations.chroma.revision": 1, "representations.beat_frames.revision": 1},
     ))
     todo = []
     for doc in docs:
         reps = doc.get("representations") or {}
         needs_audio = not (reps.get("audio_semantic") or {}).get("revision")
         needs_chroma = (reps.get("chroma") or {}).get("revision") != CHROMA_REVISION
-        if needs_audio or needs_chroma:
-            todo.append((doc, needs_audio, needs_chroma))
+        needs_beats = (reps.get("beat_frames") or {}).get("revision") != BEAT_FRAMES_REVISION
+        if needs_audio or needs_chroma or needs_beats:
+            todo.append((doc, needs_audio, needs_chroma or needs_beats))
     logger.info("%d audio fragments, %d need encoding", len(docs), len(todo))
     if args.dry_run:
         for doc, a, c in todo:
-            logger.info("  %s audio=%s chroma=%s", doc["_id"], "missing" if a else "ok",
+            logger.info("  %s audio=%s chroma/beats=%s", doc["_id"], "missing" if a else "ok",
                         "missing" if c else "ok")
         return 0
 

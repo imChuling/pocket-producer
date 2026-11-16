@@ -13,6 +13,14 @@ export type ParsedIntent = {
   key: string | null;
 };
 
+/** The session's first 10 s on the project's beat grid, built by /session-embed. */
+export type SessionBeats = {
+  bpm: number;
+  beat_times: number[];
+  beat_chroma: number[][];
+  onsets: number[];
+};
+
 export type SessionFingerprint = {
   project_id: string;
   bpm: number | null;
@@ -30,6 +38,8 @@ export type SessionFingerprint = {
   region_chroma_vectors?: number[][] | null;
   /** User-approved LLM interpretation of text_intent; null degrades to raw text matching. */
   parsed_intent?: ParsedIntent | null;
+  /** Beat-synchronous chroma and onsets; absent when the project tempo is unknown. */
+  session_beats?: SessionBeats | null;
 };
 
 export type RecommendationEvent =
@@ -51,9 +61,13 @@ export type RankEvidence = {
     | "role_gap_fill"
     | "harmonic_fit"
     | "timbral_match"
-    | "tag_overlap";
+    | "tag_overlap"
+    | "beat_harmony"
+    | "beat_rhythm";
   label: string;
   contribution: number;
+  /** Absolute measurement, distinct from the relative score contribution. */
+  raw_value?: number | null;
 };
 
 export type RankedCandidate = {
@@ -62,6 +76,7 @@ export type RankedCandidate = {
   evidence: RankEvidence[];
   /** Signal vector behind the score, when the serving ranker exposes one. */
   signals?: number[] | null;
+  signal_available?: boolean[] | null;
 };
 
 export type RankResponse = {
@@ -69,6 +84,8 @@ export type RankResponse = {
   model_id: string;
   fallback_used: boolean;
   candidates: RankedCandidate[];
+  /** Names of the entries in each candidate's `signals`. */
+  signal_names?: string[] | null;
 };
 
 export type AudiotoolStatus =

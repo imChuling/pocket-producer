@@ -117,7 +117,9 @@ class TestFusionRanker:
         )
         by_id = {c.fragment_id: c for c in response.candidates}
         signals = by_id["f1"].signals
-        assert signals is not None and len(signals) == len(SIGNAL_NAMES)
+        assert signals is not None and len(signals) == len(SIGNAL_NAMES) + 2
+        assert signals[5:] == [0.0, 0.0]  # no session beats: logged as zero
+        assert response.signal_names[: len(SIGNAL_NAMES)] == SIGNAL_NAMES
         assert signals[0] == pytest.approx(1.0) and signals[1] == pytest.approx(1.0)
         assert signals[2] == pytest.approx(1.0)  # tempo
         assert signals[3] == 0.0  # key: session key is None
@@ -197,3 +199,33 @@ class TestFusionRanker:
         data = load_weights(path)
         assert len(data["weights"]) == len(SIGNAL_NAMES)
         FusionRanker(data)
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"signals": list(reversed(SIGNAL_NAMES))},
+        {"signals": [SIGNAL_NAMES[0]] * 5},
+        {"weights": [float("nan")] * 5},
+        {"weights": [float("inf")] * 5},
+        {"research_only": True},
+    ],
+)
+def test_loader_refuses_invalid_online_artifact(tmp_path, changes):
+    import json
+
+    path = tmp_path / "weights.json"
+    path.write_text(json.dumps({**WEIGHTS, **changes}))
+    with pytest.raises(ValueError):
+        load_weights(path)
+
+
+
+def test_finite_large_negative_loaded_weights_score_without_overflow(tmp_path):
+    import json
+
+    path = tmp_path / "weights.json"
+    path.write_text(json.dumps({**WEIGHTS, "weights": [-1000.0, 0, 0, 0, 0]}))
+    ranker = FusionRanker(load_weights(path))
+    response = ranker.rank(request([candidate("f", audio_embedding=unit(1, 0, 0))]))
+    assert response.candidates[0].score == pytest.approx(0.0)
