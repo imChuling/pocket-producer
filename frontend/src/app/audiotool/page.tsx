@@ -454,12 +454,16 @@ export default function AudiotoolPage() {
                     backendUrl: "/api/ranking/session-embed",
                     authToken: token,
                     cache: sessionAudioCacheRef.current,
+                    bpm: fresh.bpm,
                   });
                   if (result.embeddings.length > 0) {
                     fresh.region_audio_embeddings = result.embeddings;
                   }
                   if (result.chroma.length > 0) {
                     fresh.region_chroma_vectors = result.chroma;
+                  }
+                  if (result.sessionBeats) {
+                    fresh.session_beats = result.sessionBeats;
                   }
                   setSessionAudioNote(describeSessionAudio(result));
                 } catch (cause) {

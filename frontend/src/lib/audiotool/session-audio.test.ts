@@ -4,14 +4,31 @@ import { describeSessionAudio, extractSessionAudio } from "./session-audio";
 import type { NexusDocumentPort } from "@/types/audiotool";
 
 function fakeDocument(
-  regions: { id: string; sampleRef: string | { entityId: string } }[],
+  regions: {
+    id: string;
+    sampleRef: string | { entityId: string };
+    positionTicks?: number;
+    durationTicks?: number;
+  }[],
   samples: { id: string; sampleName: string }[],
 ): NexusDocumentPort {
   const entities = [
     ...regions.map((r) => ({
       id: r.id,
       entityType: "audioRegion",
-      fields: { sample: { value: r.sampleRef } },
+      fields: {
+        sample: { value: r.sampleRef },
+        ...(r.positionTicks !== undefined
+          ? {
+              region: {
+                fields: {
+                  positionTicks: { value: r.positionTicks },
+                  durationTicks: { value: r.durationTicks ?? 0 },
+                },
+              },
+            }
+          : {}),
+      },
     })),
     ...samples.map((s) => ({
       id: s.id,
@@ -234,5 +251,67 @@ describe("extractSessionAudio", () => {
     expect(result.failedCount).toBe(1);
     expect(result.sampleCount).toBe(0);
     expect(result.embeddings).toEqual([]);
+  });
+
+  it("sends the project tempo and every region's position in beats", async () => {
+    const doc = fakeDocument(
+      [
+        { id: "r1", sampleRef: "s1", positionTicks: 0, durationTicks: 4 * 3840 },
+        { id: "r2", sampleRef: "s1", positionTicks: 8 * 3840, durationTicks: 2 * 3840 },
+        { id: "r3", sampleRef: "s2", positionTicks: 3840 },
+      ],
+      [
+        { id: "s1", sampleName: "samples/a" },
+        { id: "s2", sampleName: "samples/b" },
+      ],
+    );
+    const beats = { bpm: 120, beat_times: [0, 0.5], beat_chroma: [new Array(12).fill(0)], onsets: new Array(8).fill(0) };
+    let sent: FormData | null = null;
+    const fetchMock = vi.fn(async (_url: string, init: { body: FormData }) => {
+      sent = init.body;
+      return {
+        ok: true,
+        json: async () => ({ embeddings: [[1], [2]], chroma: [[], []], session_beats: beats }),
+      };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await extractSessionAudio(doc, { download: vi.fn(async () => new Blob(["wav"])) }, {
+      backendUrl: "/embed",
+      authToken: "tok",
+      bpm: 120,
+    });
+    const form = sent as unknown as FormData;
+    expect(form.get("bpm")).toBe("120");
+    expect(JSON.parse(String(form.get("placements")))).toEqual([
+      [
+        { start_beats: 0, duration_beats: 4 },
+        { start_beats: 8, duration_beats: 2 },
+      ],
+      [{ start_beats: 1, duration_beats: null }],
+    ]);
+    expect(result.sessionBeats).toEqual(beats);
+    vi.unstubAllGlobals();
+  });
+
+  it("sends no beat data without a project tempo", async () => {
+    const doc = fakeDocument(
+      [{ id: "r1", sampleRef: "s1", positionTicks: 0, durationTicks: 3840 }],
+      [{ id: "s1", sampleName: "samples/a" }],
+    );
+    let sent: FormData | null = null;
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init: { body: FormData }) => {
+      sent = init.body;
+      return { ok: true, json: async () => ({ embeddings: [[1]], chroma: [[]] }) };
+    }));
+    const result = await extractSessionAudio(doc, { download: vi.fn(async () => new Blob(["wav"])) }, {
+      backendUrl: "/embed",
+      authToken: "tok",
+      bpm: null,
+    });
+    const form = sent as unknown as FormData;
+    expect(form.get("bpm")).toBeNull();
+    expect(form.get("placements")).toBeNull();
+    expect(result.sessionBeats).toBeNull();
+    vi.unstubAllGlobals();
   });
 });

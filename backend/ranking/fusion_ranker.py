@@ -23,6 +23,7 @@ import uuid
 
 import numpy as np
 
+from ranking import beat_sync
 from ranking.audio_cosine import InsufficientContextError
 from ranking.features import key_match, tempo_match
 from ranking.schemas import (
@@ -34,6 +35,10 @@ from ranking.schemas import (
 )
 
 SIGNAL_NAMES = ["audio_cos_mean", "audio_cos_max", "tempo", "key", "tag_jaccard"]
+# Logged after the five scored signals so decisions can later train weights
+# for them (research/finetune_from_feedback.py --extra-signals). They do not
+# enter the score; 0.0 when the session or the fragment has no beat data.
+LOGGED_SIGNAL_NAMES = [*SIGNAL_NAMES, "chroma_beat_aligned", "onset_pattern"]
 
 _EVIDENCE = [
     ("timbral_match", "Sounds close to your session regions"),
@@ -155,9 +160,20 @@ class FusionRanker:
             )
 
         ranked.sort(key=lambda c: (-c.score, c.fragment_id))
+        served = ranked[: request.limit]
+        frames_by_id = {c.fragment_id: c.beat_frames for c in request.candidates}
+        beats = request.session.session_beats
+        for candidate in served:
+            values = beat_sync.candidate_signals(
+                beats.model_dump() if beats else None, frames_by_id.get(candidate.fragment_id)
+            )
+            candidate.signals = [
+                *candidate.signals, *(round(v, 6) for v in (values or (0.0, 0.0)))
+            ]
         return RankResponse(
             request_id=str(uuid.uuid4()),
             model_id=self.model_id,
             fallback_used=False,
-            candidates=ranked[: request.limit],
+            candidates=served,
+            signal_names=LOGGED_SIGNAL_NAMES,
         )

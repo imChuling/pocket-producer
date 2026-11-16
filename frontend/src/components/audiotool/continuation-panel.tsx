@@ -42,6 +42,8 @@ const GRID_COLS: Record<Intensity, string> = {
 const MODEL_LABELS: Record<string, string> = {
   "rules-v1": "Rules",
   "fusion-5sig-v1": "Fusion",
+  "harmonic-fit-v1": "Harmonic fit",
+  "beat-fit-v1": "Beat fit",
   "recency-v1": "Recency",
   "text-only-v1": "Text",
   "audio-cosine-v1": "Audio",

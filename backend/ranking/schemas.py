@@ -6,7 +6,7 @@ backward-compatible fields; renames and removals are breaking.
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class ParsedIntent(BaseModel):
@@ -22,6 +22,28 @@ class ParsedIntent(BaseModel):
     roles: list[str] = []
     bpm: float | None = Field(default=None, gt=0)
     key: str | None = None
+
+
+class SessionBeats(BaseModel):
+    """The session's first 10 s on its own beat grid (ranking/beat_sync.py).
+
+    Built by /api/ranking/session-embed from the project tempo and each
+    region's timeline position, and echoed back by the browser.
+    """
+
+    bpm: float = Field(gt=0)
+    beat_times: list[float] = Field(min_length=2, max_length=64)
+    beat_chroma: list[list[float]]
+    onsets: list[float]
+
+    @model_validator(mode="after")
+    def _shapes(self):
+        beats = len(self.beat_times) - 1
+        if len(self.beat_chroma) != beats or any(len(row) != 12 for row in self.beat_chroma):
+            raise ValueError("beat_chroma must have one 12-bin row per beat")
+        if beats == 0 or len(self.onsets) % beats != 0:
+            raise ValueError("onsets must hold the same number of slots for every beat")
+        return self
 
 
 class SessionFingerprint(BaseModel):
@@ -44,6 +66,9 @@ class SessionFingerprint(BaseModel):
     # LLM interpretation of text_intent (user-reviewed). Backward-compatible
     # addition; absent means intent matching falls back to raw token overlap.
     parsed_intent: ParsedIntent | None = None
+    # Beat-synchronous chroma and onsets for beat-fit-v1 and logging.
+    # Backward-compatible addition; absent when the tempo is unknown.
+    session_beats: SessionBeats | None = None
 
 
 class FragmentCandidate(BaseModel):
@@ -57,6 +82,9 @@ class FragmentCandidate(BaseModel):
     audio_embedding: list[float] | None = None
     text_embedding: list[float] | None = None
     chroma_vector: list[float] | None = None
+    # Stored frame analysis of the fragment's first 10 s
+    # (representations.beat_frames), attached server-side.
+    beat_frames: dict | None = None
 
 
 class RankRequest(BaseModel):
@@ -70,7 +98,7 @@ class RankEvidence(BaseModel):
     code: Literal[
         "tempo_match", "key_match", "track_gap", "intent_match",
         "novelty", "recency", "model_signal", "role_gap_fill", "harmonic_fit",
-        "timbral_match", "tag_overlap",
+        "timbral_match", "tag_overlap", "beat_harmony", "beat_rhythm",
     ]
     label: str
     contribution: float
@@ -91,6 +119,8 @@ class RankResponse(BaseModel):
     model_id: str
     fallback_used: bool
     candidates: list[RankedCandidate]
+    # Names of the entries in each candidate's `signals`, when present.
+    signal_names: list[str] | None = None
 
 
 class FeedbackEvent(BaseModel):

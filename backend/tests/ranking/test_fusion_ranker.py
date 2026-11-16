@@ -117,7 +117,9 @@ class TestFusionRanker:
         )
         by_id = {c.fragment_id: c for c in response.candidates}
         signals = by_id["f1"].signals
-        assert signals is not None and len(signals) == len(SIGNAL_NAMES)
+        assert signals is not None and len(signals) == len(SIGNAL_NAMES) + 2
+        assert signals[5:] == [0.0, 0.0]  # no session beats: logged as zero
+        assert response.signal_names[: len(SIGNAL_NAMES)] == SIGNAL_NAMES
         assert signals[0] == pytest.approx(1.0) and signals[1] == pytest.approx(1.0)
         assert signals[2] == pytest.approx(1.0)  # tempo
         assert signals[3] == 0.0  # key: session key is None
