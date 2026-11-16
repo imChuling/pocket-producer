@@ -12,10 +12,12 @@ Bring two signals from the behavioural tests online:
 `onset_pattern` (rhythm in step with the session's beats). On MUSDB18-HQ
 they pass P1, P3 and P4 (`chroma_beat_aligned` also P2; `onset_pattern`
 also P5), where the deployed fusion passes only P3
-(`research/results-behavioral-v1.md`). In the retrieval study their
-standardised sum was the strongest training-free combination
-(`research/results-retrieval-v1.md`); it was added after the behavioural
-report, so it is an observation, not a tested claim.
+(`research/results-behavioral-v1.md`). The two-signal sum was added after the behavioural report. It is a
+design choice to expose harmony and rhythm together, not a demonstrated
+improvement over onset alone: `onset_pattern` has higher Recall@1 point
+estimates in all three pools (`research/results-retrieval-v1.md`). No paired
+interval for that contrast was computed, and no independent product test
+has validated incremental value.
 
 Two uses:
 
@@ -40,15 +42,21 @@ checks the two agree numerically.
    scaled to [0, 1].
 3. `chroma_beat_aligned` = mean per-beat chroma agreement over beats where
    both sides sound (0 with fewer than 4 such beats); `onset_pattern` =
-   correlation of the two slot patterns mapped to [0, 1] (0 if either is
-   flat).
+   correlation of the two slot patterns mapped to [0, 1]. The raw functions
+   still match the frozen research definitions. Online availability additionally
+   requires four shared sounding beats; rhythm also needs non-flat patterns.
+   A mapped value near 0.5 is near-zero correlation, not positive alignment
+   evidence. These support rules are engineering guards, not thresholds fitted
+   to MUSDB outcomes.
 
 ## The session grid
 
 The grid is never estimated from audio. It comes from the project tempo in
 the Nexus document: beats start at timeline zero with period 60 / bpm, and
-only the whole beats inside the first 10 s are used. Without a tempo there
-is no grid and the signals are missing.
+only whole beats inside the first 10 s are used. The supported online tempo
+range is finite 20–360 BPM: at most 60 beats / 480 onset slots. API, schema
+and grid helpers bound these inputs before allocation. Without supported
+tempo the helper returns no grid; malformed API input is rejected.
 
 - The frontend reads each audio region's `positionTicks` and
   `durationTicks` (3840 ticks per beat) and sends, with the per-sample
@@ -82,27 +90,54 @@ is no grid and the signals are missing.
 
 ## Rankers and logging
 
-- `beat-fit-v1`: score = the two signals, each standardised over the
-  scorable candidates in the request, summed. No weights are fitted.
-  Candidates without frames, or with both signals at 0, are skipped; if none
-  remain, or the session has no beat data, it raises
-  `InsufficientContextError` instead of serving evidence-free proposals.
-  Evidence codes `beat_harmony` and `beat_rhythm` carry the positive
-  standardised parts.
-- `fusion-5sig-v1`: unchanged scores and weights. Its signal vectors gain
-  the two values (0 when missing on either side) after the five it scores
-  with.
-- `RankResponse.signal_names` names the vector, and `ranking_requests` logs
-  it as `candidate_signal_names` next to `candidate_signals`, so vectors
-  logged before and after the change are not mixed
-  (`finetune_from_feedback.py` already drops vectors of the wrong length).
+- `beat-fit-v1` (local revision `evidence-and-support-v2`): sum of the
+  signals standardised over candidates with usable values for each signal.
+  No fitted weights. A sole usable measurement contributes its raw value;
+  unavailable components contribute zero and are explicitly masked. These
+  different support patterns can affect comparability, so inspect masks.
+  With no shared sounding beats, candidates do not receive rhythm evidence.
+  Bad/unsupported frame records are skipped with a diagnostic; a damaged
+  beat log does not invalidate otherwise valid five-signal fusion results.
+- Evidence labels state **raw chroma cosine / signed onset correlation and
+  shared-beat count**. `RankEvidence.raw_value` carries that measurement;
+  `contribution` is the relative ranking term. Both signs and tied zero
+  contributions are retained. Neither quantity is a calibrated probability
+  that musicians will like a proposal.
+- `fusion-5sig-v1`: scores and shipped weights remain five-dimensional.
+  Beat measurements are logged after those five; absent beat values have
+  zero placeholders **plus** `signal_available=false`. The historical base
+  five retain their defined structural-zero conventions for absent key,
+  tempo or tags.
+- `RankResponse.signal_names` names each vector. Exposure logs persist
+  `candidate_signal_names`, `candidate_signals` and
+  `candidate_signal_available`. Training aligns by names, not vector length,
+  and refuses ambiguous extended legacy rows or unavailable trained signals.
 
-## Rollout
+## Capability and rollout boundary (2026-11-16)
 
-Deploy with `beat-fit-v1` selectable and fusion unchanged, run the backfill
-for existing fragments, and let decisions accumulate with the seven logged
-signals. Fine-tune once there are enough pairs; ship only a
-guardrail-accepted weights file.
+| Capability | State |
+|---|---|
+| Five-signal fusion and reversible DAW insert | Existing implementation; current live revision not verified in this remediation |
+| Beat-fit, frame ingest, bounded grid, availability/evidence fixes | Local implementation and tests; not deployed |
+| Existing-fragment frame backfill | Script exists; not run on production |
+| Five-signal feedback training | Offline research workflow, tested artifact-to-loader-to-score; not automatic online learning |
+| Seven-signal feedback training | Research only; artifact marked nondeployable, distinct identity; online five-signal loader refuses it |
+| Demo / cost changes | Five commits from `cost-guard` integrated locally; deployment not performed |
+
+The behavioural guardrail first validates nonempty unique pairs, applicable
+perturbations, finite scores, at least two tracks and usable P1–P5/gain.
+An optional explicit manifest checks exact pair and track identities. The
+original cache has no historical manifest; a newly created inventory is
+not retroactive proof of original extraction. Performance rules then protect
+only endpoints the baseline already passes (on this store mainly P3), plus
+gain direction sensitivity. Passing is not a quality floor for every endpoint
+or evidence of preference benefit. Repeated filtering on MUSDB makes it a
+development set.
+
+A future deployment needs a real DAW playback comparison, a separately
+reviewed production backfill and an explicit serving contract for any new
+weight dimensionality. A seven-weight research artifact must not be copied
+into the five-signal deployment path. No such rollout was executed here.
 
 ## Open questions
 

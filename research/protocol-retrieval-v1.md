@@ -127,3 +127,43 @@ numbers.
 ## Deviations
 
 None.
+
+### 2026-11-16 deviations and erratum (append-only)
+
+The original v1 text above is retained. These corrections govern current
+interpretation; no v1 query pool, scoring rule or result JSON is replaced.
+
+1. **Stem candidates, not distinct songs.** The implementation counts and
+   samples track-stem entries. The actual `tempo_matched` inclusion rule is
+   at least nine eligible stems from other songs, not nine different songs.
+   Of 545 included queries, 88 have fewer than nine eligible different songs;
+   483 of the 545 sampled sets of nine distractors contain fewer than nine
+   different songs. The 49 exclusions lack nine eligible stems. A rule that
+   requires nine distinct songs would be a new v2 analysis. `same_role`'s
+   main result is unaffected by this terminology correction. Counts are
+   documented in `artifacts/compat-retrieval-musdb18/tempo-pools.json`.
+2. **Chronology.** The original scorer table contradicts “What was already
+   known”: `fusion_plus_classic_grid`, like the other fusion-plus-classic
+   combination, was defined after the behavioural report and before the
+   retrieval result. `classic_grid`'s earlier draft is an author account,
+   not independently established by the first visible retrieval commit.
+   The local Git sequence is behavioural freeze `460f7e9`, behavioural
+   result `9af9906`, retrieval freeze `24d511e`, retrieval result `8c369c0`.
+   This supports a local protocol-before-result record, not an external
+   timestamp proving no prior computations. Retrieval hypotheses designed
+   with behavioural knowledge of these recordings are not independent
+   confirmation on unseen data, even when fixed before retrieval scoring.
+3. **Checkpoint training data.** The actual `COCOLA_HP_v1` is listed as
+   trained on MoisesDB, Slakh2100 and CocoChorales in the
+   [official checkpoint table](https://github.com/gladia-research-group/cocola#pretrained-models).
+   The prior MUSDB18-HQ assertion is unsupported for this checkpoint. See
+   the behavioural protocol's dated erratum for the checkpoint hash and
+   MIXED loader provenance. No independent reconstruction rules out overlap.
+4. **Task boundary.** This is **as-is layering retrieval**: the true stem
+   shares its context's song and time window, while other-song distractors
+   keep their own tempo, phase, key and phrase. Pooling on a query grid does
+   not align a distractor to it. Tempo matching reduces only one difference.
+   These results do not demonstrate musician preference, or retrieval after
+   time stretching / transposition / phase alignment. Other candidates may
+   be musically useful; with no preference labels, the direction or magnitude
+   of the resulting evaluation bias is unknown.

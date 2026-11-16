@@ -1,6 +1,7 @@
 import asyncio
 import io
 import logging
+import math
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from typing import Literal
@@ -94,6 +95,7 @@ def _log_exposure(db, user_id: str, rank_request: RankRequest, response: RankRes
                 "fragment_ids": [c.fragment_id for c in response.candidates],
                 "candidate_signals": [c.signals for c in response.candidates],
                 "candidate_signal_names": response.signal_names,
+                "candidate_signal_available": [c.signal_available for c in response.candidates],
                 "n_candidates_in": len(rank_request.candidates),
                 "created_at": datetime.now(UTC),
             }
@@ -203,7 +205,8 @@ def _parse_placements(text: str | None, n_files: int) -> list[list[dict]] | None
                 raise HTTPException(
                     status_code=400, detail="placements: start_beats and duration_beats"
                 ) from None
-            if start < 0 or (length is not None and length <= 0):
+            if (not math.isfinite(start) or start < 0 or
+                    (length is not None and (not math.isfinite(length) or length <= 0))):
                 raise HTTPException(status_code=400, detail="placements: invalid region")
             rows.append({"start_beats": start, "duration_beats": length})
         parsed.append(rows)
@@ -249,7 +252,7 @@ MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 async def session_embed(
     request: Request,
     files: list[UploadFile] = File(...),
-    bpm: float | None = Form(None),
+    bpm: float | None = Form(None, ge=20, le=360, allow_inf_nan=False),
     placements: str | None = Form(None),
     user_id: str = Depends(verify_firebase_token),
 ):

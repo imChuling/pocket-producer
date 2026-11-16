@@ -59,12 +59,26 @@ def _group(contributions: np.ndarray) -> np.ndarray:
 
 
 def load_weights(path: str | pathlib.Path) -> dict:
-    """Load a weights artifact: {"weights": [5 floats], "trained_on": ...}."""
+    """Load finite online weights, validating declared canonical signal order.
+
+    Legacy unnamed five-weight artifacts use SIGNAL_NAMES in its fixed order.
+    Extended and explicitly research-only artifacts are refused.
+    """
     data = json.loads(pathlib.Path(path).read_text())
+    if data.get("research_only") or data.get("deployable") is False:
+        raise ValueError(
+            "research-only artifact is not deployable by the five-signal online fusion"
+        )
     if len(data["weights"]) != len(SIGNAL_NAMES):
         raise ValueError(
-            f"expected {len(SIGNAL_NAMES)} weights, got {len(data['weights'])}"
+            f"online fusion requires {len(SIGNAL_NAMES)} weights; got {len(data['weights'])}. "
+            "Extended weights are research-only"
         )
+    if "signals" in data and data["signals"] != SIGNAL_NAMES:
+        raise ValueError(f"online signals must be unique and in canonical order: {SIGNAL_NAMES}")
+    weights = np.asarray(data["weights"], dtype=np.float64)
+    if weights.shape != (len(SIGNAL_NAMES),) or not np.isfinite(weights).all():
+        raise ValueError("online weights must be five finite scalar numbers")
     return data
 
 
@@ -142,7 +156,13 @@ class FusionRanker:
 
         ranked: list[RankedCandidate] = []
         for (cand, signals, contributions), group in zip(scored, grouped):
-            score = round(1.0 / (1.0 + math.exp(-float(contributions.sum()))), 6)
+            logit = float(contributions.sum())
+            if logit >= 0:
+                probability = 1.0 / (1.0 + math.exp(-logit))
+            else:
+                exp_logit = math.exp(logit)
+                probability = exp_logit / (1.0 + exp_logit)
+            score = round(probability, 6)
             relative = group - baseline
             evidence = [
                 RankEvidence(code=code, label=label, contribution=round(float(c), 6))
@@ -164,11 +184,19 @@ class FusionRanker:
         frames_by_id = {c.fragment_id: c.beat_frames for c in request.candidates}
         beats = request.session.session_beats
         for candidate in served:
-            values = beat_sync.candidate_signals(
+            measured = beat_sync.candidate_measurements(
                 beats.model_dump() if beats else None, frames_by_id.get(candidate.fragment_id)
             )
             candidate.signals = [
-                *candidate.signals, *(round(v, 6) for v in (values or (0.0, 0.0)))
+                *candidate.signals,
+                *(round(v, 6) for v in (measured.values if measured else (0.0, 0.0))),
+            ]
+            candidate.signal_available = [
+                # The base five retain their deployed definitions, including
+                # structural zero for absent key/tags/tempo. Beat signals
+                # are optional measurements and require an explicit mask.
+                *([True] * len(SIGNAL_NAMES)),
+                *(measured.available if measured else (False, False)),
             ]
         return RankResponse(
             request_id=str(uuid.uuid4()),

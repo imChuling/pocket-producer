@@ -136,3 +136,55 @@ def test_silence_and_missing_records_are_not_scorable():
     assert beat_sync.decode_frames(beat_sync.encode_frames(None)) is None
     assert beat_sync.candidate_signals(None, {}) is None
     assert beat_sync.candidate_signals({"beat_times": [0, 0.5]}, None) is None
+
+
+@pytest.mark.parametrize("bpm", [float("inf"), float("nan"), 0, -1, 1e12, 601, 19])
+def test_invalid_tempos_are_rejected_before_allocating_a_grid(bpm):
+    with pytest.raises(ValueError, match="tempo"):
+        beat_sync.beat_times_for(bpm)
+    assert beat_sync.session_beats([], bpm) is None
+
+
+@pytest.mark.parametrize("change", [
+    {"sample_rate": 0}, {"sample_rate": 44100}, {"hop_length": 0},
+    {"n_frames": 10**9}, {"n_frames": -1}, {"n_frames": 2.5},
+    {"duration": float("inf")}, {"duration": -1}, {"duration": 0.01},
+    {"chroma": "not base64"}, {"window_seconds": 20},
+])
+def test_invalid_stored_frames_are_unavailable_not_request_failures(clip, change):
+    assert beat_sync.decode_frames({**beat_sync.encode_frames(clip), **change}) is None
+
+
+def test_nonfinite_frame_values_are_unavailable(clip):
+    import base64
+
+    record = beat_sync.encode_frames(clip)
+    broken = np.full(clip.onset.shape, np.nan, dtype=np.float16)
+    record["onset"] = base64.b64encode(broken.tobytes()).decode()
+    assert beat_sync.decode_frames(record) is None
+
+
+def test_session_beat_schema_rejects_nonfinite_and_unbounded_grids():
+    from pydantic import ValidationError
+
+    from ranking.schemas import SessionBeats
+
+    good = dict(bpm=120, beat_times=[0, 0.5, 1], beat_chroma=[[1.] * 12] * 2,
+                onsets=[0., 1.] * 8)
+    for change in [
+        {"bpm": 1e12}, {"bpm": float("inf")},
+        {"beat_times": [0, 0.5, float("nan")]},
+        {"beat_times": [0, 0.5, 0.4]},
+        {"beat_times": [0, 0.5, 100]},
+        {"beat_chroma": [[float("inf")] * 12] * 2},
+        {"onsets": [0., 1.] * 10000}, {"onsets": [0., float("nan")] * 8},
+    ]:
+        with pytest.raises(ValidationError):
+            SessionBeats(**{**good, **change})
+
+
+def test_invalid_frame_diagnostic_never_echoes_payload(clip, caplog):
+    record = {**beat_sync.encode_frames(clip), "duration": "PRIVATE_AUDIO_PAYLOAD"}
+    assert beat_sync.decode_frames(record) is None
+    assert "PRIVATE_AUDIO_PAYLOAD" not in caplog.text
+    assert "invalid beat-frame" in caplog.text

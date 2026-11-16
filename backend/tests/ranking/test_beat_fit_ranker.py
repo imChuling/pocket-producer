@@ -192,3 +192,79 @@ def test_ingest_adds_missing_beat_frames_without_rerunning_clap(monkeypatch, tmp
     assert outcome == "encoded"
     assert list(writes[0]) == ["representations.beat_frames"]
     assert writes[0]["representations.beat_frames"]["revision"] == beat_sync.BEAT_FRAMES_REVISION
+
+
+def test_identical_candidates_keep_raw_measurements_when_relative_scores_tie(
+    session_beats, records,
+):
+    response = BeatFitRanker().rank(_request(
+        [_candidate("a", beat_frames=records["in_step"]),
+         _candidate("b", beat_frames=records["in_step"])], session_beats,
+    ))
+    for candidate in response.candidates:
+        assert candidate.score == 0
+        assert len(candidate.evidence) == 2
+        assert all(e.raw_value is not None for e in candidate.evidence)
+        assert all(e.contribution == 0 for e in candidate.evidence)
+        assert any("tied" in e.label.lower() for e in candidate.evidence)
+        assert candidate.signal_available == [True, True]
+
+
+def test_non_overlapping_audio_is_not_rhythm_alignment():
+    times = np.arange(431) * beat_sync.HOP_LENGTH / SR
+    early = times < 4.5
+    late = times >= 5.0
+
+    def clip(active):
+        return beat_sync.Frames(
+            np.ones((12, len(times)), dtype=np.float32),
+            np.where(active, np.arange(len(times)) % 7, 0).astype(np.float32),
+            active.astype(np.float32), times, 10.0,
+        )
+
+    beats = beat_sync.session_beats([beat_sync.Placement(clip(late), 0)], BPM)
+    record = beat_sync.encode_frames(clip(early))
+    assert beat_sync.decode_frames(record) is not None
+    measured = beat_sync.candidate_measurements(beats, record)
+    assert measured.shared_beats == 0
+    assert measured.available == (False, False)
+    with pytest.raises(InsufficientContextError):
+        BeatFitRanker().rank(_request([_candidate("early", beat_frames=record)], beats))
+
+
+def test_negative_correlation_is_a_signed_measurement_not_a_match(session_beats, records):
+    clip = beat_sync.decode_frames(records["in_step"])
+    assert clip is not None
+    pattern = beat_sync.pool_onsets(clip, np.asarray(session_beats["beat_times"]))
+    beats = {**session_beats, "onsets": (1 - pattern).tolist()}
+    response = BeatFitRanker().rank(_request(
+        [_candidate("opposite", beat_frames=records["in_step"])], beats,
+    ))
+    rhythm = next(e for e in response.candidates[0].evidence if e.code == "beat_rhythm")
+    assert rhythm.raw_value == pytest.approx(-1)
+    assert "-1.00" in rhythm.label
+    assert "line up" not in rhythm.label and "falls where" not in rhythm.label
+    assert response.candidates[0].signal_available == [True, True]
+
+
+def test_corrupt_candidate_does_not_discard_a_valid_recommendation(session_beats, records):
+    broken = {**records["in_step"], "chroma": "not base64!"}
+    response = BeatFitRanker().rank(_request(
+        [_candidate("good", beat_frames=records["in_step"]),
+         _candidate("bad", beat_frames=broken)], session_beats,
+    ))
+    assert [c.fragment_id for c in response.candidates] == ["good"]
+
+
+def test_corrupt_logged_beat_frames_do_not_break_five_signal_fusion(session_beats, records):
+    artifact = {"weights": [1, 1, 1, 1, 1]}
+    request = _request(
+        [_candidate("good", beat_frames=records["in_step"], audio_embedding=[1, 0]),
+         _candidate("bad", beat_frames={**records["in_step"], "onset": "!"},
+                    audio_embedding=[0, 1])],
+        session_beats, region_audio_embeddings=[[1, 0]],
+    )
+    response = FusionRanker(artifact).rank(request)
+    assert len(response.candidates) == 2
+    assert response.candidates[0].signal_available[-2:] == [True, True]
+    assert response.candidates[1].signal_available[-2:] == [False, False]

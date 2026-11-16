@@ -574,3 +574,23 @@ def test_feedback_ignores_user_id_in_body(auth_client):
     )
     assert response.status_code == 200
     assert _stub_db["ranking_feedback"].docs[0]["user_id"] == FAKE_USER_ID
+
+
+@pytest.mark.parametrize("bpm", ["nan", "inf", "1000000000", "0", "19.9", "360.1"])
+def test_session_embed_rejects_unsupported_tempo_before_encoding(auth_client, bpm):
+    response = auth_client.post(
+        "/api/ranking/session-embed", data={"bpm": bpm},
+        files=[("files", ("clip.wav", b"unused", "audio/wav"))],
+        headers={"Authorization": "Bearer fake"},
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize("value", ['NaN', 'Infinity', '-Infinity'])
+def test_region_positions_refuse_nonfinite_values(value):
+    from fastapi import HTTPException
+
+    from api.routes.ranking import _parse_placements
+
+    with pytest.raises(HTTPException):
+        _parse_placements('[[{"start_beats": ' + value + '}]]', 1)

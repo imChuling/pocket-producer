@@ -17,11 +17,15 @@ share one generator across all summaries; the win rates are identical).
     --store research/data/compat/musdb18_v1 --output verdict.json
 
 The weights file has the fusion artifact's shape: {"signals": [...], "weights": [...]}.
+The CLI binds evaluation to the inspected MUSDB cache identity manifest by
+default; another store requires an explicit --manifest. Direct check() calls
+without a manifest are labelled unbound-development-only.
 """
 
 import argparse
 import dataclasses
 import json
+import numbers
 import pathlib
 import pickle
 from collections.abc import Iterable, Iterator
@@ -33,6 +37,7 @@ from . import perturb, progression, run_behavioral, signals
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 BASELINE_WEIGHTS = ROOT / "artifacts" / "fusion-deploy" / "weights.json"
 DEFAULT_STORE = ROOT / "research" / "data" / "compat" / "musdb18_v1"
+DEFAULT_MANIFEST = ROOT / "research" / "manifests" / "musdb18-behavioral-v1-cache.json"
 
 # Signal names used by the deployed ranker and its logs, as behavioural-test
 # scorers. Key and tags are zero online (the host exposes no key and stems
@@ -61,6 +66,10 @@ class WeightSet:
     @classmethod
     def of(cls, names: Iterable[str], weights: Iterable[float]) -> "WeightSet":
         names, weights = tuple(names), tuple(float(w) for w in weights)
+        if not names or len(set(names)) != len(names):
+            raise ValueError("signals must be nonempty and unique")
+        if not np.isfinite(weights).all():
+            raise ValueError("weights must be finite")
         if len(names) != len(weights):
             raise ValueError(f"{len(names)} signals but {len(weights)} weights")
         for name in names:
@@ -77,6 +86,8 @@ class WeightSet:
             component = ALIASES.get(name, name)
             if component is not None:
                 total += weight * component_scores[component]
+        if not np.isfinite(total):
+            raise ValueError("nonfinite weighted score")
         return total
 
 
@@ -94,10 +105,21 @@ def _tests_needed() -> dict[str, perturb.Perturbation]:
     return wanted
 
 
+def load_manifest(path: pathlib.Path) -> dict:
+    """Require an identity object at CLI boundaries; JSON null cannot unbind it."""
+    manifest = json.loads(path.read_text())
+    if not isinstance(manifest, dict):
+        raise ValueError("manifest must be a JSON object with pair_ids and track_ids")
+    return manifest
+
+
 def iter_store(store: pathlib.Path) -> Iterator[dict]:
     """Stored pairs one at a time; the full store never sits in memory."""
     for path in sorted(p for p in store.glob("*.pkl") if not p.name.startswith("._")):
-        yield pickle.loads(path.read_bytes())
+        try:
+            yield pickle.loads(path.read_bytes())
+        except (OSError, pickle.UnpicklingError, EOFError) as exc:
+            raise ValueError(f"unreadable store entry {path.name}: {exc}") from exc
 
 
 def _harmony_moves(entry: dict, test_name: str) -> bool:
@@ -106,6 +128,24 @@ def _harmony_moves(entry: dict, test_name: str) -> bool:
         return False
     fit = progression.aligned_fit(before.beat_chroma, after.beat_chroma)
     return fit > 0 and 1.0 - fit >= run_behavioral.MIN_HARMONIC_CHANGE
+
+
+def _finite(value, location="entry"):
+    """Reject corrupt numeric inputs before scorers can turn them into ties."""
+    if dataclasses.is_dataclass(value):
+        for field in dataclasses.fields(value):
+            _finite(getattr(value, field.name), f"{location}.{field.name}")
+    elif isinstance(value, dict):
+        for name, child in value.items():
+            _finite(child, f"{location}.{name}")
+    elif isinstance(value, (list, tuple)):
+        for index, child in enumerate(value):
+            _finite(child, f"{location}[{index}]")
+    elif isinstance(value, np.ndarray):
+        if not np.isfinite(value).all():
+            raise ValueError(f"nonfinite input at {location}")
+    elif isinstance(value, numbers.Number) and not np.isfinite(value):
+        raise ValueError(f"nonfinite input at {location}")
 
 
 def collect(entries: Iterable[dict], components: set[str]) -> dict:
@@ -123,10 +163,32 @@ def collect(entries: Iterable[dict], components: set[str]) -> dict:
         missing = components - scores.keys()
         if missing:
             raise ValueError(f"store has no features for {sorted(missing)}")
-        return {name: scores[name] for name in components}
+        selected = {name: scores[name] for name in components}
+        _finite(selected, "component_scores")
+        return selected
 
     for entry in entries:
         pid = entry["pair_id"]
+        if (
+            not isinstance(pid, str)
+            or not pid
+            or not isinstance(entry["track"], str)
+            or not entry["track"]
+        ):
+            raise ValueError("pair_id and track must be nonempty strings")
+        if pid in pairs:
+            raise ValueError(f"duplicate pair_id {pid!r}")
+        _finite(entry, pid)
+        grid = entry["grid"]
+        beat_seconds = 60.0 / grid.bpm if grid is not None else None
+        required = {
+            name
+            for name, test in tests.items()
+            if perturb.applicable(test, entry["pitched"], beat_seconds)
+        }
+        missing = required - entry["perturbed"].keys()
+        if missing:
+            raise ValueError(f"{pid}: missing required perturbations {sorted(missing)}")
         pairs[pid] = {
             "track": entry["track"],
             "pitched": entry["pitched"],
@@ -146,6 +208,13 @@ def collect(entries: Iterable[dict], components: set[str]) -> dict:
             "context_mix": entry["context_mix"],
             "regions": entry["regions"],
         }
+
+    if not pairs:
+        raise ValueError("empty feature store")
+    if len({p["track"] for p in pairs.values()}) < 2:
+        raise ValueError("at least two distinct songs are required")
+    if not any(p["harmony_moves"] for p in pairs.values()):
+        raise ValueError("P4: no usable harmony-moving pairs")
 
     for pid, candidates in run_behavioral.foreign_candidates(slim).items():
         pairs[pid]["foreign"] = [comp(slim[pid], c) for c in candidates.values()]
@@ -207,7 +276,8 @@ def _passes(summary: dict | None) -> bool:
 
 def decide(baseline: dict, candidate: dict) -> dict:
     """Accept unless a baseline pass is lost or gain sensitivity grows."""
-    reasons = []
+    reasons = [f"{label}: missing endpoint data" for label in (*ENDPOINTS, "gain")
+               if not baseline.get(label) or not candidate.get(label)]
     for label in ENDPOINTS:
         if _passes(baseline.get(label)) and not _passes(candidate.get(label)):
             c = candidate.get(label)
@@ -232,11 +302,52 @@ def check(
     candidate: WeightSet,
     entries: Iterable[dict],
     baseline: WeightSet | None = None,
+    *,
+    manifest: dict | None = None,
 ) -> dict:
-    baseline = baseline or WeightSet.from_file(BASELINE_WEIGHTS)
-    collected = collect(entries, candidate.components() | baseline.components())
-    base, cand = endpoints(collected, baseline), endpoints(collected, candidate)
+    try:
+        baseline = baseline or WeightSet.from_file(BASELINE_WEIGHTS)
+        candidate = WeightSet.of(candidate.signals, candidate.weights)
+        baseline = WeightSet.of(baseline.signals, baseline.weights)
+        collected = collect(entries, candidate.components() | baseline.components())
+        if manifest is not None:
+            # Explicit caller-supplied identities, never inferred from historical reports.
+            for key, actual in (
+                ("pair_ids", set(collected["pairs"])),
+                ("track_ids", {p["track"] for p in collected["pairs"].values()}),
+            ):
+                expected = manifest.get(key)
+                if (
+                    not isinstance(expected, list)
+                    or not expected
+                    or any(not isinstance(x, str) for x in expected)
+                    or len(set(expected)) != len(expected)
+                ):
+                    raise ValueError(f"manifest {key} must be a nonempty list of unique IDs")
+                if set(expected) != actual:
+                    raise ValueError(
+                        f"manifest {key} mismatch: missing={sorted(set(expected) - actual)}, "
+                        f"unexpected={sorted(actual - set(expected))}"
+                    )
+        base, cand = endpoints(collected, baseline), endpoints(collected, candidate)
+        for label in (*ENDPOINTS, "gain"):
+            if not base[label] or not cand[label]:
+                raise ValueError(f"{label}: no usable endpoint data")
+            _finite(base[label], label)
+            _finite(cand[label], label)
+    except (ValueError, KeyError, TypeError, AttributeError, IndexError) as exc:
+        return {
+            "verdict": "reject",
+            "reasons": [f"integrity: {exc}"],
+            "integrity": {"status": "invalid", "errors": [str(exc)]},
+        }
     result = decide(base, cand)
+    result["integrity"] = {
+        "status": "valid",
+        "errors": [],
+        "manifest_checked": manifest is not None,
+        "manifest_binding": "bound" if manifest is not None else "unbound-development-only",
+    }
     result.update(
         {
             "n_pairs": len(collected["pairs"]),
@@ -257,14 +368,21 @@ def main() -> int:
     parser.add_argument("--store", type=pathlib.Path, default=DEFAULT_STORE)
     parser.add_argument("--baseline", type=pathlib.Path, default=BASELINE_WEIGHTS)
     parser.add_argument("--output", type=pathlib.Path)
+    parser.add_argument("--manifest", type=pathlib.Path, default=DEFAULT_MANIFEST,
+                        help="exact pair_ids/track_ids JSON (default: inspected MUSDB snapshot)")
     args = parser.parse_args()
     if not args.store.is_dir():
         parser.error(f"feature store not found: {args.store}")
-    result = check(
-        WeightSet.from_file(args.weights),
-        iter_store(args.store),
-        WeightSet.from_file(args.baseline),
-    )
+    try:
+        result = check(
+            WeightSet.from_file(args.weights),
+            iter_store(args.store),
+            WeightSet.from_file(args.baseline),
+            manifest=load_manifest(args.manifest),
+        )
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        result = {"verdict": "reject", "reasons": [f"integrity: {exc}"],
+                  "integrity": {"status": "invalid", "errors": [str(exc)]}}
     text = json.dumps(result, indent=2)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)

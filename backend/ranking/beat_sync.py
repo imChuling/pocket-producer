@@ -17,6 +17,7 @@ tests/ranking/test_beat_sync.py checks they agree numerically.
 """
 
 import base64
+import logging
 from dataclasses import dataclass
 
 import numpy as np
@@ -27,8 +28,13 @@ SILENT_RMS = 10 ** (-50 / 20)
 ONSET_SUBDIVISIONS = 8
 MIN_SHARED_BEATS = 4
 WINDOW_SECONDS = 10.0
+MIN_BPM = 20.0
+MAX_BPM = 360.0
+MAX_BEATS = int(WINDOW_SECONDS * MAX_BPM / 60)
+MAX_FRAMES = int(WINDOW_SECONDS * SAMPLE_RATE / HOP_LENGTH) + 1
 BEAT_FRAMES_REVISION = "beat-frames-v1"
 SIGNAL_NAMES = ("chroma_beat_aligned", "onset_pattern")
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -67,6 +73,10 @@ def frames(audio, sample_rate: int, max_seconds: float | None = WINDOW_SECONDS) 
 
 def beat_times_for(bpm: float, seconds: float = WINDOW_SECONDS) -> np.ndarray:
     """Beat boundaries from timeline zero covering whole beats within `seconds`."""
+    if not np.isfinite(bpm) or not MIN_BPM <= bpm <= MAX_BPM:
+        raise ValueError(f"beat grid requires a finite tempo in [{MIN_BPM}, {MAX_BPM}] BPM")
+    if not np.isfinite(seconds) or not 0 < seconds <= WINDOW_SECONDS:
+        raise ValueError(f"beat grid window must be in (0, {WINDOW_SECONDS}] seconds")
     period = 60.0 / bpm
     count = int(np.floor(seconds / period + 1e-9))
     return np.arange(count + 1) * period
@@ -148,7 +158,7 @@ def session_beats(placements: list[Placement], bpm: float | None) -> dict | None
     loudness in that beat, then normalised per beat; onset slots take the
     strongest region per slot. Without a tempo there is no grid: None.
     """
-    if bpm is None or not np.isfinite(bpm) or bpm <= 0:
+    if bpm is None or not np.isfinite(bpm) or not MIN_BPM <= bpm <= MAX_BPM:
         return None
     grid = beat_times_for(bpm)
     if grid.shape[0] < 2:
@@ -218,34 +228,105 @@ def encode_frames(clip: Frames | None) -> dict:
 
 
 def decode_frames(record: dict | None) -> Frames | None:
-    if not record or record.get("revision") != BEAT_FRAMES_REVISION or not record.get("n_frames"):
+    """Decode a bounded v1 record; damaged/unsupported records are unavailable.
+
+    Validation happens before allocation. One damaged cache must not turn a
+    whole request (including otherwise unaffected five-signal fusion) into
+    a fallback. Diagnostics contain no audio or base64 payloads.
+    """
+    if not record or record.get("revision") != BEAT_FRAMES_REVISION:
         return None
-    n = int(record["n_frames"])
+    try:
+        n = record["n_frames"]
+        if type(n) is not int or not 0 <= n <= MAX_FRAMES:
+            raise ValueError("invalid frame count")
+        if (record.get("sample_rate") != SAMPLE_RATE
+                or record.get("hop_length") != HOP_LENGTH
+                or record.get("window_seconds") != WINDOW_SECONDS):
+            raise ValueError("unsupported frame codec")
+        if n == 0:
+            return None
+        duration = float(record["duration"])
+        # Stored duration is rounded to 4 decimals; tolerate only that rounding.
+        if (not np.isfinite(duration) or not 0 < duration <= WINDOW_SECONDS
+                or abs(n - 1 - duration * SAMPLE_RATE / HOP_LENGTH) > 1.01):
+            raise ValueError("duration inconsistent with frame count")
 
-    def unpack(key, shape):
-        raw = np.frombuffer(base64.b64decode(record[key]), dtype=np.float16)
-        return raw.astype(np.float32).reshape(shape)
+        def unpack(key, shape):
+            encoded = record[key]
+            size = int(np.prod(shape)) * 2
+            if not isinstance(encoded, str) or len(encoded) != 4 * ((size + 2) // 3):
+                raise ValueError(f"invalid {key} length")
+            payload = base64.b64decode(encoded, validate=True)
+            if len(payload) != size:
+                raise ValueError(f"invalid {key} byte count")
+            raw = np.frombuffer(payload, dtype=np.float16).astype(np.float32).reshape(shape)
+            if not np.isfinite(raw).all() or (raw < 0).any():
+                raise ValueError(f"invalid {key} values")
+            return raw
 
-    times = np.arange(n) * record["hop_length"] / record["sample_rate"]
-    return Frames(
-        chroma=unpack("chroma", (12, n)),
-        onset=unpack("onset", (n,)),
-        rms=unpack("rms", (n,)),
-        times=times,
-        duration=float(record.get("duration", n * record["hop_length"] / record["sample_rate"])),
-    )
+        return Frames(
+            chroma=unpack("chroma", (12, n)), onset=unpack("onset", (n,)),
+            rms=unpack("rms", (n,)), times=np.arange(n) * HOP_LENGTH / SAMPLE_RATE,
+            duration=duration,
+        )
+    except (KeyError, ValueError, TypeError, OverflowError) as error:
+        logger.warning("Ignoring invalid beat-frame record (%s)", type(error).__name__)
+        return None
 
 
-def candidate_signals(beats: dict | None, record: dict | None) -> tuple[float, float] | None:
-    """(chroma_beat_aligned, onset_pattern) for a stored candidate; None if not scorable."""
+@dataclass(frozen=True)
+class CandidateMeasurements:
+    values: tuple[float, float]
+    available: tuple[bool, bool]
+    shared_beats: int
+
+    @property
+    def onset_correlation(self) -> float | None:
+        return 2 * self.values[1] - 1 if self.available[1] else None
+
+
+def candidate_measurements(
+    beats: dict | None, record: dict | None,
+) -> CandidateMeasurements | None:
+    """Raw values plus support, independently of their relative ranking.
+
+    The correlation transform agrees with the frozen research function.
+    Availability additionally requires four shared sounding beats and a
+    non-flat onset pattern. Neither a positive transformed value nor a
+    positive z-score establishes musical alignment or listener preference.
+    """
     if not beats:
         return None
     clip = decode_frames(record)
     if clip is None:
         return None
-    grid = np.asarray(beats["beat_times"], dtype=np.float64)
-    session_chroma = np.asarray(beats["beat_chroma"], dtype=np.float64)
-    session_onsets = np.asarray(beats["onsets"], dtype=np.float64)
-    harmony = aligned_fit(session_chroma, pool_chroma(clip, grid))
-    rhythm = onset_pattern(session_onsets, pool_onsets(clip, grid))
-    return harmony, rhythm
+    # Also protect direct callers that do not pass through RankRequest.
+    from ranking.schemas import SessionBeats
+
+    try:
+        checked = SessionBeats.model_validate(beats)
+    except ValueError:
+        logger.warning("Ignoring invalid session beat grid")
+        return None
+    grid = np.asarray(checked.beat_times, dtype=np.float64)
+    session_chroma = np.asarray(checked.beat_chroma, dtype=np.float64)
+    session_onsets = np.asarray(checked.onsets, dtype=np.float64)
+    candidate_chroma = pool_chroma(clip, grid)
+    candidate_onsets = pool_onsets(clip, grid)
+    shared = int(((np.linalg.norm(session_chroma, axis=1) > 1e-8)
+                  & (np.linalg.norm(candidate_chroma, axis=1) > 1e-8)).sum())
+    harmony_available = shared >= MIN_SHARED_BEATS
+    rhythm_available = (harmony_available and session_onsets.std() > 1e-8
+                        and candidate_onsets.std() > 1e-8)
+    return CandidateMeasurements(
+        values=(aligned_fit(session_chroma, candidate_chroma) if harmony_available else 0.0,
+                onset_pattern(session_onsets, candidate_onsets) if rhythm_available else 0.0),
+        available=(harmony_available, bool(rhythm_available)), shared_beats=shared,
+    )
+
+
+def candidate_signals(beats: dict | None, record: dict | None) -> tuple[float, float] | None:
+    """(chroma_beat_aligned, onset_pattern) for a stored candidate; None if not scorable."""
+    measured = candidate_measurements(beats, record)
+    return measured.values if measured is not None and any(measured.available) else None

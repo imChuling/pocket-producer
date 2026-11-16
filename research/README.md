@@ -1,11 +1,13 @@
 # Reproducing the ISMIR 2026 LBD Results
 
-Every number in the paper is derived from versioned artifacts in
-`artifacts/`. This document maps each claim to the script that produced it
-and the command to re-run it. The mapping is enforced by
-`research/check_paper_numbers.py` (151 assertions), which runs before every
-PDF build; it expects the LaTeX source at `docs/ismir2026/lbd.tex`, which is
-not distributed with this repository.
+Versioned artifacts in `artifacts/` are the evidence for the reported
+numbers. This document maps result families to scripts and rerun commands.
+`research/check_paper_numbers.py` is a **partial legacy cross-check**, not
+coverage of every behavioural/retrieval claim. Its LaTeX checks expect
+`docs/ismir2026/lbd.tex`, which is not distributed here, and therefore skip
+those assertions. Report passes **and** skips when quoting its result.
+The dated v1 protocol errata supersede unsupported background statements
+without replacing the frozen text or raw reports.
 
 ## Prerequisites
 
@@ -252,10 +254,19 @@ Step 1 writes one file per pair and skips pairs already done, so it can be
 stopped and resumed; `--shard i/n` splits it across processes (each loads
 all three models, so watch memory). Step 3 reads the store at
 `research/data/compat/musdb18_v1` by default (`--store` to change it) and
-exits with code 1 when it rejects the weights; run on the deployed weights
-it accepts, as a sanity check. `research/finetune_from_feedback.py
+exits with code 1 when it rejects the weights or cannot verify the data.
+Empty/partial stores cannot accept: applicable perturbations, finite scores,
+unique pairs, multiple songs and all P1–P5/gain summaries are required.
+The default manifest binds the inspected 594-pair / 149-song MUSDB cache.
+It was captured after results on 2026-11-16, not frozen before evaluation. Use
+`--manifest manifest.json` with explicit `pair_ids` and `track_ids` to enforce
+an expected inventory. Baseline self-acceptance is only a sanity check on a
+complete store, not proof of P1–P5 quality. `research/finetune_from_feedback.py
 --guardrail-store` runs the same check on newly fitted weights and exits
-with code 2 on a rejection.
+with code 2 on a rejection. Its matching override is
+`--guardrail-manifest`. Direct unbound Python checks are development-only;
+manifest cache-file hashes are provenance records, while the gate checks
+exact pair/song identities.
 `python -m research.compat_tests.render_report --report
 research/data/compat/behavioral-report/report.json --output
 research/data/compat/behavioral-report/figures` redraws the figures.
@@ -318,3 +329,21 @@ docs/ismir2026/build.sh
 | `artifacts/heldout-eval-correction/sensitivity.json` | `run_heldout_correction.py --mode laion` | Table 1, LAION column |
 | `artifacts/msclap-sensitivity-correction/sensitivity.json` | `run_heldout_correction.py --mode msclap` | Table 1, MS-CLAP sw-BPR column |
 | `artifacts/fusion-deploy/weights.json` | `export_fusion_weights.py` | §2.4 deployment configuration |
+
+
+### Submission corrections and capability status (2026-11-16)
+
+Read the dated append-only errata in the two frozen v1 protocols together
+with their updated results text. Raw result JSON and frozen scorer definitions
+remain unchanged. `COCOLA_HP_v1` officially lists MoisesDB, Slakh2100 and
+CocoChorales as training data, not MUSDB18-HQ; absence of file-level overlap
+was not independently established. Retrieval v1 counts stem candidates,
+not nine distinct songs, in the tempo pool. It is as-is layering retrieval,
+not preference testing or adapted-loop retrieval.
+
+Feedback training aligns by recorded signal names and availability masks.
+Extended weights are research-only and cannot be loaded by the online
+five-signal ranker. Beat-fit/backfill changes are local, not a deployed or
+automatically learning service; see [online design](design-online-signals.md)
+and [portfolio note](../docs/portfolio/PROJECT_NOTE.md). Missing masks in historical
+extended logs cannot be repaired by treating zero as a valid measurement.

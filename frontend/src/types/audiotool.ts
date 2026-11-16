@@ -66,6 +66,8 @@ export type RankEvidence = {
     | "beat_rhythm";
   label: string;
   contribution: number;
+  /** Absolute measurement, distinct from the relative score contribution. */
+  raw_value?: number | null;
 };
 
 export type RankedCandidate = {
@@ -74,6 +76,7 @@ export type RankedCandidate = {
   evidence: RankEvidence[];
   /** Signal vector behind the score, when the serving ranker exposes one. */
   signals?: number[] | null;
+  signal_available?: boolean[] | null;
 };
 
 export type RankResponse = {

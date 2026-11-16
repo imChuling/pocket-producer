@@ -14,11 +14,20 @@ reported on the same pairs that were trained on (train fit, not a held-out
 estimate) and the output artifact says so.
 
 Signals logged after the base five (for example chroma_beat_aligned and
-onset_pattern) are named with --extra-signals and start at weight zero.
+onset_pattern) are requested with --extra-signals and start at weight zero.
+Training reorders logged vectors by candidate_signal_names and excludes
+candidates whose requested signals are unavailable. Unnamed legacy logs
+are accepted only at the original five-signal canonical order.
 The result must then pass the behavioural guardrail
 (research/compat_tests/guardrail.py) on a stored feature set; if it does
-not, no weights file is written. The verdict is always written next to the
-output as guardrail.json.
+not, no weights file is written. Evaluated runs write the verdict next to the
+output as guardrail.json. Existing output and verdict files are quarantined as
+*.previous-<run ID> before every attempt, so a rejected/aborted rerun leaves no
+stale artifact at the requested output path. Extended artifacts are research-only
+and cannot be loaded by the five-signal online fusion. Evaluation defaults to
+the inspected MUSDB cache identity manifest; another store requires its own
+explicit --guardrail-manifest. The accepted mean and per-seed weights are
+serialized without decimal rounding, preserving the exact gated vector.
 
 Usage:
   backend/.venv/bin/python research/finetune_from_feedback.py \
@@ -34,6 +43,7 @@ import hashlib
 import json
 import pathlib
 import sys
+import uuid
 
 import numpy as np
 
@@ -61,6 +71,8 @@ def load_jsonl(path):
 
 
 def main() -> int:
+    from research.compat_tests import guardrail
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--requests", required=True)
     parser.add_argument("--feedback", required=True)
@@ -72,15 +84,24 @@ def main() -> int:
     parser.add_argument("--min-pairs", type=int, default=MIN_PAIRS)
     parser.add_argument("--extra-signals", default="",
                         help="comma-separated signals logged after the base ones")
+    parser.add_argument("--guardrail-manifest", type=pathlib.Path,
+                        default=guardrail.DEFAULT_MANIFEST,
+                        help="exact pair_ids/track_ids JSON (default: inspected MUSDB snapshot)")
     parser.add_argument("--guardrail-store", type=pathlib.Path, default=None,
                         help="behavioural feature store (default: the MUSDB18-HQ store)")
     args = parser.parse_args()
 
-    from research.compat_tests import guardrail
-
+    out = pathlib.Path(args.output)
+    if out.resolve() == pathlib.Path(args.weights).resolve():
+        parser.error("output must differ from the base weights file")
+    run_id = uuid.uuid4().hex
+    for previous in (out, out.parent / "guardrail.json"):
+        if previous.exists():
+            previous.rename(previous.with_name(f"{previous.name}.previous-{run_id}"))
     base = load_weights(args.weights)
     names = list(base.get("signals") or SIGNAL_NAMES)
-    names += [s for s in args.extra_signals.split(",") if s]
+    names += [s.strip() for s in args.extra_signals.split(",") if s.strip()]
+    guardrail.WeightSet.of(names, np.zeros(len(names)))  # validate names before training
     w0 = np.zeros(len(names))
     w0[: len(base["weights"])] = base["weights"]
     store = args.guardrail_store or guardrail.DEFAULT_STORE
@@ -89,9 +110,7 @@ def main() -> int:
         return 1
     requests = load_jsonl(args.requests)
     feedback = load_jsonl(args.feedback)
-    pairs = build_feedback_pairs(requests, feedback, model_id=base["model_id"])
-    # Lists logged before the extra signals existed have shorter vectors.
-    pairs = [p for p in pairs if len(p["pos"]) == len(names) == len(p["neg"])]
+    pairs = build_feedback_pairs(requests, feedback, model_id=base["model_id"], signal_names=names)
     n_requests = len({p["request_id"] for p in pairs})
     print(f"{len(requests)} served lists, {len(feedback)} events -> "
           f"{len(pairs)} decision pairs from {n_requests} lists", flush=True)
@@ -111,14 +130,22 @@ def main() -> int:
     print(f"pairwise accuracy on the training pairs: {acc_before:.4f} -> {acc_after:.4f}")
     print(f"mean weights: {np.array2string(mean_w, precision=4)}")
 
-    out = pathlib.Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
-    verdict = guardrail.check(
-        guardrail.WeightSet.of(names, mean_w),
-        guardrail.iter_store(store),
-        guardrail.WeightSet.of(base.get("signals") or SIGNAL_NAMES, base["weights"]),
-    )
+    try:
+        verdict = guardrail.check(
+            guardrail.WeightSet.of(names, mean_w),
+            guardrail.iter_store(store),
+            guardrail.WeightSet.of(base.get("signals") or SIGNAL_NAMES, base["weights"]),
+            manifest=guardrail.load_manifest(args.guardrail_manifest),
+        )
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        verdict = {
+            "verdict": "reject",
+            "reasons": [f"integrity: {exc}"],
+            "integrity": {"status": "invalid", "errors": [str(exc)]},
+        }
     verdict["store"] = str(store)
+    verdict["run_id"] = run_id
     (out.parent / "guardrail.json").write_text(json.dumps(verdict, indent=2))
     if verdict["verdict"] != "accept":
         print("REJECTED by the behavioural guardrail; weights not written:")
@@ -128,12 +155,19 @@ def main() -> int:
         return 2
     print(f"guardrail: accept ({verdict['n_pairs']} stored pairs)")
 
+    research_only = names != SIGNAL_NAMES
     out.write_text(json.dumps({
-        "model_id": base["model_id"],
+        "model_id": (
+            f"fusion-feedback-research-{len(names)}sig-v1" if research_only else base["model_id"]
+        ),
+        "research_only": research_only,
+        "deployable": not research_only,
+        "run_id": run_id,
         "signals": names,
-        "weights": [round(float(x), 6) for x in mean_w],
+        "weights": [float(x) for x in mean_w],
+        "weight_serialization": "unrounded float64; same mean vector evaluated by guardrail",
         "per_seed_weights": {
-            str(s): [round(float(x), 6) for x in w] for s, w in zip(SEEDS, per_seed)
+            str(s): [float(x) for x in w] for s, w in zip(SEEDS, per_seed)
         },
         "representation_model": base.get("representation_model"),
         "trained_on": (

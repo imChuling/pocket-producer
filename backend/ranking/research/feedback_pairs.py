@@ -15,13 +15,30 @@ the proxy-trained fusion instead of overfitting a handful of clicks.
 
 import numpy as np
 
+from ranking.fusion_ranker import LOGGED_SIGNAL_NAMES, SIGNAL_NAMES
+
 POSITIVE_EVENTS = frozenset({"accept", "insert"})
 NEGATIVE_EVENTS = frozenset({"reject"})
 
 
 def build_feedback_pairs(
-    requests: list[dict], feedback: list[dict], model_id: str = "fusion-5sig-v1"
+    requests: list[dict],
+    feedback: list[dict],
+    model_id: str = "fusion-5sig-v1",
+    *,
+    signal_names: list[str] | None = None,
 ) -> list[dict]:
+    requested = list(SIGNAL_NAMES if signal_names is None else signal_names)
+
+    def validate_names(names):
+        if (
+            not names
+            or any(not isinstance(n, str) or n not in LOGGED_SIGNAL_NAMES for n in names)
+            or len(set(names)) != len(names)
+        ):
+            raise ValueError("signal names must be known, nonempty and unique")
+
+    validate_names(requested)
     vectors_by_request: dict[str, dict[str, list[float]]] = {}
     for req in requests:
         if req.get("model_id_served") != model_id:
@@ -30,7 +47,45 @@ def build_feedback_pairs(
         signals = req.get("candidate_signals") or []
         if len(signals) != len(ids):
             continue
-        vectors = {fid: list(sig) for fid, sig in zip(ids, signals) if sig}
+        present = [sig for sig in signals if sig]
+        if not present:
+            continue
+        names = req.get("candidate_signal_names")
+        if names is None:
+            if any(len(sig) != len(SIGNAL_NAMES) for sig in present):
+                raise ValueError("unnamed extended signal vectors are ambiguous")
+            names = SIGNAL_NAMES
+            # Historical five-only lists cannot train newly introduced signals.
+            if set(requested) - set(names):
+                continue
+        validate_names(names)
+        if any(len(sig) != len(names) for sig in present):
+            raise ValueError("signal names and vector lengths disagree")
+        missing = set(requested) - set(names)
+        if missing:
+            raise ValueError(f"missing requested signals: {sorted(missing)}")
+        indices = [names.index(name) for name in requested]
+        masks = req.get("candidate_signal_available")
+        if masks is not None:
+            if len(masks) != len(ids):
+                raise ValueError("signal availability masks must match named vectors")
+            for mask in masks:
+                if mask is not None and (
+                    len(mask) != len(names) or any(type(v) is not bool for v in mask)
+                ):
+                    raise ValueError("signal availability masks must match named vectors")
+        vectors = {}
+        for i, (fid, sig) in enumerate(zip(ids, signals)):
+            if not sig:
+                continue
+            if not np.isfinite(np.asarray(sig, dtype=np.float64)).all():
+                raise ValueError("signal vectors must be finite")
+            mask = masks[i] if masks is not None else None
+            if mask is None and set(requested) - set(SIGNAL_NAMES):
+                continue
+            if mask is not None and not all(mask[j] for j in indices):
+                continue
+            vectors[fid] = [sig[j] for j in indices]
         if vectors:
             vectors_by_request[req["request_id"]] = vectors
 

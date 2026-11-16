@@ -182,3 +182,38 @@ of numbers are kept.
 ## Deviations
 
 None.
+
+### 2026-11-16 erratum (append-only; supersedes the background claims above)
+
+The frozen text and H7 rationale above are retained as the historical record.
+The actual checkpoint, **COCOLA_HP_v1**, is listed by its authors as trained
+on **MoisesDB, Slakh2100 and CocoChorales**, not MUSDB18-HQ. See the
+[official checkpoint table](https://github.com/gladia-research-group/cocola#pretrained-models)
+and [training configuration](https://github.com/gladia-research-group/cocola/blob/b3ac9480cd1594d990a1d2dfabbab7cf15af8dfa/configs/train_all_submixtures_hpss.yaml).
+The local checkpoint SHA256 is
+`951b70bc787fcac489208a6b665d0d4e1375d6c0511a91eedad2814986bfb0aa`;
+its recorded dataset is `MIXED`. At external checkout
+`b3ac9480cd1594d990a1d2dfabbab7cf15af8dfa`, the MIXED loader combines only
+those three datasets. We did not independently reconstruct the training
+file list; this correction neither establishes zero overlap nor supports
+the original assertion of MUSDB18-HQ training exposure. The BabySlakh / Slakh
+relationship is a separate development-set limitation. Scores and H7's
+prespecified pass criterion are unchanged; its original in-domain rationale
+does not apply to the MUSDB checkpoint comparison as written.
+
+Interpretive corrections: P4 is a **four-beat delay**, without meter or
+downbeat detection; the fixed window gains earlier audio and loses its tail,
+so its pitch-class contents and level are not guaranteed invariant. A
+round-trip control undergoes two processing passes while the altered copy
+undergoes one, at different transformation magnitudes. It diagnoses processing
+sensitivity but does not isolate a musical mismatch effect. The protocol's
+`blind` label means the pointwise interval crosses 0.5; it is not an
+equivalence test. The 95% intervals have no multiple-comparison correction.
+The possible direction of window-selection bias has not been established
+for every scorer. One known-good target does not establish a lower bound on
+general musical compatibility or listener preference.
+
+The local Git history records protocol commit `460f7e9` before result commit
+`9af9906`. The no-prior-scoring statements above are author statements, not
+independently timestamped public preregistration or proof of no earlier runs.
+This erratum changes no frozen scoring code, result JSON or evaluation data.
