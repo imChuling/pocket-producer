@@ -26,7 +26,7 @@ Usage:
     --weights artifacts/fusion-deploy/weights.json \
     --output artifacts/fusion-feedback/weights.json \
     [--extra-signals chroma_beat_aligned,onset_pattern] \
-    [--guardrail-store /Volumes/Shirlene/Pocket_Producer/cache/musdb18_v1]
+    [--guardrail-store research/data/compat/musdb18_v1]
 """
 
 import argparse

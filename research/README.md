@@ -203,6 +203,77 @@ python research/export_fusion_weights.py \
 | `artifacts/human-eval-v1/power_sim.json` | `power_sim_human_v1.py` | power simulation for the pre-registered listening study (`prereg_human_v1.md`), driven by the 17 discordant-capable pairs in `data/listening_test/pairs.json` |
 | `artifacts/fusion-feedback/weights.json` (once data exists) | `finetune_from_feedback.py` | fusion weights fine-tuned on logged musician decisions (`ranking_requests.candidate_signals` + `ranking_feedback`), warm-started from the deployed weights |
 
+## Behavioural tests, retrieval and the guardrail
+
+A separate study from the paper above: does a compatibility scorer react to
+the changes a musician would hear (wrong key, wrong tempo, a bar late)?
+Protocols are frozen in `protocol-behavioral-v1.md` and
+`protocol-retrieval-v1.md`; results are in `results-behavioral-v1.md` and
+`results-retrieval-v1.md`. Code: `research/compat_tests/`.
+
+**Data.** MUSDB18-HQ, Zenodo record
+[3338373](https://zenodo.org/records/3338373), `musdb18hq.zip` (md5
+`12d4f2ecd55245a4688754dd76363103`), for research use under its own terms.
+It is not redistributed here. Keep the zip as it is; the reader streams
+tracks out of the archive.
+
+**Models.** The research extras (MS-CLAP, LAION-CLAP) plus COCOLA:
+
+```bash
+python -m pip install -e "backend[research]" lightning efficientnet_pytorch
+git clone https://github.com/gladia-research-group/cocola ../../cocola
+# Download COCOLA_HP_v1.ckpt (link in the COCOLA README) into ../../cocola/
+```
+
+`compat_tests/cocola_scorer.py` looks for the checkout two levels above
+this repository.
+
+**Commands**, from the repository root:
+
+```bash
+# 1. Features: every scorer on every pair and its altered copies (594 pairs)
+python -m research.compat_tests.run_behavioral features \
+  --dataset musdb18hq --root /path/to/musdb18hq.zip \
+  --store research/data/compat/musdb18_v1
+
+# 2. Reports: behavioural endpoints, then retrieval on the same store
+python -m research.compat_tests.run_behavioral report \
+  --store research/data/compat/musdb18_v1 --output research/data/compat/behavioral-report
+python -m research.compat_tests.run_retrieval \
+  --store research/data/compat/musdb18_v1 --output research/data/compat/retrieval-report
+
+# 3. Guardrail: compare a weights file with the deployed fusion on P1 to P5
+python -m research.compat_tests.guardrail \
+  --weights artifacts/fusion-deploy/weights.json \
+  --output research/data/compat/verdict.json
+```
+
+Step 1 writes one file per pair and skips pairs already done, so it can be
+stopped and resumed; `--shard i/n` splits it across processes (each loads
+all three models, so watch memory). Step 3 reads the store at
+`research/data/compat/musdb18_v1` by default (`--store` to change it) and
+exits with code 1 when it rejects the weights; run on the deployed weights
+it accepts, as a sanity check. `research/finetune_from_feedback.py
+--guardrail-store` runs the same check on newly fitted weights and exits
+with code 2 on a rejection.
+`python -m research.compat_tests.render_report --report
+research/data/compat/behavioral-report/report.json --output
+research/data/compat/behavioral-report/figures` redraws the figures.
+
+Expected wall-clock on a laptop CPU:
+
+| Step | Time |
+|------|------|
+| 1. features | 35 to 40 s per pair: about 6 h in one process, about 4 h in two shards |
+| 2. reports | about 10 min together, mostly bootstrap |
+| 3. guardrail | under a minute |
+
+Everything is written under `research/data/compat/`, which git ignores.
+The committed reports in `artifacts/compat-behavioral-musdb18/` and
+`artifacts/compat-retrieval-musdb18/` are what steps 1 and 2 produced once,
+with the code as frozen; compare a rerun with them rather than copying it
+over them.
+
 ## Embedding-stage determinism (caveat)
 
 The numbers above are reproducible from the `items_*.jsonl` embedding

@@ -14,7 +14,7 @@ use identical resamples (they differ from the report's intervals, which
 share one generator across all summaries; the win rates are identical).
 
   python -m research.compat_tests.guardrail --weights candidate.json \
-    --store /Volumes/Shirlene/Pocket_Producer/cache/musdb18_v1 --output verdict.json
+    --store research/data/compat/musdb18_v1 --output verdict.json
 
 The weights file has the fusion artifact's shape: {"signals": [...], "weights": [...]}.
 """
@@ -32,7 +32,7 @@ from . import perturb, progression, run_behavioral, signals
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 BASELINE_WEIGHTS = ROOT / "artifacts" / "fusion-deploy" / "weights.json"
-DEFAULT_STORE = pathlib.Path("/Volumes/Shirlene/Pocket_Producer/cache/musdb18_v1")
+DEFAULT_STORE = ROOT / "research" / "data" / "compat" / "musdb18_v1"
 
 # Signal names used by the deployed ranker and its logs, as behavioural-test
 # scorers. Key and tags are zero online (the host exposes no key and stems
