@@ -42,7 +42,7 @@ Measured on Apple M-series CPU, batch size 32, 32 context tokens, from the exact
 | Baseline | Description |
 |---|---|
 | `rules-v1` | Weighted combination of 7 deterministic [0,1] features (tempo match, key match, role gap, intent match, tag novelty, tag overlap with the session's inserted fragments, recency). Roles already in the session are inferred from the tags of inserted fragments, since the host DAW reports track kinds, not musical roles. Always-available fallback and the default. |
-| `harmonic-fit-v1` | Transpose-invariant cross-correlation between the session's mean chroma and each candidate's 12-dim chroma; both computed at encode time (session) and ingest (candidate). |
+| `harmonic-fit-v1` | Transpose-invariant cross-correlation between the session's mean chroma and each candidate's 12-dim chroma; both computed at encode time (session) and ingest (candidate). It measures similarity after the best transposition, not fit as played: it is blind to transposition in the behavioural tests (P2 0.49), and the product never transposes. |
 | `role-gap-v1` | Zero-shot CLAP instrument-role probe; scores candidates that fill a role the session regions lack. |
 | `recency-v1` | Most-recently-created first. |
 | `text-only-v1` | Voyage voyage-3 cosine between intent text and candidate text embedding. |

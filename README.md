@@ -85,7 +85,14 @@ reported as exploratory after a corrected training protocol):
 The two columns differ in embedding space, training recipe, and mined
 negatives, so the gap shows configuration sensitivity, not which model is
 better. That is why the deployed system treats scores as proposals and
-keeps the rules ranker as the default. Follow-up checks, including the
+keeps the rules ranker as the default. The split groups by pack, not by
+uploader: 58 of the 121 held-out packs come from uploaders who also have
+packs on the train side. On the 25 query packs without such an uploader
+(135 hard_similar queries) the advantage is +3.9 pp [−1.9, +10.3] under
+MS-CLAP and +0.3 pp [−4.4, +4.6] under LAION-CLAP
+([`artifacts/uploader-overlap-check/`](artifacts/uploader-overlap-check/),
+post hoc, same pairs and weights). That subset is small, so it neither shows
+nor rules out that the +9.9 pp rests on recognising uploaders. Follow-up checks, including the
 negative results, are in [research/README.md](research/README.md); the
 dataset's per-item licenses are in [DATA_CREDITS.md](DATA_CREDITS.md).
 

@@ -94,7 +94,7 @@ on its own two-thread pool so a slow ranker cannot starve other work.
 | `recency-v1` | `created_at` | Newest first |
 | `text-only-v1` | Voyage text vectors | Intent encoded with the same frozen `voyage-3` model |
 | `mean-session-v1` | region audio embeddings | Cosine to the mean of the session's CLAP vectors |
-| `harmonic-fit-v1` | 12-dim chroma on regions and candidates | Transpose-invariant cross-correlation; chroma is computed for session regions in `/session-embed` and for candidates at ingest (`representations.chroma`) |
+| `harmonic-fit-v1` | 12-dim chroma on regions and candidates | Transpose-invariant cross-correlation, so it scores pitch-class similarity after the best transposition, not fit in the current key (behavioural test P2 blind); chroma is computed for session regions in `/session-embed` and for candidates at ingest (`representations.chroma`) |
 | `audio-cosine-v1` | `POCKET_ENABLE_CLAP=1` | Intent text encoded into MS-CLAP audio space, cosine against candidate audio |
 | `role-gap-v1` | `POCKET_ENABLE_CLAP=1`, region audio embeddings | Zero-shot role probe; rewards roles the session lacks |
 | `fusion-5sig-v1` | region audio embeddings, `artifacts/fusion-deploy/weights.json` | BPR-trained weights over audio cosine (mean, max), tempo, key, tag Jaccard; key is always zero online |

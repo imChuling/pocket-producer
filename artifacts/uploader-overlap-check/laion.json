@@ -1,0 +1,111 @@
+{
+  "experiment": "held-out sensitivity to uploaders shared with the train side",
+  "status": "post hoc, descriptive; frozen pairs and committed weights, no retraining",
+  "sensitivity_file": "artifacts/heldout-eval-correction/sensitivity.json",
+  "split_sha256": "3f4967ca916ac5a985388836f9fb60e44bef93c3f73d2df7ee1c37ee4f36384c",
+  "heldout_packs": 121,
+  "heldout_packs_with_shared_uploader": 58,
+  "heldout_items": 408,
+  "heldout_items_with_shared_uploader": 226,
+  "uploaders_on_both_sides": 39,
+  "all_queries": {
+    "n_sources": 54,
+    "n_queries": 323,
+    "mean_accuracy": {
+      "rules": {
+        "overall": 0.7831,
+        "easy": 0.9025,
+        "hard_similar": 0.8437,
+        "hard_tempo_key": 0.4238
+      },
+      "cosine": {
+        "overall": 0.9467,
+        "easy": 0.9768,
+        "hard_similar": 0.8793,
+        "hard_tempo_key": 0.9554
+      },
+      "fusion-5sig": {
+        "overall": 0.9532,
+        "easy": 0.9786,
+        "hard_similar": 0.9003,
+        "hard_tempo_key": 0.9554
+      }
+    },
+    "fusion_vs_cosine": {
+      "easy": {
+        "point_delta": 0.001858,
+        "ci_lo": -0.004878,
+        "ci_hi": 0.008621,
+        "n_comparisons": 646
+      },
+      "hard_similar": {
+        "point_delta": 0.021053,
+        "ci_lo": -0.010462,
+        "ci_hi": 0.052596,
+        "n_comparisons": 323
+      },
+      "hard_tempo_key": {
+        "point_delta": 0.0,
+        "ci_lo": -0.007782,
+        "ci_hi": 0.00531,
+        "n_comparisons": 269
+      },
+      "overall": {
+        "point_delta": 0.006462,
+        "ci_lo": -0.003966,
+        "ci_hi": 0.01616,
+        "n_comparisons": 1238
+      }
+    }
+  },
+  "queries_without_shared_uploader": {
+    "n_sources": 25,
+    "n_queries": 135,
+    "mean_accuracy": {
+      "rules": {
+        "overall": 0.7553,
+        "easy": 0.8778,
+        "hard_similar": 0.8037,
+        "hard_tempo_key": 0.4018
+      },
+      "cosine": {
+        "overall": 0.9265,
+        "easy": 0.9519,
+        "hard_similar": 0.8815,
+        "hard_tempo_key": 0.9196
+      },
+      "fusion-5sig": {
+        "overall": 0.9338,
+        "easy": 0.963,
+        "hard_similar": 0.8845,
+        "hard_tempo_key": 0.9232
+      }
+    },
+    "fusion_vs_cosine": {
+      "easy": {
+        "point_delta": 0.011111,
+        "ci_lo": 0.0,
+        "ci_hi": 0.023932,
+        "n_comparisons": 270
+      },
+      "hard_similar": {
+        "point_delta": 0.002963,
+        "ci_lo": -0.043796,
+        "ci_hi": 0.04643,
+        "n_comparisons": 135
+      },
+      "hard_tempo_key": {
+        "point_delta": 0.003571,
+        "ci_lo": 0.0,
+        "ci_hi": 0.009091,
+        "n_comparisons": 112
+      },
+      "overall": {
+        "point_delta": 0.00735,
+        "ci_lo": -0.007925,
+        "ci_hi": 0.023669,
+        "n_comparisons": 517
+      }
+    }
+  }
+}

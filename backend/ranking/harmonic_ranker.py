@@ -1,9 +1,12 @@
-"""harmonic-fit-v1: rank candidates by tonal compatibility with the session.
+"""harmonic-fit-v1: rank candidates by pitch-class similarity to the session.
 
-Scores each candidate's chroma profile against the session's aggregated
-chroma using transpose-invariant cross-correlation. This captures whether
-a candidate is in a compatible key — something neither CLAP cosine nor
-role-gap detection can express.
+Scores each candidate's mean chroma profile against the session's aggregated
+chroma under the best of 12 transpositions. Despite the name, this measures
+whether a candidate could fit after transposing it, not whether it fits as
+played: an untransposed candidate and a copy a semitone away score alike.
+The behavioural tests confirm it (research/results-behavioral-v1.md, P2:
+0.49, blind). The product never transposes a fragment, so a shift other
+than 0 in the evidence label means the candidate would need transposing.
 
 Requires pre-computed 12-dim chroma vectors on session regions and candidates.
 """
@@ -35,6 +38,8 @@ class HarmonicFitRanker:
             "requires pre-computed chroma vectors for session regions and candidates",
             "mean chroma loses temporal structure (key changes within a loop)",
             "percussion-heavy regions produce weak chroma signal",
+            "transpose-invariant: does not tell whether a candidate fits in its "
+            "current key (behavioural test P2 blind, 0.49)",
         ],
     }
 
