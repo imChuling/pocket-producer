@@ -23,6 +23,7 @@ from google.adk.tools.agent_tool import AgentTool
 from google.genai import types as genai_types
 
 from api._clients import get_genai_client
+from tools.edit_context import user_edit_context
 from tools.rescue_score import compute_rescue_score
 
 from ._serialization import to_json as _to_json
@@ -314,6 +315,7 @@ async def generate_project_title(fragment_ids: list[str], connection_types: list
         "If fragments are in Chinese, the title can be Chinese. "
         "Output ONLY the title, nothing else."
     )
+    prompt += await asyncio.to_thread(user_edit_context, db, user_id, "project_title")
     try:
         client = _get_genai_client()
         response = await asyncio.wait_for(
@@ -398,6 +400,7 @@ async def generate_next_action(project_id: str) -> str:
         "when relevant. Output ONLY a JSON object: "
         '{"action": "...", "estimated_time": "20 min"}'
     )
+    prompt += await asyncio.to_thread(user_edit_context, db, user_id, "next_action")
     try:
         client = _get_genai_client()
         response = await asyncio.wait_for(

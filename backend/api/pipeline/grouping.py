@@ -26,9 +26,17 @@ async def memory_and_project(
         return
 
     from ..deps import get_user_agent_lock
+    from .fusion_grouping import HYBRID, record_hybrid_outcome
     user_lock = await get_user_agent_lock(user_id)
     async with user_lock:
-        await _memory_and_project_locked(db, user_id, fragment_id, tag_result, t0, skip_if_grouped)
+        token = HYBRID.set(None)
+        try:
+            await _memory_and_project_locked(db, user_id, fragment_id, tag_result, t0, skip_if_grouped)
+            hybrid = HYBRID.get()
+            if hybrid is not None:
+                await asyncio.to_thread(record_hybrid_outcome, db, user_id, fragment_id, hybrid)
+        finally:
+            HYBRID.reset(token)
 
 
 async def _memory_and_project_locked(
@@ -79,10 +87,14 @@ async def _memory_and_project_locked(
                 )
             logger.info("Dissolved project %s (only %d fragments left)", old_project_id, remaining)
 
-    from .fusion_grouping import group_by_fusion, grouping_mode
+    from .fusion_grouping import HYBRID, group_by_fusion, grouping_mode, prepare_hybrid
 
-    if grouping_mode() == "fusion" and await group_by_fusion(db, user_id, fragment_id):
+    mode = grouping_mode()
+    if mode == "fusion" and await group_by_fusion(db, user_id, fragment_id):
         return
+    if mode == "hybrid":
+        # The agent decides; it is shown the fusion scores (agents/_runner.py).
+        HYBRID.set(await prepare_hybrid(db, user_id, fragment_id))
 
     result = await group_fragment_with_agents(db, user_id, fragment_id)
     logger.info(

@@ -107,6 +107,7 @@ async def tag_fragment_direct(
     text: str,
     audio_features: object = None,
     audio_gcs_uri: str | None = None,
+    user_context: str = "",
 ) -> dict | None:
     system_context = (
         _load_tagging_skill_context(audio=bool(audio_gcs_uri))
@@ -182,6 +183,9 @@ Return ONLY a JSON object with these fields (flat structure, not nested):
 - "title": a 2-5 word evocative title for this fragment, same language as its content. Name what makes it distinct (mood + material), never generic words like "fragment", "audio", "recording", "untitled". No quotes.
 
 ONLY output the JSON object. No markdown wrapping, no explanation outside the JSON."""
+
+    # The user's own edit profile (empty unless enabled and the user has edits).
+    prompt_text += user_context
 
     if audio_gcs_uri:
         model = os.environ.get("TAGGING_MODEL_AUDIO", "gemini-3-flash-preview")

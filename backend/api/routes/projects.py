@@ -29,6 +29,8 @@ class AudiotoolUnlinkRequest(BaseModel):
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
+SKIPPED_ACTIONS_LIMIT = 20
+
 
 @router.get("")
 @limiter.limit("30/minute")
@@ -253,6 +255,19 @@ async def skip_action(
         raise HTTPException(status_code=404, detail="Project not found")
 
     from api.pipeline import _generate_next_action
+
+    # Recorded before generating the replacement, so the new suggestion can
+    # take this skip into account.
+    skipped = project.get("next_action")
+    if skipped:
+        await asyncio.to_thread(
+            db["projects"].update_one,
+            {"_id": oid, "user_id": user_id},
+            {"$push": {"skipped_actions": {
+                "$each": [{"action": skipped, "skipped_at": datetime.now(UTC)}],
+                "$slice": -SKIPPED_ACTIONS_LIMIT,
+            }}},
+        )
 
     new_action = await _generate_next_action(db, user_id, project_id)
 

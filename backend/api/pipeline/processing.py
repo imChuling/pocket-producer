@@ -97,10 +97,13 @@ async def process_fragment_background(
                 features_task = None
 
         _set_step(db, fragment_id, user_id, "Analyzing emotions and themes...")
+        from tools.edit_context import user_edit_context
+
         tag_task = tag_fragment_direct(
             text=text or "",
             audio_features=features,
             audio_gcs_uri=audio_url,
+            user_context=await asyncio.to_thread(user_edit_context, db, user_id, "tagging"),
         )
 
         embed_task = generate_embedding(text) if text else None

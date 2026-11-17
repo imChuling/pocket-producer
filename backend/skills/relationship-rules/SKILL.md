@@ -22,7 +22,8 @@ This skill is **judgmental, not generative**. You do not invent connections.
 You evaluate signals and assign labels with explicit reasoning.
 
 Scope: this skill applies to the agent grouping path, the default
-(`POCKET_GROUPING_MODE=llm`). With `POCKET_GROUPING_MODE=fusion`, grouping
+(`POCKET_GROUPING_MODE=llm`), and to `hybrid`, where the same path runs and
+each neighbor also carries a fusion score to weigh. With `POCKET_GROUPING_MODE=fusion`, grouping
 for fragments that have an audio vector is decided in code by the fusion
 score against a threshold calibrated on pack data
 (`research/results-grouping-threshold-v1.md`), and this skill is used only

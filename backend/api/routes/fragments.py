@@ -22,6 +22,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/fragments", tags=["fragments"])
 
+# Bounded per-fragment records of the user's own edits.
+TITLE_HISTORY_LIMIT = 10
+TAG_EDITS_LIMIT = 20
+
 _background_tasks: set[asyncio.Task] = set()
 
 
@@ -120,13 +124,21 @@ async def update_fragment_title(
 ):
     db = get_db()
     oid = parse_object_id(fragment_id, "fragment_id")
-    result = await asyncio.to_thread(
-        db["fragments"].update_one,
-        {"_id": oid, "user_id": user_id},
-        {"$set": {"title": title.strip()}},
+    current = await asyncio.to_thread(
+        db["fragments"].find_one, {"_id": oid, "user_id": user_id}, {"title": 1}
     )
-    if result.matched_count == 0:
+    if current is None:
         raise HTTPException(status_code=404, detail="Fragment not found")
+    new_title = title.strip()
+    update: dict = {"$set": {"title": new_title}}
+    if current.get("title") and current["title"] != new_title:
+        # Kept so the app can take the user's own naming into account.
+        update["$push"] = {"title_history": {
+            "$each": [{"from": current["title"], "to": new_title, "at": datetime.now(UTC)}],
+            "$slice": -TITLE_HISTORY_LIMIT,
+        }}
+        update["$addToSet"] = {"user_edited_fields": "title"}
+    await asyncio.to_thread(db["fragments"].update_one, {"_id": oid, "user_id": user_id}, update)
     return {"updated": True}
 
 
@@ -350,10 +362,27 @@ async def update_fragment_tags(
         return {"updated": False, "message": "No fields to update"}
 
     update["user_edited_fields"] = edited_fields
+    # What the user added to or removed from each list, so the app can take
+    # their own vocabulary into account.
+    tag_edits = []
+    for field in ("tags", "emotions", "style"):
+        if field in update:
+            before = set(fragment.get(field) or [])
+            after = set(update[field] or [])
+            if before != after:
+                tag_edits.append({
+                    "field": field,
+                    "added": sorted(after - before),
+                    "removed": sorted(before - after),
+                    "at": datetime.now(UTC),
+                })
+    operation: dict = {"$set": update}
+    if tag_edits:
+        operation["$push"] = {"tag_edits": {"$each": tag_edits, "$slice": -TAG_EDITS_LIMIT}}
     await asyncio.to_thread(
         db["fragments"].update_one,
         {"_id": oid, "user_id": user_id},
-        {"$set": update},
+        operation,
     )
     return {"updated": True, "user_edited_fields": edited_fields}
 
@@ -485,7 +514,12 @@ async def _reanalyze_fragment_text(user_id: str, fragment_id: str, new_text: str
     db = get_db()
     oid = ObjectId(fragment_id)
     try:
-        tag_task = tag_fragment_direct(new_text)
+        from tools.edit_context import user_edit_context
+
+        tag_task = tag_fragment_direct(
+            new_text,
+            user_context=await asyncio.to_thread(user_edit_context, db, user_id, "tagging"),
+        )
         embed_task = generate_embedding(new_text)
         tag_result, embedding = await asyncio.gather(tag_task, embed_task, return_exceptions=True)
 

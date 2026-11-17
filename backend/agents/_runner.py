@@ -142,6 +142,12 @@ async def group_fragment_with_agents(
             "reflect the creator's most current thinking.\n"
             f"{match_mode_hints.get(match_mode, match_mode_hints['balanced'])}"
         )
+        # Both are empty unless their flags are on, leaving the prompt unchanged.
+        from api.pipeline.fusion_grouping import HYBRID, hybrid_prompt_block
+        from tools.edit_context import user_edit_context
+
+        prompt += hybrid_prompt_block(HYBRID.get())
+        prompt += await asyncio.to_thread(user_edit_context, db, user_id, "grouping")
 
         message = types.Content(
             role="user",

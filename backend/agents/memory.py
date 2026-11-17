@@ -114,7 +114,9 @@ async def vector_search_fragment_neighbors(fragment_id: str, limit: int = 6) -> 
                 len(neighbors), fragment_id, threshold,
             )
             neighbors = await enrich_neighbors_with_signals(fragment_id, neighbors)
-            return _to_json({"neighbors": neighbors, "threshold_applied": threshold, "via": "mcp"})
+            return _to_json(_with_fusion_guidance(
+                {"neighbors": neighbors, "threshold_applied": threshold, "via": "mcp"}
+            ))
         except Exception:
             logger.warning(
                 "MCP vector search failed for %s, falling back to direct pymongo",
@@ -142,7 +144,7 @@ async def vector_search_fragment_neighbors(fragment_id: str, limit: int = 6) -> 
     ]
     neighbors = await asyncio.to_thread(lambda: list(db["fragments"].aggregate(pipeline)))
     neighbors = await enrich_neighbors_with_signals(fragment_id, neighbors)
-    return _to_json({"neighbors": neighbors, "threshold_applied": threshold})
+    return _to_json(_with_fusion_guidance({"neighbors": neighbors, "threshold_applied": threshold}))
 
 
 # mongodb-mcp-server wraps result documents in untrusted-user-data tags and
@@ -514,6 +516,23 @@ def _compute_pairwise_signals(
     }
 
 
+def _with_fusion_guidance(result: dict) -> dict:
+    """In hybrid grouping mode, say what the neighbours' fusion scores mean."""
+    from api.pipeline.fusion_grouping import SCORE_MEANING, grouping_mode
+
+    if grouping_mode() != "hybrid":
+        return result
+    return {
+        **result,
+        "fusion_score_guidance": SCORE_MEANING + (
+            " Each neighbour's computed_signals carry fusion_pair_score (\"no score\" "
+            "without an audio vector) and fusion_at_or_above_threshold. Copy the score "
+            "into that neighbour's analysis entry as fusion_score, and treat a score at "
+            "or above the threshold as strong evidence for the same project."
+        ),
+    }
+
+
 async def enrich_neighbors_with_signals(
     fragment_id: str, neighbors: list[dict],
 ) -> list[dict]:
@@ -531,6 +550,17 @@ async def enrich_neighbors_with_signals(
     for nbr in neighbors:
         nbr["computed_signals"] = _compute_pairwise_signals(source, nbr)
 
+    from api.pipeline.fusion_grouping import HYBRID, grouping_mode, neighbour_score
+
+    if grouping_mode() == "hybrid":
+        context = HYBRID.get()
+        for nbr in neighbors:
+            score = neighbour_score(source, nbr)
+            nbr["computed_signals"].update(score)
+            if context is not None:
+                context.neighbour_scores.append(
+                    {"fragment_id": str(nbr.get("_id")), "source": "memory_neighbour", **score}
+                )
     return neighbors
 
 

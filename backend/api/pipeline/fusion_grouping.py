@@ -20,28 +20,41 @@ In fusion mode, for a newly processed fragment:
 Each fragment records grouping_decided_by ("fusion", "creator_note" or
 "llm_fallback") and grouping_decision (score, threshold, counts), so the
 share of each can be counted later.
+
+POCKET_GROUPING_MODE=hybrid runs the agent path as in "llm", and the
+language model makes the final call, but it is shown the fusion pair scores:
+the scores against the closest fragments in the library, the grouping that
+decide_grouping would choose, and, on every neighbour the memory agent
+considers, that neighbour's score (or "no score" without an audio vector).
+The fragment records grouping_decided_by "llm_with_fusion", the scores
+shown, and whether the final grouping agreed with what decide_grouping would
+have chosen. That agreement is computed, not enforced.
 """
 
 import asyncio
 import json
 import logging
 import os
+from contextvars import ContextVar
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
 from bson import ObjectId
 
 from ranking.grouping import (
+    GROUPING_THRESHOLD,
     MAX_CANDIDATES,
     GroupingDecision,
     Scorable,
     decide_grouping,
+    pair_fusion_score,
     resolve_artifact,
 )
 
 logger = logging.getLogger(__name__)
 
-MODES = ("llm", "fusion")
+MODES = ("llm", "fusion", "hybrid")
 CONNECTION_TYPE = "sound_match"
 CLAP_WAIT_SECONDS = 90.0
 _NOTE_READINGS = ("stands_alone", "names_a_home", "none")
@@ -358,3 +371,200 @@ async def _execute(db, user_id: str, fragment_id: str, decision: GroupingDecisio
     finally:
         producer_db_var.reset(db_token)
         producer_user_var.reset(user_token)
+
+
+# --- hybrid mode -------------------------------------------------------------
+
+SHOWN_TOP = 8
+SHOWN_RECORDED = 20
+
+SCORE_MEANING = (
+    "Each score is the deployed fusion-5sig-v1 score between two fragments "
+    "(MS-CLAP audio similarity, tempo, key and tags, with weights trained on "
+    "loops filed in the same sample pack). The threshold is "
+    f"{GROUPING_THRESHOLD:.2f}. On held-out packs, at this threshold about 94% of "
+    "the pairs it flagged were from the same pack, while about two thirds of "
+    "same-pack pairs scored below it and were missed. The score mostly reflects "
+    "how alike two recordings sound, so a low score does not rule out parts that "
+    "complement each other, such as a bass line and a drum loop from one song."
+)
+
+
+@dataclass
+class HybridContext:
+    """What the model was shown, and what decide_grouping would have chosen."""
+
+    suggestion: GroupingDecision | None
+    reason: str | None = None
+    top_scores: list[dict] = field(default_factory=list)
+    neighbour_scores: list[dict] = field(default_factory=list)
+    existing_projects: set[str] = field(default_factory=set)
+
+
+HYBRID: ContextVar[HybridContext | None] = ContextVar("hybrid_grouping", default=None)
+
+
+def neighbour_score(source: dict, neighbour: dict) -> dict:
+    """A neighbour's pair score for the memory agent, or "no score" without vectors."""
+    me, other = _scorable({**source, "_id": source.get("_id", "")}), _scorable(
+        {**neighbour, "_id": neighbour.get("_id", "")}
+    )
+    if me is None or other is None:
+        return {"fusion_pair_score": "no score", "fusion_at_or_above_threshold": None}
+    try:
+        score = pair_fusion_score(
+            fusion_weights(), me.vector, other.vector, me.bpm, other.bpm,
+            me.key, other.key, me.tags, other.tags,
+        )
+    except ValueError:
+        return {"fusion_pair_score": "no score", "fusion_at_or_above_threshold": None}
+    return {
+        "fusion_pair_score": round(score, 3),
+        "fusion_at_or_above_threshold": score >= GROUPING_THRESHOLD,
+    }
+
+
+async def prepare_hybrid(db, user_id: str, fragment_id: str) -> HybridContext:
+    """Score the library the way fusion mode would, without acting on it."""
+    projects = await asyncio.to_thread(
+        lambda: {str(p["_id"]) for p in db["projects"].find({"user_id": user_id}, {"_id": 1})}
+    )
+    source = await asyncio.to_thread(
+        db["fragments"].find_one, {"_id": ObjectId(fragment_id), "user_id": user_id}, _FIELDS
+    )
+    if not source:
+        return HybridContext(None, "fragment_missing", existing_projects=projects)
+    source = await _wait_for_audio_vector(db, user_id, fragment_id, source)
+    me = _scorable(source)
+    if me is None:
+        return HybridContext(None, "no_audio_vector", existing_projects=projects)
+
+    others_docs = await asyncio.to_thread(lambda: list(
+        db["fragments"].find(
+            {
+                "user_id": user_id,
+                "_id": {"$ne": ObjectId(fragment_id)},
+                "status": "ready",
+                "representations.audio_semantic.vector": {"$exists": True},
+            },
+            _FIELDS,
+        ).sort("created_at", -1).limit(MAX_CANDIDATES)
+    ))
+    weights = fusion_weights()
+    titles = {str(d["_id"]): d.get("title") for d in others_docs}
+    others = [o for o in (_scorable(d) for d in others_docs) if o is not None]
+    scored = []
+    for other in others:
+        try:
+            score = pair_fusion_score(
+                weights, me.vector, other.vector, me.bpm, other.bpm,
+                me.key, other.key, me.tags, other.tags,
+            )
+        except ValueError:
+            continue
+        scored.append({
+            "fragment_id": other.fragment_id,
+            "title": titles.get(other.fragment_id),
+            "project_id": other.project_id,
+            "fusion_pair_score": round(score, 3),
+            "at_or_above_threshold": score >= GROUPING_THRESHOLD,
+        })
+    scored.sort(key=lambda r: -r["fusion_pair_score"])
+    return HybridContext(
+        decide_grouping(me, others, weights),
+        top_scores=scored[:SHOWN_TOP],
+        existing_projects=projects,
+    )
+
+
+def _describe(decision: GroupingDecision | None) -> str:
+    if decision is None:
+        return "none"
+    if decision.action == "join_project":
+        return f"join project {decision.project_id} (project score {decision.score:.2f})"
+    if decision.action == "new_project":
+        return f"new project with fragments {decision.fragment_ids} (best score {decision.score:.2f})"
+    best = "n/a" if decision.score is None else f"{decision.score:.2f}"
+    return f"no group (best score {best}, below the threshold)"
+
+
+def hybrid_prompt_block(ctx: HybridContext | None) -> str:
+    """The fusion evidence for the deciding agent, or "" outside hybrid mode."""
+    if ctx is None:
+        return ""
+    if ctx.suggestion is None:
+        evidence = (
+            "This fragment has no audio vector, so it has no fusion score against any "
+            "fragment: no score."
+        )
+    else:
+        lines = [
+            f"- {r['fragment_id']} ({r.get('title') or 'untitled'}; project "
+            f"{r.get('project_id') or 'none'}): {r['fusion_pair_score']:.2f}"
+            f"{' (at or above threshold)' if r.get('at_or_above_threshold') else ''}"
+            for r in ctx.top_scores
+        ]
+        evidence = (
+            "Highest fusion scores against this user's fragments with an audio vector "
+            "(fragments without one have no score):\n"
+            + ("\n".join(lines) if lines else "- none")
+            + f"\nWhat the fusion rule alone would choose: {_describe(ctx.suggestion)}."
+        )
+    return (
+        "\n\nFusion model evidence (computed in code):\n"
+        f"{SCORE_MEANING}\n{evidence}\n"
+        "The memory tool also reports `fusion_pair_score` for each neighbour "
+        "(\"no score\" when a fragment has no audio vector). Treat a score at or above "
+        "the threshold as strong evidence that the two fragments belong in the same "
+        "project. You make the final decision. If your decision goes against the "
+        "score, say so in the narrative and why. Explicit creator notes still win."
+    )
+
+
+def record_hybrid_outcome(db, user_id: str, fragment_id: str, ctx: HybridContext) -> None:
+    """Store what was shown and whether the final grouping matched the fusion rule."""
+    oid = ObjectId(fragment_id)
+    doc = db["fragments"].find_one({"_id": oid, "user_id": user_id}, {"project_id": 1})
+    if doc is None:
+        return
+    project_id = str(doc["project_id"]) if doc.get("project_id") else None
+    if project_id is None:
+        final = "no_group"
+    elif project_id in ctx.existing_projects:
+        final = "join_project"
+    else:
+        final = "new_project"
+
+    suggestion = ctx.suggestion
+    agrees: bool | None = None
+    if suggestion is not None:
+        if suggestion.action != final:
+            agrees = False
+        elif final == "join_project":
+            agrees = project_id == suggestion.project_id
+        elif final == "new_project":
+            members = (db["projects"].find_one(
+                {"_id": ObjectId(project_id), "user_id": user_id}, {"fragment_ids": 1}
+            ) or {}).get("fragment_ids", [])
+            agrees = suggestion.fragment_ids[1] in {str(m) for m in members}
+        else:
+            agrees = True
+
+    shown = (ctx.top_scores + ctx.neighbour_scores)[:SHOWN_RECORDED]
+    db["fragments"].update_one(
+        {"_id": oid, "user_id": user_id},
+        {"$set": {
+            "grouping_decided_by": "llm_with_fusion",
+            "grouping_decision": {
+                "decided_by": "llm_with_fusion",
+                "mode": "hybrid",
+                "at": datetime.now(UTC),
+                "threshold": GROUPING_THRESHOLD,
+                "model_suggestion": suggestion.record() if suggestion else None,
+                "reason": ctx.reason,
+                "final": {"action": final, "project_id": project_id},
+                "agrees_with_fusion_rule": agrees,
+                "scores_shown": shown,
+            },
+        }},
+    )

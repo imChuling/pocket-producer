@@ -46,6 +46,12 @@ export default function PrivacyPage() {
               <li>Provide personalized next-action suggestions</li>
             </ul>
             <p>
+              To produce tags, titles, project groupings and suggestions, your fragments&apos; content,
+              titles, tags, notes and comments are sent to Google&apos;s Gemini language models on Vertex
+              AI; where the service is set to take your edits into account, a summary of the changes you
+              made to titles, tags and suggestions is sent as well.
+            </p>
+            <p>
               Your creative content is never used to train AI models. It is processed solely to provide
               the features described above.
             </p>
@@ -55,10 +61,10 @@ export default function PrivacyPage() {
             <h2 className="font-heading text-base font-medium text-obsidian mb-2">Third-Party Processors</h2>
             <p>Your data is processed by the following services, each under their own privacy policies:</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li><strong>Google Cloud Platform</strong> (Vertex AI, Cloud Run, Cloud Storage) &mdash; AI inference, hosting, audio file storage</li>
-              <li><strong>MongoDB Atlas</strong> &mdash; database storage, vector search</li>
-              <li><strong>Voyage AI</strong> (MongoDB-provided) &mdash; text embedding generation</li>
-              <li><strong>Firebase Authentication</strong> &mdash; user identity verification</li>
+              <li><strong>Google Cloud Platform</strong> (Vertex AI, Cloud Run, Cloud Storage): AI inference, hosting, audio file storage</li>
+              <li><strong>MongoDB Atlas</strong>: database storage, vector search</li>
+              <li><strong>Voyage AI</strong> (MongoDB-provided): text embedding generation</li>
+              <li><strong>Firebase Authentication</strong>: user identity verification</li>
             </ul>
             <p>
               All data is stored in the <strong>us-central1</strong> region. No data is shared with
@@ -78,11 +84,11 @@ export default function PrivacyPage() {
           <section>
             <h2 className="font-heading text-base font-medium text-obsidian mb-2">Your Rights</h2>
             <ul className="list-disc pl-5 space-y-1">
-              <li><strong>Delete individual fragments</strong> &mdash; available from any fragment card</li>
-              <li><strong>Delete your entire account</strong> &mdash; contact us to request deletion; this permanently
+              <li><strong>Delete individual fragments</strong>: available from any fragment card</li>
+              <li><strong>Delete your entire account</strong>: contact us to request deletion; this permanently
                 removes all your fragments, projects, DNA data, notification history, settings, and
                 audio files from our systems</li>
-              <li><strong>Data portability</strong> &mdash; contact us to request an export of your data</li>
+              <li><strong>Data portability</strong>: contact us to request an export of your data</li>
             </ul>
             <p>
               Deletion is immediate and irreversible. We do not retain backups of deleted user data.
@@ -93,7 +99,7 @@ export default function PrivacyPage() {
             <h2 className="font-heading text-base font-medium text-obsidian mb-2">Sensitive Data</h2>
             <p>
               Audio recordings and lyrics may contain personal expression. We treat all creative content
-              as sensitive personal data. Access is scoped to your authenticated account only &mdash; no
+              as sensitive personal data. Access is scoped to your authenticated account only: no
               other user or administrator can view your content through the application.
             </p>
           </section>
