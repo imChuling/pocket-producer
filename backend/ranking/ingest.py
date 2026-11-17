@@ -3,7 +3,7 @@
 Keeps the fragment library rank-ready: /api/ranking/rank reads
 representations.audio_semantic.vector via attach_audio_embeddings, so a
 fragment without this record can only be ranked through its text embedding.
-Mirrors scripts/backfill_audio_representations.py — the backfill script
+Mirrors scripts/backfill_representations.py; the backfill script
 remains the recovery path for fragments uploaded while CLAP was disabled.
 """
 

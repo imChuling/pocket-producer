@@ -5,8 +5,9 @@
 The capacity-ladder descriptions below document earlier research models;
 they do not establish that every model is deployed or preference-validated.
 The product default remains `rules-v1`; the shipped fusion scores five
-signals. Beat-fit is implemented locally and not deployed; production frame
-backfill has not run. Offline feedback training is not automatic online
+signals. `beat-fit-v1` is registered and deployed as a selectable ranker;
+the production frame backfill has not run, so fragments ingested before it
+are left out of its lists. Offline feedback training is not automatic online
 adaptation. Seven-signal artifacts are explicitly research-only and rejected
 by the online five-signal loader. See [capability boundaries and evidence
 semantics](research/design-online-signals.md) and the [project note](docs/portfolio/PROJECT_NOTE.md).
@@ -98,7 +99,7 @@ The only check now wired into code is narrower: when fusion weights are refit fr
 ## Limitations
 
 - **No personalization**: the system does not adapt to individual user preferences over time. This is a deliberate design constraint: adaptation would first need a temporal held-out evaluation on logged decisions, and learned weights must pass the behavioural guardrail (`research/compat_tests/guardrail.py`).
-- **Session representation limits**: the existing fusion uses pooled region audio and metadata. The local, undeployed beat-fit prototype adds approximate timeline placement and chroma/onset structure; it does not reproduce offsets, loops, mixing or effects of real DAW playback.
+- **Session representation limits**: the existing fusion uses pooled region audio and metadata. The selectable `beat-fit-v1` ranker adds approximate timeline placement and chroma/onset structure; it does not reproduce offsets, loops, mixing or effects of real DAW playback.
 - **Intent in the fusion rankers**: `fusion-5sig-v1` is affected by the typed intent only through a BPM or key parsed from it when the session lacks one; role words such as "replace the drums" or "add a synth hook" do not change its ranking. `beat-fit-v1` reads only the precomputed `session_beats` and not the parsed intent. `rules-v1` and the text and audio cosine rankers do read role words.
 - **No human evaluation**: every reported result uses proxy labels (pack co-membership, controlled perturbations); none measures whether musicians prefer the suggestions. Sample sizes are reported with each result.
 - **Backbone audit incomplete**: LAION-CLAP music training data provenance has not been fully verified for commercial deployment.

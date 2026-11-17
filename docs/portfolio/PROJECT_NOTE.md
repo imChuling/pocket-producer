@@ -38,8 +38,9 @@ reversible interaction design.
 
 ## One result and one negative result
 
-On 594 MUSDB18-HQ stem/context pairs from 149 songs, beat-aligned chroma
-preferred the reference to a four-beat-delayed target with a win rate of
+On the 402 MUSDB18-HQ stem/context pairs whose harmony changes across the
+shift (of 594 pairs from 149 songs), beat-aligned chroma preferred the
+reference to a four-beat-delayed target with a win rate of
 **0.74 [0.69, 0.78]**, versus **0.45 [0.39, 0.49]** for mean chroma. This
 supports investigating temporal harmony information in this task. It is not
 a pure permutation test: a fixed delayed window replaces some content with
@@ -66,8 +67,8 @@ text with dated corrections; result JSON and tables were not changed.
 | Capability | Evidence and state |
 |---|---|
 | DAW session reading, proposals, preview, insert and undo | Existing implementation and tests; this revision has no live DAW verification |
-| Five-signal fusion | Existing five-signal scoring contract; no change to shipped weights; live deployment revision not checked |
-| Beat-fit / beat-frame ingestion | Local implementation, including support checks and factual measurement labels; not deployed |
+| Five-signal fusion | Existing five-signal scoring contract; no change to shipped weights; registered in the live service (`/ready`) |
+| Beat-fit / beat-frame ingestion | Registered and deployed as a selectable ranker, with support checks and factual measurement labels; scores only fragments that have stored beat frames |
 | Frame backfill for existing fragments | Script available; production backfill not executed |
 | Feedback training | Offline prototype; named vectors, masks and a behavioural guardrail; no automatic online adaptation |
 | Seven-signal learned fusion | Research-only artifact, refused by the five-signal online loader |

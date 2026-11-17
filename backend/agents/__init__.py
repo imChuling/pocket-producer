@@ -3,9 +3,8 @@
 Active agents in the ingest pipeline:
 - Producer (root) → Memory (sub_agent)
 
-Catcher agent is defined but bypassed in the capture flow — tagging is handled
-by a direct Gemini multimodal call for latency optimization. The Catcher agent
-is available for full Agent Engine deployment where latency is less critical.
+Tagging is not an agent: the capture flow calls Gemini directly
+(api/pipeline/tagging.py) to keep ingest latency down.
 """
 
 from ._runner import group_fragment_with_agents  # noqa: F401

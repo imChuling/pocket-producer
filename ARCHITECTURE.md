@@ -95,6 +95,7 @@ on its own two-thread pool so a slow ranker cannot starve other work.
 | `text-only-v1` | Voyage text vectors | Intent encoded with the same frozen `voyage-3` model |
 | `mean-session-v1` | region audio embeddings | Cosine to the mean of the session's CLAP vectors |
 | `harmonic-fit-v1` | 12-dim chroma on regions and candidates | Transpose-invariant cross-correlation, so it scores pitch-class similarity after the best transposition, not fit in the current key (behavioural test P2 blind); chroma is computed for session regions in `/session-embed` and for candidates at ingest (`representations.chroma`) |
+| `beat-fit-v1` | project tempo, region positions, `representations.beat_frames` on candidates | Beat-synchronous chroma agreement plus onset-pattern correlation on the session's beat grid, each standardised over the request's candidates; no fitted weights. Fragments without stored frames are left out |
 | `audio-cosine-v1` | `POCKET_ENABLE_CLAP=1` | Intent text encoded into MS-CLAP audio space, cosine against candidate audio |
 | `role-gap-v1` | `POCKET_ENABLE_CLAP=1`, region audio embeddings | Zero-shot role probe; rewards roles the session lacks |
 | `fusion-5sig-v1` | region audio embeddings, `artifacts/fusion-deploy/weights.json` | BPR-trained weights over audio cosine (mean, max), tempo, key, tag Jaccard; key is always zero online |
@@ -270,13 +271,6 @@ Reanalysis re-runs the full pipeline (Phase 2 + Phase 3) for a fragment.
 4. Re-run the agent pipeline (Phase 3) — may join a different project,
    create a new one, or remain ungrouped
 5. Returns only after processing completes (120s timeout)
-
-**All fragments** (`POST /api/reanalyze-all`):
-
-1. All fragments set to `processing`
-2. Process all in parallel with `asyncio.gather` (120s per-fragment timeout)
-3. Fragments that timeout get `status: "timeout"`
-4. After completion, triggers DNA Insights update
 
 The key invariant: **reanalyze always re-evaluates project connections**.
 The old project assignment is cleared before the agent pipeline runs, so
@@ -645,10 +639,9 @@ Index name: `fragment_vector_index`.
 ### DNA Insights (`backend/jobs/dna_insights.py`)
 
 Aggregation of user creative patterns. Pure MongoDB aggregation pipelines,
-no LLM calls. Triggered in three ways:
+no LLM calls. Triggered in two ways:
 1. Daily Cloud Scheduler job (`POST /api/jobs/dna`)
-2. After `reanalyze-all` completes (inline)
-3. After `reprocess-projects` completes (inline)
+2. After `reprocess-projects` completes (inline)
 
 For each user, computes:
 - Emotion distribution (full histogram)
@@ -780,7 +773,8 @@ The frontend runs separately with `pnpm dev`.
 ### Authentication
 - Firebase Auth issues ID tokens on the frontend
 - Backend verifies tokens via `firebase_admin.auth.verify_id_token()`
-- Every API endpoint requires a valid token (except `/health`)
+- Every endpoint that touches user data requires a valid token. `/health`,
+  `/ready` and the read-only `/api/demo/*` routes are public
 
 ### User Isolation
 - All MongoDB queries include `user_id` filter
@@ -794,7 +788,8 @@ The frontend runs separately with `pnpm dev`.
   removal, prompt injection regex detection
 - Audio: MIME type allowlist, size limit (10 MB), duration limit (5 min via
   librosa validation)
-- Rate limiting via slowapi (per-IP)
+- Rate limiting via slowapi, keyed per user (per forwarded IP for anonymous
+  requests)
 
 ### Agent Safety
 - Creator text wrapped in `<creator_fragment>` XML tags in Gemini prompts

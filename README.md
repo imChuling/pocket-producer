@@ -11,8 +11,10 @@ suggestion, and lets you preview, insert, and undo.
 
 **Revision of 2026-11-16:** start with the short
 [project note](docs/portfolio/PROJECT_NOTE.md).
-Beat-fit and feedback-training changes in this checkout are local implementations,
-not verified live deployments. Online fusion still scores five signals; extended
+`beat-fit-v1` is merged, registered and deployed as a selectable ranker; fragments
+ingested before it carry no stored beat frames, and no production backfill has run,
+so it scores only newer fragments. Feedback training is an offline prototype.
+Online fusion still scores five signals; extended
 feedback weights are research-only and refused by that loader. Frozen behavioural
 and retrieval JSON are preserved, with dated protocol errata and corrected
 interpretations. Video recording and demo materials are not part of this revision.
@@ -37,7 +39,8 @@ preference. The musician makes the call.
    open project: tempo, track roles, up to eight unique samples on the
    timeline, and an optional sentence of intent. Session audio is embedded
    with MS-CLAP on the server (CPU).
-2. **Two rankers.** The default `rules-v1` scores seven non-audio signals
+2. **Rankers.** Nine are registered and selectable in the panel; two matter
+   most. The default `rules-v1` scores seven non-audio signals
    (tempo fit, key, role gap, stated intent, tag overlap, tag novelty,
    recency). The selectable `fusion-5sig-v1` is a linear fusion of mean and
    max CLAP cosine, tempo, key, and tag Jaccard, with weights trained by
