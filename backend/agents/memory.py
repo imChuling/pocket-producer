@@ -2,7 +2,7 @@
 
 Responsibilities:
 - Vector search for similar past fragments (via MongoDB MCP or direct tools)
-- Relationship classification using relationship-rules + musical-knowledge skills
+- Relationship classification using fusion score (same weights as ranking)
 - Returns structured analysis to Producer Agent (never writes to DB)
 """
 
@@ -17,11 +17,13 @@ from typing import Any
 from urllib.parse import urlparse
 
 import httpx
+import numpy as np
 from bson import ObjectId
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
 
 from ranking import features as ranking_features
+from ranking.fusion_ranker import load_weights as _load_fusion_weights
 
 from ._serialization import to_json as _to_json
 from ._skills_loader import get_skill_toolset
@@ -451,6 +453,83 @@ def _structure_complement(src_hint: str | None, nbr_hint: str | None) -> float:
     return 1.0 if nbr_hint in complements else 0.0
 
 
+def _audio_cosine(source: dict, neighbor: dict) -> float:
+    """CLAP embedding cosine similarity (same space as the ISMIR fusion ranker)."""
+    src_repr = (source.get("representations") or {}).get("audio_semantic") or {}
+    nbr_repr = (neighbor.get("representations") or {}).get("audio_semantic") or {}
+    src_vec = src_repr.get("vector")
+    nbr_vec = nbr_repr.get("vector")
+    if not src_vec or not nbr_vec:
+        return 0.0
+    a = np.asarray(src_vec, dtype=np.float64)
+    b = np.asarray(nbr_vec, dtype=np.float64)
+    norm_a = np.linalg.norm(a)
+    norm_b = np.linalg.norm(b)
+    if norm_a < 1e-9 or norm_b < 1e-9:
+        return 0.0
+    return float(np.dot(a, b) / (norm_a * norm_b))
+
+
+def _get_fusion_weights() -> list[float]:
+    path = os.environ.get(
+        "POCKET_FUSION_WEIGHTS", "artifacts/fusion-deploy/weights.json"
+    )
+    return _load_fusion_weights(path)["weights"]
+
+
+_FUSION_WEIGHTS: list[float] | None = None
+
+
+def _fusion_weights() -> list[float]:
+    global _FUSION_WEIGHTS
+    if _FUSION_WEIGHTS is None:
+        _FUSION_WEIGHTS = _get_fusion_weights()
+    return _FUSION_WEIGHTS
+
+
+def classify_fusion_relationship(
+    fusion_score: float,
+    neighbors_scores: list[float],
+    audio_cosine: float,
+    tempo: float,
+    key: float,
+    tag_jac: float,
+) -> str:
+    """Classify relationship using relative positioning within the neighbor set.
+
+    Uses z-score against the neighbor distribution instead of absolute
+    thresholds, because the raw fusion score has a high floor (~4) due to
+    baseline CLAP cosine similarity between unrelated music.
+
+    Known limitation: the reference set is the vector-search neighbors
+    (typically 5-6 items). With so few samples, z >= 1.5 can only be
+    reached by one extreme outlier; two equally strong same-song neighbors
+    cannot both be classified same_song_candidate. A future improvement is
+    to use the user's full library pairwise distribution as the reference.
+    """
+    if not neighbors_scores:
+        return "unrelated"
+
+    arr = np.array(neighbors_scores, dtype=np.float64)
+    median = float(np.median(arr))
+    std = float(np.std(arr))
+
+    if std < 0.1:
+        z = 0.0
+    else:
+        z = (fusion_score - median) / std
+
+    has_non_audio_signal = (tempo > 0.0 or key > 0.0 or tag_jac > 0.0)
+
+    if z >= 1.5 and has_non_audio_signal:
+        return "same_song_candidate"
+    if z >= 0.5:
+        return "related_theme"
+    if z >= -0.5 and (audio_cosine > 0.5 or has_non_audio_signal):
+        return "similar_emotion"
+    return "unrelated"
+
+
 def _compute_pairwise_signals(
     source: dict, neighbor: dict,
 ) -> dict[str, float]:
@@ -476,10 +555,23 @@ def _compute_pairwise_signals(
     src_af = source.get("audio_features") or {}
     nbr_af = neighbor.get("audio_features") or {}
 
+    audio_cos = _audio_cosine(source, neighbor)
+    tempo = ranking_features.tempo_match(src_bpm, nbr_bpm)
+    key = ranking_features.key_match(src_key, nbr_key, mode="exact")
+    tag_jac = ranking_features.tag_overlap(src_tags, nbr_tags)
+
+    w = _fusion_weights()
+    phi = [audio_cos, audio_cos, tempo, key, tag_jac]
+    fusion_score = sum(wi * si for wi, si in zip(w, phi))
+
     return {
+        # --- ISMIR fusion score (BPR-trained weights, same as ranking) ---
+        "fusion_score": round(fusion_score, 3),
+        # --- CLAP timbral similarity (same signal space as ISMIR fusion ranker) ---
+        "audio_cosine": round(audio_cos, 3),
         # --- from ranking/features.py (shared with Audiotool ranker) ---
-        "tempo_match": round(ranking_features.tempo_match(src_bpm, nbr_bpm), 3),
-        "key_match_exact": round(ranking_features.key_match(src_key, nbr_key, mode="exact"), 3),
+        "tempo_match": round(tempo, 3),
+        "key_match_exact": round(key, 3),
         "key_match_relative": round(ranking_features.key_match(src_key, nbr_key, mode="relative"), 3),
         "key_match_fifth": round(ranking_features.key_match(src_key, nbr_key, mode="fifth"), 3),
         "tag_overlap": round(ranking_features.tag_overlap(src_tags, nbr_tags), 3),
@@ -531,6 +623,15 @@ async def enrich_neighbors_with_signals(
     for nbr in neighbors:
         nbr["computed_signals"] = _compute_pairwise_signals(source, nbr)
 
+    all_scores = [nbr["computed_signals"]["fusion_score"] for nbr in neighbors]
+    for nbr in neighbors:
+        sig = nbr["computed_signals"]
+        sig["fusion_relationship"] = classify_fusion_relationship(
+            sig["fusion_score"], all_scores,
+            sig["audio_cosine"], sig["tempo_match"],
+            sig["key_match_exact"], sig["tag_overlap"],
+        )
+
     return neighbors
 
 
@@ -555,86 +656,28 @@ their relationships. You NEVER write to the database.
    Each neighbor now includes a `computed_signals` object with pre-computed
    deterministic scores (all normalized 0-1):
 
-   Musical signals (shared with the Audiotool ranker):
-   - `tempo_match`: how close the BPMs are (1.0 = identical, 0.0 = >25% apart)
-   - `key_match_exact`: 1.0 if same key and mode, else 0.0
-   - `key_match_relative`: 1.0 if exact OR relative major/minor (Am=C), else 0.0
-   - `key_match_fifth`: adds 0.5 for tonic a fifth apart (Camelot neighbors)
-   - `tag_overlap`: Jaccard overlap of tag sets (1.0 = identical tags)
-   - `track_gap`: 1.0 if neighbor adds a role (drums/bass/melody/vocal/etc.)
-     the source fragment lacks; 0.0 otherwise
-   - `novelty`: fraction of the neighbor's tags that are NOT in the source
-     (1.0 = entirely new material, 0.0 = nothing new)
-   - `intent_match`: overlap between the source fragment's notes (creator's
-     stated intent) and the neighbor's tags (1.0 = notes keywords fully
-     matched by neighbor tags, 0.0 = no match or no notes)
-   - `recency`: how recently the neighbor was created relative to the source
-     fragment (1.0 = same time, 0.5 = ~30 days older, decaying with a
-     30-day half-life)
+   `fusion_relationship` is the pre-classified grouping label, computed in
+   code from the ranker's fusion score (weighted sum of audio_cosine,
+   tempo_match, key_match_exact, tag_overlap using BPR-trained weights).
+   The classification uses relative z-score within the neighbor set, not
+   absolute thresholds. Values: same_song_candidate, related_theme,
+   similar_emotion, unrelated.
 
-   Semantic signals (computed from Gemini tagging results):
-   - `emotion_overlap`: Jaccard overlap of emotion tags (1.0 = identical emotions)
-   - `theme_overlap`: Jaccard overlap of theme tags (1.0 = identical themes)
-   - `style_overlap`: Jaccard overlap of style tags
-   - `structure_complement`: 1.0 if structure hints are complementary
-     (e.g. verse + chorus), 0.5 if same hint, 0.0 if unrelated or missing
+   USE `fusion_relationship` directly as the `relationship` in your output.
+   Override only when:
+   - Creator's notes explicitly state a connection or separation
+   - structure_complement == 1.0 (verse + chorus) upgrades a borderline case
+   - track_gap == 1.0 (fills a missing role) upgrades a borderline case
 
-   Audio feature proximity (timbral compatibility from librosa analysis):
-   - `brightness_proximity`: how close the spectral centroids are (1.0 = same
-     brightness/warmth, 0.0 = very different tonal character)
-   - `onset_density_proximity`: how similar the rhythmic density is (1.0 =
-     same attack rate, 0.0 = sparse vs dense mismatch)
-   - `energy_proximity`: how close the RMS energy levels are (1.0 = same
-     loudness range)
+   Other signals in `computed_signals` (fusion_score, audio_cosine,
+   tempo_match, key_match_exact, tag_overlap, track_gap,
+   structure_complement, emotion_overlap, theme_overlap, intent_match,
+   etc.) are available for your evidence text.
 
-   Temporal signal:
-   - `temporal_proximity`: 1.0 if created at the same time, 0.5 if ~7 days
-     apart, decaying further. High values suggest the same creative session.
-
-   USE THESE SCORES directly in your evaluation:
-   - musical_compatibility: tempo_match >= 0.6 AND key_match_relative >= 0.5
-     means "strong"; both at 0.0 means "conflicting"
-   - emotional_alignment: emotion_overlap >= 0.3 supports "strong"
-   - thematic_alignment: theme_overlap >= 0.3 supports "strong"
-   - structure_complement = 1.0 is strong evidence for same_song_candidate
-   - track_gap = 1.0 means the neighbor fills a missing role (valuable for
-     project composition)
-   - novelty >= 0.5 means the neighbor brings mostly new tags (diversity)
-   - intent_match >= 0.5 means the creator's notes describe what this
-     neighbor offers (strong evidence for deliberate connection)
-   - recency >= 0.5 means the neighbor is relatively recent (current work)
-   - brightness_proximity >= 0.7 AND energy_proximity >= 0.7 means the
-     fragments have compatible timbral character (supports same_song_candidate)
-   - temporal_proximity >= 0.8 suggests the fragments were created in the
-     same creative burst (supports grouping into the same project)
 3. DISCARD any neighbor with similarity_score below the threshold returned by vector_search_fragment_neighbors.
-4. For each remaining neighbor, you MUST consult the relationship-rules skill
-   tool to get the 4-signal fusion rules, classification thresholds, and
-   worked examples. The skill defines exactly how to evaluate:
-   - emotional_alignment, thematic_alignment, musical_compatibility, temporal_pattern
-   Integrate the computed_signals into your evaluation: use tag_overlap for
-   thematic evidence, tempo_match + key_match for musical_compatibility.
+4. Use the `fusion_relationship` label from each neighbor's computed_signals.
 5. If a neighbor already belongs to a project, call get_project_context to
    understand that project's scope before recommending joining it.
-
-## Hard rejection rules (ALWAYS apply, even before consulting skills)
-
-REJECT a connection (classify as "unrelated") if:
-- Similarity score is below the threshold returned by vector_search_fragment_neighbors.
-
-NOTE on musical compatibility: Key and tempo differences are NOT rejection
-criteria. Creators routinely transpose keys and adjust tempos when combining
-ideas. Use the pre-computed `computed_signals` to evaluate musical_compatibility:
-- tempo_match >= 0.6 AND key_match_relative >= 0.5 → "strong"
-- tempo_match >= 0.3 OR key_match_fifth >= 0.5 → "weak"
-- tempo_match == 0.0 AND all key_match variants == 0.0 → "conflicting"
-- Both fragments lack audio_features (scores all 0.0) → "n/a"
-Never use musical_compatibility alone to reject a connection.
-
-For ALL other classification decisions (same_song_candidate vs related_theme
-vs similar_emotion vs unrelated), you MUST follow the thresholds and
-multi-signal fusion logic defined in the relationship-rules skill. Do not
-guess — call the skill tool to load the rules.
 
 ## Output
 
@@ -646,13 +689,14 @@ Return ONLY this JSON structure:
       "neighbor_title": "...",
       "similarity_score": 0.82,
       "relationship": "same_song_candidate | related_theme | similar_emotion | unrelated",
+      "fusion_score": 12.345,
       "signals": {
         "emotional_alignment": "strong | weak | conflicting | unknown",
         "thematic_alignment": "strong | weak | conflicting | unknown",
         "musical_compatibility": "strong | weak | conflicting | n/a",
         "temporal_pattern": "active_project | dormant | unrelated_in_time"
       },
-      "evidence": "specific reasons with concrete details from both fragments",
+      "evidence": "brief supporting details from computed_signals",
       "project_id": "... or null",
       "project_title": "... or null"
     }
@@ -668,18 +712,9 @@ Return ONLY this JSON structure:
 
 ## Grouping guidance
 
-When fragments share emotional, thematic, or musical connections, group them.
-A creator with 15 fragments might have 3-8 projects. Lean toward grouping when
-there is reasonable evidence — creators benefit from seeing connections.
-
-Relationship types and when to recommend grouping:
-- "same_song_candidate": shared imagery, lyrical continuity, structural complement → new_project or join_project
-- "related_theme": overlapping themes or subject matter → new_project or join_project
-- "similar_emotion": shared emotional tone → new_project or join_project
-- "unrelated": no meaningful connection → no_group
-
-When recommending "new_project", ALWAYS include the current fragment AND at least
-one neighbor in "group_with_ids". The Producer Agent needs these IDs to create the project.
+Use the `fusion_relationship` label directly. When recommending
+"new_project", ALWAYS include the current fragment AND at least one
+neighbor in "group_with_ids".
 
 ## Refusal rules (inline — always check before output)
 
@@ -724,7 +759,7 @@ Collections available: fragments, projects, user_settings, notifications
 def build_memory_agent() -> LlmAgent:
     """Build the Memory Agent with all tools and skills."""
     tools: list[Any] = [
-        get_skill_toolset(["relationship-rules", "musical-knowledge", "refusal-rules"]),
+        get_skill_toolset(["musical-knowledge", "refusal-rules"]),
         FunctionTool(get_fragment_context),
         FunctionTool(vector_search_fragment_neighbors),
     ]
