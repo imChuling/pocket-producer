@@ -210,9 +210,21 @@ python research/export_fusion_weights.py \
 
 A separate study from the paper above: does a compatibility scorer react to
 the changes a musician would hear (wrong key, wrong tempo, a bar late)?
-Protocols are frozen in `protocol-behavioral-v1.md` and
-`protocol-retrieval-v1.md`; results are in `results-behavioral-v1.md` and
-`results-retrieval-v1.md`. Code: `research/compat_tests/`.
+Protocols are frozen in `protocol-behavioral-v1.md`,
+`protocol-retrieval-v1.md` and `protocol-assignment-v1.md`; results are in
+`results-behavioral-v1.md`, `results-retrieval-v1.md` and
+`results-assignment-v1.md`. Code: `research/compat_tests/`.
+
+The assignment study is retrieval turned around: given one stem, rank the
+context it came from among 50 contexts missing the same stem type. It
+measures whether a part fits a musical context, the question the session
+rankers answer (`beat-fit-v1`), and is filed with that evidence, not with
+grouping, which the product does on emotional and thematic kinship. Same-role
+Recall@1: `classic_onset` 0.540 [0.496, 0.584] and fusion plus onset 0.604
+[0.559, 0.649], against MS-CLAP cosine 0.141 and the deployed fusion 0.207;
+six of seven predictions held. It reuses the recordings of the behavioural and retrieval studies, so it is not independent; the onset combination was chosen post hoc on them; the stems are studio multitrack with a steady beat; and prediction A1 (similarity at most 0.10) was not supported. Run it with
+`python -m research.compat_tests.run_assignment --store <store> --output
+artifacts/compat-assignment-musdb18`.
 
 **Data.** MUSDB18-HQ, Zenodo record
 [3338373](https://zenodo.org/records/3338373), `musdb18hq.zip` (md5
@@ -281,8 +293,9 @@ Expected wall-clock on a laptop CPU:
 | 3. guardrail | under a minute |
 
 Everything is written under `research/data/compat/`, which git ignores.
-The committed reports in `artifacts/compat-behavioral-musdb18/` and
-`artifacts/compat-retrieval-musdb18/` are what steps 1 and 2 produced once,
+The committed reports in `artifacts/compat-behavioral-musdb18/`,
+`artifacts/compat-retrieval-musdb18/` and
+`artifacts/compat-assignment-musdb18/` are what steps 1 and 2 produced once,
 with the code as frozen; compare a rerun with them rather than copying it
 over them.
 

@@ -8,7 +8,12 @@ before the script was written and before any score was computed. Script:
 
 MUSDB18-HQ, 594 query stems from 149 tracks. Each stem is scored against a
 pool of contexts (its own plus contexts from other tracks) and the task is
-to rank its own context first. Intervals are 95% track-level bootstrap
+to rank its own context first: assigning a part to the musical context it
+fits. That is the question the session rankers answer (`beat-fit-v1`), seen
+from the part's side. It is not how the product groups fragments into
+projects, which is on emotional and thematic kinship as judged by the
+language model; this study says nothing about that (see the protocol's
+dated scope clarification). Intervals are 95% track-level bootstrap
 intervals. This is not an independent validation: the recordings, the
 stored features and the retrieval results on them were known beforehand,
 and the onset combination was chosen post hoc on the same recordings.
@@ -70,7 +75,7 @@ In these two pools a candidate context may still contain the query's own
 instrument. There the similarity scorers are at chance (`any_role`) or at
 and below it (`tempo_matched`: the `fusion5_online` interval lies below
 0.10). A likely reading is that a stem is most similar to mixes that already
-contain its instrument, which are the wrong projects for it; this was not
+contain its instrument, which are the wrong contexts for it; this was not
 tested directly. Adding the fusion score to the onset signal lowers
 Recall@1 in both pools relative to `classic_onset` alone, the opposite of
 what happens in `same_role`.
@@ -90,17 +95,21 @@ Every scorer is weakest on vocals.
 
 ## Reading
 
-- For assigning a stem to its project, the beat-synchronous fit signals
-  rank the true context first far more often than MS-CLAP similarity or the
-  deployed fusion do. The direction matches retrieval on the same
-  recordings and is measured here in the other direction, stem to project.
+- For assigning a part to the context it fits, the beat-synchronous fit
+  signals rank the true context first far more often than MS-CLAP
+  similarity or the deployed fusion do. The direction matches retrieval on
+  the same recordings and is measured here the other way round, part to
+  context. For ranking, this is further support for scoring candidates by
+  beat-aligned chroma and onset pattern on the session's grid, as
+  `beat-fit-v1` does, on the same recordings rather than new ones.
 - MS-CLAP nearest neighbours are almost entirely the same instrument from a
-  different song. A grouping rule built on that similarity groups by
-  instrument type, not by song.
+  different song (586 of 594): the embedding places stems mainly by
+  instrument type, not by the song or context they come from.
 - The limits stated in the protocol apply: the true context is one good
   assignment among possibly several; the stems are studio multitrack with a
-  steady beat cut from the same time window as their context; product
-  projects made of separately recorded fragments at different tempos and
-  keys are not modelled; nothing here shows how a musician would group.
+  steady beat cut from the same time window as their context; separately
+  recorded fragments at different tempos and keys, and hummed or free-tempo
+  ideas, are not modelled; nothing here shows which parts a musician would
+  choose.
 - No multiple-comparison correction was applied across the seven
   predictions.

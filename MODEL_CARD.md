@@ -19,6 +19,13 @@ onset alone. COCOLA_HP_v1's official training sets are MoisesDB, Slakh2100
 and CocoChorales; the older MUSDB18-HQ assertion is corrected in the dated
 protocol errata. No independent training-file reconstruction excludes overlap.
 
+The assignment study (`research/results-assignment-v1.md`) adds evidence for
+the beat-fit signals from the other direction: given one stem, beat-aligned
+chroma plus onset pattern ranks the context it fits first among 50 contexts
+missing the same stem type in 54.0% of stems [49.6, 58.4], against 14.1% for
+MS-CLAP cosine and 20.7% for the deployed fusion. It is evidence about fit
+for ranking, not about grouping. It reuses the recordings of the behavioural and retrieval studies, so it is not independent; the onset combination was chosen post hoc on them; the stems are studio multitrack with a steady beat; and prediction A1 (similarity at most 0.10) was not supported.
+
 ## Overview
 
 Pocket Producer proposes fragments from a user's private library for an open

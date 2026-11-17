@@ -179,3 +179,17 @@ numbers.
 ## Deviations
 
 None.
+
+### 2026-11-17 clarification of scope (append-only)
+
+The text above is retained. This entry clarifies what the study measures;
+it changes no query, pool, scorer, prediction or number.
+
+The "Question" section frames the study as grouping fragments into
+projects. The product does not group that way: it forms projects on
+emotional and thematic kinship, as judged by the language model from tags,
+text, and the creator's notes and edits, and this study does not address
+that. What the study measures is whether a part fits a musical context
+(tempo, harmony and rhythm lining up with the other parts), which is the
+question the session rankers answer, `beat-fit-v1` among them. Its results
+are filed with the fit and ranking evidence, not with grouping.

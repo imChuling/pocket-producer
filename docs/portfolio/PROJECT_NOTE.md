@@ -55,6 +55,13 @@ loss; it also provides no demonstrated incremental benefit from adding
 chroma. Exposing harmony alongside rhythm remains a design choice to test,
 not an established superiority claim. Source: [retrieval results](../../research/results-retrieval-v1.md).
 
+Turned around (given one stem, find the context it fits among 50 that miss
+the same stem type), chroma plus onset ranked the true context first for
+**54.0% [49.6, 58.4]** of 594 stems, against 14.1% for MS-CLAP cosine and
+20.7% for the deployed fusion. This is evidence about fit, the question
+`beat-fit-v1` answers in ranking, not about how the product groups
+fragments. It reuses the recordings of the behavioural and retrieval studies, so it is not independent; the onset combination was chosen post hoc on them; the stems are studio multitrack with a steady beat; and prediction A1 (similarity at most 0.10) was not supported. Source: [assignment results](../../research/results-assignment-v1.md).
+
 The retrieval task is **as-is layering**: the true stem shares the context's
 song and time window; other-song candidates retain their own tempo, phase,
 key and phrase. These results do not establish musician preference or loop

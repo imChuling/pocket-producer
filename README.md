@@ -116,6 +116,14 @@ nor rules out that the +9.9 pp rests on recognising uploaders. Follow-up checks,
 negative results, are in [research/README.md](research/README.md); the
 dataset's per-item licenses are in [DATA_CREDITS.md](DATA_CREDITS.md).
 
+**Fit evidence for ranking** (MUSDB18-HQ, given one stem, find the context
+it fits among 50 missing the same stem type): beat-aligned chroma plus onset
+pattern ranks the true context first in 54.0% of 594 stems [49.6, 58.4],
+MS-CLAP cosine in 14.1% and the deployed fusion in 20.7%
+([results](research/results-assignment-v1.md)). Same recordings as the
+behavioural and retrieval studies, onset combination chosen post hoc, studio
+stems with a steady beat; one of seven predictions (A1) was not supported.
+
 ## Run it locally
 
 ```bash
