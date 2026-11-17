@@ -26,6 +26,11 @@ from .producer import producer_agent
 
 logger = logging.getLogger(__name__)
 
+# A grouping run makes about twenty model round trips and was observed to
+# need 149 s; at 150 s the run was cut off after its tools had grouped the
+# fragment but before it returned the narrative, which was then lost.
+AGENT_TIMEOUT_SECONDS = 240
+
 _runner: Runner | None = None
 
 
@@ -177,9 +182,11 @@ async def group_fragment_with_agents(
             return _final, _count
 
         try:
-            final_text, event_count = await asyncio.wait_for(_run(), timeout=150)
+            final_text, event_count = await asyncio.wait_for(_run(), timeout=AGENT_TIMEOUT_SECONDS)
         except TimeoutError:
-            logger.warning("Agent pipeline timed out (150s) for fragment %s", fragment_id)
+            logger.warning(
+                "Agent pipeline timed out (%ds) for fragment %s", AGENT_TIMEOUT_SECONDS, fragment_id
+            )
             return None
 
         result = _try_parse_json(final_text)
