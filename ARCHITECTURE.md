@@ -263,7 +263,8 @@ arrive or when the user triggers reanalysis.
 ### Who decides grouping
 
 `POCKET_GROUPING_MODE` selects who makes the join / new project / leave
-ungrouped call. The default is `llm`, which is what is deployed.
+ungrouped call. The default when unset is `llm`; the deployment
+configuration (`backend/deploy/cloudrun.env.yaml`) sets `hybrid`.
 
 | Stage | `llm` (default, live) | `fusion` | `hybrid` |
 |---|---|---|---|

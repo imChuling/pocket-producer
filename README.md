@@ -54,12 +54,12 @@ preference. The musician makes the call.
    Previews, accepts, rejects, inserts, and undos are logged with rank
    position for future supervision.
 4. **Grouping captured fragments into projects.** `POCKET_GROUPING_MODE`
-   sets who decides. `llm` (the default, and what is deployed): Gemini
+   sets who decides. `llm` (the default when unset): Gemini
    agents decide. `fusion`: the fusion score against a threshold calibrated
    on pack data decides in code, and Gemini only writes the narrative,
-   title and next action. `hybrid`: Gemini decides, shown each candidate's
+   title and next action. `hybrid` (what is deployed): Gemini decides, shown each candidate's
    fusion score and what the fusion rule would choose, and whether it agreed
-   is recorded. With `POCKET_EDIT_CONTEXT=1` (off by default), Gemini is
+   is recorded. With `POCKET_EDIT_CONTEXT=1` (off when unset, on in the deployment), Gemini is
    also shown a summary of the user's own edits (tags added or removed,
    titles replaced, suggestions completed or skipped) when it writes tags,
    titles, suggestions and grouping decisions. This conditions the prompt;
