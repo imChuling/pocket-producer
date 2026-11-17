@@ -101,11 +101,12 @@ The only check now wired into code is narrower: when fusion weights are refit fr
 
 ## Grouping use (behind a flag)
 
-With `POCKET_GROUPING_MODE=fusion` (default `llm`), the same
-`fusion-5sig-v1` weights decide which project a new fragment joins, scored
-pair by pair (`backend/ranking/grouping.py`). The weights were trained on
-pack co-membership, which asks the same question as grouping, but on pack
-data. The threshold, 15.31, is the smallest score at which same-pack
+Projects are formed on emotional and thematic kinship, as judged by the language model from tags, text, and the creator's notes and edits; the fusion score is shown to it as a sound-similarity cue. None of this has been evaluated against anyone's grouping preferences. The
+fusion score answers a narrower question: whether two recordings sound
+alike. Its weights were trained on pack co-membership (two loops filed in
+the same sample pack). With `POCKET_GROUPING_MODE=fusion` (not deployed),
+those weights decide which project a new fragment joins, scored pair by
+pair (`backend/ranking/grouping.py`). The threshold, 15.31, is the smallest score at which same-pack
 precision reaches 0.50 on the 484 training packs; on the 121 held-out packs
 it gives precision 0.937 [0.822, 0.995] and recall 0.325 [0.221, 0.480],
 and fusion's average precision exceeds plain MS-CLAP cosine by 0.127
@@ -115,10 +116,11 @@ from the product's own analysis, so these numbers do not transfer directly
 to a user's library. Neither the threshold nor the decision has been
 checked against any musician's own grouping. Gemini still writes the
 narrative, project title and next action; it does not make the decision.
-With `POCKET_GROUPING_MODE=hybrid`, Gemini makes the decision and is shown
-the fusion scores and what the fusion rule would choose; whether the two
-agree is recorded per fragment, and that agreement rate is the measure of
-how much the score weighs in. With `llm`, the value when the variable is unset, grouping is decided
+With `POCKET_GROUPING_MODE=hybrid` (deployed), Gemini makes the decision on
+emotional and thematic kinship and is shown the fusion scores as a
+sound-similarity cue; whether its choice coincides with the fusion rule is
+recorded per fragment, as a description of how often the two agree, not a
+target. With `llm`, the value when the variable is unset, grouping is decided
 by the Gemini agents alone. The deployment sets `hybrid`.
 
 ## Limitations

@@ -379,14 +379,26 @@ SHOWN_TOP = 8
 SHOWN_RECORDED = 20
 
 SCORE_MEANING = (
-    "Each score is the deployed fusion-5sig-v1 score between two fragments "
-    "(MS-CLAP audio similarity, tempo, key and tags, with weights trained on "
-    "loops filed in the same sample pack). The threshold is "
-    f"{GROUPING_THRESHOLD:.2f}. On held-out packs, at this threshold about 94% of "
-    "the pairs it flagged were from the same pack, while about two thirds of "
-    "same-pack pairs scored below it and were missed. The score mostly reflects "
-    "how alike two recordings sound, so a low score does not rule out parts that "
-    "complement each other, such as a bass line and a drum loop from one song."
+    "Each score is the deployed fusion-5sig-v1 score between two fragments: how "
+    "alike the two recordings sound (MS-CLAP audio similarity, tempo, key and tags, "
+    "with weights trained on loops filed in the same sample pack). It says nothing "
+    "about emotion, theme or meaning. The threshold is "
+    f"{GROUPING_THRESHOLD:.2f}. On held-out sample packs, at this threshold about 94% "
+    "of the pairs it flagged came from the same pack, while about two thirds of "
+    "same-pack pairs scored below it."
+)
+
+GROUPING_PRIORITY = (
+    "Fragments belong in the same project mainly through emotional and thematic "
+    "kinship: emotion, theme, lyric imagery, and the creator's own notes and "
+    "comments come first. Sound and role cues (the fusion score, timbral "
+    "proximity, structure complement, track gap, tempo and key) are supporting "
+    "links at most. A fusion score at or above the threshold is one supporting "
+    "link, not a reason to group on its own; a low score, or no score, is no "
+    "argument against grouping, and neither is a low text similarity when the "
+    "emotional or thematic link is specific. You may also group fragments on a "
+    "connection you can articulate that the tags do not capture; if you do, name "
+    "that connection in your narrative."
 )
 
 
@@ -514,10 +526,9 @@ def hybrid_prompt_block(ctx: HybridContext | None) -> str:
         "\n\nFusion model evidence (computed in code):\n"
         f"{SCORE_MEANING}\n{evidence}\n"
         "The memory tool also reports `fusion_pair_score` for each neighbour "
-        "(\"no score\" when a fragment has no audio vector). Treat a score at or above "
-        "the threshold as strong evidence that the two fragments belong in the same "
-        "project. You make the final decision. If your decision goes against the "
-        "score, say so in the narrative and why. Explicit creator notes still win."
+        "(\"no score\" when a fragment has no audio vector).\n"
+        f"{GROUPING_PRIORITY} You make the final decision. Explicit creator notes "
+        "still win."
     )
 
 

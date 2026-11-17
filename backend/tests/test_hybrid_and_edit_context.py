@@ -100,10 +100,21 @@ def test_hybrid_scores_the_library_and_names_what_the_rule_would_choose():
     block = fg.hybrid_prompt_block(ctx)
     assert f"{GROUPING_THRESHOLD:.2f}" in block
     assert "94%" in block and "two thirds" in block
-    assert "complement each other" in block
     assert "Bass" in block and "(at or above threshold)" in block
     assert f"join project {pid}" in block
-    assert "say so in the narrative" in block
+
+
+def test_hybrid_prompt_puts_emotion_and_theme_first():
+    block = fg.hybrid_prompt_block(fg.HybridContext(None))
+    assert fg.GROUPING_PRIORITY in block
+    assert "emotional and thematic kinship" in block
+    assert "says nothing about emotion, theme or meaning" in block
+    assert "not a reason to group on its own" in block
+    assert "no argument against grouping" in block
+    assert "name that connection in your narrative" in block
+    assert "strong evidence" not in block
+    assert "bass line and a drum loop" not in block
+    assert "Explicit creator notes still win" in block
 
 
 def test_hybrid_says_no_score_without_an_audio_vector():
@@ -145,7 +156,8 @@ def test_memory_neighbours_carry_their_scores_only_in_hybrid_mode(monkeypatch):
         assert shown[0]["computed_signals"]["fusion_at_or_above_threshold"] is True
         assert shown[1]["computed_signals"]["fusion_pair_score"] == "no score"
         assert len(ctx.neighbour_scores) == 2
-        assert "fusion_score_guidance" in memory._with_fusion_guidance({"neighbors": []})
+        guidance = memory._with_fusion_guidance({"neighbors": []})["fusion_score_guidance"]
+        assert fg.GROUPING_PRIORITY in guidance and "strong evidence" not in guidance
     finally:
         memory._current_db.reset(db_token)
         memory._current_user_id.reset(user_token)

@@ -518,7 +518,7 @@ def _compute_pairwise_signals(
 
 def _with_fusion_guidance(result: dict) -> dict:
     """In hybrid grouping mode, say what the neighbours' fusion scores mean."""
-    from api.pipeline.fusion_grouping import SCORE_MEANING, grouping_mode
+    from api.pipeline.fusion_grouping import GROUPING_PRIORITY, SCORE_MEANING, grouping_mode
 
     if grouping_mode() != "hybrid":
         return result
@@ -527,9 +527,8 @@ def _with_fusion_guidance(result: dict) -> dict:
         "fusion_score_guidance": SCORE_MEANING + (
             " Each neighbour's computed_signals carry fusion_pair_score (\"no score\" "
             "without an audio vector) and fusion_at_or_above_threshold. Copy the score "
-            "into that neighbour's analysis entry as fusion_score, and treat a score at "
-            "or above the threshold as strong evidence for the same project."
-        ),
+            "into that neighbour's analysis entry as fusion_score. "
+        ) + GROUPING_PRIORITY,
     }
 
 

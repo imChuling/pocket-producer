@@ -262,18 +262,20 @@ arrive or when the user triggers reanalysis.
 
 ### Who decides grouping
 
+Projects are formed on emotional and thematic kinship, as judged by the language model from tags, text, and the creator's notes and edits; the fusion score is shown to it as a sound-similarity cue. None of this has been evaluated against anyone's grouping preferences.
+
 `POCKET_GROUPING_MODE` selects who makes the join / new project / leave
 ungrouped call. The default when unset is `llm`; the deployment
 configuration (`backend/deploy/cloudrun.env.yaml`) sets `hybrid`.
 
-| Stage | `llm` (default, live) | `fusion` | `hybrid` |
+| Stage | `llm` (default when unset) | `fusion` | `hybrid` (deployed) |
 |---|---|---|---|
 | Tags, transcript, fragment key and BPM | Gemini tagging, with librosa as fallback | Same | Same |
 | Candidates considered | Voyage text-vector search, top neighbors at or above `SIMILARITY_THRESHOLD` (0.55 by default) | Up to 500 of the user's most recent fragments with an MS-CLAP audio vector | Voyage neighbors as in `llm`, plus the highest fusion scores over up to 500 recent fragments |
 | Creator note | Read by the agents as one input among others | Read only for an explicit instruction: "stands alone" is followed in code (no group); naming a place hands the fragment to the agent path | As in `llm`; explicit notes win |
 | Grouping decision | Memory and Producer agents (Gemini) | Code: `ranking/grouping.py: decide_grouping`, fusion score against a fixed threshold | Memory and Producer agents (Gemini), shown every neighbor's fusion score ("no score" without an audio vector) and what `decide_grouping` would choose |
 | Fragments without an audio vector | Agent path | Agent path, recorded as `llm_fallback` (the pipeline first waits up to 90 s for an upload's audio encoding) | Agent path, shown "no score" |
-| Narrative, project title, next action | Gemini | Gemini, given the decision; nothing it returns is read as a decision | Gemini; asked to say in the narrative when it goes against the score |
+| Narrative, project title, next action | Gemini | Gemini, given the decision; nothing it returns is read as a decision | Gemini; asked to name in the narrative any connection it groups on that the tags do not capture |
 | Rescue Score | Code | Code | Code |
 
 The score between two fragments is the deployed `fusion-5sig-v1` weights
@@ -286,11 +288,16 @@ reaches 15.31; an ungrouped winner starts a new project with every
 ungrouped fragment at or above it. Otherwise the fragment stays ungrouped.
 
 In `hybrid` mode the same computation runs but is not acted on. The agents
-are told what the score means: at 15.31, on held-out packs, about 94% of
+are told what the score means: how alike two recordings sound, and nothing
+about emotion, theme or meaning; at 15.31, on held-out packs, about 94% of
 flagged pairs were same-pack and about two thirds of same-pack pairs were
-missed, and the score mostly reflects sounding alike, so a low score does
-not rule out complementary parts. They are asked to treat a score at or
-above the threshold as strong evidence for the same project.
+missed. They are told that emotion, theme, lyric imagery and the creator's
+own notes and comments come first; that a score at or above the threshold
+is one supporting link, not a reason to group on its own; that a low score
+is no argument against grouping; and that they may group on a connection
+the tags do not capture if they name it in the narrative. Whether a part
+fits an open DAW session (tempo, harmony, rhythm lining up) is a separate
+question, answered by the session rankers such as `beat-fit-v1`.
 
 The threshold was chosen on the 484 training packs of the frozen pack split
 and checked once on the 121 held-out packs
