@@ -66,7 +66,8 @@ async def _memory_and_project_locked(
         logger.info("Fragment %s removing from project %s for re-evaluation", fragment_id, old_project_id)
         db["fragments"].update_one(
             {"_id": ObjectId(fragment_id), "user_id": user_id},
-            {"$unset": {"project_id": "", "project_title": "", "connection_reason": "", "connection_types": "", "agent_narrative": ""}},
+            {"$unset": {"project_id": "", "project_title": "", "connection_reason": "", "connection_types": "", "agent_narrative": "",
+                        "grouping_decided_by": "", "grouping_decision": ""}},
         )
         remaining = db["fragments"].count_documents({"user_id": user_id, "project_id": old_project_id})
         if remaining < 2:
@@ -77,6 +78,11 @@ async def _memory_and_project_locked(
                     {"$unset": {"project_id": "", "project_title": "", "connection_reason": "", "connection_types": "", "agent_narrative": ""}},
                 )
             logger.info("Dissolved project %s (only %d fragments left)", old_project_id, remaining)
+
+    from .fusion_grouping import group_by_fusion, grouping_mode
+
+    if grouping_mode() == "fusion" and await group_by_fusion(db, user_id, fragment_id):
+        return
 
     result = await group_fragment_with_agents(db, user_id, fragment_id)
     logger.info(

@@ -14,6 +14,24 @@ from .tagging import build_fallback_tags, tag_fragment_direct
 logger = logging.getLogger(__name__)
 
 _clap_tasks: set[asyncio.Task] = set()
+_clap_by_fragment: dict[str, asyncio.Task] = {}
+
+
+async def wait_for_clap(fragment_id: str, timeout: float) -> bool:
+    """Wait for this fragment's audio encoding if one is running here.
+
+    Returns True when an encoding task finished within the timeout. Fusion
+    grouping uses it: the encoding is started in parallel with tagging and
+    may still be running when grouping begins.
+    """
+    task = _clap_by_fragment.get(fragment_id)
+    if task is None:
+        return False
+    try:
+        await asyncio.wait_for(asyncio.shield(task), timeout=timeout)
+        return True
+    except Exception:
+        return False
 
 
 def _spawn_clap_encoding(db, user_id: str, fragment_id: str, gcs_uri: str) -> None:
@@ -31,7 +49,14 @@ def _spawn_clap_encoding(db, user_id: str, fragment_id: str, gcs_uri: str) -> No
 
     task = asyncio.create_task(_run())
     _clap_tasks.add(task)
-    task.add_done_callback(lambda t: _clap_tasks.discard(t))
+    _clap_by_fragment[fragment_id] = task
+
+    def _forget(t: asyncio.Task) -> None:
+        _clap_tasks.discard(t)
+        if _clap_by_fragment.get(fragment_id) is t:
+            del _clap_by_fragment[fragment_id]
+
+    task.add_done_callback(_forget)
 
 
 def _set_step(db, fragment_id: str, user_id: str, step: str):

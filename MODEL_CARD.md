@@ -96,6 +96,24 @@ The only check now wired into code is narrower: when fusion weights are refit fr
 
 **Key finding**: the two-parameter cosine-plus-bias baseline beats both learned models on weak labels. The benchmark predominantly rewards embedding proximity, so it cannot establish validity for continuation utility. A single-rater listening protocol was designed (`research/prereg_human_v1.md`) and, by the author's choice, not run, so whether learned capacity helps on the real task remains open.
 
+## Grouping use (behind a flag)
+
+With `POCKET_GROUPING_MODE=fusion` (default `llm`), the same
+`fusion-5sig-v1` weights decide which project a new fragment joins, scored
+pair by pair (`backend/ranking/grouping.py`). The weights were trained on
+pack co-membership, which asks the same question as grouping, but on pack
+data. The threshold, 15.31, is the smallest score at which same-pack
+precision reaches 0.50 on the 484 training packs; on the 121 held-out packs
+it gives precision 0.937 [0.822, 0.995] and recall 0.325 [0.221, 0.480],
+and fusion's average precision exceeds plain MS-CLAP cosine by 0.127
+[0.039, 0.206] (`research/results-grouping-threshold-v1.md`). Precision at a
+fixed threshold depends on library size, and online tags, tempo and key come
+from the product's own analysis, so these numbers do not transfer directly
+to a user's library. Neither the threshold nor the decision has been
+checked against any musician's own grouping. Gemini still writes the
+narrative, project title and next action; it does not make the decision.
+With the flag off, grouping is decided by the Gemini agents as before.
+
 ## Limitations
 
 - **No personalization**: the system does not adapt to individual user preferences over time. This is a deliberate design constraint: adaptation would first need a temporal held-out evaluation on logged decisions, and learned weights must pass the behavioural guardrail (`research/compat_tests/guardrail.py`).

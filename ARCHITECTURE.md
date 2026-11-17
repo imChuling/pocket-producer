@@ -258,6 +258,41 @@ NOT override them. A wrong grouping damages user trust more than a missed
 connection. Fragments left ungrouped are re-evaluated whenever new fragments
 arrive or when the user triggers reanalysis.
 
+### Who decides grouping
+
+`POCKET_GROUPING_MODE` selects who makes the join / new project / leave
+ungrouped call. The default is `llm`.
+
+| Stage | `llm` (default, live) | `fusion` |
+|---|---|---|
+| Tags, transcript, fragment key and BPM | Gemini tagging, with librosa as fallback | Same |
+| Candidates considered | Voyage text-vector search, top neighbors at or above `SIMILARITY_THRESHOLD` (0.55 by default) | Up to 500 of the user's most recent fragments with an MS-CLAP audio vector |
+| Creator note | Read by the agents as one input among others | Read only for an explicit instruction: "stands alone" is followed in code (no group); naming a place hands the fragment to the agent path |
+| Grouping decision | Memory and Producer agents (Gemini) | Code: `ranking/grouping.py: decide_grouping`, fusion score against a fixed threshold |
+| Fragments without an audio vector | Agent path | Agent path, recorded as `llm_fallback` (the pipeline first waits up to 90 s for an upload's audio encoding) |
+| Narrative, project title, next action | Gemini | Gemini, given the decision; nothing it returns is read as a decision |
+| Rescue Score | Code | Code |
+
+In `fusion` mode the score between two fragments is the deployed
+`fusion-5sig-v1` weights applied to their MS-CLAP cosine (filling both the
+mean and max terms), tempo match averaged over both directions, exact key
+match after compact keys such as `Em` are read as `e minor`, and tag
+Jaccard. A project scores the mean of the new fragment's scores against its
+members (average linkage). The best project or ungrouped fragment wins if
+it reaches 15.31; an ungrouped winner starts a new project with every
+ungrouped fragment at or above it. Otherwise the fragment stays ungrouped.
+
+The threshold was chosen on the 484 training packs of the frozen pack split
+and checked once on the 121 held-out packs
+(`research/results-grouping-threshold-v1.md`). It comes from pack
+co-membership, not from anyone's grouping choices, and has not been checked
+against how musicians group their own fragments.
+
+Each fragment grouped in `fusion` mode records `grouping_decided_by`
+(`fusion`, `creator_note` or `llm_fallback`) and `grouping_decision` (score,
+threshold, number of fragments scored), so the share each path takes can be
+counted. The `/group-with-agent` debug endpoint always runs the agent path.
+
 ### Reanalyze Flow
 
 Reanalysis re-runs the full pipeline (Phase 2 + Phase 3) for a fragment.

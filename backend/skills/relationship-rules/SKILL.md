@@ -3,7 +3,8 @@ name: relationship-rules
 description: |
   Classify fragment pairs into same_song_candidate / related_theme /
   similar_emotion / unrelated using 4-signal fusion. Call after vector
-  search returns neighbors with score >= 0.70 and computed_signals attached.
+  search returns neighbors at or above its threshold (`threshold_applied`,
+  0.55 by default, adjustable per user) with computed_signals attached.
   Use the pre-computed scores in computed_signals as primary evidence;
   fall back to raw tag inspection only when scores are all 0.0 (missing
   data). NOT for single-fragment tagging or project scoring.
@@ -20,13 +21,22 @@ project grouping.
 This skill is **judgmental, not generative**. You do not invent connections.
 You evaluate signals and assign labels with explicit reasoning.
 
+Scope: this skill applies to the agent grouping path, the default
+(`POCKET_GROUPING_MODE=llm`). With `POCKET_GROUPING_MODE=fusion`, grouping
+for fragments that have an audio vector is decided in code by the fusion
+score against a threshold calibrated on pack data
+(`research/results-grouping-threshold-v1.md`), and this skill is used only
+for fragments that path hands back: text-only fragments, fragments without
+an audio vector yet, and fragments whose creator note names where they
+belong.
+
 ## When to use this skill
 
 Use this skill whenever:
 
 1. A new fragment is being processed and Vector Search has returned 1-N
-   candidate neighbors above the base similarity threshold (0.70 cosine
-   similarity).
+   candidate neighbors at or above the search threshold (`threshold_applied`
+   in the search result: 0.55 cosine by default, or the user's own setting).
 2. The Producer Agent asks you to evaluate whether two specific fragments
    could belong to the same project.
 3. A user manually links two fragments and you need to verify the link makes
@@ -42,8 +52,8 @@ Use this skill whenever:
 - The question is about whether to refuse (use `refusal-rules`)
 - Do NOT call just because two fragments belong to the same user — ALL
   fragments belong to the same user; that is not a signal
-- Do NOT call for neighbors with similarity_score < 0.70 — they are
-  already discarded by the hard floor rule
+- Do NOT call for neighbors below `threshold_applied`; the search has
+  already discarded them
 
 ## Input
 
@@ -157,7 +167,7 @@ Follow these steps for every set of candidates returned by Vector Search.
 
 ### Step 1: Filter candidates
 
-Discard any candidate with `similarity < 0.70`. If more than 10
+Discard any candidate with `similarity` below `threshold_applied`. If more than 10
 candidates remain, keep only the top 5 by similarity.
 
 ### Step 2: Evaluate signals per candidate
@@ -268,7 +278,7 @@ Creative Habit Radar (showing emotional patterns over time) but not strong
 enough to suggest project-level connection.
 
 Required signals:
-- `similarity` between 0.70 and 0.80
+- `similarity` between `threshold_applied` and 0.80
 - `emotional_alignment` is `strong`
 - `thematic_alignment` is `weak` or `unknown`
 
@@ -277,7 +287,7 @@ The candidate, despite Vector Search returning it, is not meaningfully
 related to the new fragment. Below the floor of usefulness.
 
 Conditions:
-- `similarity < 0.70` (technically shouldn't return, but allow margin), OR
+- `similarity` below `threshold_applied` (should not be returned, but allow margin), OR
 - At least one signal is `conflicting`, OR
 - All signals are `weak`/`unknown`
 
