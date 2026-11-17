@@ -89,6 +89,8 @@ one process-wide instance (`ranking/adapters/shared.py`) with serialized
 inference, warmed at startup together with the role probe; ranking runs
 on its own two-thread pool so a slow ranker cannot starve other work.
 
+Nine rankers are registered in the default deployment (with `POCKET_ENABLE_CLAP=1` and the fusion weights present, as deployed): `rules-v1`, `recency-v1`, `mean-session-v1`, `text-only-v1`, `audio-cosine-v1`, `role-gap-v1`, `harmonic-fit-v1`, `beat-fit-v1` and `fusion-5sig-v1`.
+
 | Model id | Needs | Notes |
 |---|---|---|
 | `rules-v1` | metadata only | Seven deterministic [0,1] features with hand-tuned weights: tempo 0.25, intent 0.20, key 0.20, role gap 0.15, novelty 0.05, tag overlap 0.10, recency 0.05. Roles already in the session come from the tags of inserted fragments, since Audiotool reports track kinds, not roles |

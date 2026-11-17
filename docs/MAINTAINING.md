@@ -57,7 +57,8 @@ read its name and docstring before editing it.
   (`ranking/beat_sync.py`, design in `research/design-online-signals.md`).
   It needs the project tempo and `representations.beat_frames`; fusion logs
   the same two signals but does not score with them. All nine registered
-  rankers serve without fallback given full inputs.
+  rankers (`rules-v1`, `recency-v1`, `mean-session-v1`, `text-only-v1`, `audio-cosine-v1`, `role-gap-v1`, `harmonic-fit-v1`, `beat-fit-v1` and `fusion-5sig-v1`)
+  serve without fallback given full inputs.
 - MS-CLAP is one shared instance (`backend/ranking/adapters/shared.py`).
   Never construct `MsClapAdapter()` elsewhere.
 - Rankers skip candidates they cannot score and raise when none remain;

@@ -39,7 +39,8 @@ preference. The musician makes the call.
    open project: tempo, track roles, up to eight unique samples on the
    timeline, and an optional sentence of intent. Session audio is embedded
    with MS-CLAP on the server (CPU).
-2. **Rankers.** Nine are registered and selectable in the panel; two matter
+2. **Rankers.** Nine are registered and selectable in the panel
+   (`rules-v1`, `recency-v1`, `mean-session-v1`, `text-only-v1`, `audio-cosine-v1`, `role-gap-v1`, `harmonic-fit-v1`, `beat-fit-v1` and `fusion-5sig-v1`); two matter
    most. The default `rules-v1` scores seven non-audio signals
    (tempo fit, key, role gap, stated intent, tag overlap, tag novelty,
    recency). The selectable `fusion-5sig-v1` is a linear fusion of mean and

@@ -16,7 +16,7 @@ cc-by 4,827 / cc0 3,230 / cc-by-nc 1,215 / sampling-plus 221).
 ## Regenerating the ignored files
 
 ```
-# manifest (tracked)
+# manifest (gitignored, regenerated here)
 python research/build_fsld_manifest.py
 
 # MS-CLAP 2023 embeddings

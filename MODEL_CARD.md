@@ -40,10 +40,13 @@ Measured on Apple M-series CPU, batch size 32, 32 context tokens, from the exact
 
 ## Baselines (no learned parameters)
 
+Nine rankers are registered in the default deployment (with `POCKET_ENABLE_CLAP=1` and the fusion weights present, as deployed): `rules-v1`, `recency-v1`, `mean-session-v1`, `text-only-v1`, `audio-cosine-v1`, `role-gap-v1`, `harmonic-fit-v1`, `beat-fit-v1` and `fusion-5sig-v1`. The eight without fitted weights are listed here; `fusion-5sig-v1`, whose five weights were fitted on pack co-membership, is covered under Grouping use and Limitations.
+
 | Baseline | Description |
 |---|---|
 | `rules-v1` | Weighted combination of 7 deterministic [0,1] features (tempo match, key match, role gap, intent match, tag novelty, tag overlap with the session's inserted fragments, recency). Roles already in the session are inferred from the tags of inserted fragments, since the host DAW reports track kinds, not musical roles; when no role is known, as in a freshly opened project that may already hold untagged parts, role gap is not scored. Always-available fallback and the default. |
 | `harmonic-fit-v1` | Transpose-invariant cross-correlation between the session's mean chroma and each candidate's 12-dim chroma; both computed at encode time (session) and ingest (candidate). It measures similarity after the best transposition, not fit as played: it is blind to transposition in the behavioural tests (P2 0.49), and the product never transposes. Silent candidates or sessions (all-zero chroma) are not scored. |
+| `beat-fit-v1` | Beat-synchronous chroma agreement plus onset-pattern correlation on the project's beat grid, each standardised over the request's candidates; no fitted weights. Needs the project tempo, region positions and stored `representations.beat_frames`; fragments without stored frames are left out. |
 | `role-gap-v1` | Zero-shot CLAP instrument-role probe; scores candidates that fill a role the session regions lack. |
 | `recency-v1` | Most-recently-created first. |
 | `text-only-v1` | Voyage voyage-3 cosine between intent text and candidate text embedding. |
@@ -71,7 +74,7 @@ Revision pinning: every stored vector carries `model_id`, `revision` (sha256 of 
 - Three negative types: easy random, hard tempo/key match, hard cosine-similar
 - Split: 1,236 train / 519 val (per-source grouped, deterministic seed 20260725)
 - Label type: **weak** (same-pack membership as proxy for continuation utility)
-- Per-item licenses classified from metadata, counted over the full 9,493-item manifest (`DATA_CREDITS.md`), not over the 2,558 annotated items or the pack-only training subset: cc-by 4,827 / cc0 3,230 / cc-by-nc 1,215 / sampling-plus 221. The license mix of the training subset has not been counted.
+- Per-item licenses classified from metadata, counted over the full 9,493-item manifest (`DATA_CREDITS.md`), not over the 2,558 annotated items or the pack-only training subset: cc-by 4,827 / cc0 3,230 / cc-by-nc 1,215 / sampling-plus 221. The pack-only train split that the served fusion weights were fitted on (1,389 loops) is cc-by 635 / cc0 547 / cc-by-nc 129 / sampling-plus 78 (`DATA_CREDITS.md`).
 
 ### Human labels (history; none in the current results)
 
