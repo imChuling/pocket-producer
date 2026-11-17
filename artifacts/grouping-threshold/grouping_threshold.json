@@ -1,0 +1,194 @@
+{
+  "experiment": "grouping threshold for the pairwise fusion score",
+  "protocol": "research/protocol-grouping-threshold-v1.md",
+  "status": "threshold chosen on train packs; held-out computed once",
+  "items_file": "research/data/fsld/items_msclap_packonly.jsonl",
+  "split_sha256": "3f4967ca916ac5a985388836f9fb60e44bef93c3f73d2df7ee1c37ee4f36384c",
+  "weights": {
+    "file": "artifacts/fusion-deploy/weights.json",
+    "model_id": "fusion-5sig-v1",
+    "values": [
+      6.843134,
+      8.332282,
+      1.980148,
+      0.367365,
+      1.497088
+    ]
+  },
+  "score_function": "backend/ranking/grouping.py: pair_fusion_score",
+  "parity_max_abs_diff": 1.9539925233402755e-14,
+  "target_precision": 0.5,
+  "bootstrap": {
+    "unit": "pack",
+    "resamples": 10000,
+    "seed": 20261117,
+    "interval": "95% percentile"
+  },
+  "train": {
+    "counts": {
+      "packs": 484,
+      "items": 1389,
+      "positive_pairs": 3706,
+      "negative_pairs": 960260
+    },
+    "thresholds": {
+      "fusion": {
+        "f1_max": {
+          "threshold": 15.181584896605491,
+          "train_precision": 0.46661550268610896,
+          "train_recall": 0.3281165677280086,
+          "train_f1": 0.38529784537389095
+        },
+        "primary": {
+          "rule": "smallest threshold with train precision >= 0.5",
+          "threshold": 15.31375234614358,
+          "train_precision": 0.5,
+          "train_recall": 0.30626011872638964
+        },
+        "train_average_precision": 0.3329
+      },
+      "cosine": {
+        "f1_max": {
+          "threshold": 0.8667337589657299,
+          "train_precision": 0.55031267765776,
+          "train_recall": 0.2611980572045332,
+          "train_f1": 0.3542543458371455
+        },
+        "primary": {
+          "rule": "smallest threshold with train precision >= 0.5",
+          "threshold": 0.8604315813827422,
+          "train_precision": 0.5,
+          "train_recall": 0.27145169994603346
+        },
+        "train_average_precision": 0.3062
+      }
+    }
+  },
+  "heldout": {
+    "counts": {
+      "packs": 121,
+      "items": 408,
+      "positive_pairs": 1332,
+      "negative_pairs": 81696
+    },
+    "results": {
+      "fusion": {
+        "average_precision": 0.6974,
+        "primary": {
+          "precision": 0.9372,
+          "recall": 0.3251,
+          "precision_ci": [
+            0.8219,
+            0.9949
+          ],
+          "recall_ci": [
+            0.221,
+            0.4801
+          ]
+        },
+        "f1_max": {
+          "precision": 0.9281,
+          "recall": 0.3491
+        },
+        "average_precision_ci": [
+          0.5765,
+          0.7995
+        ]
+      },
+      "cosine": {
+        "average_precision": 0.5705,
+        "primary": {
+          "precision": 0.9147,
+          "recall": 0.2658,
+          "precision_ci": [
+            0.8128,
+            0.9818
+          ],
+          "recall_ci": [
+            0.1615,
+            0.4291
+          ]
+        },
+        "f1_max": {
+          "precision": 0.9337,
+          "recall": 0.2432
+        },
+        "average_precision_ci": [
+          0.4465,
+          0.7021
+        ]
+      },
+      "fusion_minus_cosine_ap": {
+        "point": 0.1269,
+        "ci": [
+          0.039,
+          0.2064
+        ]
+      }
+    }
+  },
+  "heldout_uploader_disjoint": {
+    "definition": "held-out packs whose uploader has no pack on the train side",
+    "counts": {
+      "packs": 63,
+      "items": 182,
+      "positive_pairs": 473,
+      "negative_pairs": 15998
+    },
+    "results": {
+      "fusion": {
+        "average_precision": 0.6495,
+        "primary": {
+          "precision": 0.9045,
+          "recall": 0.3002,
+          "precision_ci": [
+            0.6224,
+            1.0
+          ],
+          "recall_ci": [
+            0.1498,
+            0.5018
+          ]
+        },
+        "f1_max": {
+          "precision": 0.8935,
+          "recall": 0.3192
+        },
+        "average_precision_ci": [
+          0.3749,
+          0.8058
+        ]
+      },
+      "cosine": {
+        "average_precision": 0.5002,
+        "primary": {
+          "precision": 0.906,
+          "recall": 0.2241,
+          "precision_ci": [
+            0.7121,
+            1.0
+          ],
+          "recall_ci": [
+            0.0926,
+            0.4528
+          ]
+        },
+        "f1_max": {
+          "precision": 0.9109,
+          "recall": 0.1945
+        },
+        "average_precision_ci": [
+          0.3025,
+          0.7094
+        ]
+      },
+      "fusion_minus_cosine_ap": {
+        "point": 0.1493,
+        "ci": [
+          0.0169,
+          0.2363
+        ]
+      }
+    }
+  }
+}
