@@ -8,3 +8,4 @@ tests/
 .ruff_cache/
 .pytest_cache/
 .git/
+ranking/research/

@@ -1,4 +1,6 @@
-"""Test Producer Agent's decision logic with real data.
+"""Live check of the Producer decision logic on real data.
+
+A script, not a pytest test: it needs live MongoDB, Voyage and Gemini.
 
 Simulates the 3-agent pipeline:
   1. Catcher tags a new fragment (Gemini)
@@ -7,7 +9,7 @@ Simulates the 3-agent pipeline:
 
 Uses direct API calls to conserve free-tier quota.
 
-Run: .venv/bin/python tests/test_producer_decision.py
+Run from backend/: .venv/bin/python evals/producer_decision_check.py
 """
 
 import json
@@ -22,12 +24,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-import pytest  # noqa: E402
-
-# Integration test — requires live MongoDB / Voyage / Gemini. Skip cleanly when absent.
-genai = pytest.importorskip("google.genai")
-pymongo = pytest.importorskip("pymongo")
-voyageai = pytest.importorskip("voyageai")
+import pymongo  # noqa: E402
+import voyageai  # noqa: E402
+from google import genai  # noqa: E402
 
 from tools.rescue_score import compute_rescue_score  # noqa: E402
 

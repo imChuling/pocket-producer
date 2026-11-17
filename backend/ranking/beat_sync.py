@@ -12,8 +12,12 @@ not estimated: the project tempo is known, beats start at timeline zero and
 each region is placed at its own position. Candidates are inserted at the
 start of the timeline, so their first 10 s are pooled from beat 0.
 
-These functions mirror research/compat_tests (beatgrid, progression, signals);
-tests/ranking/test_beat_sync.py checks they agree numerically.
+These functions mirror research/compat_tests (beatgrid, progression, signals),
+and the two must change together: a change on one side that is not made on
+the other silently moves the product away from what the behavioural tests
+measured. tests/ranking/test_beat_sync.py checks that outputs agree and that
+the shared constants (sample rate, hop, silence threshold, window length,
+onset subdivisions, minimum shared beats) are equal.
 """
 
 import base64

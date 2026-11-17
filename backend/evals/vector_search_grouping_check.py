@@ -1,10 +1,12 @@
-"""Test clustering quality with 35 seeded fragments across 5 projects.
+"""Live check of vector-search grouping on 35 seeded fragments across 5 projects.
+
+A script, not a pytest test: it needs a live MongoDB and Voyage key.
 
 Verifies that vector search correctly groups related fragments and
 separates unrelated ones. Uses Voyage AI for query embeddings +
 MongoDB Atlas vector search. No Gemini calls needed.
 
-Run: .venv/bin/python tests/test_clustering_quality.py
+Run from backend/: .venv/bin/python evals/vector_search_grouping_check.py
 """
 
 import os
@@ -18,11 +20,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-import pytest  # noqa: E402
-
-# Integration test — requires live MongoDB / Voyage. Skip cleanly when absent.
-pymongo = pytest.importorskip("pymongo")
-voyageai = pytest.importorskip("voyageai")
+import pymongo  # noqa: E402
+import voyageai  # noqa: E402
 
 USER_ID = "test_30plus"
 

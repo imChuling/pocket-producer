@@ -436,7 +436,7 @@ extraction. It no longer exists as an agent: the live pipeline calls Gemini
 directly with the `music-tagging` skill as system context (Phase 2 above),
 which produced equivalent tags about 3x faster. The three-step
 Catcher → Memory → Producer decision flow survives only as an offline
-harness in `backend/tests/test_producer_decision.py`.
+live-data script in `backend/evals/producer_decision_check.py`.
 
 ### Relationship Classification
 

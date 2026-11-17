@@ -75,6 +75,17 @@ def test_signals_match_research():
     assert beat_sync.MIN_SHARED_BEATS == progression.MIN_SHARED_BEATS
 
 
+def test_shared_constants_match_the_research_implementation():
+    beatgrid, _, _ = _research()
+    from research.compat_tests import perturb
+
+    assert beat_sync.SAMPLE_RATE == beatgrid.SAMPLE_RATE
+    assert beat_sync.HOP_LENGTH == beatgrid.HOP_LENGTH
+    assert beat_sync.SILENT_RMS == beatgrid.SILENT_RMS
+    # The candidate window the product pools equals the behavioural-test window.
+    assert beat_sync.WINDOW_SECONDS == perturb.WINDOW_SECONDS
+
+
 def test_grid_starts_at_zero_and_covers_whole_beats_in_ten_seconds():
     times = beat_sync.beat_times_for(120.0)
     assert times[0] == 0.0 and times[-1] == pytest.approx(10.0)
