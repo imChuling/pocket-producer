@@ -55,7 +55,6 @@ def _encode_sync(db, user_id: str, fragment_id: str, gcs_uri: str) -> str:
     from bson import ObjectId
 
     from ranking.adapters.base import audio_sha256, encode_with_lineage
-    from ranking.zero_shot import style_scores
 
     bucket_name, blob_name = gcs_uri.replace("gs://", "").split("/", 1)
     suffix = pathlib.Path(blob_name).suffix or ".webm"
@@ -106,22 +105,12 @@ def _encode_sync(db, user_id: str, fragment_id: str, gcs_uri: str) -> str:
 
     with shared.infer_lock:
         record = encode_with_lineage(adapter, waveform, sample_rate)
-        styles = style_scores(adapter, waveform, sample_rate, audio_vector=record.vector)
-    top_styles = sorted(styles.items(), key=lambda kv: -kv[1])[:5]
     db["fragments"].update_one(
         {"_id": oid, "user_id": user_id},
         {"$set": {
             "representations.audio_semantic": record.model_dump(),
             "representations.chroma": chroma_record(waveform, sample_rate, input_hash),
             "representations.beat_frames": beat_frames_record(waveform, sample_rate),
-            "style_scores": {
-                "model_id": record.model_id,
-                "revision": record.revision,
-                "top": [
-                    {"style": style, "score": round(score, 4)}
-                    for style, score in top_styles
-                ],
-            },
         }},
     )
     return "encoded"

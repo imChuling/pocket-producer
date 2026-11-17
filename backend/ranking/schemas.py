@@ -99,9 +99,13 @@ class FragmentCandidate(BaseModel):
     beat_frames: dict | None = None
 
 
+# The client sends its fragment list, which the API caps at 200.
+MAX_RANK_CANDIDATES = 200
+
+
 class RankRequest(BaseModel):
     session: SessionFingerprint
-    candidates: list[FragmentCandidate]
+    candidates: list[FragmentCandidate] = Field(max_length=MAX_RANK_CANDIDATES)
     model_id: str = "rules-v1"
     limit: int = Field(default=3, ge=1, le=10)
 

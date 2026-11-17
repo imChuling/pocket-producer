@@ -342,8 +342,9 @@ def _verify_job_auth(authorization: str | None):
             )
             if claims.get("email") == allowed_sa and claims.get("email_verified"):
                 return
-        except Exception:
-            pass
+        except Exception as exc:
+            # The token itself is never logged.
+            logger.warning("job trigger OIDC verification failed: %s", type(exc).__name__)
     raise HTTPException(status_code=403, detail="Unauthorized")
 
 

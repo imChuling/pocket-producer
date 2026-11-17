@@ -122,6 +122,11 @@ def default_service() -> RankingService:
             logger.warning(
                 "failed to load fusion weights from %s", fusion_weights, exc_info=True
             )
+    else:
+        logger.warning(
+            "fusion weights not found at %s; fusion-5sig-v1 is not registered",
+            fusion_weights,
+        )
 
     ladder_dir = os.environ.get("POCKET_LADDER_DIR", "")
     if ladder_dir:

@@ -287,3 +287,67 @@ def test_snapshot_matches_the_routes_and_keeps_storage_paths_private(client, db,
     text = "".join(p.read_text() for p in written)
     assert "gs://" not in text
     assert "private" not in text
+
+
+def test_audio_serves_a_suffix_range(client, db):
+    fragment = add_fragment(db)
+
+    res = client.get(f"/api/demo/fragments/{fragment['_id']}/audio", headers={"Range": "bytes=-5"})
+
+    assert res.status_code == 206
+    assert res.content == AUDIO_BYTES[-5:]
+    assert res.headers["content-range"] == f"bytes 95-99/{len(AUDIO_BYTES)}"
+
+
+@pytest.mark.parametrize(
+    "header", ["bytes=100-", "bytes=500-600", "bytes=20-10", "bytes=-0", "bytes=abc"]
+)
+def test_audio_refuses_unsatisfiable_ranges(client, db, header):
+    fragment = add_fragment(db)
+
+    res = client.get(f"/api/demo/fragments/{fragment['_id']}/audio", headers={"Range": header})
+
+    assert res.status_code == 416
+    assert res.headers["content-range"] == f"bytes */{len(AUDIO_BYTES)}"
+
+
+@pytest.mark.parametrize(
+    ("header", "expected"),
+    [
+        ("bytes=0-9", (0, 9)),
+        ("bytes=90-", (90, 99)),
+        ("bytes=90-500", (90, 99)),
+        ("bytes=-10", (90, 99)),
+        ("bytes=-500", (0, 99)),
+    ],
+)
+def test_parse_byte_range_clamps_to_the_file(header, expected):
+    from api.routes.fragments import parse_byte_range
+
+    assert parse_byte_range(header, 100) == expected
+
+
+@pytest.fixture()
+def owner_client(client):
+    import api.auth
+    from api.main import app
+
+    app.dependency_overrides[api.auth.verify_firebase_token] = lambda: DEMO_USER_ID
+    yield client
+    app.dependency_overrides.clear()
+
+
+def test_fragment_list_keeps_vectors_server_side(owner_client, db):
+    add_fragment(db)
+
+    res = owner_client.get("/api/fragments")
+
+    assert res.status_code == 200
+    (fragment,) = res.json()["fragments"]
+    assert "representations" not in fragment
+    assert "embedding" not in fragment
+
+
+@pytest.mark.parametrize("limit", [0, 201])
+def test_fragment_list_limit_is_bounded(owner_client, limit):
+    assert owner_client.get(f"/api/fragments?limit={limit}").status_code == 422

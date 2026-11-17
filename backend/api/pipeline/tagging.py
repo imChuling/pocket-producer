@@ -72,7 +72,9 @@ def _load_tagging_skill_context(audio: bool = False) -> str:
                         + json.dumps(selected, ensure_ascii=False)
                     )
             except Exception:
-                pass
+                logger.warning(
+                    "Could not load tagging examples from %s", examples_path, exc_info=True
+                )
 
     result = "\n\n---\n\n".join(parts)
     if audio:

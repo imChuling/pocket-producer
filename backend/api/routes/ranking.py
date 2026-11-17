@@ -48,8 +48,16 @@ async def rank(
     user_id: str = Depends(verify_firebase_token),
 ) -> RankResponse:
     db = get_db()
-    rank_request = await asyncio.to_thread(attach_audio_embeddings, db, user_id, rank_request)
-    rank_request = apply_parsed_intent(rank_request)
+    try:
+        rank_request = await asyncio.to_thread(attach_audio_embeddings, db, user_id, rank_request)
+    except Exception:
+        # Without stored vectors the audio rankers refuse and the service
+        # falls back to rules, as it does for any other ranker failure.
+        logger.warning("attaching audio embeddings failed for user=%s", user_id, exc_info=True)
+    try:
+        rank_request = apply_parsed_intent(rank_request)
+    except Exception:
+        logger.warning("applying the parsed intent failed; ranking without it", exc_info=True)
     loop = asyncio.get_running_loop()
     try:
         response = await asyncio.wait_for(

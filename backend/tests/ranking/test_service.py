@@ -104,3 +104,16 @@ class TestRankingService:
     def test_model_cards_listed(self):
         cards = RankingService(registry()).model_cards()
         assert any(card["id"] == "rules-v1" for card in cards)
+
+
+def test_missing_fusion_weights_are_logged(monkeypatch, tmp_path, caplog):
+    import logging
+
+    from ranking.service import default_service
+
+    monkeypatch.delenv("POCKET_ENABLE_CLAP", raising=False)
+    monkeypatch.setenv("POCKET_FUSION_WEIGHTS", str(tmp_path / "absent.json"))
+    with caplog.at_level(logging.WARNING, logger="ranking.service"):
+        service = default_service()
+    assert "fusion-5sig-v1" not in {card["id"] for card in service.model_cards()}
+    assert any("fusion weights not found" in r.getMessage() for r in caplog.records)

@@ -120,8 +120,8 @@ a field. The historical `embedding` field is registered as what it is, a
 New audio fragments are encoded on upload (`backend/ranking/ingest.py`):
 resampled to 44.1 kHz mono, hashed, and skipped when the stored record
 already has the same input hash and model revision. The same pass stores a
-12-dim chroma profile under `representations.chroma` and the top five
-zero-shot style scores under `style_scores`. Encoding starts before Gemini
+12-dim chroma profile under `representations.chroma` and beat frames under
+`representations.beat_frames`. Encoding starts before Gemini
 tagging, so a tagging failure never leaves a fragment unrankable;
 `backend/scripts/backfill_representations.py` re-encodes older fragments.
 

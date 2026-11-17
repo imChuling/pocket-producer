@@ -48,6 +48,7 @@ const MODEL_LABELS: Record<string, string> = {
   "text-only-v1": "Text",
   "audio-cosine-v1": "Audio",
   "mean-session-v1": "Session",
+  "role-gap-v1": "Role gap",
   "linear-v1": "Linear",
   "deepsets-v1": "DeepSets",
   "pocketrank-context-v1": "PocketRank",

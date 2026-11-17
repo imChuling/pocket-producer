@@ -594,3 +594,39 @@ def test_region_positions_refuse_nonfinite_values(value):
 
     with pytest.raises(HTTPException):
         _parse_placements('[[{"start_beats": ' + value + '}]]', 1)
+
+
+def test_rank_falls_back_when_the_database_read_fails(auth_client):
+    def broken(*args, **kwargs):
+        raise RuntimeError("database unavailable")
+
+    with patch("api.routes.ranking.attach_audio_embeddings", broken):
+        response = auth_client.post(
+            "/api/ranking/rank",
+            json=rank_payload(model_id="fusion-5sig-v1"),
+            headers={"Authorization": "Bearer fake"},
+        )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["model_id"] == "rules-v1"
+    assert body["fallback_used"] is True
+
+
+def test_rank_survives_a_failing_intent_step(auth_client):
+    def broken(request):
+        raise ValueError("bad parsed intent")
+
+    with patch("api.routes.ranking.apply_parsed_intent", broken):
+        response = auth_client.post(
+            "/api/ranking/rank", json=rank_payload(), headers={"Authorization": "Bearer fake"}
+        )
+    assert response.status_code == 200
+
+
+def test_rank_rejects_too_many_candidates(auth_client):
+    payload = rank_payload()
+    payload["candidates"] = payload["candidates"] * 201
+    response = auth_client.post(
+        "/api/ranking/rank", json=payload, headers={"Authorization": "Bearer fake"}
+    )
+    assert response.status_code == 422

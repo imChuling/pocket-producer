@@ -194,7 +194,9 @@ async def group_fragment_with_agents(
                     session_id=session.id,
                 )
             except Exception:
-                pass
+                logger.warning(
+                    "Could not delete agent session for fragment %s", fragment_id, exc_info=True
+                )
         memory_db_var.reset(mem_db_token)
         memory_user_var.reset(mem_user_token)
         producer_db_var.reset(prod_db_token)

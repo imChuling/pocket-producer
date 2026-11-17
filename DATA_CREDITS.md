@@ -19,7 +19,7 @@ Weak-pretraining audio loops with per-item licenses.
 
 ## Models
 
-- **MS-CLAP 2023** — [microsoft/CLAP](https://github.com/microsoft/CLAP). Code: MIT. Weight revision is SHA-256-locked and recorded in every representation and `style_scores` entry. Usage: offline audio/text embedding, zero-shot style scoring. Not called on the synchronous ranking request path.
+- **MS-CLAP 2023** — [microsoft/CLAP](https://github.com/microsoft/CLAP). Code: MIT. Weight revision is SHA-256-locked and recorded in every representation. Usage: audio/text embedding; zero-shot style scoring in research and tests only. Not called on the synchronous ranking request path.
 - **Voyage voyage-3** — API text representation (legacy). Existing vectors are frozen as the `text-only-v1` baseline; new usage is limited to intent query encoding.
 - **Gemini (Vertex AI)** — Legacy ingestion tagging. Outputs are retained as historical metadata, not used as ranking ground truth. Not on the competition critical path.
 

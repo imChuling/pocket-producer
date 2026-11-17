@@ -155,6 +155,11 @@ describe("ContinuationPanel", () => {
     );
   });
 
+  it("labels the role-gap ranker", () => {
+    setup({ availableModels: ["rules-v1", "role-gap-v1"] });
+    expect(screen.getByRole("option", { name: "Role gap" })).toHaveValue("role-gap-v1");
+  });
+
   it("offers only the rules fallback when the model list is unavailable", () => {
     setup({ availableModels: undefined });
     const select = screen.getByRole("combobox", { name: /ranking model/i });

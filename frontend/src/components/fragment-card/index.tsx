@@ -102,14 +102,18 @@ export function FragmentCard({ fragment, onDeleted, onUpdated, readOnly, onReadO
     return () => controller.abort();
   }, [isProcessing, fragment._id]);
 
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   async function handleDelete() {
     if (readOnly) { onReadOnlyAction?.(); return; }
     setDeleting(true);
+    setDeleteError(null);
     try {
       await apiPost(`/fragments/${fragment._id}/delete`, {});
       onDeleted?.();
     } catch {
       setDeleting(false);
+      setDeleteError("Could not delete this fragment. Check your connection and try again.");
     }
   }
 
@@ -233,6 +237,9 @@ export function FragmentCard({ fragment, onDeleted, onUpdated, readOnly, onReadO
       )}
       {reanalyzeError && (
         <div className="text-xs text-amber-600">{reanalyzeError}</div>
+      )}
+      {deleteError && (
+        <div role="alert" className="text-xs text-amber-600">{deleteError}</div>
       )}
 
       {/* Content */}

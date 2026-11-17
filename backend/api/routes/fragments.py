@@ -4,7 +4,7 @@ import uuid
 from datetime import UTC, datetime
 
 from bson import ObjectId
-from fastapi import APIRouter, Depends, Form, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, Header, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from ..auth import verify_firebase_token
@@ -74,13 +74,17 @@ async def fragment_status_stream(
 async def list_fragments(
     request: Request,
     user_id: str = Depends(verify_firebase_token),
-    limit: int = 50,
+    limit: int = Query(50, ge=1, le=200),
 ):
     db = get_db()
+    # Vectors and beat frames stay server-side: the list view never reads them.
     fragments = await asyncio.to_thread(
         lambda: list(
             db["fragments"]
-            .find({"user_id": user_id}, {"embedding": 0, "edit_history": 0})
+            .find(
+                {"user_id": user_id},
+                {"embedding": 0, "edit_history": 0, "representations": 0},
+            )
             .sort("created_at", -1)
             .limit(limit)
         )
@@ -566,6 +570,39 @@ async def stream_audio(
     return await gcs_audio_response(fragment["audio_url"], range)
 
 
+def parse_byte_range(header: str, size: int) -> tuple[int, int]:
+    """First and last byte of a single `bytes=` range, clamped to the file.
+
+    Supports `start-end`, `start-` and the suffix form `-N` (the last N
+    bytes). A range that starts past the end of the file, or ends before it
+    starts, is unsatisfiable: 416 with `Content-Range: bytes */<size>`.
+    """
+    unsatisfiable = HTTPException(
+        status_code=416,
+        detail="Requested range not satisfiable",
+        headers={"Content-Range": f"bytes */{size}"},
+    )
+    spec = header.strip()
+    if not spec.startswith("bytes=") or "," in spec:
+        raise unsatisfiable
+    start_str, sep, end_str = spec[len("bytes="):].strip().partition("-")
+    try:
+        if not sep:
+            raise ValueError
+        if not start_str:
+            suffix = int(end_str)
+            if suffix <= 0:
+                raise unsatisfiable
+            return max(size - suffix, 0), size - 1
+        start = int(start_str)
+        end = int(end_str) if end_str else size - 1
+    except ValueError:
+        raise unsatisfiable from None
+    if start < 0 or start >= size or end < start:
+        raise unsatisfiable
+    return start, min(end, size - 1)
+
+
 async def gcs_audio_response(
     gcs_uri: str, range: str | None, cache_control: str = "private, max-age=3600"
 ):
@@ -589,14 +626,7 @@ async def gcs_audio_response(
     content_type = content_types.get(ext, "audio/mpeg")
 
     if range:
-        range_spec = range.replace("bytes=", "")
-        try:
-            range_start_str, range_end_str = range_spec.split("-", 1)
-            range_start = int(range_start_str) if range_start_str else 0
-            range_end = int(range_end_str) if range_end_str else file_size - 1
-        except (ValueError, TypeError):
-            raise HTTPException(416, "Invalid Range header")
-        range_end = min(range_end, file_size - 1)
+        range_start, range_end = parse_byte_range(range, file_size)
         content_length = range_end - range_start + 1
 
         def stream_range():

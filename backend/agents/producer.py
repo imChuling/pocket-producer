@@ -299,7 +299,7 @@ async def generate_project_title(fragment_ids: list[str], connection_types: list
                     "style": f.get("style", []),
                 })
         except Exception:
-            pass
+            logger.warning("Could not read fragment %s for the project title", fid, exc_info=True)
 
     if not fragments_info:
         return _to_json({"title": "Untitled Project"})
