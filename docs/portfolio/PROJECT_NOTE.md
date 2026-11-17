@@ -72,7 +72,8 @@ text with dated corrections; result JSON and tables were not changed.
 | Frame backfill for existing fragments | Script available; production backfill not executed |
 | Feedback training | Offline prototype; named vectors, masks and a behavioural guardrail; no automatic online adaptation |
 | Seven-signal learned fusion | Research-only artifact, refused by the five-signal online loader |
-| Grouping by the fusion score | Behind `POCKET_GROUPING_MODE=fusion`, off by default and not deployed. With it on, the fusion score against a threshold calibrated on the pack split decides join / new project / ungrouped, and Gemini only writes the narrative, title and next action; with it off, Gemini agents decide. The threshold comes from pack co-membership, not user grouping data ([results](../../research/results-grouping-threshold-v1.md)) |
+| Who decides grouping | `POCKET_GROUPING_MODE`: `llm` (default, deployed) lets Gemini agents decide; `fusion` lets the fusion score against a threshold calibrated on the pack split decide, with Gemini writing only the narrative, title and next action; `hybrid` lets Gemini decide while shown the fusion scores and what the fusion rule would choose, recording whether they agree. The threshold comes from pack co-membership, not user grouping data ([results](../../research/results-grouping-threshold-v1.md)); neither non-default mode is deployed |
+| The user's edits as context | Behind `POCKET_EDIT_CONTEXT=1`, off by default: Gemini is shown a code-compiled summary of the user's own edits (tags added or removed, titles replaced, suggestions completed or skipped) when writing tags, titles, suggestions and grouping decisions. Prompt conditioning, not training; not covered by the behavioural guardrail; effect not evaluated |
 | Chord-transition continuation ideas | Future study; not a completed v1 result |
 
 Beat-fit labels report a raw chroma cosine or signed onset correlation,

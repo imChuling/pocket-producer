@@ -115,11 +115,15 @@ from the product's own analysis, so these numbers do not transfer directly
 to a user's library. Neither the threshold nor the decision has been
 checked against any musician's own grouping. Gemini still writes the
 narrative, project title and next action; it does not make the decision.
-With the flag off, grouping is decided by the Gemini agents as before.
+With `POCKET_GROUPING_MODE=hybrid`, Gemini makes the decision and is shown
+the fusion scores and what the fusion rule would choose; whether the two
+agree is recorded per fragment, and that agreement rate is the measure of
+how much the score weighs in. With the default `llm`, grouping is decided
+by the Gemini agents as before.
 
 ## Limitations
 
-- **No personalization**: the system does not adapt to individual user preferences over time. This is a deliberate design constraint: adaptation would first need a temporal held-out evaluation on logged decisions, and learned weights must pass the behavioural guardrail (`research/compat_tests/guardrail.py`).
+- **No online weight adaptation; edit context is prompt conditioning**: no ranking or grouping weights adapt online. With `POCKET_EDIT_CONTEXT=1` (off by default), the language model is shown a summary of the user's own edits (tags added or removed, titles replaced, suggestions completed or skipped) when it writes tags, titles, suggestions and grouping decisions. This is in-context conditioning, not training. It is not covered by the behavioural guardrail (`research/compat_tests/guardrail.py`), which gates learned ranking weights only, and its effect has not been evaluated. Refitting weights from logged decisions remains an offline step that must pass that guardrail.
 - **Session representation limits**: the existing fusion uses pooled region audio and metadata. The selectable `beat-fit-v1` ranker adds approximate timeline placement and chroma/onset structure; it does not reproduce offsets, loops, mixing or effects of real DAW playback.
 - **Intent in the fusion rankers**: `fusion-5sig-v1` is affected by the typed intent only through a BPM or key parsed from it when the session lacks one; role words such as "replace the drums" or "add a synth hook" do not change its ranking. `beat-fit-v1` reads only the precomputed `session_beats` and not the parsed intent. `rules-v1` and the text and audio cosine rankers do read role words.
 - **No human evaluation**: every reported result uses proxy labels (pack co-membership, controlled perturbations); none measures whether musicians prefer the suggestions. Sample sizes are reported with each result.

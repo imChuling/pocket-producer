@@ -53,6 +53,17 @@ preference. The musician makes the call.
    the timeline; undo removes exactly the entities that insert created.
    Previews, accepts, rejects, inserts, and undos are logged with rank
    position for future supervision.
+4. **Grouping captured fragments into projects.** `POCKET_GROUPING_MODE`
+   sets who decides. `llm` (the default, and what is deployed): Gemini
+   agents decide. `fusion`: the fusion score against a threshold calibrated
+   on pack data decides in code, and Gemini only writes the narrative,
+   title and next action. `hybrid`: Gemini decides, shown each candidate's
+   fusion score and what the fusion rule would choose, and whether it agreed
+   is recorded. With `POCKET_EDIT_CONTEXT=1` (off by default), Gemini is
+   also shown a summary of the user's own edits (tags added or removed,
+   titles replaced, suggestions completed or skipped) when it writes tags,
+   titles, suggestions and grouping decisions. This conditions the prompt;
+   no weights are trained or changed.
 
 Details: [ARCHITECTURE.md](ARCHITECTURE.md), [MODEL_CARD.md](MODEL_CARD.md),
 [VERIFICATION.md](VERIFICATION.md). The Nexus SDK patch shipped in
@@ -160,7 +171,7 @@ artifacts with no download. Rebuilding the artifacts takes two stages:
 |---|---|
 | `backend/ranking/` | Rankers, signals, CLAP adapters, ingest |
 | `backend/api/` | FastAPI app: ranking, fragments, projects, session embedding |
-| `backend/agents/` | Gemini-based tagging and project grouping for the capture flow |
+| `backend/agents/` | Gemini agents for project grouping (tagging is a direct Gemini call in `backend/api/pipeline/`) |
 | `frontend/src/app/audiotool/`, `frontend/src/lib/audiotool/` | Session reading, ranking UI, insert and undo |
 | `research/` | Evaluation scripts, protocols, reproduction |
 | `artifacts/` | Versioned results and the deployed fusion weights |

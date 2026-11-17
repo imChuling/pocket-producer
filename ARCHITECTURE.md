@@ -263,26 +263,33 @@ arrive or when the user triggers reanalysis.
 ### Who decides grouping
 
 `POCKET_GROUPING_MODE` selects who makes the join / new project / leave
-ungrouped call. The default is `llm`.
+ungrouped call. The default is `llm`, which is what is deployed.
 
-| Stage | `llm` (default, live) | `fusion` |
-|---|---|---|
-| Tags, transcript, fragment key and BPM | Gemini tagging, with librosa as fallback | Same |
-| Candidates considered | Voyage text-vector search, top neighbors at or above `SIMILARITY_THRESHOLD` (0.55 by default) | Up to 500 of the user's most recent fragments with an MS-CLAP audio vector |
-| Creator note | Read by the agents as one input among others | Read only for an explicit instruction: "stands alone" is followed in code (no group); naming a place hands the fragment to the agent path |
-| Grouping decision | Memory and Producer agents (Gemini) | Code: `ranking/grouping.py: decide_grouping`, fusion score against a fixed threshold |
-| Fragments without an audio vector | Agent path | Agent path, recorded as `llm_fallback` (the pipeline first waits up to 90 s for an upload's audio encoding) |
-| Narrative, project title, next action | Gemini | Gemini, given the decision; nothing it returns is read as a decision |
-| Rescue Score | Code | Code |
+| Stage | `llm` (default, live) | `fusion` | `hybrid` |
+|---|---|---|---|
+| Tags, transcript, fragment key and BPM | Gemini tagging, with librosa as fallback | Same | Same |
+| Candidates considered | Voyage text-vector search, top neighbors at or above `SIMILARITY_THRESHOLD` (0.55 by default) | Up to 500 of the user's most recent fragments with an MS-CLAP audio vector | Voyage neighbors as in `llm`, plus the highest fusion scores over up to 500 recent fragments |
+| Creator note | Read by the agents as one input among others | Read only for an explicit instruction: "stands alone" is followed in code (no group); naming a place hands the fragment to the agent path | As in `llm`; explicit notes win |
+| Grouping decision | Memory and Producer agents (Gemini) | Code: `ranking/grouping.py: decide_grouping`, fusion score against a fixed threshold | Memory and Producer agents (Gemini), shown every neighbor's fusion score ("no score" without an audio vector) and what `decide_grouping` would choose |
+| Fragments without an audio vector | Agent path | Agent path, recorded as `llm_fallback` (the pipeline first waits up to 90 s for an upload's audio encoding) | Agent path, shown "no score" |
+| Narrative, project title, next action | Gemini | Gemini, given the decision; nothing it returns is read as a decision | Gemini; asked to say in the narrative when it goes against the score |
+| Rescue Score | Code | Code | Code |
 
-In `fusion` mode the score between two fragments is the deployed
-`fusion-5sig-v1` weights applied to their MS-CLAP cosine (filling both the
-mean and max terms), tempo match averaged over both directions, exact key
-match after compact keys such as `Em` are read as `e minor`, and tag
-Jaccard. A project scores the mean of the new fragment's scores against its
-members (average linkage). The best project or ungrouped fragment wins if
-it reaches 15.31; an ungrouped winner starts a new project with every
+The score between two fragments is the deployed `fusion-5sig-v1` weights
+applied to their MS-CLAP cosine (filling both the mean and max terms),
+tempo match averaged over both directions, exact key match after compact
+keys such as `Em` are read as `e minor`, and tag Jaccard. In `fusion` mode a
+project scores the mean of the new fragment's scores against its members
+(average linkage). The best project or ungrouped fragment wins if it
+reaches 15.31; an ungrouped winner starts a new project with every
 ungrouped fragment at or above it. Otherwise the fragment stays ungrouped.
+
+In `hybrid` mode the same computation runs but is not acted on. The agents
+are told what the score means: at 15.31, on held-out packs, about 94% of
+flagged pairs were same-pack and about two thirds of same-pack pairs were
+missed, and the score mostly reflects sounding alike, so a low score does
+not rule out complementary parts. They are asked to treat a score at or
+above the threshold as strong evidence for the same project.
 
 The threshold was chosen on the 484 training packs of the frozen pack split
 and checked once on the 121 held-out packs
@@ -290,10 +297,37 @@ and checked once on the 121 held-out packs
 co-membership, not from anyone's grouping choices, and has not been checked
 against how musicians group their own fragments.
 
-Each fragment grouped in `fusion` mode records `grouping_decided_by`
-(`fusion`, `creator_note` or `llm_fallback`) and `grouping_decision` (score,
-threshold, number of fragments scored), so the share each path takes can be
-counted. The `/group-with-agent` debug endpoint always runs the agent path.
+Each fragment records `grouping_decided_by` and `grouping_decision`:
+`fusion`, `creator_note` or `llm_fallback` in `fusion` mode (score,
+threshold, number scored), and `llm_with_fusion` in `hybrid` mode (the
+scores shown, what `decide_grouping` would have chosen, the final grouping,
+and whether the two agree). The agreement rate is the measure of how much
+the score weighs in the agents' decisions. `llm` mode records nothing new.
+The `/group-with-agent` debug endpoint always runs the plain agent path.
+
+### The user's edits as context
+
+With `POCKET_EDIT_CONTEXT=1` (default `0`), the Gemini calls that write
+tags (`api/pipeline/tagging.py`), project titles and next actions
+(`agents/producer.py`) and the grouping prompt (`agents/_runner.py`) are
+given a delimited block summarising the user's own edits, compiled in code
+by `tools/edit_context.py`: tags, emotions and styles added to or removed
+from generated ones (with counts), titles the user replaced (most recent
+five), and next-action suggestions completed or skipped (most recent five).
+Each call sees only the relevant part. The block is marked as data, not
+instructions, angle brackets inside it are escaped so typed text cannot
+close it, and explicit creator notes still take precedence. A user with no
+recorded edits gets exactly the prompts they would get with the flag off.
+
+The edits come from fields the routes record whatever the flag: the tags
+route stores what was added and removed (`tag_edits`, last 20 per
+fragment), the title route stores the title it replaced (`title_history`,
+last 10), and skipping a next action stores it (`skipped_actions`, last 20
+per project); completed actions were already stored. There is no route for
+moving a fragment between projects or rejecting a grouping, so grouping
+corrections are not part of the profile. This conditions the prompts; it
+trains nothing, changes no ranking weight, and is not covered by the
+behavioural guardrail, which gates learned ranking weights only.
 
 ### Reanalyze Flow
 
