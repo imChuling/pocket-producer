@@ -244,15 +244,15 @@ ONLY output the JSON object. No markdown wrapping, no explanation outside the JS
                 )
                 result_text = response.text.strip()
                 parsed = try_parse_agent_json(result_text)
-                if not parsed and len(result_text) > 2000:
-                    logger.warning("Parse failed on large response (%d chars), attempting recovery...", len(result_text))
+                if not parsed:
+                    logger.warning("Parse failed (%d chars), attempting recovery...", len(result_text))
                     trunc = re.sub(
                         r'"transcript"\s*:\s*"[^"]{200,}"',
                         '"transcript": null',
                         result_text,
                     )
                     trunc = re.sub(
-                        r'"transcript"\s*:\s*"[^"]{200,}$',
+                        r'"transcript"\s*:\s*"(?:[^"\\]|\\.)*$',
                         '"transcript": null}',
                         trunc,
                     )

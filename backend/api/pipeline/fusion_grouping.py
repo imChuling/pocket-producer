@@ -579,3 +579,7 @@ def record_hybrid_outcome(db, user_id: str, fragment_id: str, ctx: HybridContext
             },
         }},
     )
+    logger.info(
+        "Hybrid grouping for %s: final=%s, fusion rule=%s, agrees=%s, scores shown=%d",
+        fragment_id, final, suggestion.action if suggestion else None, agrees, len(shown),
+    )

@@ -408,7 +408,7 @@ def _feature_proximity(a: float | None, b: float | None, tolerance: float) -> fl
 
 
 def _temporal_proximity(src_created: Any, nbr_created: Any) -> float:
-    from datetime import datetime
+    from datetime import UTC, datetime
     def _to_dt(v: Any) -> datetime | None:
         if isinstance(v, datetime):
             return v
@@ -423,6 +423,10 @@ def _temporal_proximity(src_created: Any, nbr_created: Any) -> float:
     a, b = _to_dt(src_created), _to_dt(nbr_created)
     if a is None or b is None:
         return 0.0
+    # Mongo returns naive UTC datetimes, the MCP path returns aware ones;
+    # subtracting one from the other raises, so both are made aware first.
+    a = a if a.tzinfo else a.replace(tzinfo=UTC)
+    b = b if b.tzinfo else b.replace(tzinfo=UTC)
     days_apart = abs((a - b).total_seconds()) / 86400.0
     return 1.0 / (1.0 + days_apart / 7.0)
 

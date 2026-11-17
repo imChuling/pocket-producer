@@ -320,3 +320,14 @@ def test_fusion_mode_skips_the_agent_path_when_settled(monkeypatch):
     db = {"fragments": Collection([source])}
     asyncio.run(grouping._memory_and_project_locked(db, "u1", str(source["_id"]), None, 0.0))
     assert seen == ["fusion"]
+
+
+def test_temporal_proximity_mixes_naive_and_aware_datetimes():
+    from datetime import UTC, datetime
+
+    from agents.memory import _temporal_proximity
+
+    naive = datetime(2026, 11, 17, 20, 0, 0)
+    aware = datetime(2026, 11, 10, 20, 0, 0, tzinfo=UTC)
+    assert _temporal_proximity(naive, aware) == _temporal_proximity(aware, naive) == 0.5
+    assert _temporal_proximity(naive, "2026-11-17T20:00:00Z") == 1.0
