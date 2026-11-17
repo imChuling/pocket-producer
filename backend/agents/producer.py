@@ -568,15 +568,16 @@ clicks with it later, I'll let you know."
    A relationship label alone is not enough; ask yourself: would combining
    these fragments genuinely help the creator?
 
-2. "similar_emotion" or "related_theme" with LOW similarity scores (<0.78)
-   often means surface-level overlap, not a real creative connection.
-   Prefer no_group in these cases.
+2. A specific emotional or thematic link is enough to group, even when the
+   similarity score is low. Prefer no_group only when the link is vague or
+   surface-level.
 
 3. "same_song_candidate" with high similarity IS strong evidence to group.
 
 4. If Memory says "no_group", respect that. Do NOT override it unless you
-   have a compelling musical reason (e.g., the fragments are clearly two
-   parts of the same song). When in doubt, leave ungrouped.
+   have a compelling reason (e.g., the fragments clearly share the same
+   emotion or theme, such as the same loss or the same place). When in
+   doubt, leave ungrouped.
 
 5. If Memory says "join_project" and a target_project_id exists, call
    attach_fragment_to_project.
