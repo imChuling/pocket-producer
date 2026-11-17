@@ -1,7 +1,7 @@
 """Train fusion-5sig on a full items file and export deployment weights.
 
 Trains the same BPR logistic fusion as run_fusion.py, but on ALL examples
-from the given items file (no validation carve-out — this is a deployment
+from the given items file (no validation carve-out; this is a deployment
 export, not an evaluation), averaging weights over the standard 5 seeds.
 
 The items file should be the pack-only TRAIN side of the frozen held-out

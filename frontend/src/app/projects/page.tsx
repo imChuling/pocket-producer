@@ -111,7 +111,7 @@ export default function ProjectsPage() {
             </div>
             <p className="text-sm text-gravel">No projects yet</p>
             <p className="text-xs text-slate max-w-[300px] mx-auto leading-relaxed">
-              Keep capturing ideas — when AI finds fragments with shared emotion, key, or theme, it groups them into a project automatically.
+              Keep capturing ideas. When AI finds fragments with shared emotion, key, or theme, it groups them into a project automatically.
             </p>
           </div>
         ) : (

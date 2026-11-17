@@ -1,4 +1,4 @@
-"""Seed a demo account with local audio files — no Cloud Run needed.
+"""Seed a demo account with local audio files: no Cloud Run needed.
 
 Processes audio locally (librosa features + CLAP embedding), uploads to
 GCS, and inserts complete fragment documents into MongoDB. Skips Gemini
@@ -247,7 +247,7 @@ def main() -> int:
         if adapter:
             logger.info("CLAP adapter loaded")
     if not adapter:
-        logger.warning("CLAP disabled — fragments will have no audio_semantic embedding")
+        logger.warning("CLAP disabled; fragments will have no audio_semantic embedding")
 
     bucket_name = os.environ.get("GCS_BUCKET")
     if not bucket_name:

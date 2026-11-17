@@ -1,6 +1,6 @@
 """BPR training over weak pairs for the capacity ladder.
 
-Deterministic given a seed. Weak labels pretrain only — reported numbers are
+Deterministic given a seed. Weak labels pretrain only; reported numbers are
 validation pairwise accuracy on source-held-out examples, never test claims.
 """
 

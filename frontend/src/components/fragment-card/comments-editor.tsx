@@ -91,7 +91,7 @@ export function CommentsEditor({ fragmentId, comments, onUpdated }: CommentsEdit
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) save();
               if (e.key === "Escape") setAdding(false);
             }}
-            placeholder="What are you thinking right now? — ideas, direction, what this connects to..."
+            placeholder="What are you thinking right now? Ideas, direction, what this connects to..."
             className="w-full text-xs text-obsidian bg-powder rounded-lg px-3 py-2 outline-none border border-chalk focus:border-gravel transition-colors resize-none leading-relaxed"
             style={{ fieldSizing: "content" as never, minHeight: "48px" }}
           />

@@ -81,7 +81,7 @@ function CaptureDashboard() {
         const ext = blob.type.includes("mp4") ? "m4a" : blob.type.includes("ogg") ? "ogg" : "webm";
         form.append("file", blob, `recording.${ext}`);
         await apiPost("/ingest", form);
-        setStatus("Saved — AI analysis takes ~30–60s");
+        setStatus("Saved. AI analysis takes ~30–60s");
         refresh();
       } catch (e) {
         setStatus(e instanceof Error ? e.message : "Processing failed");
@@ -101,7 +101,7 @@ function CaptureDashboard() {
         const form = new FormData();
         form.append("file", file);
         await apiPost("/ingest", form);
-        setStatus("Saved — AI analysis takes ~30–60s");
+        setStatus("Saved. AI analysis takes ~30–60s");
         refresh();
       } catch (e) {
         setStatus(e instanceof Error ? e.message : "Upload failed");
@@ -234,7 +234,7 @@ function CaptureDashboard() {
                     onClick={handleFixStuck}
                     className="text-xs text-gravel hover:text-obsidian transition-colors"
                   >
-                    {stuckCount} fragment{stuckCount > 1 ? "s" : ""} stuck processing —{" "}
+                    {stuckCount} fragment{stuckCount > 1 ? "s" : ""} stuck processing:{" "}
                     <span className="underline">fix now</span>
                   </button>
                 )}
@@ -265,7 +265,7 @@ function CaptureDashboard() {
                 <div className="space-y-2 text-center">
                   <p className="text-sm text-gravel">Record, type, upload, or import your first musical idea</p>
                   <p className="text-xs text-slate max-w-[300px] mx-auto leading-relaxed">
-                    Each idea becomes a fragment — AI analyzes its emotion, key, tempo, and themes, then groups related fragments into projects automatically.
+                    Each idea becomes a fragment. AI analyzes its emotion, key, tempo, and themes, then groups related fragments into projects automatically.
                   </p>
                 </div>
                 <div className="flex flex-col gap-3 w-full max-w-[280px]">

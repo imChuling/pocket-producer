@@ -1,4 +1,4 @@
-"""Daily aggregation job — computes Creative DNA data. No LLM calls."""
+"""Daily aggregation job: computes Creative DNA data. No LLM calls."""
 
 import os
 from datetime import UTC, datetime
@@ -62,7 +62,7 @@ def run(target_user_id: str | None = None):
             hours = list(fragments.aggregate(time_pipeline))
             peak = max(hours, key=lambda x: x["count"]) if hours else None
 
-            # Emotion timeline — emotions aggregated by week (ISO week)
+            # Emotion timeline: emotions aggregated by week (ISO week)
             emotion_timeline_pipeline = [
                 {"$match": {"user_id": user_id, "emotions": {"$exists": True}}},
                 {"$unwind": "$emotions"},

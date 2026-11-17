@@ -2,7 +2,7 @@
 //
 // Only information needed for ranking leaves the browser; the full Audiotool
 // project is never uploaded. Fields the document does not provide (e.g. key
-// signature) are reported as null — never guessed.
+// signature) are reported as null; never guessed.
 
 import type { SessionFingerprint } from "@/types/audiotool";
 

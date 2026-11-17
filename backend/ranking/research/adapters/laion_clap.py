@@ -29,7 +29,7 @@ class LaionClapMusicAdapter:
             revision="unresolved-until-first-load",
             modality="audio_semantic",
             dims=512,
-            license="CC0 code; training-data provenance complex — research challenger only",
+            license="CC0 code; training-data provenance complex; research challenger only",
             expected_sample_rate=TARGET_SR,
         )
 

@@ -1,4 +1,4 @@
-"""Unit tests for Rescue Score calculator — no API calls needed.
+"""Unit tests for Rescue Score calculator: no API calls needed.
 
 Run: .venv/bin/python -m pytest tests/test_rescue_score.py -v
 """
@@ -181,5 +181,5 @@ if __name__ == "__main__":
             print(f"  PASS: {t.__name__}")
             passed += 1
         except Exception as e:
-            print(f"  FAIL: {t.__name__} — {e}")
+            print(f"  FAIL: {t.__name__}: {e}")
     print(f"\n{passed}/{len(tests)} passed")

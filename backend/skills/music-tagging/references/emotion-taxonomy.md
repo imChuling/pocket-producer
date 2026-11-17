@@ -26,7 +26,7 @@ A sense of awe, marvel, or being captivated by something larger than oneself.
 - Often pairs with: `peacefulness`, `tenderness`
 
 #### `transcendence`
-A feeling of moving beyond the self — spiritual elevation, ego dissolution,
+A feeling of moving beyond the self: spiritual elevation, ego dissolution,
 sublime experience. Distinct from wonder by being more inward.
 - Examples: "I'm not anyone anymore", "Carry me out of myself"
 - Audio hints: long sustained notes, modal harmony (Lydian, Phrygian)
@@ -42,7 +42,7 @@ Soft warmth, care, vulnerability shared. Affection without being romantic.
 
 #### `nostalgia`
 Bittersweet longing for the past. Specifically about *what is gone*. Not just
-sadness — there is sweetness in the memory.
+sadness; there is sweetness in the memory.
 - Examples: "Remember that summer we...", "I drove past the old house"
 - Audio hints: any tempo; lyrically marked by past tense and specific imagery
 - Common in: verses recalling specific memories
@@ -57,7 +57,7 @@ quieter and from acceptance by being less hard-won.
 - Often pairs with: `tenderness`, `wonder`
 
 #### `power`
-Strength, confidence, command, agency. Not aggression — power *without*
+Strength, confidence, command, agency. Not aggression: power *without*
 needing to fight.
 - Examples: "I built this room with my own hands", "Watch me"
 - Audio hints: strong rhythmic feel, full arrangement, sustained vowels
@@ -92,7 +92,7 @@ hidden or transformed.
 
 #### `melancholy`
 A *thoughtful*, reflective sadness. Distinct from `sadness` by having more
-cognitive depth — not just feeling sad, but *thinking about* sadness.
+cognitive depth: not just feeling sad, but *thinking about* sadness.
 - Examples: "I keep waiting for the rain to stop, but the rain is me"
 - Audio hints: minor key with extensions (m7, m9), slow tempo, sparse texture
 - This is the most common emotion tag in singer-songwriter material
@@ -147,7 +147,7 @@ about *self-revelation* than the underlying feeling itself.
 - Often pairs with: `tenderness`, `melancholy`
 
 #### `defiance`
-Willful resistance, refusal to give in. Not anger — more controlled and
+Willful resistance, refusal to give in. Not anger; more controlled and
 purposeful. The "fuck you" with a smile.
 - Examples: "Tell me one more time I can't"
 - Audio hints: strong backbeat, sustained vocal power, repeated phrases
@@ -185,7 +185,7 @@ For each fragment, walk through these questions in order:
 **Q1: Is there clear emotion in the lyrics/text?**
 
 If yes → Use lyrics as the primary signal. Pick 1-2 tags that match what the
-words enact (not just describe — see Principle 2 in SKILL.md).
+words enact (not just describe; see Principle 2 in SKILL.md).
 
 If no → Go to Q2.
 

@@ -11,17 +11,17 @@ Signals per (context, candidate):
   harmonic        transpose-invariant chroma correlation vs session profile
 
 The last two are SESSION-STRUCTURE signals (computed from what the context
-ensemble is missing / how it aggregates), not pairwise item similarity —
+ensemble is missing / how it aggregates), not pairwise item similarity,
 they require --chroma and --role-prompts from extract_fsld_features.py and
 are skipped (with a warning) when those files are absent.
 
 Model: logistic fusion (5 weights + bias) trained with BPR. Deliberately
-tiny — the claim is signal complementarity, not model capacity.
+tiny, the claim is signal complementarity, not model capacity.
 
 Honesty guard: "easy" negatives were MINED by tempo/key incompatibility, so
 tempo/key features see the label-construction rule there. Accuracy is
 reported per negative type; the claim must rest on hard_tempo_key (tempo and
-key both compatible — those features are neutral) and hard_similar.
+key both compatible, those features are neutral) and hard_similar.
 
 Usage:
   python research/run_fusion.py \
@@ -176,9 +176,9 @@ def train_logistic(train, feature_idx, seed, epochs=300, lr=0.05,
                    source_weights=None, neg_type_weights=None, standardize=False):
     """BPR logistic trainer with optional per-source and per-neg-type weighting.
 
-    source_weights: dict[source_id, float] — gradient multiplier per source;
+    source_weights: dict[source_id, float]: gradient multiplier per source;
         typically 1/n_examples_from_source so large packs don't dominate.
-    neg_type_weights: dict[neg_type, float] — gradient multiplier per negative
+    neg_type_weights: dict[neg_type, float]: gradient multiplier per negative
         type (e.g. {"hard_similar": 2.0}).
     standardize: train on signals divided by their train-set standard
         deviation (the mean cancels in pairwise differences). The returned

@@ -2,7 +2,7 @@
 
 Each metric declares the label semantics it needs and refuses anything else:
 pairwise choices yield accuracy/log loss; nDCG needs graded relevance; MRR
-needs a single known positive. Small formative samples report raw counts —
+needs a single known positive. Small formative samples report raw counts:
 population-level significance is out of scope here.
 """
 
@@ -52,7 +52,7 @@ def _dcg(grades: list[int], k: int) -> float:
 
 def ndcg_at_k(rankings: list[dict], k: int) -> float:
     """rankings: [{"type": "graded", "grades_in_rank_order": [...],
-    "all_grades": [...]}, ...] — refuses non-graded labels."""
+    "all_grades": [...]}, ...]: refuses non-graded labels."""
     if not rankings:
         raise MetricEligibilityError("nDCG needs at least one ranking")
     values = []
@@ -60,7 +60,7 @@ def ndcg_at_k(rankings: list[dict], k: int) -> float:
         if ranking.get("type") != "graded":
             raise MetricEligibilityError(
                 "nDCG requires graded relevance labels; "
-                f"got {ranking.get('type')!r} — use pairwise accuracy instead"
+                f"got {ranking.get('type')!r}; use pairwise accuracy instead"
             )
         ideal = _dcg(sorted(ranking["all_grades"], reverse=True), k)
         if ideal == 0:

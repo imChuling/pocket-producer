@@ -3,7 +3,7 @@
 Every example carries its own precomputed embeddings, so evaluation never
 calls a network. A model that cannot honestly score an example (missing
 intent embedding, missing candidate vector, no session context) SKIPS it and
-the skip is reported — silent zeros would fake ties.
+the skip is reported; silent zeros would fake ties.
 """
 
 from collections import defaultdict

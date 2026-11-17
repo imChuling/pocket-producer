@@ -1,6 +1,6 @@
 # Theme Taxonomy
 
-Themes describe **what a fragment is about** — the subject matter, not the
+Themes describe **what a fragment is about**: the subject matter, not the
 feeling. A song about loss can feel like peace; a song about a sunset can
 feel like fear. Themes and emotions are independent.
 
@@ -58,12 +58,12 @@ relationship.
 - Examples: "My father's hands looked like mine today"
 
 #### `friendship`
-Non-romantic friendship — its joys, betrayals, distances.
+Non-romantic friendship: its joys, betrayals, distances.
 - Markers: shared history, names, plural pronouns about peers
 - Examples: "We're not who we were that summer"
 
 #### `solitude`
-Being alone — whether by choice, circumstance, or imposition. Distinct from
+Being alone: whether by choice, circumstance, or imposition. Distinct from
 loneliness emotion (which is about *feeling* alone).
 - Markers: spatial descriptions of one person, no other characters
 - Examples: "My apartment learns my footsteps"
@@ -88,7 +88,7 @@ own awareness.
 - Examples: "Mom's hands got smaller this year"
 
 #### `time-passage`
-The general feeling of time moving — distinct from aging (specifically about
+The general feeling of time moving, distinct from aging (specifically about
 self) and mortality (specifically about death). About time itself.
 - Markers: seasons, days/weeks/years passing, repetition over time
 - Examples: "Another Tuesday in a Tuesday in a Tuesday"
@@ -149,12 +149,12 @@ The fragment comments on society, systems, injustice, or political reality.
 - Examples: "The whole machine is older than my grandfather"
 
 #### `current-events`
-Specific recent events — wars, elections, disasters, public moments.
+Specific recent events: wars, elections, disasters, public moments.
 - Markers: named events, dates close to writing, news vocabulary
 - Examples: "We watched the city burn on our phones"
 
 #### `class-money`
-Economic life — work, money, class. Both the absence and presence of
+Economic life: work, money, class. Both the absence and presence of
 resources.
 - Markers: dollars, jobs, bills, hours, paychecks
 - Examples: "I priced the rent against the rest of my life"
@@ -238,15 +238,15 @@ possibly `anxiety` emotion.
 
 These are common requests that should NOT be theme tags:
 
-- **Emotions** — those go in `emotion`. "Sadness" is not a theme.
-- **Adjectives** — "dark", "intimate", "epic". These describe style/feeling.
-- **Genres** — "indie folk", "trap". Those go in `style`.
-- **Sounds** — "piano", "808s", "acoustic guitar". Production talk, not theme.
-- **Speeds** — "slow song", "ballad". This goes in `style` or structure.
-- **Generic placeholders** — "life", "feelings", "thoughts". Too vague to
+- **Emotions**: those go in `emotion`. "Sadness" is not a theme.
+- **Adjectives**: "dark", "intimate", "epic". These describe style/feeling.
+- **Genres**: "indie folk", "trap". Those go in `style`.
+- **Sounds**: "piano", "808s", "acoustic guitar". Production talk, not theme.
+- **Speeds**: "slow song", "ballad". This goes in `style` or structure.
+- **Generic placeholders**: "life", "feelings", "thoughts". Too vague to
   be useful for retrieval.
 
-If a fragment really has no theme — leave the array empty. Empty is
+If a fragment really has no theme, leave the array empty. Empty is
 acceptable and often correct.
 
 ## When to leave theme empty
@@ -256,6 +256,6 @@ acceptable and often correct.
 - Very short fragments (single word, single chord progression)
 - Abstract sound experiments with no narrative content
 
-These are common cases. An empty `theme` array is not a refusal — it's an
+These are common cases. An empty `theme` array is not a refusal; it's an
 honest signal that the fragment is purely sonic. Other agents will respect
 this and not pretend the fragment is "about" something.

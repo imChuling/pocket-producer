@@ -89,7 +89,7 @@ export default function AnnotatePage() {
         </h1>
         <p className="mt-1 text-sm text-slate">
           Listen to the context, preview both candidates, and pick the one you
-          would try next. There is no right answer — your judgment is the data.
+          would try next. There is no right answer. Your judgment is the data.
         </p>
       </header>
       <AnnotatePanel

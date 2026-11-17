@@ -45,12 +45,12 @@ Use this skill whenever:
 ## When NOT to use this skill
 
 - No candidates were returned by Vector Search (nothing to classify)
-- The fragment has not been tagged yet (run `music-tagging` first — you
+- The fragment has not been tagged yet (run `music-tagging` first; you
   need emotion/theme/structure tags to evaluate signals)
 - The question is about musical compatibility only (use `musical-knowledge`
   directly)
 - The question is about whether to refuse (use `refusal-rules`)
-- Do NOT call just because two fragments belong to the same user — ALL
+- Do NOT call just because two fragments belong to the same user: ALL
   fragments belong to the same user; that is not a signal
 - Do NOT call for neighbors below `threshold_applied`; the search has
   already discarded them
@@ -173,7 +173,7 @@ candidates remain, keep only the top 5 by similarity.
 ### Step 2: Evaluate signals per candidate
 
 First check Signal 0 (creator intent): read `notes` and `comments` on
-both fragments for explicit connection or separation statements — these
+both fragments for explicit connection or separation statements; these
 override the inferred signals below.
 
 Then evaluate the four inference signals using the pre-computed scores
@@ -216,7 +216,7 @@ This text will be shown to the user by the Producer Agent.
 ### Step 7: Return result
 
 Assemble the full output JSON (matches array + aggregated action).
-Filter out `unrelated` candidates from the matches — don't surface
+Filter out `unrelated` candidates from the matches; don't surface
 noise to the user.
 
 ## The four relationship types
@@ -273,7 +273,7 @@ Common cases:
 
 ### `similar_emotion`
 The two fragments share emotional weight but neither theme nor musical
-features strongly align. Lowest meaningful relationship — useful for the
+features strongly align. Lowest meaningful relationship: useful for the
 Creative Habit Radar (showing emotional patterns over time) but not strong
 enough to suggest project-level connection.
 
@@ -292,12 +292,12 @@ Conditions:
 - All signals are `weak`/`unknown`
 
 Filter these out before returning to Producer Agent. Don't surface
-unrelated matches to the user — they are noise.
+unrelated matches to the user; they are noise.
 
 ## The four signals
 
 For each candidate, evaluate these four dimensions independently. They are
-NOT averages of similarity — they are separate questions you answer using
+NOT averages of similarity: they are separate questions you answer using
 the fragments' tag data.
 
 ### Signal 1: Emotional alignment
@@ -399,8 +399,8 @@ The `tempo_match` score encodes BPM proximity:
 ### Signal 0: Creator intent (override signal)
 
 Before evaluating the four inference signals, check `notes` and `comments`
-on both fragments. These are the creator's own words — the only signal
-that is **stated rather than inferred** — so it overrides the others when
+on both fragments. These are the creator's own words: the only signal
+that is **stated rather than inferred**, so it overrides the others when
 explicit.
 
 **Explicit connection**: A note/comment names another fragment, song idea,
@@ -416,7 +416,7 @@ relationship at `related_theme` regardless of similarity, and lower
 confidence one level.
 
 **Directional intent**: Comments describing intended use ("want strings
-here", "chorus for something upbeat") are thematic/musical evidence —
+here", "chorus for something upbeat") are thematic/musical evidence,
 fold them into thematic alignment and musical compatibility rather than
 treating them as connection statements.
 
@@ -424,12 +424,12 @@ treating them as connection statements.
 most recent one reflects current thinking; earlier comments are context,
 not commitments.
 
-**Absent**: Most fragments have no notes or comments — then this signal
+**Absent**: Most fragments have no notes or comments; then this signal
 simply does not apply. Never infer intent from silence.
 
 ### Signal 4: Temporal pattern
 
-This signal is contextual — it doesn't influence relationship type directly,
+This signal is contextual: it doesn't influence relationship type directly,
 but it influences `confidence` and `suggested_action`.
 
 Use `computed_signals.temporal_proximity` and `computed_signals.recency`
@@ -487,7 +487,7 @@ might actually be one song the user split.
 Conditions:
 - 2 or more `same_song_candidate` results, in different projects
 - Each with at least `medium` confidence
-- This is rare but powerful when it happens — recommend the Producer Agent
+- This is rare but powerful when it happens: recommend the Producer Agent
   surface it as a high-value insight ("you may have written two halves of
   the same song without realizing")
 
@@ -562,7 +562,7 @@ Evaluation:
 Relationship: `related_theme`
 Confidence: medium
 Reasoning: "Both fragments explore family relationships but with distinct
-emotional registers and subjects — likely two separate songs that share
+emotional registers and subjects: likely two separate songs that share
 thematic territory, not the same unfinished work."
 
 ### Example 3: Coincidental similarity (unrelated)
@@ -610,7 +610,7 @@ Candidate (audio):
 
 Evaluation:
 - emotional_alignment: conflicting (defiance + tension vs vulnerability +
-  melancholy — very different emotional registers)
+  melancholy, very different emotional registers)
 - thematic_alignment: unknown
 - musical_compatibility: conflicting (138 vs 68 BPM not in doubled/halved
   range; Em vs C are distant)
@@ -667,7 +667,7 @@ Candidate (3 weeks earlier):
 
 Evaluation:
 - emotional_alignment: strong (loneliness overlaps)
-- thematic_alignment: conflicting (isolation vs escape — different
+- thematic_alignment: conflicting (isolation vs escape: different
   directions despite similar mood)
 - musical_compatibility: n/a (both text-only)
 - temporal_pattern: unrelated_in_time
@@ -675,7 +675,7 @@ Evaluation:
 Relationship: `similar_emotion`
 Confidence: medium
 Reasoning: "Both fragments share a lonely, late-night feeling, but their
-subject matter diverges — one is about stillness, the other about
+subject matter diverges: one is about stillness, the other about
 movement. Worth noting as an emotional pattern, not a same-song link."
 
 Why `similar_emotion` and not `related_theme`: thematic alignment is
@@ -683,7 +683,7 @@ conflicting. The shared loneliness is the only real connection. This is
 useful for Creative DNA (user gravitates toward loneliness at night) but
 not for project grouping.
 
-### Example 7: True unrelated — filtered out
+### Example 7: True unrelated: filtered out
 
 New fragment: "Sunrise over the highway, golden hour"
 - emotion: [wonder, joy]
@@ -698,7 +698,7 @@ Candidate:
 
 Evaluation:
 - emotional_alignment: weak (both have joy, but wonder vs tenderness are
-  not adjacent — different flavor of positive emotion)
+  not adjacent: different flavor of positive emotion)
 - thematic_alignment: weak (no shared theme; "golden" is coincidental
   vocabulary overlap that inflated similarity)
 - musical_compatibility: n/a
@@ -713,7 +713,7 @@ emotional specifics."
 Action: filter this out before returning to Producer. Do not surface to
 the user.
 
-### Example 8: Full convergence — high confidence same-song
+### Example 8: Full convergence: high confidence same-song
 
 New fragment (audio):
 - raw_text: "And I'll meet you where the streetlights end"
@@ -732,7 +732,7 @@ Candidate (audio, in project p_007 "Streetlight Letters", 3 days ago):
 
 Evaluation:
 - emotional_alignment: strong (longing overlaps; hope + melancholy are
-  complementary, not conflicting — verse melancholy building to chorus
+  complementary, not conflicting: verse melancholy building to chorus
   hope is a classic arc)
 - thematic_alignment: strong (both have `love`; "streetlights" and
   "envelopes" are compatible romantic imagery)
@@ -748,7 +748,7 @@ Reasoning: "This chorus candidate shares romantic imagery, compatible
 emotions, and near-identical tempo and key with the existing verse in
 'Streetlight Letters'. Strong evidence these are parts of the same song."
 
-### Example 9: needs_user_confirmation — ambiguous signals
+### Example 9: needs_user_confirmation: ambiguous signals
 
 New fragment (audio):
 - raw_text: "Burning bridges just to see the flames"
@@ -783,10 +783,10 @@ but `conflicting` musical compatibility. Conservative bias says →
 `related_theme` with `low` confidence.
 
 Evaluation of Candidate B:
-- emotional_alignment: weak (defiance vs acceptance — different registers)
+- emotional_alignment: weak (defiance vs acceptance: different registers)
 - thematic_alignment: strong (destruction overlap)
-- musical_compatibility: weak (Am matches; 112 vs 78 BPM = 43% apart
-  — not compatible even as doubled/halved)
+- musical_compatibility: weak (Am matches; 112 vs 78 BPM = 43% apart,
+  not compatible even as doubled/halved)
 - temporal_pattern: dormant
 
 Candidate B classification: `related_theme`, `low` confidence.
@@ -833,7 +833,7 @@ language difference suggest separate creative contexts."
 Why not `same_song_candidate`: While the signals are strong, fragments in
 different languages are unlikely to be parts of the same unfinished song
 unless the user explicitly works bilingually. The conservative bias
-applies — downgrade to `related_theme` and let the user decide.
+applies, downgrade to `related_theme` and let the user decide.
 
 ## Edge cases
 
@@ -841,7 +841,7 @@ applies — downgrade to `related_theme` and let the user decide.
 When emotion arrays are empty for both fragments (rare but possible with
 pure instrumental motifs), fall back to musical compatibility as the
 primary signal. If musical compatibility is also unknown, set
-`relationship: unrelated, confidence: low` — there's nothing to evaluate.
+`relationship: unrelated, confidence: low`; there's nothing to evaluate.
 
 ### Vector search returned >10 candidates
 Evaluate the top 5 by similarity. Discard the rest. The product surfaces at
@@ -854,7 +854,7 @@ unrelated, confidence: high` and flag as data error. Do not surface
 cross-user matches under any circumstances.
 
 ### A fragment is in 'student' mode and the other in 'creator' mode
-Treat as unrelated — these are different contexts of use. The product
+Treat as unrelated: these are different contexts of use. The product
 intentionally separates Music Education Mode data from Creator Mode data.
 
 ## What this skill does NOT do
@@ -887,7 +887,7 @@ a wrong connection.
 ## Common mistakes
 
 1. **Treating high cosine similarity as sufficient.** A similarity of 0.90
-   only means the embeddings are close — it does not mean the fragments
+   only means the embeddings are close; it does not mean the fragments
    belong together. Always evaluate all four signals before classifying.
 
 2. **Ignoring temporal context.** Two fragments with `temporal_proximity
@@ -902,7 +902,7 @@ a wrong connection.
    signals before asserting `same_song_candidate`.
 
 4. **Missing bridge detection.** When candidates come from two different
-   projects, check whether both are `same_song_candidate` — this is the
+   projects, check whether both are `same_song_candidate`: this is the
    `bridge_projects` trigger. It is rare but the highest-value insight
    this skill can produce.
 

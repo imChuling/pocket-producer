@@ -1,7 +1,7 @@
 """Deterministic fake adapter for tests and offline development.
 
 Embeddings are seeded from a content hash, so identical inputs always map to
-identical vectors and different inputs (almost surely) differ — without any
+identical vectors and different inputs (almost surely) differ, without any
 model download.
 """
 

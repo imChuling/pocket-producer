@@ -17,7 +17,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
 
 # ---------------------------------------------------------------------------
-# Stub MongoDB — dict-backed, enough for CRUD + simple queries
+# Stub MongoDB: dict-backed, enough for CRUD + simple queries
 # ---------------------------------------------------------------------------
 
 class StubCollection:
@@ -487,7 +487,7 @@ class TestCrossRoute:
             {"$set": {"status": "ready"}},
         )
 
-        # Edit text — patch the background task so it doesn't fail on missing Gemini
+        # Edit text: patch the background task so it doesn't fail on missing Gemini
         with patch("api.routes.fragments._reanalyze_fragment_text", new=AsyncMock()):
             resp = client.post(
                 f"/api/fragments/{frag_id}/edit-text",

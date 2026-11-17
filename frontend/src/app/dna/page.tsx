@@ -15,13 +15,13 @@ import type { DNAData } from "@/types";
 const STRUCTURE_COLORS = ["#a0b5eb", "#d4a06a", "#c4a44e", "#8fa3d0", "#b8c8e8", "#96a8c8"];
 
 /* ═══════════════════════════════════════════════════════════════
-   Creative Personality — hero card with animated gradient border
+   Creative Personality: hero card with animated gradient border
    ═══════════════════════════════════════════════════════════════ */
 function CreativePersonality({ dna }: { dna: DNAData }) {
   const emotionEntries = Object.entries(dna.emotions ?? {}).sort((a, b) => b[1] - a[1]);
-  const topEmotion = emotionEntries[0]?.[0] ?? "—";
+  const topEmotion = emotionEntries[0]?.[0] ?? "n/a";
   const themeEntries = Object.entries(dna.themes ?? {}).sort((a, b) => b[1] - a[1]);
-  const topTheme = themeEntries[0]?.[0] ?? "—";
+  const topTheme = themeEntries[0]?.[0] ?? "n/a";
 
   const archetype = (() => {
     const e = topEmotion.toLowerCase();
@@ -106,20 +106,20 @@ function CreativePersonality({ dna }: { dna: DNAData }) {
 }
 
 /* ═══════════════════════════════════════════
-   Emotion color mapping — semantic hue by mood
+   Emotion color mapping: semantic hue by mood
    ═══════════════════════════════════════════ */
 
 // Map each emotion keyword to a position on a warm↔cool spectrum (0 = coldest blue, 1 = warmest amber).
 // Similar emotions sit close together so their colors are naturally related.
 const EMOTION_HUE: Record<string, number> = {
-  // Cold / melancholic — deep blues
+  // Cold / melancholic: deep blues
   sadness: 0.0, melancholy: 0.05, longing: 0.1, bittersweet: 0.13,
-  // Cool / reflective — mid blues
+  // Cool / reflective: mid blues
   nostalgia: 0.18, peacefulness: 0.22, tenderness: 0.26, dreamy: 0.30,
   transcendence: 0.34, wonder: 0.38,
-  // Neutral / warm — transitional
+  // Neutral / warm: transitional
   hopeful: 0.45, joyful_activation: 0.52,
-  // Warm / energetic — oranges & golds
+  // Warm / energetic: oranges & golds
   energetic: 0.62, power: 0.70, defiance: 0.78,
   tension: 0.85,
 };
@@ -143,7 +143,7 @@ function emotionColor(name: string): string {
 }
 
 /* ═══════════════════════════════════════════
-   Emotion Flow — Canvas flowing particle field
+   Emotion Flow: Canvas flowing particle field
    ═══════════════════════════════════════════ */
 function EmotionFlow({ emotions }: { emotions: Record<string, number> }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -248,7 +248,7 @@ function EmotionFlow({ emotions }: { emotions: Record<string, number> }) {
 }
 
 /* ═══════════════════════════════════════════
-   Structure Donut — Canvas with animation
+   Structure Donut: Canvas with animation
    ═══════════════════════════════════════════ */
 function StructureDonut({ structures }: { structures: { _id: string; count: number }[] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -407,7 +407,7 @@ function PeakHoursInsight({ peakHours, hours }: { peakHours: string; hours: Reco
       <div className="flex-1">
         <p className="text-sm text-obsidian font-medium">Peak creative window</p>
         <p className="text-xs text-gravel">
-          <span className="font-mono font-medium text-obsidian">{peakHours}</span> — {peakPct}% of your ideas happen here
+          <span className="font-mono font-medium text-obsidian">{peakHours}</span>, {peakPct}% of your ideas happen here
         </p>
       </div>
     </div>
@@ -496,11 +496,11 @@ export default function DNAPage() {
             Your Creative DNA
           </h1>
           <p className="text-xs text-slate font-mono">
-            Last updated {dna.updated_at ? new Date(dna.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+            Last updated {dna.updated_at ? new Date(dna.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "n/a"}
           </p>
         </div>
 
-        {/* Hero row — Personality + Stats side by side */}
+        {/* Hero row: Personality + Stats side by side */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           <div className="lg:col-span-3">
             <CreativePersonality dna={dna} />
@@ -515,7 +515,7 @@ export default function DNAPage() {
           </div>
         </div>
 
-        {/* Emotion Flow — particle field */}
+        {/* Emotion Flow: particle field */}
         {Object.keys(emotions).length >= 2 && (
           <section className="space-y-3 animate-card-enter" style={{ animationDelay: "210ms" }}>
             <span className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-slate">
@@ -535,7 +535,7 @@ export default function DNAPage() {
           </section>
         )}
 
-        {/* Network + Style Bubbles — side by side */}
+        {/* Network + Style Bubbles: side by side */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <section className="space-y-3 animate-card-enter" style={{ animationDelay: "240ms" }}>
             <span className="font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-slate">
@@ -558,7 +558,7 @@ export default function DNAPage() {
           )}
         </div>
 
-        {/* Bento grid — 2-column layout for visualizations */}
+        {/* Bento grid: 2-column layout for visualizations */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-12 mt-12">
           {/* Emotion Radar */}
           {Object.keys(emotions).length >= 3 && (

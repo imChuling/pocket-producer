@@ -3,7 +3,7 @@
 Three fixed baselines (rules, cosine, fusion) on the pack-only MS-CLAP
 items with source-weighted BPR and hard_similar upweight=2.0.
 
-Dev-set CV + held-out eval + source-grouped bootstrap + LOSO — all in
+Dev-set CV + held-out eval + source-grouped bootstrap + LOSO: all in
 one script to ensure consistent data loading and weight handling.
 
 Usage:

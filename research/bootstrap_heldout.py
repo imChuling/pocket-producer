@@ -2,7 +2,7 @@
 
 Resamples at the SOURCE level (pack/user) to respect within-source
 correlation.  Uses saved weights from artifacts/heldout-eval/weights.json
-— no retraining.
+(no retraining).
 
 Pre-registers three wording tiers BEFORE seeing the interval:
   - entirely > 0 → "small but positive held-out gain"

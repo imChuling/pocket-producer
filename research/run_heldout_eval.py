@@ -2,7 +2,7 @@
 
 Track 1: retrain 5-signal fusion on the TRAIN split, evaluate pairwise
 accuracy on the HELD-OUT split.  Negative pools for pair construction are
-restricted to items within each split — no leakage.
+restricted to items within each split; no leakage.
 
 Track 2 prep: identify disagreement pairs (fusion correct + cosine wrong,
 or vice versa) on hard_similar negatives from the held-out evaluation.
@@ -159,7 +159,7 @@ def main():
     for seed in SEEDS:
         # Internal train/val split WITHIN train sources, mirroring the dev
         # CV so each seed's weights come from the same training recipe.
-        # NOTE: there is no early stopping — train_logistic runs a fixed
+        # NOTE: there is no early stopping: train_logistic runs a fixed
         # 300 epochs; the internal val split only shapes which examples
         # each seed trains on.
         train_source_ids = [e["source_id"] for e in train_examples]

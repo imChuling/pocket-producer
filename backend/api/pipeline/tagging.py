@@ -137,7 +137,7 @@ async def tag_fragment_direct(
         )
 
     if audio_gcs_uri:
-        prompt_text = f"""Tag this music fragment. You are receiving the ACTUAL AUDIO recording — listen to it carefully.
+        prompt_text = f"""Tag this music fragment. You are receiving the ACTUAL AUDIO recording: listen to it carefully.
 
 Follow the tagging procedure from your system instructions exactly. Pay attention to:
 - What you HEAR: melody, timbre, vocal style, dynamics, arrangement, rhythm feel
@@ -270,7 +270,7 @@ ONLY output the JSON object. No markdown wrapping, no explanation outside the JS
                 last_error = err_str
                 if ("429" in err_str or "RESOURCE_EXHAUSTED" in err_str) and attempt < 2:
                     delay = 10 * (attempt + 1)
-                    logger.info("Rate limited — waiting %ds before retry...", delay)
+                    logger.info("Rate limited, waiting %ds before retry...", delay)
                     await asyncio.sleep(delay)
 
         if not parsed:
@@ -321,5 +321,5 @@ def build_fallback_tags(features: dict, text: str | None = None) -> dict:
         "potential": "medium",
         "key": None,
         "bpm": None,
-        "suggestion": "Keep building on this idea — try layering another element.",
+        "suggestion": "Keep building on this idea; try layering another element.",
     }

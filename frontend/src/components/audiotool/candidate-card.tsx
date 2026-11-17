@@ -51,7 +51,7 @@ export function CandidateCard({
       await onInsert();
     } catch (cause) {
       setInsertError(
-        cause instanceof Error ? cause.message : "Insert failed — try again",
+        cause instanceof Error ? cause.message : "Insert failed. Try again",
       );
     } finally {
       setInserting(false);

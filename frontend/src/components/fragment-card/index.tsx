@@ -53,7 +53,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated, readOnly, onReadO
   const isAudiotool = Boolean(fragment.text && fragment.text.includes("Imported from Audiotool"));
   const displayTitle = fragment.title || "Audio fragment";
 
-  // Reset the pipeline indicator when processing stops — adjusted during
+  // Reset the pipeline indicator when processing stops, adjusted during
   // render (the React-docs pattern) instead of via setState in an effect.
   const [prevProcessing, setPrevProcessing] = useState(isProcessing);
   if (prevProcessing !== isProcessing) {
@@ -132,7 +132,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated, readOnly, onReadO
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 429) {
-        setReanalyzeError("Too busy — try again shortly");
+        setReanalyzeError("Too busy. Try again shortly");
         return;
       }
       if (!res.ok) {
@@ -227,7 +227,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated, readOnly, onReadO
               exit={{ opacity: 0, y: -6, filter: "blur(4px)" }}
               transition={{ duration: 0.3 }}
             >
-              {pipelineStep || (isAudio ? "Analyzing audio — usually ~30–60s" : "Processing...")}
+              {pipelineStep || (isAudio ? "Analyzing audio (usually ~30–60s)" : "Processing...")}
             </motion.span>
           </AnimatePresence>
         </div>
@@ -308,7 +308,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated, readOnly, onReadO
         </div>
       )}
 
-      {/* Agent narrative — shown for ungrouped fragments too (refusals,
+      {/* Agent narrative: shown for ungrouped fragments too (refusals,
           stands-on-its-own notes); connection_reason only makes sense with a project */}
       {(fragment.agent_narrative || (fragment.project_id && fragment.connection_reason)) && (
         <div

@@ -6,7 +6,7 @@ This project uses the following external datasets and models. When in doubt, the
 
 Weak-pretraining audio loops with per-item licenses.
 
-- **Source**: [Zenodo record 3967852](https://zenodo.org/records/3967852) — Ramires et al., *The Freesound Loop Dataset and Annotation Tool*, ISMIR 2020
+- **Source**: [Zenodo record 3967852](https://zenodo.org/records/3967852), Ramires et al., *The Freesound Loop Dataset and Annotation Tool*, ISMIR 2020
 - **Dataset record license**: CC BY 4.0. Each audio file carries its own license (the dataset-level CC BY does not override individual track licenses).
 - **Per-item manifest**: `research/data/fsld/manifest.jsonl` (9,493 items). Not tracked in git (`research/data/fsld/.gitignore`); regenerated locally by `research/build_fsld_manifest.py` from the FSL10K metadata.
 - **License breakdown**: CC-BY 4,827 / CC0 3,230 / CC-BY-NC 1,215 / Sampling+ 221 / Unknown 0
@@ -64,7 +64,7 @@ Audio metadata (track titles, genres, BPM, key, energy, danceability, etc.)
 - **Paper**: Defferrard, M., Benzi, K., Vandergheynst, P., & Bresson, X. (2017). FMA: A Dataset for Music Analysis. *ISMIR 2017*.
 - **arXiv**: https://arxiv.org/abs/1612.01840
 - **License**: Audio tracks are individually licensed by their artists (Creative Commons). Metadata is provided for research purposes.
-- **Usage in this project**: We use only the metadata (tracks.csv, echonest.csv) — no audio files are downloaded or distributed.
+- **Usage in this project**: We use only the metadata (tracks.csv, echonest.csv); no audio files are downloaded or distributed.
 
 ## LabROSA Lyric Database (LYRICAL)
 

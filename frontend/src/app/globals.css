@@ -22,7 +22,7 @@
   --color-sky-mint: #a0b5eb;
   --color-amber-glow: #e2c161;
 
-  /* DNA gradient palette — warm spectrum */
+  /* DNA gradient palette: warm spectrum */
   --color-dna-blue: #a0b5eb;
   --color-dna-indigo: #8fa3d0;
   --color-dna-orange: #ffa773;
@@ -58,7 +58,7 @@
   --color-input: #e5e5e5;
   --color-ring: #a59f97;
 
-  /* Chart / accent colors — muted for light theme */
+  /* Chart / accent colors: muted for light theme */
   --color-chart-1: #000000;
   --color-chart-2: #777169;
   --color-chart-3: #a59f97;
@@ -594,7 +594,7 @@
   opacity: 1;
 }
 
-/* ── DNA section card — frosted glass with warm tint ── */
+/* ── DNA section card: frosted glass with warm tint ── */
 .dna-card {
   background: rgba(255,255,255,0.55);
   backdrop-filter: blur(16px);

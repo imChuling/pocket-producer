@@ -51,7 +51,7 @@ export function EmotionRadar({ emotions }: EmotionRadarProps) {
       const t = easeOutCubic(progress / duration);
       ctx!.clearRect(0, 0, w, h);
 
-      // — Grid rings —
+      // Grid rings
       for (let r = 1; r <= rings; r++) {
         const radius = (r / rings) * maxR;
         ctx!.beginPath();
@@ -61,7 +61,7 @@ export function EmotionRadar({ emotions }: EmotionRadarProps) {
         ctx!.stroke();
       }
 
-      // — Axis lines + labels —
+      // Axis lines + labels
       for (let i = 0; i < n; i++) {
         const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
         const ex = cx + Math.cos(angle) * maxR;
@@ -85,7 +85,7 @@ export function EmotionRadar({ emotions }: EmotionRadarProps) {
         ctx!.fillText(data[i].name, lx, ly);
       }
 
-      // — Filled shape with gradient —
+      // Filled shape with gradient
       const points: [number, number][] = [];
       for (let i = 0; i < n; i++) {
         const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
@@ -141,7 +141,7 @@ export function EmotionRadar({ emotions }: EmotionRadarProps) {
       ctx!.lineWidth = 2;
       ctx!.stroke();
 
-      // — Dots with glow —
+      // Dots with glow
       for (let i = 0; i < n; i++) {
         const [px, py] = points[i];
         // Glow

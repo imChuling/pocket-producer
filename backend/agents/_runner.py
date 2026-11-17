@@ -126,7 +126,7 @@ async def group_fragment_with_agents(
             "balanced": "Match mode: BALANCED. Apply the default grouping guidance.",
             "loose": (
                 "Match mode: LOOSE. The creator wants to see more speculative "
-                "connections — related_theme or similar_emotion with medium "
+                "connections: related_theme or similar_emotion with medium "
                 "confidence may justify grouping. Still never group against "
                 "explicit creator intent."
             ),
@@ -137,7 +137,7 @@ async def group_fragment_with_agents(
             f"{chr(10).join(context_parts)}\n\n"
             "Call the memory tool for relationship discovery, "
             "then decide on project grouping. "
-            "If the creator left notes or comments, weigh them heavily — they "
+            "If the creator left notes or comments, weigh them heavily; they "
             "express intent. Comments are timestamped thoughts; later comments "
             "reflect the creator's most current thinking.\n"
             f"{match_mode_hints.get(match_mode, match_mode_hints['balanced'])}"

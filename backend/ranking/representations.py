@@ -46,7 +46,7 @@ LEGACY_TEXT_MODEL_ID = "voyage-3"
 
 def migrate_legacy_embedding(fragment_doc: dict) -> RepresentationRecord | None:
     """Register the historical `embedding` field as what it actually is:
-    a Voyage text embedding — regardless of the fragment's media type."""
+    a Voyage text embedding, regardless of the fragment's media type."""
     vector = fragment_doc.get("embedding")
     if not vector:
         return None

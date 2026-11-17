@@ -12,7 +12,7 @@ license: Apache-2.0
 # Musical Knowledge
 
 Provide objective music theory rules for evaluating whether two fragments
-are musically compatible. Purely referential — this skill answers questions,
+are musically compatible. Purely referential: this skill answers questions,
 it does not act on fragments or generate musical content.
 
 ## When to use this skill
@@ -28,14 +28,14 @@ Use this skill when:
 
 ## When NOT to use this skill
 
-- Both fragments are pure text with no audio_features — musical
+- Both fragments are pure text with no audio_features; musical
   compatibility is `n/a`, just return that without calling this skill
 - Audio features are missing or unreliable for both fragments
 - The question is about emotion or theme (those have their own taxonomies
   in `music-tagging`)
-- You need to generate musical content (chords, melodies, beats) — this
+- You need to generate musical content (chords, melodies, beats); this
   skill is descriptive only
-- Do NOT call for every fragment pair — only when at least one fragment
+- Do NOT call for every fragment pair; only when at least one fragment
   has audio_features with estimated_key or BPM
 
 ## Input
@@ -120,7 +120,7 @@ If either fragment lacks `audio_features` entirely, return
 
 If one fragment has audio features and the other doesn't, you can still
 return `key_compatibility` or `tempo_compatibility` as `unknown` (not
-`n/a` — the data is missing, not inapplicable).
+`n/a`: the data is missing, not inapplicable).
 
 ### Step 2: Normalize raw values
 
@@ -155,7 +155,7 @@ applicable) styles, and explains why they are or aren't compatible.
 
 ### Step 7: Return result
 
-Return the JSON object. Do not suggest what the user should do — that is
+Return the JSON object. Do not suggest what the user should do: that is
 the Producer Agent's job.
 
 ## Core principle: Compatibility, not correctness
@@ -287,7 +287,7 @@ detection has these known issues:
 
 - **Relative major/minor confusion**: Am is often detected as C (and vice
   versa) because they share the same note set. **Rule**: always treat
-  relative major/minor pairs as `strong` — they may be the same tonal
+  relative major/minor pairs as `strong`; they may be the same tonal
   center detected differently.
 - **Weak chroma signal**: short, noisy, or percussive audio produces
   unreliable key. If `duration_sec < 5` or the audio is percussive with
@@ -345,7 +345,7 @@ at "double time" feel. The doubled/halved range tolerates ±10%:
 - 72 ↔ 144 → strong (exactly 2×)
 - 72 ↔ 140 → strong (2× within 5%)
 - 72 ↔ 150 → strong (2× within 5%)
-- 72 ↔ 160 → marginal (2× but 11% off — borderline)
+- 72 ↔ 160 → marginal (2× but 11% off, borderline)
 
 This matters because songwriters frequently sketch at half-time and
 perform at full tempo (especially common in trap: felt 70 BPM, detected
@@ -355,7 +355,7 @@ perform at full tempo (especially common in trap: felt 70 BPM, detected
 
 Two fragments within 10-25% of each other might be the same song with
 one section slowed or rushed. A 1.5× relationship (e.g., 80 ↔ 120) is
-possible but unusual — sometimes indicates triplet feel vs straight feel.
+possible but unusual: sometimes indicates triplet feel vs straight feel.
 
 **Zone 4: Conflicting (>25% and not 2× related)**
 
@@ -566,7 +566,7 @@ For each style tag, the key structural expectations. Full details in
 
 librosa sometimes reports the relative major instead of the minor (e.g.,
 C instead of Am). If two fragments report keys that are relative
-major/minor of each other, treat them as `strong` — they are likely the
+major/minor of each other, treat them as `strong`; they are likely the
 same tonal center detected differently. This is the most common librosa
 "error" and should always be handled gracefully.
 
@@ -646,7 +646,7 @@ Fragment B: C major, 118 BPM
   modulation pathway. Despite nearly identical tempos, these fragments
   are musically incompatible."
 
-### Example 4: Marginal — key strong, tempo borderline
+### Example 4: Marginal: key strong, tempo borderline
 
 Fragment A: D major, 90 BPM
 Fragment B: A major, 112 BPM
@@ -675,7 +675,7 @@ Fragment A: Gm, 156 BPM, style: [trap]
 Fragment B: Gm, 78 BPM, style: [hip-hop]
 
 - Key: Gm ↔ Gm = identical → `strong`
-- Tempo: 156 / 78 = 2.0× → `strong` (doubled/halved — classic trap
+- Tempo: 156 / 78 = 2.0× → `strong` (doubled/halved, classic trap
   half-time feel)
 - Style: trap + hip-hop → `compatible`
 - Overall: `strong`
@@ -709,7 +709,7 @@ Fragment B: C major, 96 BPM
 - Reasoning: "D Dorian shares its note set with C major (parent key).
   BPMs are nearly identical. Strongly compatible."
 
-### Example 9: Percussive audio — tempo only
+### Example 9: Percussive audio: tempo only
 
 Fragment A: no key (beatbox), 92 BPM
 Fragment B: Am, 88 BPM
@@ -729,7 +729,7 @@ Fragment B: librosa reports "Am", 72 BPM
 User context: both fragments are described as "minor-key piano"
 
 - Key: C ↔ Am = relative major/minor → `strong`
-  (and likely the same tonal center — librosa probably detected C for a
+  (and likely the same tonal center; librosa probably detected C for a
   fragment that is actually in Am)
 - Tempo: |75 - 72| / 75 = 4% → `strong`
 - Overall: `strong`
@@ -760,7 +760,7 @@ User context: both fragments are described as "minor-key piano"
    certainly detected at 2× the real tempo. Normalize before comparing.
 
 5. **Going too deep into theory.** If you find yourself reasoning about
-   modal interchange, Neapolitan chords, or chromatic mediants — stop.
+   modal interchange, Neapolitan chords, or chromatic mediants, stop.
    Return `marginal` and let the user judge. This skill provides defaults,
    not advanced harmonic analysis.
 
@@ -768,7 +768,7 @@ User context: both fragments are described as "minor-key piano"
    felt at double that. Always check both the raw BPM and its double when
    a trap or hip-hop style tag is present.
 
-7. **Using style as a primary signal.** Style is the weakest signal —
+7. **Using style as a primary signal.** Style is the weakest signal:
    most fragments have empty style arrays, and genre boundaries are
    fluid. Style should only modify an already-formed key+tempo judgment,
    never drive it.
@@ -782,14 +782,14 @@ User context: both fragments are described as "minor-key piano"
 - Generate musical content (chord progressions, melodies, riffs, beats)
 - Judge musical quality or originality
 - Act on fragments (no writes, no project changes)
-- Evaluate non-musical compatibility (emotion, theme — separate skills)
+- Evaluate non-musical compatibility (emotion, theme: separate skills)
 - Override the user's stated musical intent
 - Provide advanced harmonic analysis (beyond the rules defined here)
 
 Stay within compatibility assessment. For the full reference tables with
 additional context, see:
-- `references/key-compatibility.md` — complete theory and pseudocode
-- `references/tempo-rules.md` — zone details and special cases
-- `references/genre-conventions.md` — style-by-style structural norms
+- `references/key-compatibility.md`: complete theory and pseudocode
+- `references/tempo-rules.md`: zone details and special cases
+- `references/genre-conventions.md`: style-by-style structural norms
 
 Other agents and skills handle the rest.

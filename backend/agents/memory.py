@@ -1,4 +1,4 @@
-"""Memory Agent (Grounding layer) — real, actively running in the pipeline.
+"""Memory Agent (Grounding layer): real, actively running in the pipeline.
 
 Responsibilities:
 - Vector search for similar past fragments (via MongoDB MCP or direct tools)
@@ -146,7 +146,7 @@ async def vector_search_fragment_neighbors(fragment_id: str, limit: int = 6) -> 
 
 
 # mongodb-mcp-server wraps result documents in untrusted-user-data tags and
-# prepends a human-readable summary block — extract only the JSON payload.
+# prepends a human-readable summary block; extract only the JSON payload.
 _MCP_UNTRUSTED_RE = re.compile(
     r"<untrusted-user-data-[0-9a-f-]+>\s*(.*?)\s*</untrusted-user-data-[0-9a-f-]+>",
     re.DOTALL,
@@ -169,7 +169,7 @@ def _parse_mcp_documents(content: list[Any]) -> list[dict]:
         if not text:
             continue
         # The warning preamble itself mentions the tags, so several matches
-        # exist per block — only the JSON-parsable one carries the payload.
+        # exist per block: only the JSON-parsable one carries the payload.
         candidates = _MCP_UNTRUSTED_RE.findall(text) or [text]
         for candidate in candidates:
             try:
@@ -204,7 +204,7 @@ class _GoogleIdTokenAuth(httpx.Auth):
             except Exception:
                 self._unavailable = True
                 logger.warning(
-                    "No ambient credentials for MCP ID token — calling %s unauthenticated",
+                    "No ambient credentials for MCP ID token, calling %s unauthenticated",
                     self._audience,
                 )
         if self._token:
@@ -547,7 +547,7 @@ their relationships. You NEVER write to the database.
 ## Workflow
 
 1. Call get_fragment_context for the new fragment to understand its content.
-   Pay special attention to `notes` and `comments` — the creator's own words
+   Pay special attention to `notes` and `comments`: the creator's own words
    about intent. An explicit connection stated there (e.g. "this goes with
    the rain song") overrides embedding similarity; an explicit separation
    ("standalone idea") caps the relationship at related_theme.
@@ -634,7 +634,7 @@ Never use musical_compatibility alone to reject a connection.
 For ALL other classification decisions (same_song_candidate vs related_theme
 vs similar_emotion vs unrelated), you MUST follow the thresholds and
 multi-signal fusion logic defined in the relationship-rules skill. Do not
-guess — call the skill tool to load the rules.
+guess, call the skill tool to load the rules.
 
 ## Output
 
@@ -670,7 +670,7 @@ Return ONLY this JSON structure:
 
 When fragments share emotional, thematic, or musical connections, group them.
 A creator with 15 fragments might have 3-8 projects. Lean toward grouping when
-there is reasonable evidence — creators benefit from seeing connections.
+there is reasonable evidence; creators benefit from seeing connections.
 
 Relationship types and when to recommend grouping:
 - "same_song_candidate": shared imagery, lyrical continuity, structural complement → new_project or join_project
@@ -681,7 +681,7 @@ Relationship types and when to recommend grouping:
 When recommending "new_project", ALWAYS include the current fragment AND at least
 one neighbor in "group_with_ids". The Producer Agent needs these IDs to create the project.
 
-## Refusal rules (inline — always check before output)
+## Refusal rules (inline: always check before output)
 
 REFUSE to classify (return "unrelated" with explanation) if:
 - Input fragment has no text AND no audio_features → insufficient data
@@ -705,7 +705,7 @@ MEMORY_MCP_ADDENDUM = """
 This agent is connected to the MongoDB MCP server for database reads.
 The vector_search_fragment_neighbors tool already routes through MCP internally.
 
-You also have the **mongo_mcp_find** tool — a read-only query routed through
+You also have the **mongo_mcp_find** tool, a read-only query routed through
 the MCP server. Every query is automatically scoped to the current user at
 the tool layer; you do not need to (and cannot) set user_id yourself.
 

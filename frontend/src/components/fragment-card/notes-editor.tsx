@@ -46,7 +46,7 @@ export function NotesEditor({ fragmentId, notes, onUpdated }: NotesEditorProps) 
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) save();
             if (e.key === "Escape") setEditing(false);
           }}
-          placeholder="Add context for the AI — what inspired this, how it connects to other ideas..."
+          placeholder="Add context for the AI: what inspired this, how it connects to other ideas..."
           className="w-full text-xs text-obsidian bg-powder rounded-lg px-3 py-2 outline-none border border-chalk focus:border-gravel transition-colors resize-none leading-relaxed"
           style={{ fieldSizing: "content" as never, minHeight: "48px" }}
         />

@@ -141,7 +141,7 @@ export type NexusAuthResult =
 
 /**
  * `interactive: false` means "use an existing session if there is one, but
- * never navigate the user away" — used to finish the OAuth redirect on mount.
+ * never navigate the user away", used to finish the OAuth redirect on mount.
  */
 export type NexusAuthorize = (options?: {
   interactive?: boolean;

@@ -60,7 +60,7 @@ def _rate_limit_key(request) -> str:
 limiter = Limiter(key_func=_rate_limit_key)
 
 # ---------------------------------------------------------------------------
-# Concurrent pipeline guard — reject (not queue) when too many are running
+# Concurrent pipeline guard: reject (not queue) when too many are running
 # ---------------------------------------------------------------------------
 MAX_CONCURRENT_PIPELINES = int(os.environ.get("MAX_CONCURRENT_PIPELINES", "2"))
 _pipeline_count = 0
@@ -82,7 +82,7 @@ async def release_pipeline_slot():
         _pipeline_count = max(0, _pipeline_count - 1)
 
 
-# Per-user agent-pipeline serialization — two fragments uploaded close
+# Per-user agent-pipeline serialization: two fragments uploaded close
 # together must not both create a project for the same neighborhood.
 # Weak values: a lock lives only while a pipeline holds it, so the map does
 # not grow by one entry per user ever seen for the life of the process.
@@ -99,7 +99,7 @@ async def get_user_agent_lock(user_id: str) -> asyncio.Lock:
         return lock
 
 
-# DNA update debounce — collapse rapid successive triggers into one run.
+# DNA update debounce: collapse rapid successive triggers into one run.
 # Pending-ness is tracked per user: one user's debounce window must not
 # swallow another user's trigger, and a caller cancelled mid-wait (a
 # reanalyze stream the client closed) must not leave the flag set forever.

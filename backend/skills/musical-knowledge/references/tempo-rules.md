@@ -44,7 +44,7 @@ The doubled/halved range tolerates ±10% on either:
 - 72 + 144 → strong (exactly 2x)
 - 72 + 140 → strong (2x within 5%)
 - 72 + 150 → strong (2x within 5%)
-- 72 + 160 → weak (2x but 11% off — borderline)
+- 72 + 160 → weak (2x but 11% off, borderline)
 
 To check programmatically:
 
@@ -76,7 +76,7 @@ def tempo_compatible(BPM_A, BPM_B):
 Two fragments within 10-25% of each other might be the same song with one
 section slowed or rushed (an unusual choice but real songs do this).
 Triplet feel against straight feel produces a 3:2 ratio (e.g., 80 vs 120
-BPM) — possible but unusual.
+BPM): possible but unusual.
 
 Set `musical_compatibility: weak` for these.
 

@@ -67,7 +67,7 @@ def _warm_clap_in_background() -> None:
                     ensure()
             logger.info("role probe warmup complete")
         except Exception:
-            logger.exception("CLAP warmup failed — will retry on first request")
+            logger.exception("CLAP warmup failed; will retry on first request")
 
     threading.Thread(target=_load, name="clap-warmup", daemon=True).start()
 
@@ -80,7 +80,7 @@ async def lifespan(application: FastAPI):
         get_genai_client()
         logger.info("Warmup complete")
     except Exception:
-        logger.exception("Warmup failed — will retry on first request")
+        logger.exception("Warmup failed; will retry on first request")
     _warm_clap_in_background()
     yield
 
@@ -159,7 +159,7 @@ async def ready():
 
 
 # ---------------------------------------------------------------------------
-# Ingest — the core ingestion endpoint stays in main.py
+# Ingest: the core ingestion endpoint stays in main.py
 # ---------------------------------------------------------------------------
 
 _background_tasks: set[asyncio.Task] = set()

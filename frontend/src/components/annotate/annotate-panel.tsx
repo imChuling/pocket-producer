@@ -91,7 +91,7 @@ export function AnnotatePanel({
     return (
       <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-8 text-center text-emerald-900">
         <CheckCircle2 className="mx-auto mb-2 h-8 w-8" />
-        All pairs labeled — thank you. Run the export script to collect them.
+        All pairs labeled. Thank you. Run the export script to collect them.
       </div>
     );
   }
@@ -130,7 +130,7 @@ export function AnnotatePanel({
 
       <section className="rounded-xl border border-chalk bg-powder p-4">
         <h2 className="mb-2 text-sm font-medium text-gravel">
-          Session context — imagine you are continuing this project
+          Session context: imagine you are continuing this project
         </h2>
         <ul className="space-y-1">
           {pair.context.map((fragment) => (

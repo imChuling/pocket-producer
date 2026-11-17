@@ -25,7 +25,7 @@ export function ConnectionPanel({
         suggest fragments from your own library. It asks for{" "}
         <code className="text-gravel">project:write</code> and{" "}
         <code className="text-gravel">sample:write</code> so it can insert a
-        fragment you choose — every insert is undoable, and you can disconnect
+        fragment you choose. Every insert is undoable, and you can disconnect
         at any time. Your Audiotool login never leaves this browser.
       </p>
       {error && (

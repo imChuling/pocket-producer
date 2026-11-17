@@ -1,6 +1,6 @@
 // Client for the /api/ranking endpoints.
 //
-// Only the session fingerprint and candidate *metadata* are sent — audio
+// Only the session fingerprint and candidate *metadata* are sent; audio
 // bytes stay behind the protected fragment audio route, and no Audiotool
 // OAuth material is ever included.
 
@@ -56,7 +56,7 @@ export type ModelCard = {
   id: string;
 } & Record<string, unknown>;
 
-/** Registered ranking models — drives the model selector so the UI never
+/** Registered ranking models: drives the model selector so the UI never
  * advertises a model the server didn't actually load. */
 export async function fetchModelCards(): Promise<{
   default: string;
@@ -67,7 +67,7 @@ export async function fetchModelCards(): Promise<{
 
 /**
  * Ask the server's LLM to read a free-text intent as structured fields.
- * Null means "no usable reading" — the caller degrades to raw-text
+ * Null means "no usable reading"; the caller degrades to raw-text
  * matching and the user never sees an error for it.
  */
 export async function parseIntent(text: string): Promise<ParsedIntent | null> {

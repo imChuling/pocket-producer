@@ -172,13 +172,13 @@ Output ONLY valid JSON:
 Rules:
 - join: Memory found same_song_candidate with high confidence
 - new: No matching project found
-- bridge: Two related projects found — highlight this to the user
+- bridge: Two related projects found: highlight this to the user
 - ask_user: Memory unsure, surface options
 
 next_action must be concrete and achievable in 30 minutes. Examples:
 - "Try humming a chorus melody that matches this verse's mood"
 - "Record a second verse exploring the same theme from a different angle"
-- "This has verse + chorus — try a bridge section to contrast the emotions"
+- "This has verse + chorus: try a bridge section to contrast the emotions"
 """
 
 
@@ -272,12 +272,12 @@ TEST_CASES = [
     },
     {
         "input": "Turn up the bass, feel the floor vibrate, hands in the air tonight",
-        "description": "Party/bass theme — should be new project or unrelated to rain seeds",
+        "description": "Party/bass theme: should be new project or unrelated to rain seeds",
         "expect_decision": ["new"],
     },
     {
         "input": "Puddles on the sidewalk reflect the neon signs, I pull my hood up tight",
-        "description": "Rain + urban imagery — could bridge or join existing rain project",
+        "description": "Rain + urban imagery: could bridge or join existing rain project",
         "expect_decision": ["join", "bridge", "ask_user"],
     },
 ]

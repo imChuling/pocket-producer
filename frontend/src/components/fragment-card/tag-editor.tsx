@@ -27,7 +27,7 @@ export function TagEditor({ fragment, onUpdated }: TagEditorProps) {
   const [localStructure, setLocalStructure] = useState(fragment.structure_hint);
   const [editedFields, setEditedFields] = useState<string[]>(fragment.user_edited_fields ?? []);
 
-  // Re-sync local editing state when a new fragment object arrives —
+  // Re-sync local editing state when a new fragment object arrives,
   // adjusted during render (the React-docs pattern) instead of via
   // setState in an effect.
   const [prevFragment, setPrevFragment] = useState(fragment);

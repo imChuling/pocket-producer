@@ -5,7 +5,7 @@ Input: a 2x headless-Chrome capture of /figure (temporary fixture route)
     --force-device-scale-factor=2 --virtual-time-budget=8000 \
     http://127.0.0.1:3000/figure
 
-Output: docs/ismir2026/assets/ui-panel.png — cropped panel with a thin
+Output: docs/ismir2026/assets/ui-panel.png: cropped panel with a thin
 frame and circled (a)-(e) callouts in a left margin band, keyed in the
 figure caption.
 

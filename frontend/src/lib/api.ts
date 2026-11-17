@@ -4,7 +4,7 @@ const API_BASE = "/api";
 
 async function authHeaders(): Promise<HeadersInit> {
   const token = await getIdToken();
-  if (!token) throw new Error("Not authenticated — please sign in again");
+  if (!token) throw new Error("Not authenticated. Please sign in again");
   return { Authorization: `Bearer ${token}` };
 }
 

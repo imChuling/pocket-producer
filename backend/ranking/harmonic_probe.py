@@ -3,7 +3,7 @@
 Computes 12-dimensional chroma profiles from audio waveforms and scores
 harmonic fit via transpose-invariant cross-correlation. Two chroma
 vectors match well when their pitch-class distributions align after an
-optimal transposition — capturing key compatibility without requiring
+optimal transposition, capturing key compatibility without requiring
 explicit key detection.
 """
 

@@ -50,7 +50,7 @@ recommendation system. The intent may be in any language.
 Intent: {text}
 
 Output JSON:
-- "tags": 3-8 lowercase English music tags a loop library would use —
+- "tags": 3-8 lowercase English music tags a loop library would use,
   moods, genres, textures, instruments (e.g. "dark", "cinematic",
   "strings", "lofi"). Capture what the creator wants, including softened
   negations ("not too heavy" -> "mellow", not "heavy").

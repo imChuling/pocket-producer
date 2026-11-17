@@ -85,7 +85,7 @@ def _extract_sync(audio_url: str) -> dict[str, Any]:
 
     # --- Enriched features (new) ---
 
-    # RMS energy — overall loudness curve, segmented into ~4 equal bins
+    # RMS energy: overall loudness curve, segmented into ~4 equal bins
     # Gives Gemini a sense of dynamic arc (e.g. build-up → drop)
     rms = librosa.feature.rms(y=y)[0]
     rms_mean = round(float(np.mean(rms)), 4)
@@ -99,15 +99,15 @@ def _extract_sync(audio_url: str) -> dict[str, Any]:
     else:
         energy_curve = [rms_mean]
 
-    # Spectral centroid — tonal "brightness" (low=warm/dark, high=bright/harsh)
+    # Spectral centroid: tonal "brightness" (low=warm/dark, high=bright/harsh)
     centroid = librosa.feature.spectral_centroid(y=y, sr=sr)[0]
     centroid_mean = round(float(np.mean(centroid)), 1)
 
-    # Onset density — how many note attacks per second (sparse vs dense texture)
+    # Onset density: how many note attacks per second (sparse vs dense texture)
     onsets = librosa.onset.onset_detect(y=y, sr=sr, units="time")
     onset_density = round(len(onsets) / max(duration, 0.1), 2)
 
-    # Major/minor confidence — helps Gemini verify key quality
+    # Major/minor confidence: helps Gemini verify key quality
     # Compare energy in major vs minor triads across the chroma
     major_profile = np.array([1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1])  # Major scale
     minor_profile = np.array([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0])  # Natural minor
@@ -118,7 +118,7 @@ def _extract_sync(audio_url: str) -> dict[str, Any]:
 
     # --- Niche-style discriminator features ---
 
-    # Rhythm complexity — std dev of inter-onset intervals (IOI)
+    # Rhythm complexity: std dev of inter-onset intervals (IOI)
     # High = irregular timing (math-rock, jazz), low = steady pulse (four-on-floor, punk)
     # Medium = shuffle/swing patterns (blues, soul)
     if len(onsets) >= 3:
@@ -127,7 +127,7 @@ def _extract_sync(audio_url: str) -> dict[str, Any]:
     else:
         rhythm_complexity = 0.0
 
-    # Spectral flatness — how noise-like vs tonal the signal is (0=pure tone, 1=white noise)
+    # Spectral flatness: how noise-like vs tonal the signal is (0=pure tone, 1=white noise)
     # High (>0.1) = shoegaze wall-of-sound, ambient drones, noise textures
     # Low (<0.02) = clean guitar, piano, vocals in front
     # Use with energy to disambiguate: high flatness + high energy = shoegaze,
@@ -135,7 +135,7 @@ def _extract_sync(audio_url: str) -> dict[str, Any]:
     spec_flat = librosa.feature.spectral_flatness(y=y)[0]
     spectral_flatness = round(float(np.mean(spec_flat)), 4)
 
-    # Dynamic range — ratio of 90th to 10th percentile RMS
+    # Dynamic range: ratio of 90th to 10th percentile RMS
     # High (>4) = large dynamic swings (post-rock, classical, acoustic-ballad with climax)
     # Low (<2) = compressed/consistent loudness (punk, metal, trap, lo-fi)
     # Medium (2-4) = normal pop/rock dynamics

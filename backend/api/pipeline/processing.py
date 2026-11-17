@@ -91,7 +91,7 @@ async def process_fragment_background(
                 features = await asyncio.wait_for(asyncio.shield(features_task), timeout=25)
                 logger.info("Audio features ready before tagging (%.1fs)", time.monotonic() - t0)
             except TimeoutError:
-                logger.info("Audio features not ready after 25s — tagging without them")
+                logger.info("Audio features not ready after 25s, tagging without them")
             except Exception as e:
                 logger.warning("Audio features extraction failed: %s", e)
                 features_task = None
@@ -121,7 +121,7 @@ async def process_fragment_background(
                 logger.warning("Audio features extraction failed: %s", e)
 
         if not tag_result and features:
-            logger.info("Gemini failed — building fallback tags from librosa features")
+            logger.info("Gemini failed, building fallback tags from librosa features")
             tag_result = build_fallback_tags(features, text)
 
         transcript = None
@@ -205,7 +205,7 @@ async def process_fragment_background(
             )
 
         logger.info(
-            "Fragment %s tagged in %.1fs — update=%s",
+            "Fragment %s tagged in %.1fs; update=%s",
             fragment_id, time.monotonic() - t0,
             json.dumps({k: v for k, v in final_update.items() if k not in ("embedding", "audio_features")}, ensure_ascii=False, default=str)[:600],
         )

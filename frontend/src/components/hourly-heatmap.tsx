@@ -7,7 +7,7 @@ interface HourlyHeatmapProps {
 }
 
 /**
- * Radial clock heatmap — 24-hour ring where each segment's
+ * Radial clock heatmap: 24-hour ring where each segment's
  * radius and color intensity reflect fragment count.
  */
 export function HourlyHeatmap({ distribution }: HourlyHeatmapProps) {
@@ -141,7 +141,7 @@ export function HourlyHeatmap({ distribution }: HourlyHeatmapProps) {
                   : "#f5f3f1",
                 animationDelay: `${h * 25}ms`,
               }}
-              title={`${h}:00 — ${val} fragments`}
+              title={`${h}:00: ${val} fragments`}
             />
           );
         })}

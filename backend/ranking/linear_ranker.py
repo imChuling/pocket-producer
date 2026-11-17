@@ -1,7 +1,7 @@
 """L0 of the capacity ladder: a linear model over interpretable inputs.
 
 Inputs are the structured features plus the cosine between the candidate and
-the masked mean of the region tokens — the simplest learnable rung, and the
+the masked mean of the region tokens, the simplest learnable rung, and the
 bar every heavier model must beat.
 """
 

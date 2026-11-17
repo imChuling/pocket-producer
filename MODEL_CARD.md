@@ -1,4 +1,4 @@
-# Model Card — Pocket Producer Ranking System
+# Model Card: Pocket Producer Ranking System
 
 ## Local submission revision, 2026-11-16
 

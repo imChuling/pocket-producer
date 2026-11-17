@@ -3,7 +3,7 @@ name: music-tagging
 description: |
   Rules and taxonomy for tagging music fragments with emotion, theme,
   structure, style, and potential. This skill is loaded as system context
-  for the Gemini tagging pipeline — not called as a tool at runtime.
+  for the Gemini tagging pipeline, not called as a tool at runtime.
 license: Apache-2.0
 ---
 
@@ -131,7 +131,7 @@ These principles override any other instruction below if there is a conflict.
 If you cannot identify an emotion from the input, do not guess. Set
 `needs_user_input: true` and ask the user. The downstream system tolerates
 empty tags better than wrong tags. Wrong tags pollute the Vector Search index
-and break cross-time reconnection — the core value of the product.
+and break cross-time reconnection: the core value of the product.
 
 ### Principle 2: Distinguish "lyrics about X" from "expressing X"
 
@@ -150,7 +150,7 @@ the lyrics.
 
 Prefer 1-2 strong tags over 3 weak ones. A fragment tagged
 `emotion: [melancholy, acceptance]` is more useful than one tagged
-`emotion: [melancholy, sadness, longing, reflection]` — the second has no
+`emotion: [melancholy, sadness, longing, reflection]`; the second has no
 semantic shape. The Memory Agent will use these tags to find related
 fragments; precise tags lead to precise matches.
 
@@ -170,7 +170,7 @@ Follow these steps in order for every fragment.
 - **Audio with transcript**: use transcript for emotion/theme, audio features
   for structure/style
 - **Audio without transcript** (humming, instrumental): treat as
-  audio-only — see "Handling sparse audio" below
+  audio-only; see "Handling sparse audio" below
 - **Emoji only**: see "Handling emoji input" below
 
 ### Step 2: Read for emotion
@@ -179,7 +179,7 @@ Load `references/emotion-taxonomy.md` and identify 1-3 emotion tags. Use the
 taxonomy's decision flowchart. Order from strongest to weakest.
 
 Common pitfall: do not confuse subject matter with emotion. A song *about*
-death can be peaceful, defiant, or angry — not necessarily sad.
+death can be peaceful, defiant, or angry, not necessarily sad.
 
 ### Step 3: Read for theme
 
@@ -266,7 +266,7 @@ not what the creator was feeling or intending.
 - "I captured this melodic motif in A minor at 72 BPM. To help me suggest
   next steps, can you tell me how you felt when you played this?"
 - "This sounds like a slow, contemplative piano idea. What were you imagining
-  it could become — a verse, an intro, something else?"
+  it could become: a verse, an intro, something else?"
 
 ### Case 2: Very short fragments (< 3 seconds of audio, < 5 words of text)
 
@@ -302,7 +302,7 @@ Example: upbeat major-key tempo with deeply melancholy lyrics. This is
 mismatch between a placeholder audio and an unrelated lyric.
 
 **user_prompt example**:
-- "The music feels upbeat but the lyrics feel sad — is the contrast
+- "The music feels upbeat but the lyrics feel sad. Is the contrast
   intentional, or are these meant to be separate ideas?"
 
 ### What NOT to refuse on
@@ -372,11 +372,11 @@ to apply the rules in practice.
 2. **Confusing genre with style.** "Sad" is not a style. "Indie folk
    ballad" is. Leave style empty rather than vague.
 3. **Tagging structure based on user wishes.** If the user says "this is my
-   chorus", that's their decision — record it but verify the fragment
+   chorus", that's their decision; record it but verify the fragment
    actually has chorus-like features (memorable hook, emotional peak,
    repeatable). If features contradict, note it in reasoning.
 4. **Treating "potential: low" as judgment.** Low potential just means "not
-   enough to act on yet" — not "bad". Be neutral. Many great songs start as
+   enough to act on yet", not "bad". Be neutral. Many great songs start as
    low-potential fragments.
 5. **Refusing too easily.** A short fragment with one strong tag is better
    than a refusal. Reserve refusals for the five cases listed above.

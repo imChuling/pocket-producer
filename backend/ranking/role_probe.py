@@ -1,7 +1,7 @@
 """Zero-shot instrument-role classification over CLAP embeddings.
 
 Uses the same vocabulary and prompt template as the backbone bake-off P2
-probe. Classification is deterministic given fixed prompt embeddings —
+probe. Classification is deterministic given fixed prompt embeddings:
 no model inference at query time, only pre-computed vector dot products.
 
 The probe runs entirely on pre-stored CLAP audio embeddings; it never

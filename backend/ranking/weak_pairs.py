@@ -2,7 +2,7 @@
 
 Following Neural Loop Combiner / SampleMatch: items that lived in the same
 composition (project, track, pack) are weak positives for each other; typed
-negatives come from other sources. These labels are for PRETRAINING only —
+negatives come from other sources. These labels are for PRETRAINING only:
 they must never be used as human test ground truth, and splits are grouped
 by source so the model cannot memorize source identity across the boundary.
 

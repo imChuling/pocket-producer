@@ -175,7 +175,7 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
   }, []);
 
   // Unmounting mid-recording must release the microphone and discard the
-  // take — the parent is gone, so there is nowhere to deliver the blob.
+  // take; the parent is gone, so there is nowhere to deliver the blob.
   useEffect(() => {
     return () => {
       mountedRef.current = false;
@@ -263,13 +263,13 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
       streamRef.current = null;
       const name = err instanceof DOMException ? err.name : "";
       if (name === "NotAllowedError" || name === "SecurityError") {
-        setError("Microphone access denied — check browser and OS permission settings");
+        setError("Microphone access denied. Check browser and OS permission settings");
       } else if (name === "NotFoundError" || name === "OverconstrainedError") {
         setError("No microphone found");
       } else if (name === "NotReadableError") {
         setError("Microphone is in use by another app");
       } else {
-        setError("Could not start recording — try reloading the page");
+        setError("Could not start recording. Try reloading the page");
       }
     }
   }, [onRecorded]);
@@ -309,7 +309,7 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
           )}
         </button>
 
-        {/* Timer overlay — inside the ring when recording */}
+        {/* Timer overlay: inside the ring when recording */}
         {recording && (
           <span
             className={`absolute bottom-[38px] z-10 font-mono text-[11px] tracking-wider animate-fade-in ${

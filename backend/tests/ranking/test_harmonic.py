@@ -25,7 +25,7 @@ def _c_major_chroma() -> list[float]:
 
 
 def _f_major_chroma() -> list[float]:
-    """F-A-C triad — shift C major up by 5 semitones."""
+    """F-A-C triad: shift C major up by 5 semitones."""
     return list(np.roll(np.array(_c_major_chroma()), 5))
 
 

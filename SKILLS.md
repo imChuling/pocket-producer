@@ -1,6 +1,6 @@
 # Skills
 
-Pocket Producer ships 5 open-source ADK skills — domain knowledge encoded as
+Pocket Producer ships 5 open-source ADK skills: domain knowledge encoded as
 structured markdown, loaded by [Google ADK](https://github.com/google/adk-python)
 via progressive disclosure. All skills are licensed under
 [Apache 2.0](LICENSE).
@@ -8,7 +8,7 @@ via progressive disclosure. All skills are licensed under
 These skills represent the **semantic layer** of the product: they define how
 fragments are tagged, how relationships are classified, how scores are
 interpreted, and when agents should refuse to act. Changing a skill changes
-agent behavior across the entire system — no prompt rewrites needed.
+agent behavior across the entire system, with no prompt rewrites needed.
 
 ---
 
@@ -55,7 +55,7 @@ music-tagging/
 **Key design decisions**:
 - Emotion taxonomy is based on GEMS (Geneva Emotional Music Scales), adapted
   for fragment-level tagging rather than full-song annotation
-- Tags are **descriptive, not generative** — the skill describes what is present,
+- Tags are **descriptive, not generative**: the skill describes what is present,
   never invents features without evidence
 - `needs_user_input` flag triggers when input is too sparse for confident tagging
 - Worked examples provide calibration for ambiguous cases (mixed emotions,
@@ -102,9 +102,9 @@ relationship-rules/
 | `similar_emotion` | Shared emotional quality | Overlapping emotion tags without thematic or musical connection |
 | `unrelated` | Semantically close but coincidental | Default when signals are weak or conflicting |
 
-**Multi-signal fusion**: the skill evaluates four signal channels —
-emotion overlap, thematic continuity, musical compatibility, and temporal
-context — and requires convergence before asserting strong relationships.
+**Multi-signal fusion**: the skill evaluates four signal channels
+(emotion overlap, thematic continuity, musical compatibility, and temporal
+context) and requires convergence before asserting strong relationships.
 
 **Conservative bias**: when uncertain, the skill instructs agents to choose the
 weaker relationship type. A wrong connection damages trust more than a missed
@@ -122,7 +122,7 @@ needs-user-confirmation, non-English fragment (Chinese), and edge cases.
 ## musical-knowledge
 
 **Purpose**: Objective music theory rules for evaluating compatibility between
-fragments. Purely referential — answers questions, doesn't act on fragments.
+fragments. Purely referential: answers questions, doesn't act on fragments.
 
 **Consumer**: Memory Agent and Producer Agent (loaded via ADK SkillToolset).
 
@@ -163,7 +163,7 @@ musical-knowledge/
 
 **Purpose**: Define how the Producer Agent interprets, explains, and presents
 the Rescue Score to users. The actual score computation is pure Python
-(`backend/tools/rescue_score.py`) — the skill focuses on what the numbers
+(`backend/tools/rescue_score.py`). The skill focuses on what the numbers
 **mean** and what to **do** about them.
 
 **Consumer**: Producer Agent (loaded via ADK SkillToolset).
@@ -175,7 +175,7 @@ rescue-scoring/
 └── SKILL.md    # Formula reference, interpretation, next-action generation, presentation
 ```
 
-**Formula** (reference — computed by Python, not the agent):
+**Formula** (reference; computed by Python, not the agent):
 `score = richness + structure_completeness + emotional_coherence + freshness`
 
 | Component | Max | What it measures |
@@ -195,7 +195,7 @@ rescue-scoring/
   project view, notification context (Resurrect), and conversation context
 
 **Not a quality judgment**: a low score means the project lacks material,
-structure, coherence, or recency — not that the song is bad.
+structure, coherence, or recency, not that the song is bad.
 
 **6 worked examples** focused on interpretation: high-tier next action,
 structure gap, dormant project, new project, score increase, coherence drop.
@@ -207,7 +207,7 @@ structure gap, dormant project, new project, score increase, coherence drop.
 **Purpose**: Define when and how agents should stop, refuse, request user input,
 or escalate. Shared across all agents to ensure consistent boundary behavior.
 
-**Consumer**: All agents — Catcher, Memory, Producer (loaded via ADK SkillToolset).
+**Consumer**: All agents (Catcher, Memory, Producer; loaded via ADK SkillToolset).
 
 **Structure**:
 
@@ -219,12 +219,12 @@ refusal-rules/
 **Core principle**: a polite refusal is always better than a confident mistake.
 
 **Refusal categories**:
-1. **Data sparsity** — input too short or ambiguous for confident tagging
-2. **Uncertainty** — conflicting signals in relationship classification
-3. **Copyright concern** — input appears to be someone else's published work
-4. **Scope mismatch** — request falls outside Pocket Producer's domain
-5. **Emotional safety** — content suggesting crisis or distress
-6. **Technical limitation** — unsupported format or exceeds processing limits
+1. **Data sparsity**: input too short or ambiguous for confident tagging
+2. **Uncertainty**: conflicting signals in relationship classification
+3. **Copyright concern**: input appears to be someone else's published work
+4. **Scope mismatch**: request falls outside Pocket Producer's domain
+5. **Emotional safety**: content suggesting crisis or distress
+6. **Technical limitation**: unsupported format or exceeds processing limits
 
 **10 worked examples** covering: sparse lyric, conflicting signals, near-
 copyright, out-of-scope request, emotional crisis, system uncertainty (mixed
@@ -283,7 +283,7 @@ agents, you can use these skills in your own ADK project:
 cp -r backend/skills/music-tagging your-project/skills/
 ```
 
-Each skill is self-contained — the SKILL.md frontmatter includes name,
+Each skill is self-contained: the SKILL.md frontmatter includes name,
 description, and license. Reference files provide the detailed taxonomies
 and rules.
 

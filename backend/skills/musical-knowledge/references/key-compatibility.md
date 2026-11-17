@@ -7,7 +7,7 @@ the same piece.
 
 ## Foundation: Why keys matter for fragment compatibility
 
-A "key" is the tonal center of a piece of music — the note that feels like
+A "key" is the tonal center of a piece of music, the note that feels like
 "home". Two fragments in radically different keys typically don't feel like
 one song unless there's an intentional modulation between them.
 
@@ -16,7 +16,7 @@ Lane", Whitney Houston's "I Will Always Love You", countless others). Some
 keys move into each other more naturally than others.
 
 The classifications below describe **default expectations** for songwriter
-fragments. They are not rules of music theory — they are expectations about
+fragments. They are not rules of music theory; they are expectations about
 what feels coherent without explicit transition.
 
 ## The three categories
@@ -155,7 +155,7 @@ def keys_compatible(K1, K2):
 
 ## Edge case: librosa estimated key is ambiguous
 
-librosa's key detection is approximate — it usually gets within a perfect
+librosa's key detection is approximate: it usually gets within a perfect
 fifth of the true key, but can confuse:
 - Major with its relative minor (Am detected as C, or vice versa)
 - Keys with similar chord palettes

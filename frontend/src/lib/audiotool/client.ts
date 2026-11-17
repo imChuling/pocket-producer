@@ -195,7 +195,7 @@ type AuthenticatedNexus = {
  *
  * The client returned by `audiotool()` carries no WASM loader, so `open()`
  * fails in a Next.js bundle (see wasm-loader.ts). Re-create it from the same
- * tokens with an explicit browser loader. Tokens stay in this tab — they are
+ * tokens with an explicit browser loader. Tokens stay in this tab; they are
  * never sent to the Pocket Producer backend.
  */
 function documentOpener(

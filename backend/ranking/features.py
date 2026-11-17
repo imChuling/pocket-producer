@@ -1,7 +1,7 @@
 """Deterministic ranking features, all normalized to [0, 1].
 
 Every feature must be computable without network access and must return 0.0
-rather than raising when its inputs are missing — missing data is never
+rather than raising when its inputs are missing; missing data is never
 evidence for a recommendation.
 """
 

@@ -51,7 +51,7 @@ and rhythm. Values are typical ranges, not hard boundaries.
   modal interchange
 - **Structure**: usually verse-chorus or verse-pre-chorus-chorus; bridge
   common; outros often instrumental
-- **Lyrical density**: high — narrative, specific imagery, particular places
+- **Lyrical density**: high: narrative, specific imagery, particular places
 - **Production**: acoustic guitar or piano lead; sparse arrangement; reverb
   moderate; vocal prominent
 - **Typical instrumentation**: acoustic guitar, piano, vocal, strings,
@@ -71,7 +71,7 @@ and rhythm. Values are typical ranges, not hard boundaries.
 
 - **Tempo**: 60-80 BPM
 - **Keys**: any; emotional weight more important than mode
-- **Structure**: simple — verse, chorus, possibly bridge; often 3-4 minutes
+- **Structure**: simple: verse, chorus, possibly bridge; often 3-4 minutes
 - **Production**: extreme intimacy; minimal arrangement; vocal in front
 
 ### pop
@@ -187,7 +187,7 @@ and rhythm. Values are typical ranges, not hard boundaries.
 
 - **Tempo**: 80–130 BPM; varies widely by concept
 - **Keys**: any; tonal ambiguity and key changes common
-- **Structure**: often unconventional — extended intros, irregular section
+- **Structure**: often unconventional: extended intros, irregular section
   lengths, concept-driven sequencing; may follow pop form with subversions
 - **Lyrical density**: moderate to high; often theatrical or conceptual
 - **Production**: layered, genre-blending; avant-garde textures mixed with
@@ -330,7 +330,7 @@ and rhythm. Values are typical ranges, not hard boundaries.
 - **Tempo**: 80–140 BPM; can shift within a track
 - **Keys**: any; modal scales common (Mixolydian, Dorian); drone-based
   tonality in some styles
-- **Structure**: often extended — 5–10+ minutes; improvisatory sections;
+- **Structure**: often extended: 5–10+ minutes; improvisatory sections;
   may follow verse-chorus loosely but with long instrumental passages
 - **Lyrical density**: variable; can be stream-of-consciousness or minimal
 - **Production**: heavy use of effects (delay, phaser, flanger, wah,
@@ -368,7 +368,7 @@ and rhythm. Values are typical ranges, not hard boundaries.
 
 ### metal
 
-- **Tempo**: varies widely by subgenre — doom 60–80 BPM, traditional
+- **Tempo**: varies widely by subgenre: doom 60–80 BPM, traditional
   100–140, thrash 160–220
 - **Keys**: minor dominant; diminished and chromatic movement; drop tunings
   (Drop D, Drop C, Drop B) standard
@@ -458,17 +458,17 @@ These require deliberate intention:
 - `r&b` + `electronic` (modern alt-R&B)
 - `indie-folk` + `lo-fi`
 - `hip-hop` + `synth-pop`
-- `jazz` + `hip-hop` (jazz rap — A Tribe Called Quest territory)
+- `jazz` + `hip-hop` (jazz rap: A Tribe Called Quest territory)
 - `jazz` + `electronic` (nu-jazz / Jazztronica)
 - `blues` + `jazz` (blues-jazz crossover)
 - `fusion` + `progressive-rock` (prog-fusion)
-- `metal` + `progressive-rock` (progressive metal — Tool territory)
+- `metal` + `progressive-rock` (progressive metal: Tool territory)
 - `psychedelic-rock` + `shoegaze` (psych-shoegaze)
 - `post-punk` + `shoegaze` (darkgaze)
 - `post-punk` + `synth-pop` (dark synth-pop crossover)
 - `art-pop` + `electronic` (FKA twigs territory)
 - `dream-pop` + `indie-folk` (atmospheric folk)
-- `soul` + `blues` + (soul-blues — already compatible but unusual blend)
+- `soul` + `blues` + (soul-blues: already compatible but unusual blend)
 - `neo-soul` + `lo-fi` (lo-fi neo-soul production)
 - `metalcore` + `electronic` (modern hybrid metalcore)
 - `post-rock` + `progressive-rock` (expansive, atmospheric)
@@ -493,7 +493,7 @@ These usually indicate different songs:
 - `soul` + `metal`
 
 When two fragments have rarely-compatible styles, the styles alone are not
-enough to set `musical_compatibility: conflicting` — but it's evidence in
+enough to set `musical_compatibility: conflicting`, but it's evidence in
 that direction. Combine with key/tempo signals.
 
 ## When style is empty
@@ -501,5 +501,5 @@ that direction. Combine with key/tempo signals.
 Most fragments have empty style arrays. In that case, style does not
 contribute to musical compatibility evaluation. Use only key and tempo.
 
-This is the common case. Don't over-rely on style for compatibility — it's
+This is the common case. Don't over-rely on style for compatibility: it's
 the weakest signal of the four because it's the most uncertain to detect.

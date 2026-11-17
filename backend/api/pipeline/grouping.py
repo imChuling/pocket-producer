@@ -22,7 +22,7 @@ async def memory_and_project(
     skip_if_grouped: bool = False,
 ):
     if not embedding:
-        logger.info("Fragment %s has no embedding — skipping agent pipeline", fragment_id)
+        logger.info("Fragment %s has no embedding, skipping agent pipeline", fragment_id)
         return
 
     from ..deps import get_user_agent_lock
@@ -60,7 +60,7 @@ async def _memory_and_project_locked(
     old_project_id = existing.get("project_id") if existing else None
     if old_project_id and skip_if_grouped:
         _set_step(db, fragment_id, user_id, "Grouped into a project")
-        logger.info("Fragment %s already grouped into %s by a sibling run — skipping", fragment_id, old_project_id)
+        logger.info("Fragment %s already grouped into %s by a sibling run, skipping", fragment_id, old_project_id)
         return
     if old_project_id:
         logger.info("Fragment %s removing from project %s for re-evaluation", fragment_id, old_project_id)

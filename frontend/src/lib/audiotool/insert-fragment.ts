@@ -1,5 +1,5 @@
 // Upload a fragment's audio as an Audiotool sample and insert it into the
-// open project — reversibly.
+// open project, reversibly.
 //
 // Order is strict: the document is only modified after the sample bytes are
 // acknowledged by the server, so a failed upload never leaves a broken

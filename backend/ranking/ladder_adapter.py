@@ -3,7 +3,7 @@
 Bridges the torch nn.Module forward interface (region_tokens, mask,
 candidate, structured) to the RankerAdapter protocol (RankRequest →
 RankResponse).  Models that cannot score a candidate (missing audio
-embedding) skip it — skips are honest, never zero-filled.  If nothing at
+embedding) skip it; skips are honest, never zero-filled.  If nothing at
 all is scorable, the adapter raises InsufficientContextError so the
 service falls back to rules instead of returning an empty success.
 """
@@ -51,14 +51,14 @@ class LadderRankerAdapter:
         if config.structured_dim != 0:
             raise ValueError(
                 f"FSLD checkpoints were trained with structured_dim=0; "
-                f"got {config.structured_dim} — refusing to serve with silent zero-fill"
+                f"got {config.structured_dim}, refusing to serve with silent zero-fill"
             )
         self._model = cls(config)
         self._model.load_state_dict(load_file(str(directory / "model.safetensors")))
         self._model.eval()
         self._config = config
         self.model_id = model_id
-        # Research provenance only — never the server filesystem path.
+        # Research provenance only: never the server filesystem path.
         weights = (directory / "model.safetensors").read_bytes()
         metrics_path = directory.parent / "metrics.json"
         metrics = (

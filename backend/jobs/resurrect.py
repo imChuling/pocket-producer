@@ -1,4 +1,4 @@
-"""Weekly job — find sleeping projects that match new fragments."""
+"""Weekly job: find sleeping projects that match new fragments."""
 
 import os
 from datetime import UTC, datetime, timedelta

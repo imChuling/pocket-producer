@@ -1,4 +1,4 @@
-"""Metrics must match label semantics — wrong pairings fail loudly."""
+"""Metrics must match label semantics: wrong pairings fail loudly."""
 
 import math
 

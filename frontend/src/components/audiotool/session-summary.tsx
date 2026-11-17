@@ -7,12 +7,12 @@ import { parseIntent } from "@/lib/ranking-api";
 import type { ParsedIntent, SessionFingerprint } from "@/types/audiotool";
 
 // Shows exactly what was read from the Audiotool document. Fields the
-// document didn't provide render as "not available" — the UI never pretends
+// document didn't provide render as "not available"; the UI never pretends
 // to know more than Nexus reported.
 //
 // The intent input carries an LLM reading underneath: once the user pauses
 // typing, the server proposes structured chips (tags, roles, tempo, key).
-// Every chip is removable — only what the user leaves standing is echoed
+// Every chip is removable; only what the user leaves standing is echoed
 // back into the fingerprint and allowed to influence ranking.
 export function SessionSummary({
   fingerprint,

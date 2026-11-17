@@ -2,7 +2,7 @@
 // the backend for CLAP encoding. Returns the resulting embeddings so the
 // caller can populate SessionFingerprint.region_audio_embeddings.
 //
-// Audio blobs are read via the Nexus samples.download() API — audio never
+// Audio blobs are read via the Nexus samples.download() API; audio never
 // touches our backend in any other form. The backend receives raw WAV bytes,
 // CLAP-encodes them, and returns float vectors. Deduplication is by sampleName
 // so a sample used in multiple regions is only downloaded and encoded once.

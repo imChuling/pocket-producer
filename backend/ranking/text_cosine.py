@@ -1,6 +1,6 @@
 """text-only-v1: legacy Voyage text-embedding cosine against the text intent.
 
-This is the strongest thing the June system could do — kept as the honest
+This is the strongest thing the June system could do, kept as the honest
 "what we had before" baseline. The query is the text intent embedded with the
 same frozen Voyage model that produced the stored fragment text vectors.
 """

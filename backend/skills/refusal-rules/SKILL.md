@@ -11,7 +11,7 @@ license: Apache-2.0
 # Refusal Rules
 
 Define when and how agents should stop, refuse, request user input, or
-escalate — ensuring consistent boundary behavior across all Pocket Producer
+escalate, ensuring consistent boundary behavior across all Pocket Producer
 agents. A polite refusal is always better than a confident mistake.
 
 ## When to use this skill
@@ -108,7 +108,7 @@ Input is too thin to produce meaningful output.
 
 **Triggers**:
 - Audio fragment with no transcript, no user description, AND no
-  distinguishing audio features (e.g., 4-second hum at 80 BPM in C — no
+  distinguishing audio features (e.g., 4-second hum at 80 BPM in C, no
   basis for tagging)
 - Text fragment shorter than 5 words AND not a single evocative phrase
 - Project with only 1 fragment (don't compute Rescue Score)
@@ -138,9 +138,9 @@ You can produce an output, but you're not confident enough.
 3. Continue with the parts you ARE confident about
 
 **Standard user prompt examples**:
-- "I had trouble hearing this clearly — I think the word was 'water' but
+- "I had trouble hearing this clearly. I think the word was 'water' but
   it could be 'daughter'. Which is it?"
-- "The melody could fit several emotional contexts — was this a sad
+- "The melody could fit several emotional contexts. Was this a sad
   ballad or a more triumphant moment for you?"
 
 ### Category 3: Copyright or attribution concerns
@@ -162,7 +162,7 @@ The fragment may not be the user's original work.
    memory search (it could pollute the user's creative DNA)
 
 **Standard user prompt example**:
-- "This sounds like it might reference an existing song — am I right? If
+- "This sounds like it might reference an existing song. Am I right? If
   it's just a reference for inspiration, I'll tag it accordingly and keep
   it out of your creative memory matching."
 
@@ -184,7 +184,7 @@ The user is asking the agent to do something the product doesn't do.
 3. Suggest a path forward that aligns with the product
 
 **Standard user prompt examples**:
-- "Pocket Producer doesn't generate lyrics, melodies, or beats — its job
+- "Pocket Producer doesn't generate lyrics, melodies, or beats; its job
   is to help you organize and connect ideas you bring in. If you have
   even a rough idea for that chorus (a phrase, a feeling, a hum), drop it
   in and I'll help you develop it."
@@ -244,10 +244,10 @@ The agent encounters a situation it doesn't know how to handle.
 4. Suggest the simplest fix (re-upload, split, clarify, etc.)
 
 **Standard user prompt examples**:
-- "I noticed this upload seems to contain two separate ideas — a quiet
+- "I noticed this upload seems to contain two separate ideas: a quiet
   verse and a contrasting hook. Would you like me to split them into two
   fragments, or keep them as one for now?"
-- "Something unusual happened processing this — could you try uploading
+- "Something unusual happened processing this. Could you try uploading
   again? If it keeps happening, let us know."
 
 ## Refusal tone guidelines
@@ -286,7 +286,7 @@ When one agent refuses, what happens to downstream agents?
 
 - **Memory refuses (low confidence) → Producer escalates to user**. The
   Producer Agent surfaces Memory's uncertainty as part of its decision
-  (e.g., "I'm not sure if this belongs to an existing project — here are
+  (e.g., "I'm not sure if this belongs to an existing project; here are
   two candidates, which feels right?").
 
 - **Producer refuses → user sees the refusal, fragment is still saved**.
@@ -299,19 +299,19 @@ Some users will get frustrated with refusals and demand the agent proceed
 without input. Honor this in some cases, refuse in others:
 
 - **Honor**: Data sparsity refusals when the user says "just capture it,
-  I'll add details later" — comply by storing with sparse tags and a
+  I'll add details later", comply by storing with sparse tags and a
   followup reminder.
 - **Refuse**: Copyright concerns. Even if the user says "just tag it",
   protect them from accidentally claiming someone else's work as their own
   creative DNA.
 - **Refuse**: Scope mismatches (generation requests). The product doesn't
-  do these — pushing harder doesn't enable them.
+  do these; pushing harder doesn't enable them.
 - **Refuse**: Emotional safety triggers. Even if dismissed, leave the
   helpline reference in place. It costs nothing.
 
 ## Worked examples
 
-### Example 1: Data sparsity — too short to tag (tagging)
+### Example 1: Data sparsity: too short to tag (tagging)
 
 Input: text = "sad"
 - 1 word, no audio features, no context
@@ -321,29 +321,29 @@ Input: text = "sad"
   mood or where you think it might go?"
 - Tags: `emotions: [], themes: [], structure_hint: null`
 
-### Example 2: Copyright concern — known lyrics (tagging)
+### Example 2: Copyright concern: known lyrics (tagging)
 
 Input: text = "Hello darkness my old friend, I've come to talk with you again"
 - Trigger: Category 3 (matches Simon & Garfunkel's "The Sound of Silence")
 - Action: `needs_user_input: true`
 - user_prompt: "This sounds like it might reference 'The Sound of Silence'
-  by Simon & Garfunkel — am I right? If it's just a reference for
+  by Simon & Garfunkel. Am I right? If it's just a reference for
   inspiration, I'll tag it accordingly and keep it out of your creative
   memory matching."
 - Tags: partial tagging is fine (emotions can be identified), but flag
   the copyright concern
 
-### Example 3: Scope mismatch — generation request (Producer)
+### Example 3: Scope mismatch: generation request (Producer)
 
 User message: "Write me a chorus about my grandmother"
 - Trigger: Category 4 (lyrics generation request)
 - Action: refuse politely
-- user_prompt: "Pocket Producer doesn't generate lyrics — its job is to
+- user_prompt: "Pocket Producer doesn't generate lyrics; its job is to
   help you organize and connect ideas you bring in. If you have even a
   rough phrase or feeling about your grandmother, drop it in and I'll
   help you find connections to your other work."
 
-### Example 4: Emotional safety — crisis content (tagging)
+### Example 4: Emotional safety: crisis content (tagging)
 
 Input: text = "I can't do this anymore. I want it to end tonight."
 - Context: no project history of dark lyrics, no clearly performative
@@ -356,7 +356,7 @@ Input: text = "I can't do this anymore. I want it to end tonight."
   you can reach a free helpline at the link at the bottom of the page.
   Either way, your work is here when you want to come back to it."
 
-### Example 5: Low confidence — Memory Agent uncertain (Memory)
+### Example 5: Low confidence: Memory Agent uncertain (Memory)
 
 Two candidates with conflicting signals:
 - Candidate A: `same_song_candidate` by emotion but `conflicting` on
@@ -365,10 +365,10 @@ Two candidates with conflicting signals:
 - Trigger: Category 2 (multiple interpretations, no clear winner)
 - Action: `needs_user_confirmation` in suggested_action
 - Reasoning passed to Producer: "I found two possible connections but
-  I'm not confident about either — one matches emotionally but the music
+  I'm not confident about either: one matches emotionally but the music
   doesn't fit, the other shares a theme but has no other signals."
 
-### Example 6: System uncertainty — mixed ideas in one upload (tagging)
+### Example 6: System uncertainty: mixed ideas in one upload (tagging)
 
 Input: audio, 90 seconds, transcript shows two clearly separate sections:
 - First 40s: soft piano with lyrics about loneliness
@@ -382,11 +382,11 @@ upload)
   structure_hint: null` (no single structural role fits)
 - `needs_user_input: true`
 - user_prompt: "I noticed this recording seems to contain two distinct
-  ideas — a quiet piano section and an intense guitar section. Would you
+  ideas: a quiet piano section and an intense guitar section. Would you
   like me to split them into two fragments so I can tag and match each
   one better, or keep them together as one piece?"
 
-Why not refuse entirely: the fragment IS capturable — emotions and themes
+Why not refuse entirely: the fragment IS capturable; emotions and themes
 can be identified. The system uncertainty is about structure, not about
 whether the input is valid.
 
@@ -396,7 +396,7 @@ Input: text = "I buried my heart in the backyard next to the dog / Now
 nothing grows there but silence and weeds"
 - Context: user has a project called "Garden Songs" with 4 other fragments
   using nature metaphors for emotional states
-- Trigger check: Category 5 — does this apply?
+- Trigger check: Category 5: does this apply?
   - "buried my heart" is metaphorical, not literal
   - Past tense, not present-tense crisis
   - Consistent with an established creative pattern (garden/nature imagery)
@@ -411,7 +411,7 @@ artistic context is normal creative work. The system must support it, not
 pathologize it. Only present-tense, autobiographical crisis language
 triggers Category 5.
 
-### Example 8: "Just do it" override — user pushes back (tagging)
+### Example 8: "Just do it" override: user pushes back (tagging)
 
 First pass: user uploads 3-second hum, no text
 - Trigger: Category 1 (sparse audio, < 5 seconds, no distinguishing
@@ -437,7 +437,7 @@ User responds: "I know, just tag it"
 - Override policy: **Refuse** (copyright concerns are never overridable)
 - Action: store with a `reference_track` flag, exclude from creative DNA
   matching
-- user_prompt: "Got it — I've saved this as a reference track so it won't
+- user_prompt: "Got it, I've saved this as a reference track so it won't
   affect your creative memory matching. Your original ideas stay distinct."
 
 ### Example 9: Audio quality issues (tagging)
@@ -445,22 +445,22 @@ User responds: "I know, just tag it"
 Input: audio, 15 seconds, heavy background noise
 - Gemini transcript: "I... [inaudible]... the morning... [inaudible]...
   without you" (estimated confidence ~40%)
-- Audio features: bpm: 84, key: "F", duration: 15s (features OK — noise
+- Audio features: bpm: 84, key: "F", duration: 15s (features OK, noise
   doesn't affect librosa as much)
 - Trigger: Category 2 (transcription confidence below 60%)
 - Action: partial capture + ask for clarification
 - Tags: `emotions: [melancholy], themes: [], structure_hint:
   verse_candidate` (inferred from audio features + the few clear words)
 - `needs_user_input: true`
-- user_prompt: "I caught some of this — something about 'the morning'
-  and 'without you' — but background noise made parts hard to hear. Could
+- user_prompt: "I caught some of this (something about 'the morning'
+  and 'without you'), but background noise made parts hard to hear. Could
   you re-record in a quieter spot, or type out what you sang?"
 
 Key: the agent captured what it COULD (emotion from features + partial
 text, structure from duration). It didn't refuse entirely just because
 the transcript was poor.
 
-### Example 10: Copyright grey area — familiar melody (tagging)
+### Example 10: Copyright grey area: familiar melody (tagging)
 
 Input: audio, 8 seconds, hummed melody
 - No lyrics, no user text
@@ -470,9 +470,9 @@ Input: audio, 8 seconds, hummed melody
   - The rhythm is different
   - Only 4-5 notes match
 
-Trigger check: Category 3 — does this apply?
+Trigger check: Category 3: does this apply?
 - No lyrics match (the strongest copyright signal)
-- Melody similarity is vague — many melodies share short note sequences
+- Melody similarity is vague: many melodies share short note sequences
 - No user description mentioning a cover or reference
 
 **Result: Category 3 does NOT apply**
@@ -485,14 +485,14 @@ Trigger check: Category 3 — does this apply?
 Why NOT flag: copyright concerns require strong evidence (matching
 lyrics, explicit user description, or highly distinctive melody). A
 vague resemblance in a short hum does not meet the threshold. Flagging
-too aggressively would make the system unusable — every 4-note sequence
+too aggressively would make the system unusable: every 4-note sequence
 resembles something.
 
 ## Common mistakes
 
 1. **Refusing too eagerly.** A short fragment with one strong tag is
    better than a refusal. Reserve refusals for the specific triggers
-   listed above. "I'm not 100% sure" is not a reason to refuse — assign
+   listed above. "I'm not 100% sure" is not a reason to refuse: assign
    medium confidence and proceed.
 
 2. **Pathologizing dark content.** Songwriters work with the full range

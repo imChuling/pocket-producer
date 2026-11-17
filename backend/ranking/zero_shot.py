@@ -1,7 +1,7 @@
 """Zero-shot style evidence over a fixed, versioned vocabulary.
 
 Style tags come from cosine similarity between the fragment's audio embedding
-and text-prompt embeddings of a closed vocabulary — deterministic and fully
+and text-prompt embeddings of a closed vocabulary, deterministic and fully
 reproducible, unlike free-form LLM tagging. The vocabulary is part of the
 experiment configuration: changing it is a versioned change.
 """

@@ -211,7 +211,7 @@ A background task runs:
    `gemini-3-flash-preview` (text-only fragments use `gemini-3.1-flash-lite`) with
    the full `music-tagging` skill loaded as system context (~2,350 lines of
    domain knowledge). Gemini *listens* to the audio
-   directly — no separate transcription step. Returns structured JSON: emotions,
+   directly, with no separate transcription step. Returns structured JSON: emotions,
    themes, tags, structure hint, style, potential, key, BPM, suggestion, and
    transcript (for audio).
 3. **Embedding**: Voyage AI (`voyage-3`) generates a 1024-dim vector from the
@@ -240,8 +240,8 @@ Producer Agent (root)
             - connection types and reasoning
   │
   ├─ create_project_from_fragments() or attach_fragment_to_project()
-  ├─ generate_project_title() — poetic title via Gemini
-  ├─ generate_next_action() — musically-specific suggestion
+  ├─ generate_project_title(): poetic title via Gemini
+  ├─ generate_next_action(): musically-specific suggestion
   ├─ refresh_project_score() with Rescue Score computation
   └─ returns decision JSON to the pipeline
 ```
@@ -255,7 +255,7 @@ metadata (title, text, creator notes, tags, emotions) so the Producer Agent
 has context before delegating to Memory. Creator notes are explicitly flagged
 as expressing the creator's intent.
 
-**Grouping philosophy**: The agent respects `no_group` decisions — it does
+**Grouping philosophy**: The agent respects `no_group` decisions; it does
 NOT override them. A wrong grouping damages user trust more than a missed
 connection. Fragments left ungrouped are re-evaluated whenever new fragments
 arrive or when the user triggers reanalysis.
@@ -306,7 +306,7 @@ Reanalysis re-runs the full pipeline (Phase 2 + Phase 3) for a fragment.
 3. If the fragment was in a project:
    - Remove it from the project
    - If the project has <2 fragments remaining, dissolve the project
-4. Re-run the agent pipeline (Phase 3) — may join a different project,
+4. Re-run the agent pipeline (Phase 3); it may join a different project,
    create a new one, or remain ungrouped
 5. Returns only after processing completes (120s timeout)
 
@@ -316,7 +316,7 @@ the agent makes a fresh decision based on current data.
 
 ### Creator Notes
 
-Fragments can have user-authored `notes` — free-text context the creator
+Fragments can have user-authored `notes`: free-text context the creator
 adds to express intent ("this is the chorus for my rain song", "same vibe
 as the recording from last week"). Notes are:
 
@@ -345,10 +345,10 @@ responsibilities live in `backend/api/pipeline/` (Phase 2).
 
 ### Producer Agent (`backend/agents/producer.py`)
 
-- **Role**: Action layer — root orchestrator
+- **Role**: Action layer, root orchestrator
 - **Model**: `gemini-3-flash-preview` (configurable via `PRODUCER_MODEL`)
 - **Agent tools**: Memory Agent, wired as an ADK `AgentTool` rather than a
-  sub-agent — Memory's analysis returns to Producer as a tool result, so the
+  sub-agent: Memory's analysis returns to Producer as a tool result, so the
   root agent keeps control and always emits the final decision (an AutoFlow
   transfer would hand the session over and never come back)
 - **Skills**: `rescue-scoring`, `musical-knowledge`, `refusal-rules`, `music-tagging`
@@ -386,7 +386,7 @@ agent.
 
 ### Memory Agent (`backend/agents/memory.py`)
 
-- **Role**: Grounding layer — read-only analysis
+- **Role**: Grounding layer, read-only analysis
 - **Model**: `gemini-3-flash-preview` (configurable via `MEMORY_MODEL`)
 - **Skills**: `relationship-rules`, `musical-knowledge`, `refusal-rules`
 - **Read tools**:
@@ -399,8 +399,8 @@ agent.
     fragments (excluding embeddings)
 - **MCP tool** (optional): when `ENABLE_MCP_MEMORY_TOOLS=1`, a read-only
   `mongo_mcp_find` tool routes queries through the MongoDB MCP Server.
-  User scoping is enforced at the tool layer — `user_id` is injected after
-  the model-supplied filter, and collections are limited to an allowlist —
+  User scoping is enforced at the tool layer: `user_id` is injected after
+  the model-supplied filter, and collections are limited to an allowlist,
   so prompt content can never widen a query across users
 
 Memory Agent never writes to the database. It returns structured JSON
@@ -454,7 +454,7 @@ Memory Agent classifies each vector search neighbor into one of four types
 
 Classification uses **multi-signal fusion**: emotion overlap, thematic
 continuity, musical compatibility (key + tempo via `musical-knowledge` skill),
-and temporal context. Conservative bias — false positives damage trust more
+and temporal context. Conservative bias: false positives damage trust more
 than false negatives.
 
 ### Bridge Detection
@@ -490,8 +490,8 @@ LLM calls.
 |---|---|---|
 | 70–100 | `high` | Good candidate for a finishing session |
 | 40–69 | `medium` | Needs focused work to move forward |
-| 0–39 | `low` | Sparse or dormant — expand or archive |
-| — | `new` | Single-fragment project, not yet scorable |
+| 0–39 | `low` | Sparse or dormant; expand or archive |
+| n/a | `new` | Single-fragment project, not yet scorable |
 
 The `rescue-scoring` skill defines how the Producer Agent **interprets** scores
 (explanation generation, next-action suggestions, presentation context). The
@@ -519,15 +519,15 @@ tokens per agent call, scaling up when the agent needs deeper reference data.
 
 ### Direct Skill Loading (Tagging Pipeline)
 
-The fast tagging path doesn't use ADK skill loading — it reads skill files
+The fast tagging path doesn't use ADK skill loading; it reads skill files
 directly and injects them as Gemini system instructions
 (`_load_tagging_skill_context` in `api/pipeline/tagging.py`). This includes:
 
-- `SKILL.md` — core rules and tagging procedure
-- `references/emotion-taxonomy.md` — 20 GEMS-based emotion tags
-- `references/theme-taxonomy.md` — 24 theme categories with decision tree
-- `references/structure-hints.md` — 7 structure types
-- `references/style-vocabulary.md` — 35 style tags across 9 clusters
+- `SKILL.md`: core rules and tagging procedure
+- `references/emotion-taxonomy.md`: 20 GEMS-based emotion tags
+- `references/theme-taxonomy.md`: 24 theme categories with decision tree
+- `references/structure-hints.md`: 7 structure types
+- `references/style-vocabulary.md`: 35 style tags across 9 clusters
 - 3 selected worked examples from `assets/tagging-examples.json` (calibration
   for ambiguous cases without inflating the context)
 
@@ -715,28 +715,28 @@ server on port 8081, waits for it to be ready, then starts uvicorn on port
 processing, plus Node.js 20 for the MCP server.
 
 Environment variables:
-- `MONGODB_CONNECTION_STRING` — Atlas connection string
-- `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION=global` — GCP project config
+- `MONGODB_CONNECTION_STRING`: Atlas connection string
+- `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION=global`: GCP project config
   (Gemini 3 models are served from the global Vertex AI endpoint)
-- `VOYAGE_API_KEY` — for Voyage AI embedding generation
-- `GCS_BUCKET` — Cloud Storage bucket for audio files
-- `FIREBASE_CREDENTIALS_PATH` — path to Firebase Admin SDK key
-- `ENABLE_MCP_MEMORY_TOOLS=1` — enable MCP read tools on Memory Agent
-- `MCP_SERVER_URL=http://127.0.0.1:8081/mcp` — internal MCP endpoint
-- `PRODUCER_RESOURCE_NAME` (optional) — if set, uses remote Agent Engine
+- `VOYAGE_API_KEY`: for Voyage AI embedding generation
+- `GCS_BUCKET`: Cloud Storage bucket for audio files
+- `FIREBASE_CREDENTIALS_PATH`: path to Firebase Admin SDK key
+- `ENABLE_MCP_MEMORY_TOOLS=1`: enable MCP read tools on Memory Agent
+- `MCP_SERVER_URL=http://127.0.0.1:8081/mcp`: internal MCP endpoint
+- `PRODUCER_RESOURCE_NAME` (optional): if set, uses remote Agent Engine
   instead of local ADK Runner
-- `PRODUCER_MODEL`, `MEMORY_MODEL` (optional) — override
+- `PRODUCER_MODEL`, `MEMORY_MODEL` (optional): override
   Gemini model (default: `gemini-3-flash-preview`)
-- `JOB_TRIGGER_SECRET` — shared secret for Cloud Scheduler job auth
-- `SERVICE_URL` + `JOB_INVOKER_SA` (optional) — enable OIDC verification for
+- `JOB_TRIGGER_SECRET`: shared secret for Cloud Scheduler job auth
+- `SERVICE_URL` + `JOB_INVOKER_SA` (optional): enable OIDC verification for
   job endpoints; both the expected audience and the allowed service-account
   caller must be configured
 
 ### Frontend (Vercel)
 
 Standard Next.js deployment. Environment:
-- `NEXT_PUBLIC_API_URL` — backend URL
-- `NEXT_PUBLIC_FIREBASE_*` — Firebase config
+- `NEXT_PUBLIC_API_URL`: backend URL
+- `NEXT_PUBLIC_FIREBASE_*`: Firebase config
 
 ### Docker Compose (local)
 
@@ -756,11 +756,11 @@ The frontend runs separately with `pnpm dev`.
 | Route | Purpose |
 |---|---|
 | `/` | Landing page; signed-in users are redirected to `/audiotool` |
-| `/audiotool` | Session flow — connect, session summary, suggestions, preview, insert, undo |
-| `/capture` | Capture — audio recorder, text input, file dropzone, Audiotool import, fragment feed |
+| `/audiotool` | Session flow: connect, session summary, suggestions, preview, insert, undo |
+| `/capture` | Capture: audio recorder, text input, file dropzone, Audiotool import, fragment feed |
 | `/projects` | Project list sorted by Rescue Score |
 | `/projects/[id]` | Project detail with member fragments |
-| `/dna` | Creative DNA — emotion radar, theme bar, hourly heatmap |
+| `/dna` | Creative DNA: emotion radar, theme bar, hourly heatmap |
 | `/annotate` | Blind pairwise annotation for the research protocol (dev builds only) |
 | `/figure` | Fixture page used to render the paper's UI figure (dev builds only) |
 | `/login` | Firebase Google sign-in |
@@ -768,22 +768,22 @@ The frontend runs separately with `pnpm dev`.
 
 ### Key Components
 
-- `AudioRecorder` — MediaRecorder API for in-browser recording
-- `FileDropzone` — drag-and-drop audio file upload (react-dropzone)
-- `FragmentCard` — displays tags, emotions, connection info, inline audio
+- `AudioRecorder`: MediaRecorder API for in-browser recording
+- `FileDropzone`: drag-and-drop audio file upload (react-dropzone)
+- `FragmentCard`: displays tags, emotions, connection info, inline audio
   player, creator notes editor, reanalyze button (hover). Reanalyze re-runs
   the full pipeline including project re-evaluation.
-- `RescueScore` — visual score breakdown with component bars
-- `EmotionRadar` — radar chart for emotion distribution
-- `HourlyHeatmap` — creation time patterns visualization
-- `ThemeBar` — theme frequency bar chart
-- `FragmentNetwork` — canvas graph of fragment connections
-- `AudiotoolImporter` — one-click import of an open project's samples
+- `RescueScore`: visual score breakdown with component bars
+- `EmotionRadar`: radar chart for emotion distribution
+- `HourlyHeatmap`: creation time patterns visualization
+- `ThemeBar`: theme frequency bar chart
+- `FragmentNetwork`: canvas graph of fragment connections
+- `AudiotoolImporter`: one-click import of an open project's samples
 - `audiotool/ConnectionPanel`, `SessionSummary`, `ContinuationPanel`,
-  `CandidateCard` — the suggest → preview → insert → undo loop
-- `annotate/AnnotatePanel` — blind A/B rater interface
-- `TopNav` — responsive navigation
-- `ServiceWorkerRegister` — PWA service worker setup
+  `CandidateCard`: the suggest → preview → insert → undo loop
+- `annotate/AnnotatePanel`: blind A/B rater interface
+- `TopNav`: responsive navigation
+- `ServiceWorkerRegister`: PWA service worker setup
 
 ### Design
 
@@ -796,13 +796,13 @@ The frontend runs separately with `pnpm dev`.
 
 ### State Management
 
-- `use-auth.ts` — Firebase auth state hook
-- `use-fragments.ts` — fragment list with polling for processing status
-- `use-projects.ts` — project list fetching
-- `use-notifications.ts` — notification list with unread count
-- `use-audiotool.ts` — Nexus client lifecycle (OAuth, document open/close)
-- `api.ts` — centralized API client with auth token injection
-- `ranking-api.ts` — `/api/ranking` client with a retrying feedback queue
+- `use-auth.ts`: Firebase auth state hook
+- `use-fragments.ts`: fragment list with polling for processing status
+- `use-projects.ts`: project list fetching
+- `use-notifications.ts`: notification list with unread count
+- `use-audiotool.ts`: Nexus client lifecycle (OAuth, document open/close)
+- `api.ts`: centralized API client with auth token injection
+- `ranking-api.ts`: `/api/ranking` client with a retrying feedback queue
 
 ---
 
@@ -818,7 +818,7 @@ The frontend runs separately with `pnpm dev`.
 - All MongoDB queries include `user_id` filter
 - `ContextVar`-based scoping for agent tools (no user_id in agent prompts)
 - The Memory Agent's MCP query tool injects `user_id` after the
-  model-supplied filter — a prompt-injected filter naming another user is
+  model-supplied filter; a prompt-injected filter naming another user is
   silently overridden (verified by test: cross-user query returns 0 docs)
 
 ### Input Sanitization

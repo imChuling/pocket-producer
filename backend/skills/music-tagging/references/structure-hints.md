@@ -16,10 +16,10 @@ candidate").
 |---|---|
 | `melodic_motif` | A short instrumental or hummed idea, not yet attached to lyrics or structure |
 | `lyric_fragment` | A line or two of lyrics, no clear structural role |
-| `verse_candidate` | Looks like material for a verse — narrative, building, scene-setting |
-| `chorus_candidate` | Looks like material for a chorus — memorable, emotionally peaked, repeatable |
+| `verse_candidate` | Looks like material for a verse: narrative, building, scene-setting |
+| `chorus_candidate` | Looks like material for a chorus: memorable, emotionally peaked, repeatable |
 | `hook_candidate` | A very short, distinctive phrase or melodic figure with strong identity |
-| `bridge_candidate` | Looks like material for a bridge — contrast, departure, perspective shift |
+| `bridge_candidate` | Looks like material for a bridge: contrast, departure, perspective shift |
 | `near_complete_demo` | A multi-section recording where verse + chorus (or more) are present |
 
 You may also set this to `null` when no structural role is reasonably
@@ -50,7 +50,7 @@ Use `hook_candidate` for:
 - Audio: < 12 seconds, with a clear memorable melodic figure
 - Text: a single line that is short, distinctive, and could be repeated as
   a song's central memorable phrase
-- Either: features that make this stand out — wordplay, rhythmic distinctiveness,
+- Either: features that make this stand out: wordplay, rhythmic distinctiveness,
   unusual phrase, anchor word
 
 Examples:
@@ -128,7 +128,7 @@ If audio features suggest a distinctive memorable shape → consider
 
 Setting `structure_hint: null` is acceptable and often correct. It tells the
 Producer Agent "I have no confident guess about where this belongs." That is
-useful information — better than a wrong guess.
+useful information, better than a wrong guess.
 
 Common cases for `null`:
 - Single emoji input

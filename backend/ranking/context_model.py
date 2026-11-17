@@ -5,7 +5,7 @@ candidate-context interaction and a structured-feature branch, kept under a
 hard 500K trainable-parameter budget. It is a challenger, not a default: it
 ships only if it beats the simpler ladder rungs on held-out data.
 
-Region tokens are a set — no positional encodings; temporal information
+Region tokens are a set: no positional encodings; temporal information
 lives inside the token features themselves.
 """
 

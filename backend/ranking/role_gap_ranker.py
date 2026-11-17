@@ -3,7 +3,7 @@
 This is the first retrieval space that captures something cosine similarity
 fundamentally cannot: the relationship between what a session ALREADY HAS
 and what it NEEDS. A session full of percussion loops has high cosine
-similarity with more percussion — but a bass line would be more useful.
+similarity with more percussion, but a bass line would be more useful.
 
 Requires CLAP audio embeddings on both session regions and candidates.
 """

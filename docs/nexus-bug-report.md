@@ -62,7 +62,7 @@ https://github.com/imChuling/pocket-producer/blob/main/frontend/patches/@audioto
 ## Secondary observation
 
 When a `modify()` transaction callback throws, a subsequent `modify()`
-call never starts (its callback is never invoked) — the internal
+call never starts (its callback is never invoked); the internal
 transaction lock appears not to be released on exception. With the
 primary bug fixed this path is harder to hit, but it turns any
 in-transaction exception into a permanent hang for the session.

@@ -66,7 +66,7 @@ export function TopNav() {
           </span>
         </Link>
 
-        {/* Nav links — only show when logged in */}
+        {/* Nav links: only show when logged in */}
         {!loading && user && (
           <nav className="flex items-center gap-1">
             {navLinks.map(({ href, icon: Icon, label }) => {

@@ -1,4 +1,4 @@
-"""Rescue Score calculator — pure Python, no LLM calls.
+"""Rescue Score calculator: pure Python, no LLM calls.
 
 Implements the formula from skills/rescue-scoring/SKILL.md v1.
 """
@@ -28,7 +28,7 @@ def compute_rescue_score(
             "rescue_score": None,
             "components": None,
             "tier": "new",
-            "explanation": ("Single-fragment project — needs at least one more idea to evaluate."),
+            "explanation": ("Single-fragment project, needs at least one more idea to evaluate."),
         }
 
     richness = _richness(fragments)
@@ -187,13 +187,13 @@ def _explanation(
             msg += f" with {', '.join(section_names)} material"
         if freshness >= 15:
             msg += ", recently active"
-        msg += " — good candidate for a finishing session."
+        msg += ", good candidate for a finishing session."
     elif tier == "medium":
         msg = f"Moderate progress: {n} fragments"
         if "chorus_candidate" not in sections:
             msg += ", but no chorus candidate yet"
         if freshness <= 10:
-            msg += " — activity has slowed"
+            msg += ", activity has slowed"
         msg += ". A focused 30-minute session could move this forward."
     else:
         msg = f"Sparse so far: {n} fragments"

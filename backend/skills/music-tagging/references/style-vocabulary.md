@@ -2,7 +2,7 @@
 
 Style tags describe **the genre or sonic convention** of a fragment, when
 that is clearly identifiable. Style is the most uncertain field in our
-schema — assign tags only when there is real evidence.
+schema; assign tags only when there is real evidence.
 
 The default is `style: []` (empty array). This is not a failure. Many
 fragments have no clear genre signature, especially early sketches, hums,
@@ -40,7 +40,7 @@ When none of these apply → `style: []`.
 
 When audio features are available, use these numerical signals as
 **supporting evidence** for style assignment. Never assign a style based
-on a single feature — combine with what you hear.
+on a single feature; combine with what you hear.
 
 ### Feature → style mapping
 
@@ -98,7 +98,7 @@ prominent over sparse instrumentation.
 - Reference points: Phoebe Bridgers, Bon Iver, Sufjan Stevens, Iron & Wine
 
 #### `singer-songwriter`
-Generic singer-songwriter feel — acoustic or piano-led, narrative lyrics,
+Generic singer-songwriter feel: acoustic or piano-led, narrative lyrics,
 moderate everything. Use when more specific tags don't fit.
 - Audio markers: one main instrument + voice, conversational delivery
 - Reference points: Taylor Swift (early), Ed Sheeran, Joni Mitchell
@@ -120,7 +120,7 @@ clear hook.
 - Reference points: Dua Lipa, The Weeknd, Taylor Swift (later)
 
 #### `alt-pop`
-Pop with alternative or indie production choices — less polished, more
+Pop with alternative or indie production choices: less polished, more
 distinctive timbres.
 - Audio markers: unusual textures, less commercial vocals, indie
   production quirks
@@ -152,7 +152,7 @@ song structures, avant-garde sonic textures, or high-concept themes.
   garde intent; alt-pop is indie-inflected mainstream pop
 
 #### `dream-pop`
-Atmospheric, ethereal, lush — prioritizes mood and texture over lyrical
+Atmospheric, ethereal, lush, prioritizes mood and texture over lyrical
 density. Vocals often blended into the soundscape rather than placed in
 front.
 - Audio markers: heavy reverb, shimmering guitars or synths, breathy or
@@ -175,13 +175,13 @@ drums. Covers boom-bap, conscious, lyrical, and general rap styles.
 - Reference points: Kendrick Lamar, J. Cole, Tyler the Creator
 
 #### `trap`
-Specifically trap subgenre — triplet hi-hats, 808s, slower BPM (around
+Specifically trap subgenre: triplet hi-hats, 808s, slower BPM (around
 70-90 BPM but feeling faster due to hi-hat density).
 - Audio markers: triplet hi-hats, sub-heavy 808s, often dark minor keys
 - Reference points: Travis Scott, Future, Young Thug, Playboi Carti
 
 #### `r&b`
-Contemporary R&B — smooth, often slower, polished production. Distinct
+Contemporary R&B: smooth, often slower, polished production. Distinct
 from pop by vocal style (melismatic, expressive) and rhythmic feel.
 - Audio markers: prominent vocal runs, sensual or smooth groove, layered
   backing vocals, programmed drums
@@ -201,7 +201,7 @@ live instrumentation, and emotional delivery.
   contemporary
 
 #### `neo-soul`
-Modern evolution of soul — retains the warmth and vocal focus but adds
+Modern evolution of soul: retains the warmth and vocal focus but adds
 hip-hop rhythms, jazz harmony, and electronic textures. Often features
 complex chord progressions (7ths, 9ths, altered chords).
 - Audio markers: jazzy chords over hip-hop-influenced drums, warm analog
@@ -241,7 +241,7 @@ country blues) or electric (Chicago/Texas blues).
   "electric blues", "modern blues"
 
 #### `fusion`
-Jazz fusion — combines jazz improvisation and harmony with rock, funk,
+Jazz fusion: combines jazz improvisation and harmony with rock, funk,
 or electronic elements. Often features virtuosic playing, odd meters,
 and extended compositions.
 - Audio markers: jazz harmony over rock/funk rhythms, electric guitar and
@@ -282,7 +282,7 @@ muted high end.
 ### Rock cluster
 
 #### `rock`
-Generic rock — guitar, bass, drums, no strong sub-genre indicator.
+Generic rock: guitar, bass, drums, no strong sub-genre indicator.
 - Audio markers: guitar-driven, full-band arrangement, BPM 100-150
 - Reference points: Foo Fighters, Arctic Monkeys, The Killers
 
@@ -294,7 +294,7 @@ Guitar-band rock with indie/alternative production choices.
 
 #### `soft-rock`
 Melodic, mellow rock with emphasis on vocal harmony and acoustic textures.
-Less aggressive than standard rock — bridges rock and pop.
+Less aggressive than standard rock; bridges rock and pop.
 - Audio markers: clean or lightly driven guitars, prominent vocal
   harmonies, moderate dynamics, often piano-driven, BPM 80-120
 - Reference points: Fleetwood Mac, Eagles, Elton John, John Mayer
@@ -329,7 +329,7 @@ melodic sensibility.
 - Distinction from `progressive-rock`: math-rock is usually shorter,
   more angular and minimal; prog-rock is more expansive and orchestral
 - Note: librosa BPM detection is unreliable for math-rock due to frequent
-  meter changes — set `tempo_compatibility: "unknown"` when math-rock
+  meter changes: set `tempo_compatibility: "unknown"` when math-rock
   style is detected
 
 #### `shoegaze`
@@ -347,7 +347,7 @@ mix. Named for performers staring at their effects pedals.
   drums and distorted guitars; ambient is textural without rock elements
 
 #### `psychedelic-rock`
-Rock filtered through psychedelic aesthetics — extended jams, unusual
+Rock filtered through psychedelic aesthetics: extended jams, unusual
 effects, non-linear song structures, mind-expanding intent.
 - Audio markers: heavy use of delay, phaser, flanger, wah; extended
   guitar solos or improvisations; drone elements; non-standard song

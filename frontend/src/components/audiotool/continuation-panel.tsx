@@ -174,7 +174,7 @@ export function ContinuationPanel({
           onParsedIntentChange={onParsedIntentChange}
         />
         <p className="rounded-xl border border-chalk bg-powder p-6 text-center text-slate">
-          No fragments in your library yet. Capture a few ideas first — then
+          No fragments in your library yet. Capture a few ideas first, then
           Pocket Producer can suggest what fits this session.
         </p>
       </div>

@@ -277,7 +277,7 @@ export default function AudiotoolPage() {
         );
       }
     } catch {
-      setImportMessage("Import failed — please try again.");
+      setImportMessage("Import failed. Please try again.");
     } finally {
       setImporting(null);
     }

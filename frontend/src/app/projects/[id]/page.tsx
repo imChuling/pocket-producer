@@ -166,7 +166,7 @@ export default function ProjectDetailPage({
 
         {/* Two-column layout */}
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left — Score + Next Action (sticky) */}
+          {/* Left: Score + Next Action (sticky) */}
           <div className="lg:w-[340px] flex-shrink-0">
             <div className="lg:sticky lg:top-20 space-y-5">
               {project.score_breakdown && (
@@ -242,7 +242,7 @@ export default function ProjectDetailPage({
             </div>
           </div>
 
-          {/* Right — Fragments list */}
+          {/* Right: Fragments list */}
           <div className="flex-1 min-w-0">
             <div className="space-y-4">
               <div className="flex items-center gap-3">

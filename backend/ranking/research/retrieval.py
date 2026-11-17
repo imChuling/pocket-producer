@@ -3,7 +3,7 @@
 Personal libraries are small; exact search is the default until a measured
 Recall@K–latency curve on representative library sizes justifies ANN
 (evidence audit F2). user/deleted are hard permission filters applied before
-scoring — they can never be outranked.
+scoring: they can never be outranked.
 """
 
 from dataclasses import dataclass, field

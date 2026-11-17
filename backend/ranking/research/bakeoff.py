@@ -1,6 +1,6 @@
 """Backbone bake-off probes (PocketBench P1/P2 diagnostics).
 
-These measure representation quality only — same-source retrieval and
+These measure representation quality only: same-source retrieval and
 zero-shot agreement with human annotations. They select which backbones stay
 in the race; they say nothing about continuation utility (P3/P4).
 """

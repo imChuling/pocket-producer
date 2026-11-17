@@ -68,7 +68,7 @@ def encode_with_lineage(
 
 
 class EmbeddingCache:
-    """Cache keyed by (model_id, revision, input hash) — a new model revision
+    """Cache keyed by (model_id, revision, input hash); a new model revision
     is always a miss, so upgrades can never silently reuse stale vectors."""
 
     def __init__(self):

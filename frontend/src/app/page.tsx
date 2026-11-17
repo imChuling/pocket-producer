@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { signInWithGoogle } from "@/lib/firebase";
 
 /* ═══════════════════════════════════════════════════════════════════════
-   NOISE TEXTURE — film grain for editorial feel
+   NOISE TEXTURE: film grain for editorial feel
    ═══════════════════════════════════════════════════════════════════════ */
 function NoiseTexture() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -38,7 +38,7 @@ function NoiseTexture() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   INK CANVAS — organic generative background
+   INK CANVAS: organic generative background
    ═══════════════════════════════════════════════════════════════════════ */
 function InkCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -138,7 +138,7 @@ function InkCanvas() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   REVEAL — scroll-triggered entrance with spring physics
+   REVEAL: scroll-triggered entrance with spring physics
    ═══════════════════════════════════════════════════════════════════════ */
 function Reveal({
   children,
@@ -171,7 +171,7 @@ function Reveal({
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   MARQUEE — kinetic horizontal scroll divider
+   MARQUEE: kinetic horizontal scroll divider
    ═══════════════════════════════════════════════════════════════════════ */
 function Marquee({ text, className = "" }: { text: string; className?: string }) {
   return (
@@ -190,7 +190,7 @@ function Marquee({ text, className = "" }: { text: string; className?: string })
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   LANDING PAGE — editorial, artistic, breaking the grid
+   LANDING PAGE: editorial, artistic, breaking the grid
    ═══════════════════════════════════════════════════════════════════════ */
 function LandingPage() {
   const { scrollYProgress, scrollY } = useScroll();
@@ -205,10 +205,10 @@ function LandingPage() {
       <NoiseTexture />
 
       {/* ═════════════════════════════════════════════════════════════
-          HERO — full-bleed typographic statement, not a neat grid
+          HERO: full-bleed typographic statement, not a neat grid
           ═════════════════════════════════════════════════════════════ */}
       <section className="relative min-h-screen flex flex-col justify-end pb-16 md:pb-24 overflow-x-clip">
-        {/* Gradient wash — subtle warm→cool */}
+        {/* Gradient wash: subtle warm→cool */}
         <div
           className="absolute inset-0"
           style={{
@@ -221,7 +221,7 @@ function LandingPage() {
           <InkCanvas />
         </div>
 
-        {/* Ghost word — bleeds off screen, parallax */}
+        {/* Ghost word: bleeds off screen, parallax */}
         <motion.div
           style={{ y: ghostY }}
           className="absolute top-[4vh] inset-x-0 pointer-events-none select-none leading-[0.82] overflow-visible"
@@ -238,10 +238,10 @@ function LandingPage() {
           </span>
         </motion.div>
 
-        {/* Headline — staggered type, breaking alignment */}
+        {/* Headline: staggered type, breaking alignment */}
         <motion.div style={{ opacity: heroOpacity }} className="relative z-20 px-6 md:px-12">
           <div className="mb-8 md:mb-12 max-w-[1300px] mx-auto">
-            {/* "Nothing" — massive, left flush */}
+            {/* "Nothing": massive, left flush */}
             <motion.h1
               initial={{ opacity: 0, y: 40, filter: "blur(14px)" }}
               animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -252,7 +252,7 @@ function LandingPage() {
               <span style={{ fontSize: "clamp(4.5rem, 13vw, 11rem)" }}>Nothing</span>
             </motion.h1>
 
-            {/* "is lost" — indented, "is" italic & faded — visual tension */}
+            {/* "is lost": indented, "is" italic & faded; visual tension */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -274,7 +274,7 @@ function LandingPage() {
             </motion.div>
           </div>
 
-          {/* Subtext + CTA — asymmetric placement */}
+          {/* Subtext + CTA: asymmetric placement */}
           <div className="max-w-[1300px] mx-auto flex flex-col md:flex-row md:items-end justify-between gap-8">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -336,7 +336,7 @@ function LandingPage() {
       </section>
 
       {/* ═════════════════════════════════════════════════════════════
-          MARQUEE DIVIDER — kinetic energy
+          MARQUEE DIVIDER: kinetic energy
           ═════════════════════════════════════════════════════════════ */}
       <div className="py-6 border-y border-chalk/60">
         <Marquee
@@ -346,7 +346,7 @@ function LandingPage() {
       </div>
 
       {/* ═════════════════════════════════════════════════════════════
-          PHILOSOPHY — editorial 12-col asymmetry
+          PHILOSOPHY: editorial 12-col asymmetry
           ═════════════════════════════════════════════════════════════ */}
       <section className="py-32 md:py-48 px-6 md:px-12">
         <div className="max-w-[1300px] mx-auto grid md:grid-cols-12 gap-8 md:gap-4 items-start">
@@ -365,7 +365,7 @@ function LandingPage() {
             </Reveal>
           </div>
 
-          {/* Text — offset from top */}
+          {/* Text: offset from top */}
           <Reveal className="md:col-span-7 md:col-start-5 md:pt-20" delay={0.15}>
             <h2
               className="font-heading font-light text-obsidian tracking-tight leading-[1.2] mb-8"
@@ -388,7 +388,7 @@ function LandingPage() {
       </section>
 
       {/* ═════════════════════════════════════════════════════════════
-          THREE PILLARS — overlapping collage, not a neat 3-col grid
+          THREE PILLARS: overlapping collage, not a neat 3-col grid
           ═════════════════════════════════════════════════════════════ */}
       <section id="how" className="py-20 md:py-32 relative">
         {/* Atmosphere wash */}
@@ -406,9 +406,9 @@ function LandingPage() {
             </p>
           </Reveal>
 
-          {/* Cards — stacked on mobile, overlapping collage on desktop via CSS */}
+          {/* Cards: stacked on mobile, overlapping collage on desktop via CSS */}
           <div className="relative md:min-h-[520px] flex flex-col md:block gap-6">
-            {/* Card 1 — Capture, top-left, tilted */}
+            {/* Card 1: Capture, top-left, tilted */}
             <Reveal delay={0} direction="left" className="relative md:absolute md:left-0 md:top-0 md:w-[380px] z-10">
               <motion.div
                 whileHover={{ y: -8, rotate: 0, transition: { type: "spring", stiffness: 200, damping: 18 } }}
@@ -435,7 +435,7 @@ function LandingPage() {
               </motion.div>
             </Reveal>
 
-            {/* Card 2 — Connect, center-offset, overlapping */}
+            {/* Card 2: Connect, center-offset, overlapping */}
             <Reveal delay={0.15} className="relative md:absolute md:left-[32%] md:top-[70px] md:w-[380px] z-20">
               <motion.div
                 whileHover={{ y: -8, rotate: 0, transition: { type: "spring", stiffness: 200, damping: 18 } }}
@@ -459,7 +459,7 @@ function LandingPage() {
               </motion.div>
             </Reveal>
 
-            {/* Card 3 — Discover, right side, lower */}
+            {/* Card 3: Discover, right side, lower */}
             <Reveal delay={0.3} direction="right" className="relative md:absolute md:right-0 md:top-[140px] md:w-[380px] z-10">
               <motion.div
                 whileHover={{ y: -8, rotate: 0, transition: { type: "spring", stiffness: 200, damping: 18 } }}
@@ -471,7 +471,7 @@ function LandingPage() {
               >
                 <span className="absolute top-4 right-5 font-mono text-[10px]" style={{ color: "rgba(226,193,97,0.5)" }}>03</span>
                 <h3 className="font-heading font-light text-[32px] md:text-[40px] leading-[1] tracking-tight text-obsidian mb-5">Discover</h3>
-                <p className="text-[13px] text-gravel leading-[1.9] max-w-[280px]">See your artistic identity in data. Emotional patterns, creative rhythms, and dormant projects — surfaced.</p>
+                <p className="text-[13px] text-gravel leading-[1.9] max-w-[280px]">See your artistic identity in data. Emotional patterns, creative rhythms, and dormant projects, surfaced.</p>
                 <div className="mt-8 h-8 flex items-end">
                   {[0.3, 0.7, 0.5, 0.9, 0.4, 0.6, 0.8].map((h, j) => (
                     <div key={j} className="w-4 rounded-sm mr-2" style={{ height: `${h * 32}px`, background: `rgba(226,193,97,${0.15 + h * 0.25})` }} />
@@ -484,7 +484,7 @@ function LandingPage() {
       </section>
 
       {/* ═════════════════════════════════════════════════════════════
-          FRAGMENT SHOWCASE — floating UI pieces + oversized "AI"
+          FRAGMENT SHOWCASE: floating UI pieces + oversized "AI"
           ═════════════════════════════════════════════════════════════ */}
       <section className="py-32 md:py-48 px-6 md:px-12 relative overflow-hidden">
         <div className="max-w-[1300px] mx-auto grid md:grid-cols-12 gap-8 items-center">
@@ -518,7 +518,7 @@ function LandingPage() {
             </Reveal>
           </div>
 
-          {/* Floating mock cards — tilted collage */}
+          {/* Floating mock cards: tilted collage */}
           <div className="md:col-span-6 md:col-start-7 relative min-h-[380px] md:min-h-[420px]">
             <Reveal delay={0.3}>
               <motion.div
@@ -580,7 +580,7 @@ function LandingPage() {
       </section>
 
       {/* ═════════════════════════════════════════════════════════════
-          FEATURES — magazine-style list with sideways label
+          FEATURES: magazine-style list with sideways label
           ═════════════════════════════════════════════════════════════ */}
       <section className="py-32 md:py-44 px-6 md:px-12">
         <div className="max-w-[1300px] mx-auto grid md:grid-cols-12 gap-8">
@@ -599,7 +599,7 @@ function LandingPage() {
               { title: "Emotion Detection", detail: "22 musical emotions mapped in real-time using AI analysis", color: "#a0b5eb" },
               { title: "Vector Memory", detail: "Semantic search finds connections your memory missed", color: "#ffa773" },
               { title: "Auto-Grouping", detail: "Related fragments form projects automatically across time", color: "#e2c161" },
-              { title: "Creative DNA", detail: "Your artistic patterns visualized — emotions, themes, rhythms", color: "#8fa3d0" },
+              { title: "Creative DNA", detail: "Your artistic patterns visualized: emotions, themes, rhythms", color: "#8fa3d0" },
               { title: "Rescue Score", detail: "Forgotten ideas resurfaced before they disappear forever", color: "#ff9473" },
             ].map((f, i) => (
               <Reveal key={f.title} delay={i * 0.08}>
@@ -627,7 +627,7 @@ function LandingPage() {
       </section>
 
       {/* ═════════════════════════════════════════════════════════════
-          QUOTE — cinematic full-bleed typography
+          QUOTE: cinematic full-bleed typography
           ═════════════════════════════════════════════════════════════ */}
       <section className="py-40 md:py-56 relative overflow-hidden">
         <div
@@ -640,13 +640,13 @@ function LandingPage() {
             style={{ fontSize: "clamp(1.8rem, 4.5vw, 3.5rem)" }}
           >
             &ldquo;The best song you&apos;ll ever write is already inside you
-            <span className="text-gravel/60"> — scattered across a hundred quiet moments.</span>&rdquo;
+            <span className="text-gravel/60">, scattered across a hundred quiet moments.</span>&rdquo;
           </blockquote>
         </Reveal>
       </section>
 
       {/* ═════════════════════════════════════════════════════════════
-          CTA — horizon line + cinematic ending
+          CTA: horizon line + cinematic ending
           ═════════════════════════════════════════════════════════════ */}
       <section className="py-32 md:py-44 relative overflow-hidden">
         {/* Gradient horizon */}
@@ -695,7 +695,7 @@ function LandingPage() {
       </section>
 
       {/* ═════════════════════════════════════════════════════════════
-          FOOTER — minimal, asymmetric
+          FOOTER: minimal, asymmetric
           ═════════════════════════════════════════════════════════════ */}
       <footer className="py-12 md:py-16 px-6 md:px-12 border-t border-chalk/40">
         <div className="max-w-[1300px] mx-auto flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
@@ -717,7 +717,7 @@ function LandingPage() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   CAPTURE DASHBOARD (logged in state) — kept consistent with inner pages
+   CAPTURE DASHBOARD (logged in state): kept consistent with inner pages
 
    ═══════════════════════════════════════════════════════════════════════ */
 export default function HomePage() {

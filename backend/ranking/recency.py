@@ -1,4 +1,4 @@
-"""recency-v1: most recent fragments first — the simplest honest baseline."""
+"""recency-v1: most recent fragments first: the simplest honest baseline."""
 
 import uuid
 

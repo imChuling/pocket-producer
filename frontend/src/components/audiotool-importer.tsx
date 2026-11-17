@@ -19,7 +19,7 @@ export function AudiotoolImporter({ onImported }: AudiotoolImporterProps) {
   const [statusMessage, setStatus] = useState<string | null>(null);
   const [connectOpened, setConnectOpened] = useState(false);
   // The "connect in the new tab" hint is derived, so it clears itself the
-  // moment the hook reports a live connection — no polling, no stale closure.
+  // moment the hook reports a live connection; no polling, no stale closure.
   const connectHint =
     connectOpened &&
     audiotool.status !== "connected" &&

@@ -165,7 +165,7 @@ describe("createAudiotoolController", () => {
       expect(controller.state().userName).toBe("chuling");
     });
 
-    it("stays idle — not error — when there is no session", async () => {
+    it("stays idle, not error, when there is no session", async () => {
       const controller = createAudiotoolController({
         authorize: authorizeWith({ status: "unauthenticated" }),
       });
