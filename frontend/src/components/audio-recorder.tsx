@@ -35,7 +35,10 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
   const [error, setError] = useState<string | null>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const chunks = useRef<Blob[]>([]);
+  // True from the click until the recorder is running. The first use shows a
+  // permission prompt, and a second click during it must not open a second
+  // recorder on the same microphone.
+  const startingRef = useRef(false);
   const mimeRef = useRef("");
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -195,6 +198,9 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
   }, []);
 
   const start = useCallback(async () => {
+    const active = mediaRecorder.current;
+    if (startingRef.current || (active && active.state !== "inactive")) return;
+    startingRef.current = true;
     setError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -218,17 +224,19 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
       mimeRef.current = mime;
       const options: MediaRecorderOptions = mime ? { mimeType: mime } : {};
       const recorder = new MediaRecorder(stream, options);
-      chunks.current = [];
+      // Each take keeps its own chunks, so one recording can never carry
+      // another's audio.
+      const chunks: Blob[] = [];
 
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.current.push(e.data);
+        if (e.data.size > 0) chunks.push(e.data);
       };
       recorder.onstop = () => {
         analyserRef.current = null;
         audioCtxRef.current?.close().catch(() => {});
         audioCtxRef.current = null;
         const blobType = mimeRef.current || "audio/webm";
-        const blob = new Blob(chunks.current, { type: blobType });
+        const blob = new Blob(chunks, { type: blobType });
         if (blob.size > MAX_FILE_SIZE) {
           setError(`Recording too large (${formatSize(blob.size)}). Max ${formatSize(MAX_FILE_SIZE)}.`);
           stream.getTracks().forEach((t) => t.stop());
@@ -243,6 +251,7 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
       setRecording(true);
       setSeconds(0);
       elapsedRef.current = 0;
+      if (timerRef.current) clearInterval(timerRef.current);
       // The cap is enforced from the interval, not inside the state updater:
       // updaters must stay pure (StrictMode runs them twice in development,
       // and stopping an already-inactive recorder throws).
@@ -271,6 +280,8 @@ export function AudioRecorder({ onRecorded }: AudioRecorderProps) {
       } else {
         setError("Could not start recording. Try reloading the page");
       }
+    } finally {
+      startingRef.current = false;
     }
   }, [onRecorded]);
 
