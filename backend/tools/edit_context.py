@@ -17,8 +17,11 @@ they were without this feature. Nothing here changes ranking weights.
 """
 
 import json
+import logging
 import os
 from collections import Counter
+
+logger = logging.getLogger(__name__)
 
 MAX_FRAGMENTS_READ = 200
 MAX_PROJECTS_READ = 100
@@ -148,4 +151,13 @@ def user_edit_context(db, user_id: str, purpose: str) -> str:
     """The block for this user and purpose, or "" when disabled or there are no edits."""
     if not edit_context_enabled() or not user_id:
         return ""
-    return edit_context_block(build_edit_profile(db, user_id), purpose)
+    profile = build_edit_profile(db, user_id)
+    block = edit_context_block(profile, purpose)
+    # Counts only: the edits themselves are the user's text and stay out of logs.
+    logger.info(
+        "Edit context for %s: %s (%d chars)",
+        purpose,
+        {key: len(profile[key]) for key in PURPOSES[purpose] if profile.get(key)} or "none",
+        len(block),
+    )
+    return block
