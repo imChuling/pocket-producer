@@ -541,8 +541,8 @@ def _compute_pairwise_signals(
     """
     src_bpm = source.get("bpm")
     nbr_bpm = neighbor.get("bpm")
-    src_key = source.get("key")
-    nbr_key = neighbor.get("key")
+    src_key = ranking_features.serving_key(source.get("key"))
+    nbr_key = ranking_features.serving_key(neighbor.get("key"))
     src_tags = source.get("tags") or []
     nbr_tags = neighbor.get("tags") or []
     src_emotions = source.get("emotions") or []

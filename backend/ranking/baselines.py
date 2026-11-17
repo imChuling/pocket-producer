@@ -91,7 +91,9 @@ class RulesRanker:
     ) -> RankedCandidate:
         values = {
             "tempo_match": features.tempo_match(session.bpm, candidate.bpm),
-            "key_match": features.key_match(session.key, candidate.key),
+            "key_match": features.key_match(
+                features.serving_key(session.key), features.serving_key(candidate.key)
+            ),
             # With no role observed, a role cannot be called missing: the
             # host reports track kinds, and the context tags cover only the
             # fragments added from this page, so an open project may already

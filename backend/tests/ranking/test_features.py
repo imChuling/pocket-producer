@@ -1,10 +1,13 @@
 """Unit tests for deterministic, [0, 1]-normalized ranking features."""
 
+import pytest
+
 from ranking.features import (
     intent_match,
     key_match,
     novelty,
     recency,
+    serving_key,
     tempo_match,
     track_gap,
 )
@@ -128,3 +131,44 @@ class TestRecency:
 
     def test_invalid_timestamp_scores_zero(self):
         assert recency("not-a-date", newest_iso="2026-07-29T00:00:00Z") == 0.0
+
+
+class TestServingKey:
+    """Stored fragments use compact keys; the intent parser emits two words."""
+
+    @pytest.mark.parametrize(
+        ("raw", "expected"),
+        [
+            ("Em", "e minor"),
+            ("C#m", "c# minor"),
+            ("Bb", "bb major"),
+            ("C", "c major"),
+            ("Abm", "ab minor"),
+            ("F#maj", "f# major"),
+            ("A min", "a minor"),
+            ("a minor", "a minor"),
+            ("c major", "c major"),
+            (None, None),
+            ("", None),
+            ("not a key", "not a key"),
+        ],
+    )
+    def test_compact_notation_becomes_two_words(self, raw, expected):
+        assert serving_key(raw) == expected
+
+    def test_compact_and_spoken_forms_match_exactly(self):
+        assert key_match(serving_key("Em"), serving_key("e minor")) == 1.0
+        assert key_match(serving_key("C"), serving_key("c major")) == 1.0
+        assert key_match(serving_key("Bb"), serving_key("bb major")) == 1.0
+
+    def test_compact_relative_and_fifth(self):
+        assert key_match(serving_key("Am"), serving_key("C"), mode="relative") == 1.0
+        assert key_match(serving_key("C"), serving_key("Em"), mode="relative") == 0.0
+        assert key_match(serving_key("C"), serving_key("G"), mode="fifth") == 0.5
+        assert key_match(serving_key("Em"), serving_key("Bm"), mode="fifth") == 0.5
+
+    def test_key_match_itself_is_unchanged_for_research_inputs(self):
+        # Frozen research runs pass bare tonics straight to key_match.
+        assert key_match("c", "c") == 1.0
+        assert key_match("c", "a", mode="relative") == 0.0
+        assert key_match("Am", "A minor") == 0.0

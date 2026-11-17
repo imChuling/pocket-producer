@@ -6,8 +6,10 @@ max-pooled), tempo match, key compatibility, and tag Jaccard, combined
 with weights trained offline on pack co-membership weak labels.
 
 Deployment deltas from the offline model, stated openly:
-- key is always None in Audiotool sessions (documents carry no key
-  signature), so the key term contributes zero online;
+- Audiotool documents carry no key signature, so the session key is set
+  only when the typed intent states one; otherwise the key term is zero.
+  Compact fragment keys ("Em") are compared in the two-word form
+  ("e minor") via serving_key;
 - context tags come from session.context_tags (recently used
   fragments), not pack siblings.
 
@@ -25,7 +27,7 @@ import numpy as np
 
 from ranking import beat_sync
 from ranking.audio_cosine import InsufficientContextError
-from ranking.features import key_match, tempo_match
+from ranking.features import key_match, serving_key, tempo_match
 from ranking.schemas import (
     FragmentCandidate,
     RankedCandidate,
@@ -98,7 +100,8 @@ class FusionRanker:
             ),
             "limitations": [
                 "requires audio embeddings for session regions",
-                "key signal is constant zero online (Audiotool has no key)",
+                "key signal is zero unless the typed intent states a key "
+                "(Audiotool reports none)",
                 "weights trained on pack co-membership weak labels, not "
                 "human continuation preference",
             ],
@@ -136,7 +139,7 @@ class FusionRanker:
                 float(mean_ctx @ vec),
                 float((ctx @ vec).max()),
                 tempo_match(request.session.bpm, cand.bpm),
-                key_match(request.session.key, cand.key),
+                key_match(serving_key(request.session.key), serving_key(cand.key)),
                 len(ctx_tags & cand_tags) / len(union) if union else 0.0,
             ])
             scored.append((cand, signals, self._w * signals))

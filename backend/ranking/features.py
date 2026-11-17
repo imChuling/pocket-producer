@@ -5,6 +5,7 @@ rather than raising when its inputs are missing — missing data is never
 evidence for a recommendation.
 """
 
+import re
 from datetime import datetime
 
 ROLE_TAGS = frozenset(
@@ -36,6 +37,31 @@ def normalize_key(key: str | None) -> str | None:
     elif normalized.endswith(" min"):
         normalized = normalized[:-4] + " minor"
     return normalized or None
+
+
+_COMPACT_KEY = re.compile(r"^([a-g])([#b]?)\s*(m|min|minor|maj|major)?$")
+
+
+def serving_key(key: str | None) -> str | None:
+    """Canonical "<tonic> <mode>" form for a key entering a ranker online.
+
+    Stored fragments carry compact keys ("Em", "C#m", "Bb", "C": no suffix
+    means major), while the intent parser emits "e minor". key_match only
+    compares the two-word form, so both sides go through this first. It is
+    applied where the product calls a ranker, not inside key_match, so the
+    bare tonics the frozen research runs pass ("c", "g#") score as before.
+    Unrecognised strings are returned normalized and unchanged.
+    """
+    normalized = normalize_key(key)
+    if normalized is None:
+        return None
+    flat = normalized.replace("♯", "#").replace("♭", "b")
+    match = _COMPACT_KEY.match(flat)
+    if match is None:
+        return normalized
+    tonic, accidental, suffix = match.groups()
+    mode = "minor" if suffix in ("m", "min", "minor") else "major"
+    return f"{tonic}{accidental} {mode}"
 
 
 def _parse_key(normalized: str) -> tuple[int, str] | None:

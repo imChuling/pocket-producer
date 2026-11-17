@@ -40,7 +40,8 @@ in this layer is the optional intent parser, and it runs off the rank path.
    `tempoBpm`, the set of active track types (audio, note, pattern,
    automation), up to 20 recently touched entity ids, and
    the user's free-text intent capped at 240 characters. Audiotool documents
-   carry no key signature, so `key` is always `null`; it is never estimated.
+   carry no key signature, so `key` starts as `null` and is never estimated
+   from audio; it is set only when the typed intent states a key.
    Nexus 0.0.17 exposes no playhead either, so `playhead_seconds` is always
    0 and inserts land at the start of the timeline.
    Only this fingerprint leaves the browser, never the project.
@@ -98,7 +99,7 @@ on its own two-thread pool so a slow ranker cannot starve other work.
 | `beat-fit-v1` | project tempo, region positions, `representations.beat_frames` on candidates | Beat-synchronous chroma agreement plus onset-pattern correlation on the session's beat grid, each standardised over the request's candidates; no fitted weights. Fragments without stored frames are left out |
 | `audio-cosine-v1` | `POCKET_ENABLE_CLAP=1` | Intent text encoded into MS-CLAP audio space, cosine against candidate audio |
 | `role-gap-v1` | `POCKET_ENABLE_CLAP=1`, region audio embeddings | Zero-shot role probe; rewards roles the session lacks |
-| `fusion-5sig-v1` | region audio embeddings, `artifacts/fusion-deploy/weights.json` | BPR-trained weights over audio cosine (mean, max), tempo, key, tag Jaccard; key is always zero online |
+| `fusion-5sig-v1` | region audio embeddings, `artifacts/fusion-deploy/weights.json` | BPR-trained weights over audio cosine (mean, max), tempo, key, tag Jaccard; the key term is non-zero only when the typed intent states a key, since the DAW reports none |
 | `linear-v1`, `deepsets-v1`, `pocketrank-context-v1` | `POCKET_LADDER_DIR` checkpoints | Research capacity ladder; not registered in the default deployment |
 
 Evidence codes are a closed set on `RankEvidence`: `tempo_match`,

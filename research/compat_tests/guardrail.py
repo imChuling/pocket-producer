@@ -40,8 +40,9 @@ DEFAULT_STORE = ROOT / "research" / "data" / "compat" / "musdb18_v1"
 DEFAULT_MANIFEST = ROOT / "research" / "manifests" / "musdb18-behavioral-v1-cache.json"
 
 # Signal names used by the deployed ranker and its logs, as behavioural-test
-# scorers. Key and tags are zero online (the host exposes no key and stems
-# carry no tags), so they contribute nothing here, as in fusion5_online.
+# scorers. Key and tags are zero here: stems carry no key or tags, and the
+# host reports no key (online the key term is non-zero only when the typed
+# intent states one). This matches fusion5_online.
 ALIASES = {
     "audio_cos_mean": "clap_cos_mean",
     "audio_cos_max": "clap_cos_max",

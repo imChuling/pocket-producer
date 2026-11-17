@@ -172,3 +172,14 @@ def test_role_gap_label_names_what_was_observed():
         if e.code == "track_gap"
     )
     assert label == "Adds a role not among the fragments added so far"
+
+
+def test_compact_fragment_key_matches_spoken_session_key():
+    # Fragments are stored as "Am"; a key typed in the intent arrives as "a minor".
+    result = RulesRanker().rank(
+        RankRequest(
+            session=session(key="a minor"),
+            candidates=[candidate("am", key="Am")],
+        )
+    )
+    assert "key_match" in {e.code for e in result.candidates[0].evidence}

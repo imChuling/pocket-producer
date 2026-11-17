@@ -45,7 +45,8 @@ preference. The musician makes the call.
    recency). The selectable `fusion-5sig-v1` is a linear fusion of mean and
    max CLAP cosine, tempo, key, and tag Jaccard, with weights trained by
    Bayesian Personalized Ranking on pack co-membership. Audiotool exposes no
-   project key, so the key signal is zero online.
+   project key, so the key signal is non-zero only when the typed intent
+   states one.
 3. **Proposals, not decisions.** Every candidate carries per-signal evidence
    chips. Insert writes the sample in one Nexus transaction at the start of
    the timeline; undo removes exactly the entities that insert created.

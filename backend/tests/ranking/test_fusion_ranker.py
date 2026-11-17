@@ -75,8 +75,8 @@ class TestFusionRanker:
         assert response.candidates[0].score > response.candidates[1].score
 
     def test_key_signal_zero_when_session_key_none(self):
-        # Audiotool sessions never carry a key; the key term must not
-        # differentiate candidates.
+        # Audiotool reports no key; without one typed in the intent the key
+        # term must not differentiate candidates.
         ranker = FusionRanker(WEIGHTS)
         response = ranker.rank(
             request(
@@ -87,6 +87,22 @@ class TestFusionRanker:
             )
         )
         assert response.candidates[0].score == response.candidates[1].score
+
+    def test_typed_key_matches_compact_fragment_key(self):
+        # The DAW gives no key; one stated in the intent arrives as "e minor"
+        # while the fragment is stored as "Em". They must count as the same key.
+        ranker = FusionRanker(WEIGHTS)
+        response = ranker.rank(
+            request(
+                [
+                    candidate("em", audio_embedding=unit(1, 0, 0), key="Em"),
+                    candidate("c", audio_embedding=unit(1, 0, 0), key="C"),
+                ],
+                key="e minor",
+            )
+        )
+        assert [c.fragment_id for c in response.candidates] == ["em", "c"]
+        assert "key_match" in {e.code for e in response.candidates[0].evidence}
 
     def test_tag_overlap_uses_context_tags(self):
         ranker = FusionRanker(WEIGHTS)
@@ -173,8 +189,8 @@ class TestFusionRanker:
         assert codes.count("model_signal") == 0
 
     def test_zero_contribution_signals_carry_no_evidence(self):
-        # Session key is always None online; the key term must not appear
-        # as evidence for the recommendation.
+        # With no session key (the DAW never reports one), the key term must
+        # not appear as evidence for the recommendation.
         ranker = FusionRanker(WEIGHTS)
         response = ranker.rank(
             request(
