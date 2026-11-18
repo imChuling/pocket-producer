@@ -478,7 +478,9 @@ def apply(db) -> int:
     keep = [p["_id"] for p in projects]
     db["projects"].delete_many({"user_id": DEMO_USER_ID, "_id": {"$nin": keep}})
     for project in projects:
-        db["projects"].replace_one({"_id": project["_id"]}, project, upsert=True)
+        db["projects"].replace_one(
+            {"_id": project["_id"], "user_id": DEMO_USER_ID}, project, upsert=True
+        )
     logger.info("Applied %d fragments and %d projects", len(fragments), len(projects))
     return 0
 
