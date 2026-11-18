@@ -4,81 +4,65 @@
 [![Code: Apache 2.0](https://img.shields.io/badge/Code-Apache%202.0-cfdaf5?style=flat&labelColor=1a1a2e)](LICENSE)
 [![Try it](https://img.shields.io/badge/Try%20it-pocketproducer.vercel.app-ffa773?style=flat&labelColor=1a1a2e)](https://pocketproducer.vercel.app)
 
-Sample recommendation for an open DAW session. Pocket Producer reads the
-Audiotool project you are working on, ranks your own audio fragments by how
-well they could fit that piece of music, shows the evidence behind each
-suggestion, and lets you preview, insert, and undo.
+Pocket Producer brings old musical sketches back when they might be useful.
+It reads the Audiotool project you have open, ranks your own recorded
+fragments by how well they could fit it, shows the measurements behind each
+suggestion, and lets you preview a fragment, insert it and undo the insert.
 
-Two ways in:
-
-1. **Watch the video** of preview, insert and undo in the DAW:
-   [youtu.be/i8HUDhZYcdE](https://youtu.be/i8HUDhZYcdE).
-2. **Read the reproduction guide**:
-   [docs/portfolio/REPRODUCE.md](docs/portfolio/REPRODUCE.md).
-
-**Current state.** The live site serves nine selectable rankers with
-`rules-v1` as the default. `beat-fit-v1` is deployed and selectable; fragments
-ingested before it carry no stored beat frames and the production backfill has
-not been run, so it scores only newer fragments. Captured fragments are grouped
-into projects in hybrid mode (the language model decides, shown the fusion
-scores), with the user's own edits as context. Feedback training is an offline
-prototype: online fusion scores five signals, and extended feedback weights are
-research-only and refused by that loader. Frozen behavioural and retrieval JSON
-are preserved, with dated protocol errata and corrected interpretations.
-
-Audio similarity is not the same as musical compatibility: two fragments can
-sound alike and never belong in the same track. The ranker measures particular
-relationships with the session; these scores do not establish musician
-preference. The musician makes the call.
-
-- **Live session:** trying suggestions inside your own Audiotool project at
-  [pocketproducer.vercel.app](https://pocketproducer.vercel.app) needs an
-  Audiotool account; the backend scales to zero, so the first request after
-  a quiet period takes a minute or two.
+- **Video** of preview, insert and undo in the DAW:
+  [youtu.be/i8HUDhZYcdE](https://youtu.be/i8HUDhZYcdE)
+- **Reproduction guide:** [docs/portfolio/REPRODUCE.md](docs/portfolio/REPRODUCE.md)
 - **Paper:** *Pocket Producer: Session-Conditioned Retrieval as User-Controlled
   Proposal*, ISMIR 2026 Late-Breaking Demo ([CITATION.cff](CITATION.cff))
+- **Live app:** [pocketproducer.vercel.app](https://pocketproducer.vercel.app).
+  It needs an Audiotool account, and the backend sleeps when idle, so the
+  first request after a quiet spell can take a minute or two.
 
 ![System overview](docs/system-figure.png)
 
-*The figure shows the rankers of the ISMIR demo, rules and fusion; Beat Fit
-was added afterwards.*
+*The figure is from the ISMIR demo and shows the rules and fusion rankers;
+Beat Fit came later.*
 
 ## How it works
 
-1. **Session fingerprint.** Through the Audiotool Nexus SDK the app reads the
-   open project: tempo, track roles, up to eight unique samples on the
-   timeline, and an optional sentence of intent. When the selected ranker
-   uses session audio, those samples are embedded with MS-CLAP on the
-   server (CPU); the default `rules-v1` does not need them, so none are sent.
-2. **Rankers.** Nine are registered and selectable in the panel
-   (`rules-v1`, `recency-v1`, `mean-session-v1`, `text-only-v1`, `audio-cosine-v1`, `role-gap-v1`, `harmonic-fit-v1`, `beat-fit-v1` and `fusion-5sig-v1`); two matter
-   most. The default `rules-v1` scores seven non-audio signals
-   (tempo fit, key, role gap, stated intent, tag overlap, tag novelty,
-   recency). The selectable `fusion-5sig-v1` is a linear fusion of mean and
-   max CLAP cosine, tempo, key, and tag Jaccard, with weights trained by
-   Bayesian Personalized Ranking on pack co-membership. Audiotool exposes no
-   project key, so the key signal is non-zero only when the typed intent
-   states one.
-3. **Proposals, not decisions.** Every candidate carries per-signal evidence
-   chips. Insert writes the sample in one Nexus transaction at the start of
-   the timeline; undo removes exactly the entities that insert created.
-   Previews, accepts, rejects, inserts, and undos are logged with rank
-   position for future supervision.
-4. **Grouping captured fragments into projects.** Projects are formed on
-   emotional and thematic kinship, as judged by the language model from
-   tags, text, and the creator's notes and edits; the fusion score is shown
-   to it as a sound-similarity cue. None of this has been evaluated against
-   anyone's grouping preferences. `POCKET_GROUPING_MODE` sets who decides:
-   `hybrid` (what is deployed): Gemini decides, shown each candidate's
-   fusion score, and whether its choice coincides with the fusion rule is
-   recorded. `llm` (the default when unset): Gemini decides without the
-   scores. `fusion`: the fusion score against a threshold calibrated on pack
-   data decides in code, and Gemini only writes the narrative, title and
-   next action. With `POCKET_EDIT_CONTEXT=1` (off when unset, on in the deployment), Gemini is
-   also shown a summary of the user's own edits (tags added or removed,
-   titles replaced, suggestions completed or skipped) when it writes tags,
-   titles, suggestions and grouping decisions. This conditions the prompt;
-   no weights are trained or changed.
+**Reading the session.** Through the Audiotool Nexus SDK the app reads the
+open project's tempo, its track types, the samples placed on the timeline
+(up to eight) and an optional line of intent that you type. Rankers that
+compare candidates with the sound of the session get those samples, embedded
+with MS-CLAP on the server. The default ranker does not use them, so nothing
+is sent for it.
+
+**Ranking.** Nine rankers can be chosen in the panel: `rules-v1`,
+`recency-v1`, `mean-session-v1`, `text-only-v1`, `audio-cosine-v1`,
+`role-gap-v1`, `harmonic-fit-v1`, `beat-fit-v1` and `fusion-5sig-v1`.
+`rules-v1` is the default and combines seven hand-weighted signals (tempo,
+key, a missing instrument role, the typed intent, tag overlap, tag novelty and
+recency). `fusion-5sig-v1` combines mean and max CLAP cosine, tempo, key and
+tag overlap, with weights learned by Bayesian Personalized Ranking from loops
+that share a sample pack. `beat-fit-v1` puts the session and a candidate on
+one beat grid and compares their harmony beat by beat and where their onsets
+fall. Audiotool does not give a project key, so key only counts when you type
+one in the intent. Fragments uploaded before Beat Fit shipped have no stored
+beat frames yet, so it can only score newer ones.
+
+**Trying a suggestion.** Each suggestion lists the signals behind it. Insert
+places the sample at the start of the timeline in one Nexus transaction, and
+undo removes exactly what that insert created. Previews, inserts, undos,
+accepts and rejects are logged with their rank so they can be used for
+training later; that training exists only as an offline prototype.
+
+**Grouping sketches into projects.** Separately from ranking, captured
+fragments are grouped into projects by feeling and theme. Gemini makes that
+call from the tags, the text and the notes and edits you have made, and is
+shown the fusion score as a hint of how alike two recordings sound. Nobody
+has checked this against how musicians group their own work. The modes are
+described in [ARCHITECTURE.md](ARCHITECTURE.md#who-decides-grouping).
+
+Sounding alike and fitting together are different things: two loops can be
+close in every embedding and still not belong in the same track. The scores
+measure particular relationships with the session, and whether musicians
+would pick the same fragments has not been tested, so the app suggests and
+the musician decides.
 
 ## Where to read the code
 
@@ -86,19 +70,18 @@ was added afterwards.*
   `session_beats` and `candidate_measurements`: placing the session and a
   candidate on one beat grid.
 - [`backend/ranking/beat_fit_ranker.py`](backend/ranking/beat_fit_ranker.py),
-  `BeatFitRanker.rank`: from raw measurements to a ranking and the evidence
-  shown with it.
+  `BeatFitRanker.rank`: turning those measurements into a ranking and the
+  evidence shown with it.
 - [`frontend/src/lib/audiotool/insert-fragment.ts`](frontend/src/lib/audiotool/insert-fragment.ts),
   `insertFragment` and `undoInsert`: inserting a sample in one transaction and
   undoing exactly what it created.
 
-Adopted, not built here: MS-CLAP embeddings, chroma and onset analysis
-(librosa) and the Audiotool Nexus SDK. Designed here: connecting them to the
-arrangement context of an open session, the evidence display, and the
-reversible edit.
+MS-CLAP, librosa's chroma and onset analysis and the Nexus SDK are existing
+tools. What was built here is how they are tied to the open session, how the
+evidence is shown, and the reversible insert.
 
-Details: [ARCHITECTURE.md](ARCHITECTURE.md), [MODEL_CARD.md](MODEL_CARD.md),
-[VERIFICATION.md](VERIFICATION.md). The Nexus SDK patch shipped in
+More detail: [ARCHITECTURE.md](ARCHITECTURE.md), [MODEL_CARD.md](MODEL_CARD.md),
+[VERIFICATION.md](VERIFICATION.md). The patch to the Nexus SDK in
 `frontend/patches/` is explained in [docs/nexus-bug-report.md](docs/nexus-bug-report.md).
 
 ## Evaluation
@@ -119,8 +102,9 @@ pairwise accuracy; every number below comes from a versioned JSON under
 | five-signal fusion | 0.925 | 0.8133 |
 
 On an earlier corpus that also grouped loops by uploader, fusion led cosine
-by +4.0 pp on hard_similar negatives; restricting to true pack co-membership
-removes the gain. The label construction, not the ranker, produced it.
+by +4.0 pp on hard_similar negatives. With true pack co-membership the gain
+disappears, so it came from how the labels were built rather than from the
+ranker.
 
 **Held-out** (fusion minus cosine, 5-seed mean, 95% bootstrap CI,
 reported as exploratory after a corrected training protocol):
@@ -132,15 +116,15 @@ reported as exploratory after a corrected training protocol):
 
 The two columns differ in embedding space, training recipe, and mined
 negatives, so the gap shows configuration sensitivity, not which model is
-better. That is why the deployed system treats scores as proposals and
-keeps the rules ranker as the default. The split groups by pack, not by
+better. This is one reason the rules ranker stays the default and every
+score is offered as a suggestion. The split groups by pack, not by
 uploader: 58 of the 121 held-out packs come from uploaders who also have
 packs on the train side. On the 25 query packs without such an uploader
 (135 hard_similar queries) the advantage is +3.9 pp [−1.9, +10.3] under
 MS-CLAP and +0.3 pp [−4.4, +4.6] under LAION-CLAP
 ([`artifacts/uploader-overlap-check/`](artifacts/uploader-overlap-check/),
-post hoc, same pairs and weights). That subset is small, so it neither shows
-nor rules out that the +9.9 pp rests on recognising uploaders. Follow-up checks, including the
+post hoc, same pairs and weights). The subset is too small to say whether the
++9.9 pp depends on recognising uploaders. Follow-up checks, including the
 negative results, are in [research/README.md](research/README.md); the
 dataset's per-item licenses are in [DATA_CREDITS.md](DATA_CREDITS.md).
 

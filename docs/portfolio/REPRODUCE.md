@@ -1,15 +1,15 @@
 # Reproduce the results
 
-This describes how to reproduce the reported results from the source tree.
-What is deployed is described in the README.
+How to rerun the tests and regenerate the reported results from the source
+tree. What is deployed is described in the README.
 
-## Local regression checks
+## Tests
 
-Use Python 3.11+ with the backend and research dependencies from
-`backend/pyproject.toml`, plus lightning and efficientnet_pytorch for COCOLA.
-Use a compatible Torch/torchvision pair; an incompatible pair fails at
-test collection.
-A writable Numba cache is needed under restricted filesystem permissions.
+You need Python 3.11+ with the backend and research dependencies from
+`backend/pyproject.toml`, plus `lightning` and `efficientnet_pytorch` for the
+COCOLA comparison. Torch and torchvision have to be a compatible pair, or the
+tests fail while they are being collected. On a machine with restricted file
+permissions, point Numba at a writable cache:
 
 ```bash
 NUMBA_CACHE_DIR=/tmp/pocket-numba-cache python -m pytest \
@@ -19,43 +19,48 @@ pnpm install
 pnpm run check
 ```
 
-COCOLA-dependent tests require the external source/checkpoint. Missing
-optional models may cause documented skips; a dependency import failure is
-not a passing test. The existing test of a deliberately slow ranker logs
-its eventual exception after timeout; assess the pytest exit code and counts.
+The COCOLA tests need its source and checkpoint from a separate checkout and
+skip without them. An import error from a missing dependency is a failure,
+not a skip. One test uses a deliberately slow ranker, which logs an exception
+after its timeout; judge the run by the pytest exit code and counts.
 
-## Frozen result checks
+## Committed results
 
-The committed JSONs are readable offline without credentials or audio.
-The 2026-11-16 errata explain limitations and do not change those numbers.
-`research/check_paper_numbers.py` is a partial legacy checker, not verification
-of every new narrative claim; report its skips as well as its passes.
+The committed result JSONs can be read offline, with no credentials or audio.
+The dated errata in the protocols (2026-11-16) explain their limits without
+changing any number. `research/check_paper_numbers.py` checks the numbers in
+the paper against these files; it does not cover every statement in the
+documentation, and its skips should be reported along with its passes.
 
-With the feature cache available, regenerate into a **new output directory**:
+With the MUSDB18-HQ feature cache available, regenerate each study into a
+new output directory:
 
 ```bash
 python -m research.compat_tests.run_behavioral report \
   --store /path/to/musdb18_v1 --output /tmp/behavioral-rerun --dataset musdb18hq
 python -m research.compat_tests.run_retrieval \
   --store /path/to/musdb18_v1 --output /tmp/retrieval-rerun --dataset musdb18hq
+python -m research.compat_tests.run_assignment \
+  --store /path/to/musdb18_v1 --output /tmp/assignment-rerun
 ```
 
-Compare each regenerated `report.json` with the committed one by SHA256.
-This reproduces cache-to-report computation,
-not original-audio-to-feature extraction. The external COCOLA source commit
-and checkpoint hash are recorded; the full historical extraction environment
-and per-window raw-audio manifest were not independently reconstructed.
-The cache identity/checksum manifest was captured **after** results on
-2026-11-16; it must not be described as part of the original freeze.
+Then compare each new `report.json` with the committed one by SHA-256. This
+reruns the step from cached features to report; it does not re-extract the
+features from the original audio. The COCOLA source commit and checkpoint
+hash are recorded, but the full extraction environment and a per-window
+manifest of the raw audio were not rebuilt. The cache identity manifest was
+written on 2026-11-16, after the results, so it documents the cache rather
+than being part of the original freeze.
 
-## Evaluation and learning contracts
+## The behavioural guardrail and feedback training
 
-The guardrail CLI and feedback trainer default to
-`research/manifests/musdb18-behavioral-v1-cache.json` (594 pair IDs / 149 song
-IDs). A different development dataset requires an explicit `--manifest`
-(guardrail) or `--guardrail-manifest` (trainer) with nonempty unique
-`pair_ids` and `track_ids`. This checks identity, not file hashes or training
-provenance. Cache file hashes are recorded for separate inspection.
+The guardrail and the feedback trainer use
+`research/manifests/musdb18-behavioral-v1-cache.json` by default (594 pair IDs
+from 149 songs). For any other dataset, pass `--manifest` to the guardrail or
+`--guardrail-manifest` to the trainer, listing non-empty, unique `pair_ids`
+and `track_ids`. This checks which pairs and songs are used, not file hashes
+or where the training data came from; the cache file hashes are recorded
+separately.
 
 ```bash
 python -m research.compat_tests.guardrail \
@@ -63,18 +68,20 @@ python -m research.compat_tests.guardrail \
   --output /tmp/guardrail-verdict.json
 ```
 
-No-data/incomplete/unusable endpoints reject before performance comparisons.
-A complete evaluation protects only baseline-passing endpoints and the
-specified gain win-rate criterion; it is not a quality floor for all five
-endpoints, an equivalence test or independent held-out confirmation after
-repeated model selection. Direct Python `check(..., manifest=None)` is an
-unbound development check, not a claim of coverage of the 594-pair evaluation.
+An evaluation with missing or unusable endpoints is rejected before any
+comparison. A complete one only protects the endpoints the baseline already
+passes, plus the gain win-rate criterion. It is not a minimum standard for
+all five endpoints, an equivalence test, or a fresh held-out confirmation
+after repeated model selection. Calling `check(..., manifest=None)` directly
+from Python is a development shortcut and does not tie the result to the
+594-pair set.
 
-Feedback vectors are aligned by `candidate_signal_names`, and optional beat
-measurements need an availability mask. Historical unnamed five-signal rows
-use their known canonical order; ambiguous extended rows are refused.
-Seven-signal artifacts are research-only. The online fusion loader accepts
-its canonical five signals, not seven. Previous output/verdict files are
-quarantined with run IDs before another training attempt so an old accepted
-artifact cannot masquerade as a newly accepted run. Train-fit accuracy and
-exposure-position logging do not prove generalization or remove position bias.
+Feedback vectors are matched by `candidate_signal_names`, and optional beat
+measurements need an availability mask. Older unnamed five-signal rows are
+read in their known order; extended rows that are ambiguous are refused.
+Seven-signal weights are for research only: the online fusion loader accepts
+exactly its five signals. Before each training attempt, earlier output and
+verdict files are renamed with a run ID, so an old accepted file cannot be
+mistaken for a new one. Accuracy on the training pairs and logged display
+positions do not show that the weights generalise or that position bias is
+gone.

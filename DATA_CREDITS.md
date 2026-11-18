@@ -51,7 +51,7 @@ MUSDB18-HQ, the track names and file hashes that identify the evaluated set.
 
 ## Demo account audio
 
-The read-only demo account plays royalty-free loops from Looperman. Titles
+The read-only demo account, currently switched off, plays royalty-free loops from Looperman. Titles
 that carried an artist or uploader name were renamed to neutral descriptive
 titles (`backend/scripts/enrich_seed.py`). The audio is not part of this
 repository. The lyric fragments, tags, suggestions, project groupings and next

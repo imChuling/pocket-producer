@@ -343,19 +343,21 @@ docs/ismir2026/build.sh
 | `artifacts/fusion-deploy/weights.json` | `export_fusion_weights.py` | §2.4 deployment configuration |
 
 
-### Corrections and capability status
+### Corrections and current status
 
-Read the dated append-only errata in the two frozen v1 protocols together
-with their updated results text. Raw result JSON and frozen scorer definitions
-remain unchanged. `COCOLA_HP_v1` officially lists MoisesDB, Slakh2100 and
-CocoChorales as training data, not MUSDB18-HQ; absence of file-level overlap
-was not independently established. Retrieval v1 counts stem candidates,
-not nine distinct songs, in the tempo pool. It is as-is layering retrieval,
-not preference testing or adapted-loop retrieval.
+The two frozen v1 protocols carry dated errata at the end; read them with
+the results files, which were updated to match. The raw result JSON and the
+frozen scorer definitions did not change. Three corrections matter most.
+`COCOLA_HP_v1` was trained on MoisesDB, Slakh2100 and CocoChorales, not
+MUSDB18-HQ, and nobody has checked its training files for overlap. The
+tempo-matched pool in retrieval v1 counts stems, not nine different songs.
+And retrieval v1 places each candidate as it is, without stretching or
+aligning it, so it is neither a preference test nor a test of adapted loops.
 
-Feedback training aligns by recorded signal names and availability masks.
-Extended weights are research-only and cannot be loaded by the online
-five-signal ranker. Beat-fit is deployed as a selectable ranker; the
-production beat-frame backfill has not been run, and nothing here learns
-automatically online; see [online design](design-online-signals.md). Missing masks in historical
-extended logs cannot be repaired by treating zero as a valid measurement.
+Feedback training matches vectors by their recorded signal names and
+availability masks. Extended weights are research-only and the online
+five-signal ranker cannot load them. Beat Fit is deployed as a selectable
+ranker, but older fragments have not been backfilled with beat frames, and
+nothing learns online; see the [online design notes](design-online-signals.md).
+Historical extended logs without masks cannot be repaired by reading a zero
+as a real measurement.

@@ -2,29 +2,33 @@
 
 ## Current status
 
-The capacity-ladder descriptions below document earlier research models;
-they do not establish that every model is deployed or preference-validated.
-The product default remains `rules-v1`; the shipped fusion scores five
-signals. `beat-fit-v1` is registered and deployed as a selectable ranker;
-the production frame backfill has not run, so fragments ingested before it
-are left out of its lists. Offline feedback training is not automatic online
-adaptation. Seven-signal artifacts are explicitly research-only and rejected
-by the online five-signal loader. See [capability boundaries and evidence
-semantics](research/design-online-signals.md).
+The live default is `rules-v1`. `fusion-5sig-v1` and `beat-fit-v1` are
+deployed and can be chosen in the panel; the deployed fusion scores five
+signals. Beat Fit only scores fragments uploaded since it shipped, because
+older fragments have not been backfilled with beat frames. The
+capacity-ladder models described below are research models and are not
+deployed. Training from logged feedback exists only as an offline prototype;
+its seven-signal variant is research-only and the online loader refuses it.
+What is and is not deployed is listed in the
+[design notes](research/design-online-signals.md).
 
-Controlled perturbation and as-is synchronized-stem retrieval results do
-not establish musician preference or improved creativity. The two-signal
-chroma/onset choice has no demonstrated incremental retrieval benefit over
-onset alone. COCOLA_HP_v1's official training sets are MoisesDB, Slakh2100
-and CocoChorales; the older MUSDB18-HQ assertion is corrected in the dated
-protocol errata. No independent training-file reconstruction excludes overlap.
+None of the experiments measure whether musicians prefer the suggestions or
+whether the tool helps them create; they use perturbed stems, stem retrieval
+and pack membership. In retrieval, adding chroma to onset patterns gave no
+measurable improvement over onset alone. `COCOLA_HP_v1` was trained on
+MoisesDB, Slakh2100 and CocoChorales, not MUSDB18-HQ as an earlier version
+of the protocols said (see their errata), and nobody has checked its
+training files for overlap with the evaluation data.
 
-The assignment study (`research/results-assignment-v1.md`) adds evidence for
-the beat-fit signals from the other direction: given one stem, beat-aligned
-chroma plus onset pattern ranks the context it fits first among 50 contexts
-missing the same stem type in 54.0% of stems [49.6, 58.4], against 14.1% for
-MS-CLAP cosine and 20.7% for the deployed fusion. It is evidence about fit
-for ranking, not about grouping. It reuses the recordings of the behavioural and retrieval studies, so it is not independent; the onset combination was chosen post hoc on them; the stems are studio multitrack with a steady beat; and prediction A1 (similarity at most 0.10) was not supported.
+A later study ran retrieval the other way round: given one stem, find the
+context it came from among 50 that are missing the same stem type.
+Beat-aligned chroma plus onset pattern picked the right context first for
+54.0% of stems [49.6, 58.4], MS-CLAP cosine for 14.1% and the deployed fusion
+for 20.7% (`research/results-assignment-v1.md`). This is evidence about fit,
+which matters for ranking, not about grouping. It reuses the recordings of
+the earlier studies, the onset combination was chosen after seeing them, the
+stems are studio recordings with a steady beat, and one of its seven
+predictions (A1) failed.
 
 ## Overview
 
@@ -47,7 +51,7 @@ Measured on Apple M-series CPU, batch size 32, 32 context tokens, from the exact
 
 ## Baselines (no learned parameters)
 
-Nine rankers are registered in the default deployment (with `POCKET_ENABLE_CLAP=1` and the fusion weights present, as deployed): `rules-v1`, `recency-v1`, `mean-session-v1`, `text-only-v1`, `audio-cosine-v1`, `role-gap-v1`, `harmonic-fit-v1`, `beat-fit-v1` and `fusion-5sig-v1`. The eight without fitted weights are listed here; `fusion-5sig-v1`, whose five weights were fitted on pack co-membership, is covered under Grouping use and Limitations.
+Nine rankers are registered in the default deployment (with `POCKET_ENABLE_CLAP=1` and the fusion weights present, as deployed): `rules-v1`, `recency-v1`, `mean-session-v1`, `text-only-v1`, `audio-cosine-v1`, `role-gap-v1`, `harmonic-fit-v1`, `beat-fit-v1` and `fusion-5sig-v1`. The eight without fitted weights are listed here; `fusion-5sig-v1`, whose five weights were fitted on pack co-membership, is covered under Grouping and Limitations.
 
 | Baseline | Description |
 |---|---|
@@ -94,7 +98,7 @@ The only check now wired into code is narrower: when fusion weights are refit fr
 - **Metric**: pairwise accuracy (fraction of pairs where the model ranks the preferred candidate higher). All results below use weak labels; no human pairwise labels are in them.
 - **Grouping**: the harness can group pairs by hashed participant so one person's labels would not dominate; it serves logged feedback, and no reported result uses it
 - **Label-type enforcement**: code raises `ValueError` if labels are not `pairwise`
-- **Honest skips**: models that cannot score an example (missing embeddings, no session context) skip it; skips are counted, not zeroed
+- **Skips**: a model that cannot score an example (missing embeddings, no session context) skips it, and skips are counted rather than scored as zero
 
 ### Weak-label results (FSLD, val split)
 
@@ -104,35 +108,35 @@ The only check now wired into code is narrower: when fusion weights are refit fr
 | `deepsets-v1` | 0.720 | 1,236 | 519 |
 | `pocketrank-context-v1` | 0.743 | 1,236 | 519 |
 
-**Key finding**: the two-parameter cosine-plus-bias baseline beats both learned models on weak labels. The benchmark predominantly rewards embedding proximity, so it cannot establish validity for continuation utility. No human evaluation is part of these results, so whether learned capacity helps on the real task remains open.
+The two-parameter cosine-plus-bias baseline beats both learned models on these weak labels. The benchmark mostly rewards embedding proximity, so it says little about whether a fragment would be useful in a song, and with no human evaluation it remains open whether more capacity helps on the real task.
 
-## Grouping use (behind a flag)
+## Grouping
 
-Projects are formed on emotional and thematic kinship, as judged by the language model from tags, text, and the creator's notes and edits; the fusion score is shown to it as a sound-similarity cue. None of this has been evaluated against anyone's grouping preferences. The
-fusion score answers a narrower question: whether two recordings sound
-alike. Its weights were trained on pack co-membership (two loops filed in
-the same sample pack). With `POCKET_GROUPING_MODE=fusion` (not deployed),
-those weights decide which project a new fragment joins, scored pair by
-pair (`backend/ranking/grouping.py`). The threshold, 15.31, is the smallest score at which same-pack
-precision reaches 0.50 on the 484 training packs; on the 121 held-out packs
-it gives precision 0.937 [0.822, 0.995] and recall 0.325 [0.221, 0.480],
-and fusion's average precision exceeds plain MS-CLAP cosine by 0.127
-[0.039, 0.206] (`research/results-grouping-threshold-v1.md`). Precision at a
-fixed threshold depends on library size, and online tags, tempo and key come
-from the product's own analysis, so these numbers do not transfer directly
-to a user's library. Neither the threshold nor the decision has been
-checked against any musician's own grouping. Gemini still writes the
-narrative, project title and next action; it does not make the decision.
-With `POCKET_GROUPING_MODE=hybrid` (deployed), Gemini makes the decision on
-emotional and thematic kinship and is shown the fusion scores as a
-sound-similarity cue; whether its choice coincides with the fusion rule is
-recorded per fragment, as a description of how often the two agree, not a
-target. With `llm`, the value when the variable is unset, grouping is decided
-by the Gemini agents alone. The deployment sets `hybrid`.
+Captured fragments are grouped into projects by feeling and theme. In the
+deployed mode (`POCKET_GROUPING_MODE=hybrid`) Gemini makes that call from the
+tags, the text and the creator's notes and edits, and is shown the fusion
+score as a hint of how alike two recordings sound. Whether its choice
+matches what the fusion rule alone would pick is recorded for each fragment,
+as a description of how often they agree. With `llm`, the value when the
+variable is unset, Gemini decides without the scores. None of this has been
+checked against how anyone groups their own work.
+
+The fusion score answers a narrower question, whether two recordings sound
+alike; its weights were trained on loops filed in the same sample pack. In
+the `fusion` mode, which is not deployed, those weights decide on their own
+(`backend/ranking/grouping.py`) and Gemini only writes the narrative, project
+title and next action. That mode's threshold, 15.31, is the smallest score at
+which same-pack precision reaches 0.50 on the 484 training packs. On the 121
+held-out packs it gives precision 0.937 [0.822, 0.995] and recall 0.325
+[0.221, 0.480], and fusion's average precision is 0.127 [0.039, 0.206] above
+plain MS-CLAP cosine (`research/results-grouping-threshold-v1.md`). Precision
+at a fixed threshold depends on library size, and online tags, tempo and key
+come from the product's own analysis, so these numbers will not carry over
+exactly to a user's library.
 
 ## Limitations
 
-- **No online weight adaptation; edit context is prompt conditioning**: no ranking or grouping weights adapt online. With `POCKET_EDIT_CONTEXT=1` (off when unset, on in the deployment), the language model is shown a summary of the user's own edits (tags added or removed, titles replaced, suggestions completed or skipped) when it writes tags, titles, suggestions and grouping decisions. This is in-context conditioning, not training. It is not covered by the behavioural guardrail (`research/compat_tests/guardrail.py`), which gates learned ranking weights only, and its effect has not been evaluated. Refitting weights from logged decisions remains an offline step that must pass that guardrail.
+- **No weights change online**: with `POCKET_EDIT_CONTEXT=1` (on in the deployment), the language model is shown a summary of the user's own edits (tags added or removed, titles replaced, suggestions completed or skipped) when it writes tags, titles, suggestions and grouping decisions. That shapes the prompt; nothing is trained. The behavioural guardrail (`research/compat_tests/guardrail.py`) only covers learned ranking weights, so it does not apply here, and the effect of the edit summary has not been evaluated. Refitting ranking weights from logged decisions is an offline step that has to pass the guardrail.
 - **Session representation limits**: the existing fusion uses pooled region audio and metadata. The selectable `beat-fit-v1` ranker adds approximate timeline placement and chroma/onset structure; it does not reproduce offsets, loops, mixing or effects of real DAW playback.
 - **Intent in the fusion rankers**: `fusion-5sig-v1` is affected by the typed intent only through a BPM or key parsed from it when the session lacks one; role words such as "replace the drums" or "add a synth hook" do not change its ranking. `beat-fit-v1` reads only the precomputed `session_beats` and not the parsed intent. `rules-v1` and the text and audio cosine rankers do read role words.
 - **No human evaluation**: every reported result uses proxy labels (pack co-membership, controlled perturbations); none measures whether musicians prefer the suggestions. Sample sizes are reported with each result.

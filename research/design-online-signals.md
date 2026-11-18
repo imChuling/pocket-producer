@@ -12,12 +12,12 @@ Bring two signals from the behavioural tests online:
 `onset_pattern` (rhythm in step with the session's beats). On MUSDB18-HQ
 they pass P1, P3 and P4 (`chroma_beat_aligned` also P2; `onset_pattern`
 also P5), where the deployed fusion passes only P3
-(`research/results-behavioral-v1.md`). The two-signal sum was added after the behavioural report. It is a
-design choice to expose harmony and rhythm together, not a demonstrated
-improvement over onset alone: `onset_pattern` has higher Recall@1 point
-estimates in all three pools (`research/results-retrieval-v1.md`). No paired
-interval for that contrast was computed, and no independent product test
-has validated incremental value.
+(`research/results-behavioral-v1.md`). The two-signal sum was added after the
+behavioural report. Showing harmony and rhythm together is a design choice,
+not a measured improvement: `onset_pattern` alone has higher Recall@1 point
+estimates in all three pools (`research/results-retrieval-v1.md`), no paired
+interval for that difference was computed, and no product test has shown
+that adding harmony helps.
 
 Two uses:
 
@@ -122,22 +122,23 @@ tempo the helper returns no grid; malformed API input is rejected.
 | Existing-fragment frame backfill | Script exists; not run on production |
 | Five-signal feedback training | Offline research workflow, tested artifact-to-loader-to-score; not automatic online learning |
 | Seven-signal feedback training | Research only; artifact marked nondeployable, distinct identity; online five-signal loader refuses it |
-| Demo / cost changes | Deployed: read-only demo account, daily LLM quota, scale to zero |
+| Demo / cost changes | Daily LLM quota and scale to zero are deployed; the read-only demo account is built but switched off |
 
-The behavioural guardrail first validates nonempty unique pairs, applicable
-perturbations, finite scores, at least two tracks and usable P1–P5/gain.
-An optional explicit manifest checks exact pair and track identities. The
-original cache has no historical manifest; a newly created inventory is
-not retroactive proof of original extraction. Performance rules then protect
-only endpoints the baseline already passes (on this store mainly P3), plus
-gain direction sensitivity. Passing is not a quality floor for every endpoint
-or evidence of preference benefit. Repeated filtering on MUSDB makes it a
-development set.
+The behavioural guardrail first checks its inputs: non-empty unique pairs,
+perturbations that apply, finite scores, at least two tracks and usable
+P1 to P5 and gain results. An optional manifest pins the exact pairs and
+tracks. The original cache had no manifest of its own, and one made later
+cannot prove how the features were first extracted. After those checks the
+guardrail only protects the endpoints the baseline already passes (on this
+store mostly P3) and the direction of the gain test. Passing it is not a
+minimum standard for every endpoint, and it says nothing about what musicians
+prefer. Because models have been filtered on MUSDB repeatedly, it now works
+as a development set.
 
-A future deployment needs a real DAW playback comparison, a separately
-reviewed production backfill and an explicit serving contract for any new
-weight dimensionality. A seven-weight research artifact must not be copied
-into the five-signal deployment path. No such rollout was executed here.
+Before learned weights that include the beat signals go live, they need a
+comparison against real DAW playback, a reviewed backfill of production
+fragments and a serving format for the extra weights. A seven-weight research
+file must not be copied into the five-signal path; none has been.
 
 ## Open questions
 
