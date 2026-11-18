@@ -4,12 +4,9 @@ import logging
 import math
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
-from typing import Literal
 
-from bson import ObjectId
-from bson.errors import InvalidId
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 from ranking.adapters import shared as clap
 from ranking.enrichment import attach_audio_embeddings
@@ -353,124 +350,6 @@ async def session_embed(
         "failed": failed,
         "timed_out": timed_out,
     }
-
-
-# --- Blind pairwise annotation (research protocol, models hidden) ----------
-
-REASON_CODES = frozenset(
-    {
-        "tempo_fit",
-        "key_fit",
-        "supports_next_step",
-        "fills_missing_role",
-        "rhythmic_fit",
-        "mood_fit",
-        "novelty_welcome",
-        "too_similar",
-        "wrong_energy",
-        "other",
-    }
-)
-
-
-class PairLabel(BaseModel):
-    choice: Literal["left", "right", "neither"]
-    reason_codes: list[str] = []
-    confidence: int = Field(ge=1, le=5)
-
-    @field_validator("reason_codes")
-    @classmethod
-    def reason_codes_must_be_known(cls, value: list[str]) -> list[str]:
-        unknown = set(value) - REASON_CODES
-        if unknown:
-            raise ValueError(f"unknown reason codes: {sorted(unknown)}")
-        return value
-
-
-def _fragment_summary(db, user_id: str, fragment_id: str) -> dict:
-    try:
-        oid = ObjectId(fragment_id)
-    except (InvalidId, TypeError):
-        return {"fragment_id": fragment_id, "title": None, "audio_url": None}
-    doc = db["fragments"].find_one({"_id": oid, "user_id": user_id}) or {}
-    return {
-        "fragment_id": fragment_id,
-        "title": doc.get("title"),
-        "audio_url": f"/api/fragments/{fragment_id}/audio",
-    }
-
-
-def _next_pair_sync(db, user_id):
-    """Fetch the next annotation pair and its fragment summaries."""
-    remaining = db["annotation_pairs"].count_documents(
-        {"user_id": user_id, "status": "pending"}
-    )
-    pair = db["annotation_pairs"].find_one(
-        {"user_id": user_id, "status": "pending"}
-    )
-    if pair is None:
-        return {"done": True, "remaining": 0}
-    return {
-        "done": False,
-        "remaining": remaining,
-        "pair": {
-            "pair_id": str(pair["_id"]),
-            "context_project_id": pair.get("context_project_id"),
-            "context": [
-                _fragment_summary(db, user_id, fragment_id)
-                for fragment_id in pair.get("context_fragment_ids", [])
-            ],
-            "left": _fragment_summary(db, user_id, pair["left_fragment_id"]),
-            "right": _fragment_summary(db, user_id, pair["right_fragment_id"]),
-        },
-    }
-
-
-@router.get("/pairs/next")
-@limiter.limit("30/minute")
-async def next_annotation_pair(request: Request, user_id: str = Depends(verify_firebase_token)):
-    db = get_db()
-    return await asyncio.to_thread(_next_pair_sync, db, user_id)
-
-
-def _label_pair_sync(db, oid, user_id, pair_id, label):
-    """Validate and persist a pairwise annotation label."""
-    pair = db["annotation_pairs"].find_one({"_id": oid, "user_id": user_id})
-    if pair is None:
-        raise HTTPException(status_code=404, detail="Pair not found")
-    if pair.get("status") != "pending":
-        raise HTTPException(status_code=409, detail="Pair already labeled")
-    db["annotation_labels"].insert_one(
-        {
-            "pair_id": pair_id,
-            "user_id": user_id,
-            "choice": label.choice,
-            "reason_codes": label.reason_codes,
-            "confidence": label.confidence,
-            "models_hidden": True,
-            "created_at": datetime.now(UTC),
-        }
-    )
-    db["annotation_pairs"].update_one(
-        {"_id": oid, "user_id": user_id}, {"$set": {"status": "labeled"}}
-    )
-
-
-@router.post("/pairs/{pair_id}/label")
-@limiter.limit("30/minute")
-async def label_annotation_pair(
-    request: Request,
-    pair_id: str,
-    label: PairLabel,
-    user_id: str = Depends(verify_firebase_token),
-):
-    db = get_db()
-    try:
-        oid = ObjectId(pair_id)
-    except (InvalidId, TypeError):
-        raise HTTPException(status_code=404, detail="Pair not found")
-    await asyncio.to_thread(_label_pair_sync, db, oid, user_id, pair_id, label)
-    return {"status": "ok"}
 
 
 @router.post("/feedback")
