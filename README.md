@@ -16,7 +16,7 @@ Three ways in:
    It shows a preset library and how its fragments were grouped into
    projects; ranking inside a live DAW session is what the video shows.
 2. **Watch the video** of preview, insert and undo in the DAW:
-   [youtu.be/s56Rp_1M9OE](https://youtu.be/s56Rp_1M9OE).
+   [youtu.be/i8HUDhZYcdE](https://youtu.be/i8HUDhZYcdE).
 3. **Read the reproduction guide**:
    [docs/portfolio/REPRODUCE.md](docs/portfolio/REPRODUCE.md).
 
