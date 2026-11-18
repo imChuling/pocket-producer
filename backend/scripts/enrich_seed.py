@@ -6,7 +6,8 @@ suggestions describe the sound, using the key, tempo, level, brightness and
 onset density measured from the audio. Six short lyric fragments are text
 fragments of their own, shaped the way the capture pipeline shapes text.
 Projects group fragments on a stated emotional or thematic link, as the
-product does; everything else stays ungrouped. The labels, suggestions,
+product does; everything else stays ungrouped. Loop titles that carry an
+artist or uploader name are renamed (RENAMES). The labels, suggestions,
 narratives and lyrics are AI-generated sample text written for the demo, not
 output of the live pipeline. Rescue scores and sections use the app's own
 formula, computed as of each project's newest member.
@@ -41,9 +42,20 @@ logger = logging.getLogger("enrich")
 DEMO_USER_ID = "demo-seed-user"
 SNAPSHOT = pathlib.Path(__file__).resolve().parents[2] / "frontend" / "public" / "demo-data"
 
-# Sound-only analysis for each audio loop, keyed by title.
+# Original loop titles that carry an artist or uploader name, or a known song
+# title, renamed to the kind of title a musician gives their own sketch.
+RENAMES = {
+    "Ariana": "light busy loop",
+    "gunna polo": "dark low pattern",
+    "altabeats hate goodbyes": "long beat in G",
+    "vanlas pillars of the heart and mind": "bright long take",
+    "delight ft ultradiolet": "bright full run",
+    "into you": "fast bright loop",
+}
+
+# Sound-only analysis for each audio loop, keyed by (new) title.
 AUDIO = {
-    "Ariana": {
+    "light busy loop": {
         "tags": ["loop", "rhythmic figure", "quiet dynamics"], "emotions": ["playfulness"],
         "themes": [], "style": [], "structure_hint": "melodic_motif", "potential": "medium",
         "suggestion": "A 28-second loop at 136 BPM in C# major, quiet overall but with a busy rhythmic surface of about 3.6 onsets per second. The low level means it will sit under almost anything without fighting it, so treat it as a texture rather than a lead. Try doubling its rhythm with a filtered percussion layer to hear whether the figure carries more weight when it is reinforced. Because the energy stays flat across the loop, a second part that drops out for one bar in every eight would give it shape. Its tempo is a common one, so it is easy to set into a session without stretching.",
@@ -63,12 +75,12 @@ AUDIO = {
         "themes": [], "style": [], "structure_hint": "hook_candidate", "potential": "medium",
         "suggestion": "A short 14-second loop at 136 BPM in E minor with the busiest rhythm in the library, close to five onsets per second. Its length and density make it work like a hook: something to drop in for four bars rather than run underneath a whole section. Try cutting it into two halves and alternating them to hear which half carries the identity. The mid-range tone is neither dark nor bright, so a sub-bass under the downbeats would give it weight without clouding it. Because it is minor and driving, it would also make a strong contrast against one of the calmer loops.",
     },
-    "delight ft ultradiolet": {
+    "bright full run": {
         "tags": ["full arrangement", "bright mix", "long-form"], "emotions": ["joyful_activation"],
         "themes": [], "style": [], "structure_hint": None, "potential": "medium",
         "suggestion": "At two and a half minutes this is a full piece rather than a loop: A minor at 136 BPM, loud and bright, with the spectral centroid above 2.6 kHz and a noisier texture than most of the library. Listen through once and mark where the energy changes; those points are where it could be cut into sections to reuse. The brightness means anything added on top needs to be darker or it will crowd the high end. Try pulling out a single eight-bar stretch and looping it to hear whether it holds up on its own. If it does, it becomes a bed to write over; if not, it works better as a reference for mood.",
     },
-    "gunna polo": {
+    "dark low pattern": {
         "tags": ["loop", "dark tone", "dense rhythm"], "emotions": ["tension"],
         "themes": [], "style": ["hip-hop"], "structure_hint": "melodic_motif", "potential": "medium",
         "suggestion": "A dark, quiet loop at 136 BPM in G major with a dense rhythm, about 4.6 onsets per second, and almost all of its energy below 600 Hz. That combination suits a beat: the low weight gives a floor and the busy pattern gives drive. Bring the level up before judging it; at this loudness the detail is easy to miss. A bright element on top, such as hats or a high pluck, would fill the space it leaves above. Keep the arrangement around it simple so the pattern stays at the centre.",
@@ -78,7 +90,7 @@ AUDIO = {
         "themes": [], "style": [], "structure_hint": "melodic_motif", "potential": "medium",
         "suggestion": "A slow, sparse piece at 78.3 BPM in A# major, quiet and fairly bright, with fewer than two attacks per second over 70 seconds. It leaves a lot of room, which is what a starting point needs: hum or sing over it without words first and keep whatever melody comes back twice. The space between attacks is long enough for a vocal phrase to breathe without crowding. It shares its tempo and key with 'Choir Melody', so the two can be tried together in a session. Leave percussion out for now and settle the melody first.",
     },
-    "vanlas pillars of the heart and mind": {
+    "bright long take": {
         "tags": ["full arrangement", "bright mix", "long-form"], "emotions": ["wonder"],
         "themes": [], "style": [], "structure_hint": None, "potential": "medium",
         "suggestion": "The longest piece in the library at almost four minutes: A# major at 89.1 BPM, the brightest mix here (spectral centroid near 2.8 kHz) and a steady, moderate rhythm. With that much material, the first job is to find its strongest sixteen bars and loop them as a bed. The high brightness gives it an open, lifted quality; a warm, low part underneath would balance it. Listen for the moment the arrangement is at its fullest and use that as the target for anything built on it. Shorter excerpts will be easier to combine with other ideas than the whole piece.",
@@ -98,7 +110,7 @@ AUDIO = {
         "themes": [], "style": [], "structure_hint": "melodic_motif", "potential": "medium",
         "suggestion": "A quiet 40-second loop at 129.2 BPM in D minor, mid-range in tone and moderately busy. Its low level and minor key give it a subdued, inward quality, so it suits a part that stays in the background. Raise it a few decibels against the rest of the library before deciding where it fits; quiet loops are easy to underrate. A single sustained line above it, in the same key, would bring out the mood without adding clutter. For contrast, pair its restraint with one louder section rather than making the loop itself busier.",
     },
-    "altabeats hate goodbyes": {
+    "long beat in G": {
         "tags": ["full arrangement", "beat", "long-form"], "emotions": ["joyful_activation"],
         "themes": [], "style": [], "structure_hint": None, "potential": "medium",
         "suggestion": "A two-and-a-half-minute beat at 136 BPM in G major, loud, fairly bright and rhythmically busy throughout. It already sounds like a finished instrumental, so the useful question is what it is missing rather than what to add. Listen for a section where the energy drops; if there is none, that is the gap to fill with a breakdown. Its tempo matches several shorter loops in the library, which makes it a natural bed to try them against in a session. A topline written over it should stay simple, since the beat already fills a lot of space.",
@@ -113,7 +125,7 @@ AUDIO = {
         "themes": [], "style": [], "structure_hint": None, "potential": "medium",
         "suggestion": "A three-minute piece at 117.5 BPM in A major, darker in tone than most of the library and rhythmically busy, around four onsets per second. The density keeps it moving even at a moderate level. Its low brightness leaves the top of the range open for something lighter. Try isolating one sixteen-bar stretch to use as a loop; the full length is more than most ideas need. It shares its tempo and tonic with 'broken heart', so the two are easy to try together in a session.",
     },
-    "into you": {
+    "fast bright loop": {
         "tags": ["fast tempo", "bright mix", "loop"], "emotions": ["tension", "joyful_activation"],
         "themes": [], "style": [], "structure_hint": "melodic_motif", "potential": "medium",
         "suggestion": "A loud, bright 79-second piece in C minor with a measured tempo of 198.8 BPM; that may be a double-time reading, so check whether it feels closer to 99. Either way it has a lot of energy and a noisier, brighter texture than most of the library. Decide on the felt tempo first, because it changes what can sit on top of it. At the slower feel a half-time vocal would work over it; at the fast one, keep any added parts short and percussive. The minor key under the bright mix gives it an edge worth keeping.",
@@ -256,20 +268,20 @@ PROJECTS = [
 
 # What the grouping step says about fragments it leaves on their own.
 UNGROUPED = {
-    "Ariana": "This loop has its own light, busy feel. Nothing else in your library shares its mood closely enough yet, so it stays on its own for now.",
+    "light busy loop": "This loop has its own light, busy feel. Nothing else in your library shares its mood closely enough yet, so it stays on its own for now.",
     "Choir Melody": "The choir sits in a calm, reverent place that nothing else here reaches yet. Keeping it on its own until something joins it.",
     "damn right": "A short, tense hook with nothing else in the library on the same emotional edge yet. It stays ungrouped for now.",
-    "delight ft ultradiolet": "A bright, full piece that does not clearly share a feeling or theme with anything else yet. Keeping it on its own.",
-    "gunna polo": "Dark and driving, but nothing in your library carries the same tension with a shared idea behind it. Ungrouped for now.",
+    "bright full run": "A bright, full piece that does not clearly share a feeling or theme with anything else yet. Keeping it on its own.",
+    "dark low pattern": "Dark and driving, but nothing in your library carries the same tension with a shared idea behind it. Ungrouped for now.",
     "song starter": "A quiet starting point without words yet. When a lyric or idea shows up that matches its mood, I will suggest pairing them.",
-    "vanlas pillars of the heart and mind": "A long, bright piece with its own lifted feel. Nothing else shares it closely enough to group yet.",
+    "bright long take": "A long, bright piece with its own lifted feel. Nothing else shares it closely enough to group yet.",
     "Funkyy": "Playful and loud, but no lyric or idea here shares that energy with a specific link yet. It stays on its own.",
     "Motion": "Tense and driving, with no fragment yet that shares a feeling or a theme with it. Ungrouped for now.",
     "Wanna": "Subdued and inward. Its mood is close to some lyrics here, but there is no specific link to name yet, so it stays on its own.",
-    "altabeats hate goodbyes": "A finished-sounding beat that does not yet connect to a feeling or theme elsewhere in your library. Keeping it separate.",
+    "long beat in G": "A finished-sounding beat that does not yet connect to a feeling or theme elsewhere in your library. Keeping it separate.",
     "broken heart": "Tender and spacious, but nothing here shares a specific idea with it yet. It stays on its own for now.",
     "illusion": "Dark and busy, without a fragment that shares a stated link with it yet. Ungrouped for now.",
-    "into you": "Loud and bright with an edge. Nothing in the library shares that feeling with a clear connection yet.",
+    "fast bright loop": "Loud and bright with an edge. Nothing in the library shares that feeling with a clear connection yet.",
     "laid back beat": "A relaxed groove with its own calm. It is close in mood to 'Chilling', but there is no specific link beyond that, so it stays on its own.",
     "somewhat bouncy bass": "A heavy, bouncing bassline that nothing else here shares an idea with yet. It stays on its own until something joins it.",
 }
@@ -321,11 +333,13 @@ def build(audio_docs: list[dict]) -> tuple[list[dict], list[dict]]:
     for doc in audio_docs:
         if doc.get("type") != "audio":
             continue
-        spec = AUDIO.get(doc["title"])
+        title = RENAMES.get(doc["title"], doc["title"])
+        spec = AUDIO.get(title)
         if spec is None:
             raise SystemExit(f"No sound analysis for audio fragment {doc['title']!r}")
         updated = {k: v for k, v in doc.items() if k not in _PROJECT_FIELDS}
         updated.update(spec)
+        updated["title"] = title
         # No words were transcribed from these loops, so they carry no text.
         updated.update({"text": None, "raw_text": None, "transcript": None})
         updated["created_at"] = _dt(doc["created_at"])

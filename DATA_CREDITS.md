@@ -51,10 +51,11 @@ MUSDB18-HQ, the track names and file hashes that identify the evaluated set.
 
 ## Demo account audio
 
-The read-only demo account plays royalty-free loops from Looperman, named by
-their original titles. The audio is not part of this repository. The lyrics,
-tags, suggestions, project groupings and next actions shown with them are
-sample text written for the demo.
+The read-only demo account plays royalty-free loops from Looperman. Titles
+that carried an artist or uploader name were renamed to neutral descriptive
+titles (`backend/scripts/enrich_seed.py`). The audio is not part of this
+repository. The lyric fragments, tags, suggestions, project groupings and next
+actions shown with them are sample text written for the demo.
 
 ## Free Music Archive (FMA)
 
