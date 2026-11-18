@@ -9,23 +9,27 @@ Audiotool project you are working on, ranks your own audio fragments by how
 well they could fit that piece of music, shows the evidence behind each
 suggestion, and lets you preview, insert, and undo.
 
-**Revision of 2026-11-16:**
-`beat-fit-v1` is merged, registered and deployed as a selectable ranker; fragments
-ingested before it carry no stored beat frames, and no production backfill has run,
-so it scores only newer fragments. Feedback training is an offline prototype.
-Online fusion still scores five signals; extended
-feedback weights are research-only and refused by that loader. Frozen behavioural
-and retrieval JSON are preserved, with dated protocol errata and corrected
-interpretations. Video recording and demo materials are not part of this revision.
+**Current state.** The live site serves nine selectable rankers with
+`rules-v1` as the default. `beat-fit-v1` is deployed and selectable; fragments
+ingested before it carry no stored beat frames and the production backfill has
+not been run, so it scores only newer fragments. Captured fragments are grouped
+into projects in hybrid mode (the language model decides, shown the fusion
+scores), with the user's own edits as context. Feedback training is an offline
+prototype: online fusion scores five signals, and extended feedback weights are
+research-only and refused by that loader. Frozen behavioural and retrieval JSON
+are preserved, with dated protocol errata and corrected interpretations.
 
 Audio similarity is not the same as musical compatibility: two fragments can
 sound alike and never belong in the same track. The ranker measures particular
 relationships with the session; these scores do not establish musician
 preference. The musician makes the call.
 
-- **Live demo:** [pocketproducer.vercel.app](https://pocketproducer.vercel.app)
-  (needs an Audiotool account; the backend scales to zero, so the first
-  visit after a quiet period takes a minute or two)
+- **Live demo:** a read-only demo account at
+  [pocketproducer.vercel.app/demo](https://pocketproducer.vercel.app/demo),
+  no sign-in needed. Trying suggestions inside your own Audiotool session at
+  [pocketproducer.vercel.app](https://pocketproducer.vercel.app) needs an
+  Audiotool account; the backend scales to zero, so the first request after
+  a quiet period takes a minute or two.
 - **Paper:** *Pocket Producer: Session-Conditioned Retrieval as User-Controlled
   Proposal*, ISMIR 2026 Late-Breaking Demo ([CITATION.cff](CITATION.cff))
 - **Video:** [youtu.be/s56Rp_1M9OE](https://youtu.be/s56Rp_1M9OE)

@@ -8,7 +8,7 @@ This directory stores only metadata, manifests, and fixture IDs. No participant 
 2. Participant data: user IDs are one-way hashed (`participant_hash`). No email, OAuth token, or raw project title is stored.
 3. Public weak-supervision data (e.g. FSLD): per-item license verification required. "Creative Commons" is not treated as a blanket license; only subsets that permit research processing are used.
 4. Time-stretched, pitch-shifted, or duplicate-hash variants of the same audio must not cross train/val/test split boundaries.
-5. Split policy: public weak data by pack (the frozen FSLD split does not group by uploader; 58 of 121 held-out packs share an uploader with the train side, see `artifacts/uploader-overlap-check/`); human study by participant and project; personal feedback by time.
+5. Split policy: public weak data by pack (the frozen FSLD split does not group by uploader; 58 of 121 held-out packs share an uploader with the train side, see `artifacts/uploader-overlap-check/`); personal feedback by time.
 6. `research/fixtures/golden_pairs.jsonl` contains only synthetic, self-owned, or explicitly authorized fixtures.
 
 ## Directory layout

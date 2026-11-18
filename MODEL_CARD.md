@@ -1,6 +1,6 @@
 # Model Card: Pocket Producer Ranking System
 
-## Local submission revision, 2026-11-16
+## Current status
 
 The capacity-ladder descriptions below document earlier research models;
 they do not establish that every model is deployed or preference-validated.
@@ -83,16 +83,16 @@ Revision pinning: every stored vector carries `model_id`, `revision` (sha256 of 
 - Label type: **weak** (same-pack membership as proxy for continuation utility)
 - Per-item licenses classified from metadata, counted over the full 9,493-item manifest (`DATA_CREDITS.md`), not over the 2,558 annotated items or the pack-only training subset: cc-by 4,827 / cc0 3,230 / cc-by-nc 1,215 / sampling-plus 221. The pack-only train split that the served fusion weights were fitted on (1,389 loops) is cc-by 635 / cc0 547 / cc-by-nc 129 / sampling-plus 78 (`DATA_CREDITS.md`).
 
-### Human labels (history; none in the current results)
+### Human labels
 
-A blind A/B annotation interface (dev builds only) and a pairwise annotation protocol were built early on, with a planned rule that a learned model would need to beat the cosine baseline on human pairwise accuracy before deployment. An early small signal-alignment analysis was later withdrawn because its raw vote matrix is no longer available, and the author then decided not to run human studies, so that rule no longer applies. A single-rater listening protocol (`research/prereg_human_v1.md`) was committed to the repository but not run.
+No human evaluation is part of the results: every reported result uses proxy labels (pack co-membership) or controlled perturbations.
 
 The only check now wired into code is narrower: when fusion weights are refit from logged feedback, the new weights must pass the behavioural guardrail (`research/compat_tests/guardrail.py`), or `research/finetune_from_feedback.py` writes no weights. It covers that one flow only, not other models or deployment paths, and it does not stand in for human preference data.
 
 ## Evaluation
 
 - **Metric**: pairwise accuracy (fraction of pairs where the model ranks the preferred candidate higher). All results below use weak labels; no human pairwise labels are in them.
-- **Grouping**: the harness can group by participant so one prolific annotator would not dominate; this is unused while there are no human labels
+- **Grouping**: the harness can group pairs by hashed participant so one person's labels would not dominate; it serves logged feedback, and no reported result uses it
 - **Label-type enforcement**: code raises `ValueError` if labels are not `pairwise`
 - **Honest skips**: models that cannot score an example (missing embeddings, no session context) skip it; skips are counted, not zeroed
 
@@ -104,7 +104,7 @@ The only check now wired into code is narrower: when fusion weights are refit fr
 | `deepsets-v1` | 0.720 | 1,236 | 519 |
 | `pocketrank-context-v1` | 0.743 | 1,236 | 519 |
 
-**Key finding**: the two-parameter cosine-plus-bias baseline beats both learned models on weak labels. The benchmark predominantly rewards embedding proximity, so it cannot establish validity for continuation utility. A single-rater listening protocol was designed (`research/prereg_human_v1.md`) and, by the author's choice, not run, so whether learned capacity helps on the real task remains open.
+**Key finding**: the two-parameter cosine-plus-bias baseline beats both learned models on weak labels. The benchmark predominantly rewards embedding proximity, so it cannot establish validity for continuation utility. No human evaluation is part of these results, so whether learned capacity helps on the real task remains open.
 
 ## Grouping use (behind a flag)
 
@@ -151,4 +151,4 @@ Session-conditioned fragment retrieval during live music production in Audiotool
 
 ## Contact
 
-Chuling Li — chuling.li.cs@gmail.com
+Chuling Li, chuling.li.cs@gmail.com

@@ -2,14 +2,13 @@
 
 What Pocket Producer's evaluation pipeline verifies, what it does not, and what we know about the gap.
 
-Revision of 2026-11-16.
-New regressions cover fail-closed cache integrity, named feedback vectors and
-availability, research-only extended weights, artifact-to-loader scoring,
+Regression tests cover fail-closed cache integrity, named feedback vectors
+and availability, research-only extended weights, artifact-to-loader scoring,
 beat-fit ties and negative correlation, corrupt-record isolation and bounded
 finite beat inputs. Function-level agreement with frozen research signals
-does not validate real DAW rendering with offsets/loops/effects; no live DAW
-test, deployment or production backfill is claimed. Video recording and demo
-materials are not part of this revision.
+does not validate real DAW rendering with offsets, loops or effects; no
+automated live-DAW test exists, and the production beat-frame backfill has
+not been run.
 
 ## Ranking pipeline
 

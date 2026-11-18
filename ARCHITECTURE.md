@@ -153,14 +153,6 @@ downloaded through `samples.download()` and posted to the ordinary
 backend surface: tagging and CLAP encoding reuse the standard pipeline, so
 old projects become rankable material for new sessions.
 
-### Blind pairwise annotation (research only)
-
-`/annotate` (dev builds only; the route returns 404 in production) serves
-pairs from `annotation_pairs` through `GET /api/ranking/pairs/next` and
-records choices (`left`, `right`, `neither`), a closed set of reason codes,
-and a 1–5 confidence in `annotation_labels`. Model identities are hidden
-from the rater and the label is stored with `models_hidden: true`.
-
 ### Rate limits and quota
 
 Via slowapi, keyed on the signed-in user (a hash of the bearer token) and
@@ -803,7 +795,6 @@ The frontend runs separately with `pnpm dev`.
 | `/projects` | Project list sorted by Rescue Score |
 | `/projects/[id]` | Project detail with member fragments |
 | `/dna` | Creative DNA: emotion radar, theme bar, hourly heatmap |
-| `/annotate` | Blind pairwise annotation for the research protocol (dev builds only) |
 | `/figure` | Fixture page used to render the paper's UI figure (dev builds only) |
 | `/login` | Firebase Google sign-in |
 | `/privacy` | Privacy notice |
@@ -823,7 +814,6 @@ The frontend runs separately with `pnpm dev`.
 - `AudiotoolImporter`: one-click import of an open project's samples
 - `audiotool/ConnectionPanel`, `SessionSummary`, `ContinuationPanel`,
   `CandidateCard`: the suggest → preview → insert → undo loop
-- `annotate/AnnotatePanel`: blind A/B rater interface
 - `TopNav`: responsive navigation
 - `ServiceWorkerRegister`: PWA service worker setup
 

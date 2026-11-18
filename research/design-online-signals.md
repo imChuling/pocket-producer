@@ -1,7 +1,7 @@
 # Design: beat-synchronous signals online
 
 Status: implemented (`backend/ranking/beat_sync.py`,
-`backend/ranking/beat_fit_ranker.py`). Not deployed yet; `beat-fit-v1` is
+`backend/ranking/beat_fit_ranker.py`) and deployed. `beat-fit-v1` is
 user-selectable and not the default, and `fusion-5sig-v1` scores exactly as
 before.
 
@@ -113,16 +113,16 @@ tempo the helper returns no grid; malformed API input is rejected.
   `candidate_signal_available`. Training aligns by names, not vector length,
   and refuses ambiguous extended legacy rows or unavailable trained signals.
 
-## Capability and rollout boundary (2026-11-16)
+## Capability and rollout boundary
 
 | Capability | State |
 |---|---|
-| Five-signal fusion and reversible DAW insert | Existing implementation; live revision not re-verified on 2026-11-16 |
-| Beat-fit, frame ingest, bounded grid, availability/evidence fixes | Local implementation and tests; not deployed |
+| Five-signal fusion and reversible DAW insert | Deployed; fusion is selectable, `rules-v1` is the default |
+| Beat-fit, frame ingest, bounded grid, availability/evidence fixes | Deployed; `beat-fit-v1` is selectable |
 | Existing-fragment frame backfill | Script exists; not run on production |
 | Five-signal feedback training | Offline research workflow, tested artifact-to-loader-to-score; not automatic online learning |
 | Seven-signal feedback training | Research only; artifact marked nondeployable, distinct identity; online five-signal loader refuses it |
-| Demo / cost changes | Five commits from `cost-guard` integrated locally; deployment not performed |
+| Demo / cost changes | Deployed: read-only demo account, daily LLM quota, scale to zero |
 
 The behavioural guardrail first validates nonempty unique pairs, applicable
 perturbations, finite scores, at least two tracks and usable P1–P5/gain.

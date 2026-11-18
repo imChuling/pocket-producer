@@ -1,7 +1,7 @@
-# Reproduce the submission revision
+# Reproduce the results
 
-This describes a local source revision; it is not a statement of what is
-deployed. Video recording and demo materials are not part of it.
+This describes how to reproduce the reported results from the source tree.
+What is deployed is described in the README.
 
 ## Local regression checks
 
