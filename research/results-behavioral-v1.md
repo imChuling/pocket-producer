@@ -1,22 +1,23 @@
 # Behavioural Tests of Compatibility Scorers: Results (protocol v1)
 
-Protocol: `research/protocol-behavioral-v1.md`, frozen at commit 460f7e9.
-Dated corrections: see the append-only 2026-11-16 erratum in the protocol.
-The local Git freeze is not independent evidence that no earlier runs occurred.
+Protocol: `research/protocol-behavioral-v1.md`, frozen at commit 460f7e9;
+its dated erratum (2026-11-16) is appended at the end. The freeze is a local
+Git commit, so it shows the order of work in this repository but cannot
+prove that no exploratory runs happened before it.
 
 Evaluation set: MUSDB18-HQ, 594 pairs from 149 tracks (6 of the 600
-track-stem pairs had no window that met the rule). The reported formal
-feature/report artifacts use the scoring code as frozen; the local history
-does not establish the absence of unrecorded exploratory runs.
+track-stem pairs had no window that met the rule). The reported features and
+report were produced with the scoring code as frozen.
 
 Report: `artifacts/compat-behavioral-musdb18/report.json`. Figures:
 `artifacts/compat-behavioral-musdb18/figures/`.
 
 A cell **passes** when its 95% interval lies above 0.5, is **inverted** when
-it lies below, and is **inconclusive** otherwise (`blind` in the frozen JSON). This is
-not an equivalence or invariance test. Intervals are pointwise, with no
-multiple-comparison correction; “Held” below describes the prespecified
-cell criteria, not simultaneous confirmation of every hypothesis.
+it lies below, and is **inconclusive** otherwise (`blind` in the frozen JSON).
+An inconclusive cell does not show that a scorer ignores the change; this is
+not an equivalence test. Intervals are pointwise, with no correction for
+multiple comparisons, so “Held” below means a cell met its prespecified
+criterion, not that all hypotheses were confirmed together.
 
 ## Primary endpoints
 
@@ -66,16 +67,17 @@ gain change here (0.52 [0.47, 0.56]), unlike on the development set.
 1. **Similarity misses the mixed-role target relation.** In this P1 task,
    the CLAP cosine and deployed-fusion intervals do not support preferring
    the known same-recording target to a target from another song; MS-CLAP
-   max pooling is inverted (0.35). High cosine is not a reliable identifier
-   of that target relation in this mixed-role pool. This does not establish
-   that all perceptual similarity is irrelevant to musical fit.
+   max pooling is inverted (0.35). In this mixed-role pool a high cosine does
+   not pick out the true target. That does not mean similarity never matters
+   for fit; it means it did not find this relation.
 2. **Sensitivity depends on the processing comparison.** Against the
    original, embedding scorers prefer it to tempo-altered copies at rates
    of 0.55 to 0.67; using the round-trip reference reduces those rates to
-   0.21 to 0.38. This is consistent with processing confounding, rather than
-   proof that processing explains the whole effect: the control has two
-   passes, the altered copy one, and magnitudes are not matched. With that
-   control, `cocola`, `tempo` and `onset_pattern` give 0.76, 0.62 and 0.89.
+   0.21 to 0.38. So part of what looked like tempo sensitivity is probably a
+   reaction to the processing itself, although this cannot say how much: the
+   control is processed twice and the altered copy once, so the two are not
+   matched. With that control, `cocola`, `tempo` and `onset_pattern` give
+   0.76, 0.62 and 0.89.
 3. **Order of the harmony.** `chroma_as_is` and `chroma_beat_aligned` are
    level on transposition (0.84 each). With a four-beat delay, only the beat-aligned
    version passes (0.74 against 0.45). The fixed window gains earlier audio
@@ -85,13 +87,14 @@ gain change here (0.52 [0.47, 0.56]), unlike on the development set.
    different training-free signal for each primary endpoint gives point
    estimates at or above `cocola`: P1 0.89
    (`onset_pattern`) against 0.83, P2 0.84 against 0.62, P3 0.90 against
-   0.88, P4 0.74 against 0.69, P5 0.91 against 0.65. No single classical
-   signal passes all five; `cocola` does. This best-per-endpoint comparison
-   is not evidence that one fixed classical method outperforms COCOLA;
-   paired method differences would be needed. The actual `COCOLA_HP_v1`
-   lists MoisesDB, Slakh2100 and CocoChorales as training data. The old
-   MUSDB18-HQ training claim is corrected in the protocol erratum; we have
-   not independently reconstructed the training files to exclude overlap.
+   0.88, P4 0.74 against 0.69, P5 0.91 against 0.65. But no single classical
+   signal passes all five, and `cocola` does. Picking the best signal for
+   each endpoint flatters the classical side, so this does not show that any
+   one classical method beats COCOLA; that would need paired differences
+   between fixed methods. `COCOLA_HP_v1` was trained on MoisesDB, Slakh2100
+   and CocoChorales (an earlier claim that it used MUSDB18-HQ is corrected in
+   the protocol erratum), and its training files were not checked for
+   overlap with this set.
 5. **The deployed fusion** passes one endpoint, tape-speed change (0.66),
    and it does so through its tempo term.
 
@@ -100,9 +103,9 @@ gain change here (0.52 [0.47, 0.56]), unlike on the development set.
 - **Gain.** `fusion5_online` shows directional level sensitivity: the copy 6 dB
   quieter outscores the original in 71% of pairs (0.29 [0.26, 0.32]).
   `clap_cos_mix` leans the other way (0.57 [0.53, 0.61]). `cocola` has a win rate
-  near 0.50, which alone does not prove invariance: opposite signed changes
-  can cancel. Absolute score changes, ties and a prespecified equivalence
-  margin would also be needed.
+  near 0.50, but that alone does not mean it ignores level, since changes in
+  opposite directions can cancel out. Showing that would take absolute score
+  changes, ties and an equivalence margin fixed in advance.
 - **Naming the change.** `progression_search` was meant to report the
   transposition or delay that would make a candidate fit. On real
   recordings it names the applied transposition in about half of the pairs
@@ -119,12 +122,13 @@ Scorers that cannot see alignment are not at 0.5 on the delay tests; several
 sit at 0.40 to 0.45, preferring the delayed copy. The window rule picks the
 earliest start at which the target is most active, so the audio just before
 the window, which a delayed copy brings in, is on average slightly less
-active. Together with the gain result this suggests a possible level confound.
-It does not establish the direction or size of bias for each scorer, so P4
-and P5 passes cannot be claimed to be understated. Inverted cells describe
-the measured comparison, not an inferred preference for musical delay.
-A symmetric advance/delay design with content and boundary controls could
-investigate this; it is not part of v1.
+active. Together with the gain result this points to a possible level
+effect. The direction and size of that bias for each scorer are unknown, so
+it is not safe to say the P4 and P5 passes are understated. An inverted cell
+reports the comparison as measured; it does not mean a scorer prefers music
+that comes in late. Testing this properly would need a symmetric
+advance-and-delay design with controls for content and window boundaries,
+which v1 does not have.
 
 ## Limits
 
@@ -132,7 +136,8 @@ As in the protocol: same-recording stems are one known-good pairing among
 possibly many; windows come from full songs; tempo, key and grid are
 estimates; results describe scorers, not what musicians prefer.
 
-The strongest signals here test particular perturbations and synchrony.
-They are not a general compatibility metric or a musician preference study.
-Classic chroma/transposition matching predates this system; the contribution
-is the system, evaluation design and product decisions drawn from failures.
+The strongest signals here respond to particular edits and to timing. They
+are not a general measure of compatibility, and nothing here asks musicians
+what they prefer. Chroma and transposition matching are long-established;
+what this work adds is the system, the evaluation design and the product
+decisions drawn from where scorers failed.

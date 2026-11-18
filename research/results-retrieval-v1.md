@@ -1,11 +1,11 @@
 # Retrieval on the Behavioural-Test Store: Results (protocol v1)
 
 Protocol: `research/protocol-retrieval-v1.md`, frozen at commit 24d511e.
-The 2026-11-16 append-only protocol deviations correct pool terminology,
-combination chronology and checkpoint provenance. The Git sequence records
-a local freeze before results, not independently timestamped preregistration.
-MUSDB18-HQ, 594 queries from 149 tracks in the recorded formal run with
-the scoring code as frozen.
+Its dated deviations (2026-11-16) correct how the tempo pool is described,
+when the combinations were defined, and which data the COCOLA checkpoint was
+trained on. The freeze is a local Git commit made before the results, not a
+timestamped preregistration. MUSDB18-HQ, 594 queries from 149 tracks, scored
+with the code as frozen.
 Report: `artifacts/compat-retrieval-musdb18/report.json`.
 
 ## Primary endpoints: `same_role` pool
@@ -77,50 +77,50 @@ every scorer's easiest role.
 
 1. **Similarity is more useful here within a stem type.** Among candidates
    of any type the embedding/fusion Recall@1 point estimates range from
-   0.005 to 0.024 against chance 0.02; `clap_cos_mean` is 0.0236, so they
-   are not all at or below chance. These point estimates alone do not
-   establish a significant chance comparison. In these mixed-role pools,
-   other-song instruments frequently rank above the true target. Among
-   candidates of the target's own type they are five to ten times chance
-   (0.10 to 0.19). The earlier finding that similarity does not prefer the
-   true stem is a statement about mixed-type candidates; within a type,
-   similarity does carry information about the recording.
+   0.005 to 0.024 against chance 0.02 (`clap_cos_mean` is 0.0236, slightly
+   above), and these point estimates cannot tell them apart from chance. In
+   these mixed-role pools, instruments from other songs often rank above the
+   true target. Among candidates of the target's own type they are five to
+   ten times chance (0.10 to 0.19). So the earlier finding, that similarity
+   does not prefer the true stem, holds for mixed types; within one type,
+   similarity does tell recordings apart.
 2. **`classic_grid` did not show a clear advantage over fusion** in
    the primary pool (R1). It did in the other two pools (+0.197 and
    +0.248). Added to the fusion it helped in all three. The fusion-plus-
    classical combinations were defined after the behavioural report and
-   before retrieval scoring; the original protocol table conflicts on that
-   chronology. They are not independent confirmation on unseen recordings.
+   before retrieval scoring (the original protocol table gets that order
+   wrong; see its deviations), so they are not a confirmation on unseen
+   recordings.
 3. **`onset_pattern` is the strongest single scorer** in every pool (0.52
-   to 0.62), about twice `cocola` (0.25 to 0.31). It entered the
-   combinations after the behavioural report on these recordings, so this
-   is an observation to be confirmed on other data, not a tested claim.
+   to 0.62), about twice `cocola` (0.25 to 0.31). It was added to the
+   combinations after the behavioural report on these same recordings, so
+   this is an observation to check on other data rather than a tested claim.
 
 The two-signal `classic_onset` combination has not shown incremental
 retrieval benefit over `onset_pattern` alone. Recall@1 is 0.5034 versus
 0.5202 (`any_role`), 0.5269 versus 0.5320 (`same_role`) and 0.5706 versus
-0.6165 (`tempo_matched`). No paired interval was computed for this contrast,
-so these are descriptive point estimates, not a significant disadvantage.
-Using chroma plus onset in the local product is a design choice to consider
-harmony as well as rhythm, with its incremental value still unvalidated.
+0.6165 (`tempo_matched`). No paired interval was computed for this
+difference, so these are point estimates, not evidence that adding chroma
+hurts. The product still shows chroma next to onset so that harmony is
+visible as well as rhythm; whether that helps musicians has not been tested.
 
 ## Limits
 
 As in the protocol: 10 s windows and small pools, not comparable with
-published whole-track figures; one known-good target per query, with other candidates potentially useful
-but not preference-labelled. This prevents a direct translation of Recall@1
-into musical utility; it does not establish a universally conservative bias.
-The actual `COCOLA_HP_v1` lists MoisesDB, Slakh2100 and CocoChorales, not
-MUSDB18-HQ, as its training sets (see protocol erratum); actual training-file
-overlap was not independently reconstructed.
+published whole-track figures. Each query has one known-good target, and
+other candidates may be just as usable but carry no preference labels, so
+Recall@1 cannot be read directly as musical usefulness, and it is not clear
+that it always errs on the low side. `COCOLA_HP_v1` was trained on MoisesDB,
+Slakh2100 and CocoChorales, not MUSDB18-HQ (see the protocol erratum), and
+its training files were not checked for overlap.
 
 Candidates are scored as they are. A distractor keeps its own tempo and
 starts wherever its window falls in the bar, while the true stem is in time
 with its context, which favours the rhythm scorers and, to a lesser degree,
-`cocola`. Pooling their features on the query grid is already done; it does not
-perform tempo, phase, key or phrase alignment. Symmetric adaptation of all
-candidates, and evaluation on independent recordings, remain future work.
-These **as-is layering retrieval** results do not establish listener
-preference or usefulness after stretching/transposition. Intervals are
-pointwise without multiple-comparison control; “Held” describes each
-listed criterion under that limitation.
+`cocola`. Their features are pooled on the query grid, but nothing aligns
+their tempo, phase, key or phrase. Adapting every candidate the same way,
+and testing on independent recordings, are left for future work. These are
+**as-is layering** results: they say nothing about what listeners prefer or
+how useful a candidate would be after stretching or transposing it.
+Intervals are pointwise with no correction for multiple comparisons, and
+“Held” means each listed criterion was met on that basis.
