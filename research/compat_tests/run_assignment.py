@@ -84,7 +84,9 @@ def _embedders(cache: dict, pair_ids: list[str]) -> tuple[signals.Embedders | No
         return None, "no stored COCOLA embeddings in this store"
     embedders = signals.Embedders(("cocola",))
     try:
-        embedders._get("cocola")
+        # The scorer loads its checkpoint lazily; load it now so a missing
+        # checkpoint skips the comparison here instead of failing mid-run.
+        embedders._get("cocola")._load()
     except Exception as exc:  # checkpoint or optional packages missing
         return None, f"COCOLA checkpoint did not load: {type(exc).__name__}: {exc}"
     return embedders, "scored"

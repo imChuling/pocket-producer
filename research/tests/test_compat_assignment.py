@@ -142,3 +142,24 @@ def test_relation_labels():
     assert run_assignment.relation(cache, "t00:bass", "t00:other") == "other_type_same_song"
     assert run_assignment.relation(cache, "t00:bass", "t03:bass") == "same_type_other_song"
     assert run_assignment.relation(cache, "t00:bass", "t03:other") == "other_type_other_song"
+
+
+def test_cocola_is_skipped_cleanly_when_its_checkpoint_cannot_load(monkeypatch):
+    from research.compat_tests import cocola_scorer
+
+    class MissingCheckpoint:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def _load(self):
+            raise FileNotFoundError("COCOLA_HP_v1.ckpt")
+
+    monkeypatch.setattr(cocola_scorer, "CocolaScorer", MissingCheckpoint)
+    cache = _store()
+    for entry in cache.values():
+        for features in (entry["original"], entry["context_mix"]):
+            features.embeddings["cocola"] = np.ones(4, dtype=np.float32)
+    report = run_assignment.analyse(cache)
+    assert report["cocola"].startswith("COCOLA checkpoint did not load")
+    assert "cocola" not in report["pools"]["same_role"]
+    assert report["pools"]["same_role"]["classic_onset"]["recall@1"]["value"] == 1.0

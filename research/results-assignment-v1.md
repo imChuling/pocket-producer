@@ -3,7 +3,9 @@
 Protocol: `research/protocol-assignment-v1.md`, frozen at commit 0f3da8c
 before the script was written and before any score was computed. Script:
 `research/compat_tests/run_assignment.py` (commit 3fb0282), run once on
-2026-11-17 without changes. Report:
+2026-11-17 without changes (a later fix, 2026-11-18, makes its COCOLA preflight
+load the checkpoint so a missing one is skipped cleanly; the recorded run had
+the checkpoint, so no number changes). Report:
 `artifacts/compat-assignment-musdb18/report.json`.
 
 MUSDB18-HQ, 594 query stems from 149 tracks. Each stem is scored against a
@@ -91,7 +93,7 @@ what happens in `same_role`.
 | `fusion_plus_classic_onset` | 0.723 | 0.564 | 0.792 | 0.338 |
 | `cocola` | 0.446 | 0.429 | 0.523 | 0.311 |
 
-Every scorer is weakest on vocals.
+Five of the six scorers are weakest on vocals; `clap_cos_mean` is weakest on bass (0.115), with vocals next (0.122).
 
 ## Reading
 
