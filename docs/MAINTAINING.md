@@ -97,8 +97,10 @@ read its name and docstring before editing it.
   `cd backend && .venv/bin/python -m scripts.export_demo_snapshot`.
 - The demo account is off by default: its entry links are hidden and
   `/demo` returns 404 unless the frontend is built with
-  `NEXT_PUBLIC_DEMO_ENABLED=1` (`frontend/src/lib/demo-flag.ts`). Set it in
-  Vercel and redeploy to turn it back on.
+  `NEXT_PUBLIC_DEMO_ENABLED=1` (`frontend/src/lib/demo-flag.ts`), and the
+  `/api/demo/*` routes answer 404 unless the backend runs with
+  `POCKET_DEMO_ENABLED=1` (`backend/deploy/cloudrun.env.yaml`). Set both and
+  redeploy to turn it back on.
 - Frontend: deploy by hand with `vercel --prod` from `frontend/` (the Vercel
   project is `pocketproducer`). Nothing deploys on push: the GitHub
   integration is not connected, so a green CI run on `main` says nothing

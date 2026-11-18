@@ -3,17 +3,27 @@
 The list views are also exported as static files by
 `scripts/export_demo_snapshot.py`, so the demo pages render without waking
 the backend; only audio playback reaches these routes in normal use.
+
+Off unless POCKET_DEMO_ENABLED=1: every route then answers 404. The
+payload functions below stay usable by the export script either way.
 """
 
 import asyncio
+import os
 from collections import Counter
 
-from fastapi import APIRouter, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 
 from ..deps import get_db, limiter, parse_object_id
 from .fragments import gcs_audio_response
 
-router = APIRouter(prefix="/api/demo", tags=["demo"])
+
+def demo_enabled() -> None:
+    if os.environ.get("POCKET_DEMO_ENABLED", "0").strip() != "1":
+        raise HTTPException(status_code=404, detail="Not found")
+
+
+router = APIRouter(prefix="/api/demo", tags=["demo"], dependencies=[Depends(demo_enabled)])
 
 DEMO_USER_ID = "demo-seed-user"
 MAX_FRAGMENTS = 100

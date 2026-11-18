@@ -91,6 +91,11 @@ def db():
     return StubDB()
 
 
+@pytest.fixture(autouse=True)
+def _demo_on(monkeypatch):
+    monkeypatch.setenv("POCKET_DEMO_ENABLED", "1")
+
+
 @pytest.fixture()
 def client(db):
     import api.deps
@@ -358,3 +363,15 @@ def test_fragment_list_keeps_vectors_server_side(owner_client, db):
 @pytest.mark.parametrize("limit", [0, 201])
 def test_fragment_list_limit_is_bounded(owner_client, limit):
     assert owner_client.get(f"/api/fragments?limit={limit}").status_code == 422
+
+
+def test_demo_routes_are_off_unless_enabled(client, db, monkeypatch):
+    fragment = add_fragment(db)
+    monkeypatch.setenv("POCKET_DEMO_ENABLED", "0")
+    for path in (
+        "/api/demo/fragments",
+        f"/api/demo/fragments/{fragment['_id']}/audio",
+        "/api/demo/projects",
+        "/api/demo/dna",
+    ):
+        assert client.get(path).status_code == 404
