@@ -9,6 +9,17 @@ Audiotool project you are working on, ranks your own audio fragments by how
 well they could fit that piece of music, shows the evidence behind each
 suggestion, and lets you preview, insert, and undo.
 
+Three ways in:
+
+1. **Browse the read-only demo**, no sign-in needed:
+   [pocketproducer.vercel.app/demo](https://pocketproducer.vercel.app/demo).
+   It shows a preset library and how its fragments were grouped into
+   projects; ranking inside a live DAW session is what the video shows.
+2. **Watch the video** of preview, insert and undo in the DAW:
+   [youtu.be/s56Rp_1M9OE](https://youtu.be/s56Rp_1M9OE).
+3. **Read the reproduction guide**:
+   [docs/portfolio/REPRODUCE.md](docs/portfolio/REPRODUCE.md).
+
 **Current state.** The live site serves nine selectable rankers with
 `rules-v1` as the default. `beat-fit-v1` is deployed and selectable; fragments
 ingested before it carry no stored beat frames and the production backfill has
@@ -24,17 +35,17 @@ sound alike and never belong in the same track. The ranker measures particular
 relationships with the session; these scores do not establish musician
 preference. The musician makes the call.
 
-- **Live demo:** a read-only demo account at
-  [pocketproducer.vercel.app/demo](https://pocketproducer.vercel.app/demo),
-  no sign-in needed. Trying suggestions inside your own Audiotool session at
+- **Live session:** trying suggestions inside your own Audiotool project at
   [pocketproducer.vercel.app](https://pocketproducer.vercel.app) needs an
   Audiotool account; the backend scales to zero, so the first request after
   a quiet period takes a minute or two.
 - **Paper:** *Pocket Producer: Session-Conditioned Retrieval as User-Controlled
   Proposal*, ISMIR 2026 Late-Breaking Demo ([CITATION.cff](CITATION.cff))
-- **Video:** [youtu.be/s56Rp_1M9OE](https://youtu.be/s56Rp_1M9OE)
 
 ![System overview](docs/system-figure.png)
+
+*The figure shows the rankers of the ISMIR demo, rules and fusion; Beat Fit
+was added afterwards.*
 
 ## How it works
 
@@ -71,6 +82,23 @@ preference. The musician makes the call.
    titles replaced, suggestions completed or skipped) when it writes tags,
    titles, suggestions and grouping decisions. This conditions the prompt;
    no weights are trained or changed.
+
+## Where to read the code
+
+- [`backend/ranking/beat_sync.py`](backend/ranking/beat_sync.py),
+  `session_beats` and `candidate_measurements`: placing the session and a
+  candidate on one beat grid.
+- [`backend/ranking/beat_fit_ranker.py`](backend/ranking/beat_fit_ranker.py),
+  `BeatFitRanker.rank`: from raw measurements to a ranking and the evidence
+  shown with it.
+- [`frontend/src/lib/audiotool/insert-fragment.ts`](frontend/src/lib/audiotool/insert-fragment.ts),
+  `insertFragment` and `undoInsert`: inserting a sample in one transaction and
+  undoing exactly what it created.
+
+Adopted, not built here: MS-CLAP embeddings, chroma and onset analysis
+(librosa) and the Audiotool Nexus SDK. Designed here: connecting them to the
+arrangement context of an open session, the evidence display, and the
+reversible edit.
 
 Details: [ARCHITECTURE.md](ARCHITECTURE.md), [MODEL_CARD.md](MODEL_CARD.md),
 [VERIFICATION.md](VERIFICATION.md). The Nexus SDK patch shipped in
