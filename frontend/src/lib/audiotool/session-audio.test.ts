@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { describeSessionAudio, extractSessionAudio } from "./session-audio";
+import { describeSessionAudio, extractSessionAudio, needsSessionAudio } from "./session-audio";
 import type { NexusDocumentPort } from "@/types/audiotool";
 
 function fakeDocument(
@@ -350,5 +350,26 @@ describe("extractSessionAudio", () => {
     expect(form.get("placements")).toBeNull();
     expect(result.sessionBeats).toBeNull();
     vi.unstubAllGlobals();
+  });
+});
+
+describe("needsSessionAudio", () => {
+  it("sends no session audio for rankers that do not read it", () => {
+    for (const id of ["rules-v1", "recency-v1", "text-only-v1", "audio-cosine-v1"]) {
+      expect(needsSessionAudio(id)).toBe(false);
+    }
+  });
+
+  it("sends session audio for rankers that compare against it, and for unknown ids", () => {
+    for (const id of [
+      "fusion-5sig-v1",
+      "beat-fit-v1",
+      "harmonic-fit-v1",
+      "mean-session-v1",
+      "role-gap-v1",
+      "some-future-ranker",
+    ]) {
+      expect(needsSessionAudio(id)).toBe(true);
+    }
   });
 });

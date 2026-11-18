@@ -54,8 +54,9 @@ export default function PrivacyPage() {
             <p>
               When you ask for suggestions inside an Audiotool session, the project itself stays in
               your browser. Its tempo, track types and any intent you type are sent to rank your
-              fragments, and for audio-based ranking up to eight samples used in the session are sent
-              to the server for feature extraction; the app does not save them.
+              fragments. If the ranker you choose compares candidates with the sound of the session
+              (the default ranker does not), up to eight samples used in the session are also sent to
+              the server for feature extraction; the app does not save them.
             </p>
             <p>
               Your creative content is never used to train AI models. It is processed solely to provide

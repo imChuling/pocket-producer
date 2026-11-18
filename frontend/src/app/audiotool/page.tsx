@@ -22,6 +22,7 @@ import { importProjectAsFragments } from "@/lib/audiotool/import-project";
 import {
   describeSessionAudio,
   extractSessionAudio,
+  needsSessionAudio,
   type SessionAudioCache,
 } from "@/lib/audiotool/session-audio";
 import { fingerprintFromDocument } from "@/lib/audiotool/session-fingerprint";
@@ -446,7 +447,10 @@ export default function AudiotoolPage() {
               fresh.parsed_intent = parsedIntent;
               const doc = audiotool.document();
               const samplesApi = audiotool.samples();
-              if (doc && samplesApi) {
+              if (!needsSessionAudio(modelId)) {
+                // This ranker does not use session audio: nothing is sent.
+                setSessionAudioNote(null);
+              } else if (doc && samplesApi) {
                 try {
                   const token = await getIdToken();
                   if (!token) throw new Error("not authenticated");

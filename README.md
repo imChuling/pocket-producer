@@ -51,8 +51,9 @@ was added afterwards.*
 
 1. **Session fingerprint.** Through the Audiotool Nexus SDK the app reads the
    open project: tempo, track roles, up to eight unique samples on the
-   timeline, and an optional sentence of intent. Session audio is embedded
-   with MS-CLAP on the server (CPU).
+   timeline, and an optional sentence of intent. When the selected ranker
+   uses session audio, those samples are embedded with MS-CLAP on the
+   server (CPU); the default `rules-v1` does not need them, so none are sent.
 2. **Rankers.** Nine are registered and selectable in the panel
    (`rules-v1`, `recency-v1`, `mean-session-v1`, `text-only-v1`, `audio-cosine-v1`, `role-gap-v1`, `harmonic-fit-v1`, `beat-fit-v1` and `fusion-5sig-v1`); two matter
    most. The default `rules-v1` scores seven non-audio signals

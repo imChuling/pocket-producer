@@ -67,6 +67,23 @@ const EMPTY: SessionAudioResult = {
 const MAX_SAMPLES = 8;
 
 /**
+ * Rankers that never read the session's audio, chroma or beat grid. For
+ * these, no session sample is downloaded or sent to the backend. Any other
+ * id (including ones added later) gets session audio, so a new audio ranker
+ * is not silently starved.
+ */
+const RANKERS_WITHOUT_SESSION_AUDIO = new Set([
+  "rules-v1",
+  "recency-v1",
+  "text-only-v1",
+  "audio-cosine-v1",
+]);
+
+export function needsSessionAudio(modelId: string): boolean {
+  return !RANKERS_WITHOUT_SESSION_AUDIO.has(modelId);
+}
+
+/**
  * Results keyed by the sorted set of sample names they were computed from.
  * A session whose regions did not change re-uses its vectors instead of
  * downloading and re-encoding up to eight samples on every request, which
