@@ -7,7 +7,7 @@ bridges the two.
 
 Usage:
   backend/.venv/bin/python research/convert_human_to_eval.py \
-    --input research/data/human_pairs.jsonl \
+    --input path/to/exported_pairs.jsonl \
     --output research/data/human_eval.jsonl
 """
 
