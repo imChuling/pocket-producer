@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, useScroll, useTransform } from "motion/react";
 import { useAuth } from "@/hooks/use-auth";
 import { signInWithGoogle } from "@/lib/firebase";
+import { DEMO_ENABLED } from "@/lib/demo-flag";
 
 /* ═══════════════════════════════════════════════════════════════════════
    NOISE TEXTURE: film grain for editorial feel
@@ -314,13 +315,15 @@ function LandingPage() {
                 />
                 Begin
               </button>
-              <Link
-                href="/demo"
-                className="group inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-obsidian border border-obsidian/25 rounded-full px-5 py-2.5 bg-white/40 backdrop-blur-sm hover:border-obsidian/60 hover:bg-white/70 transition-colors"
-              >
-                Explore the demo account
-                <span className="transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
-              </Link>
+              {DEMO_ENABLED && (
+                <Link
+                  href="/demo"
+                  className="group inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-obsidian border border-obsidian/25 rounded-full px-5 py-2.5 bg-white/40 backdrop-blur-sm hover:border-obsidian/60 hover:bg-white/70 transition-colors"
+                >
+                  Explore the demo account
+                  <span className="transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
+                </Link>
+              )}
             </motion.div>
           </div>
         </motion.div>
@@ -683,13 +686,15 @@ function LandingPage() {
               style={{ background: "linear-gradient(135deg, rgba(160,181,235,0.2), rgba(255,148,115,0.15), rgba(226,193,97,0.1))" }}
             />
           </motion.button>
-          <Link
-            href="/demo"
-            className="group inline-flex items-center gap-3 font-mono text-[12px] uppercase tracking-[0.2em] text-obsidian px-10 py-5 rounded-full border border-obsidian/25 bg-white/50 backdrop-blur-sm hover:border-obsidian/60 hover:bg-white/80 transition-colors"
-          >
-            Explore the demo account
-            <span className="transition-transform duration-500 group-hover:translate-x-1">&rarr;</span>
-          </Link>
+          {DEMO_ENABLED && (
+            <Link
+              href="/demo"
+              className="group inline-flex items-center gap-3 font-mono text-[12px] uppercase tracking-[0.2em] text-obsidian px-10 py-5 rounded-full border border-obsidian/25 bg-white/50 backdrop-blur-sm hover:border-obsidian/60 hover:bg-white/80 transition-colors"
+            >
+              Explore the demo account
+              <span className="transition-transform duration-500 group-hover:translate-x-1">&rarr;</span>
+            </Link>
+          )}
           </div>
         </Reveal>
       </section>

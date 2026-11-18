@@ -2,10 +2,11 @@
 
 import { useState, useCallback, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { notFound, usePathname } from "next/navigation";
 import { Mic, Layers, Dna, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { DemoToastContext } from "./demo-context";
+import { DEMO_ENABLED } from "@/lib/demo-flag";
 
 const demoNavLinks = [
   { href: "/demo/capture", icon: Mic, label: "Capture" },
@@ -14,6 +15,7 @@ const demoNavLinks = [
 ] as const;
 
 export default function DemoLayout({ children }: { children: ReactNode }) {
+  if (!DEMO_ENABLED) notFound();
   const pathname = usePathname();
   const [toast, setToast] = useState<string | null>(null);
 

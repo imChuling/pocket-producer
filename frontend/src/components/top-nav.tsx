@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useNotifications } from "@/hooks/use-notifications";
 import { signOut, signInWithGoogle } from "@/lib/firebase";
+import { DEMO_ENABLED } from "@/lib/demo-flag";
 import { Mic, Layers, Dna, LogOut, Bell, Sparkles, Check, Cable } from "lucide-react";
 
 // The session flow comes first; "/" redirects signed-in users there, so the
@@ -212,13 +213,15 @@ export function TopNav() {
             </>
           ) : !loading ? (
             <>
-              <Link
-                href="/demo"
-                className="text-sm font-medium text-obsidian px-4 py-2 rounded-full border border-obsidian/20 hover:border-obsidian/50 hover:bg-powder transition-colors btn-press whitespace-nowrap"
-              >
-                <span className="sm:hidden">Demo</span>
-                <span className="hidden sm:inline">Try the demo</span>
-              </Link>
+              {DEMO_ENABLED && (
+                <Link
+                  href="/demo"
+                  className="text-sm font-medium text-obsidian px-4 py-2 rounded-full border border-obsidian/20 hover:border-obsidian/50 hover:bg-powder transition-colors btn-press whitespace-nowrap"
+                >
+                  <span className="sm:hidden">Demo</span>
+                  <span className="hidden sm:inline">Try the demo</span>
+                </Link>
+              )}
               <button
                 onClick={() => signInWithGoogle()}
                 className="btn-gradient text-white px-5 py-2 rounded-full text-sm font-medium hover:opacity-90 transition-opacity btn-press cursor-pointer whitespace-nowrap"

@@ -9,15 +9,11 @@ Audiotool project you are working on, ranks your own audio fragments by how
 well they could fit that piece of music, shows the evidence behind each
 suggestion, and lets you preview, insert, and undo.
 
-Three ways in:
+Two ways in:
 
-1. **Browse the read-only demo**, no sign-in needed:
-   [pocketproducer.vercel.app/demo](https://pocketproducer.vercel.app/demo).
-   It shows a preset library and how its fragments were grouped into
-   projects; ranking inside a live DAW session is what the video shows.
-2. **Watch the video** of preview, insert and undo in the DAW:
+1. **Watch the video** of preview, insert and undo in the DAW:
    [youtu.be/i8HUDhZYcdE](https://youtu.be/i8HUDhZYcdE).
-3. **Read the reproduction guide**:
+2. **Read the reproduction guide**:
    [docs/portfolio/REPRODUCE.md](docs/portfolio/REPRODUCE.md).
 
 **Current state.** The live site serves nine selectable rankers with
