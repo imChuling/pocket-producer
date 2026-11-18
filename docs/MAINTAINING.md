@@ -46,7 +46,9 @@ read its name and docstring before editing it.
   tag overlap, recency) and is the default. The offline stand-in used in the
   paper is three of them (tempo, key, tag overlap) with frozen ratios.
 - `fusion-5sig-v1` is user-selectable, not default. Its five signals are
-  mean CLAP cosine, max CLAP cosine, tempo, key (always 0 online), tag Jaccard.
+  mean CLAP cosine, max CLAP cosine, tempo, key, tag Jaccard. Audiotool
+  supplies no key, so the session key is null and the key term scores 0
+  unless the typed intent states a key.
 - `harmonic-fit-v1` is wired online: chroma is computed in `/session-embed`
   and at ingest (`representations.chroma`). It takes the best of 12
   transpositions, so it measures whether a candidate could fit after

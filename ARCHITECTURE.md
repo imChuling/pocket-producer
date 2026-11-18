@@ -44,7 +44,9 @@ in this layer is the optional intent parser, and it runs off the rank path.
    from audio; it is set only when the typed intent states a key.
    Nexus 0.0.17 exposes no playhead either, so `playhead_seconds` is always
    0 and inserts land at the start of the timeline.
-   Only this fingerprint leaves the browser, never the project.
+   The project document itself stays in the browser. This fingerprint is
+   sent for ranking, and for audio-based ranking the session's samples go
+   to the backend too (step 2).
 2. **Session audio** (optional, `session-audio.ts`). Up to 8 unique samples
    referenced by audio regions are downloaded through `samples.download()`
    and posted to `POST /api/ranking/session-embed`, which encodes them with
