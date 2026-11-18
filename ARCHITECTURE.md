@@ -45,9 +45,11 @@ in this layer is the optional intent parser, and it runs off the rank path.
    Nexus 0.0.17 exposes no playhead either, so `playhead_seconds` is always
    0 and inserts land at the start of the timeline.
    The project document itself stays in the browser. This fingerprint is
-   sent for ranking, and for audio-based ranking the session's samples go
-   to the backend too (step 2).
-2. **Session audio** (optional, `session-audio.ts`). Up to 8 unique samples
+   sent for ranking, and for rankers that use session audio the session's
+   samples go to the backend too (step 2).
+2. **Session audio** (optional, `session-audio.ts`). Skipped for the rankers
+   that never read it (`rules-v1`, `recency-v1`, `text-only-v1`,
+   `audio-cosine-v1`; `needsSessionAudio`). Otherwise up to 8 unique samples
    referenced by audio regions are downloaded through `samples.download()`
    and posted to `POST /api/ranking/session-embed`, which encodes them with
    MS-CLAP and returns one vector per sample. These become
@@ -161,7 +163,7 @@ Via slowapi, keyed on the signed-in user (a hash of the bearer token) and
 only on the forwarded client IP for anonymous requests, so a shared NAT
 address does not pool everyone's allowance: `/model-card` 30/min, `/rank`
 20/min, `/intent` 15/min, `/session-embed` 10/min (at most 8 files of
-20 MB, two requests encoded at a time), `/pairs/*` 30/min, `/feedback`
+20 MB, two requests encoded at a time), `/feedback`
 30/min, `/ingest` 60/min. LLM-backed actions (`/ingest`, `/intent`) also
 share a per-user daily allowance (`POCKET_DAILY_LLM_QUOTA`, default 30);
 `/ingest` answers 429 with the reason, `/intent` degrades to raw-text
