@@ -19,9 +19,12 @@ function timeAgo(dateStr: string): string {
 interface TextContentProps {
   fragment: Fragment;
   onUpdated?: () => void;
+  /** Demo: editing and history are not available; tell the visitor instead. */
+  readOnly?: boolean;
+  onReadOnlyAction?: () => void;
 }
 
-export function TextContent({ fragment, onUpdated }: TextContentProps) {
+export function TextContent({ fragment, onUpdated, readOnly, onReadOnlyAction }: TextContentProps) {
   const [editingText, setEditingText] = useState(false);
   const [editTextValue, setEditTextValue] = useState("");
   const [savingText, setSavingText] = useState(false);
@@ -32,6 +35,7 @@ export function TextContent({ fragment, onUpdated }: TextContentProps) {
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   function startEditingText() {
+    if (readOnly) { onReadOnlyAction?.(); return; }
     setEditTextValue(fragment.text ?? "");
     setEditingText(true);
     setTimeout(() => {
@@ -59,6 +63,7 @@ export function TextContent({ fragment, onUpdated }: TextContentProps) {
   }
 
   async function toggleHistory() {
+    if (readOnly) { onReadOnlyAction?.(); return; }
     if (showHistory) {
       setShowHistory(false);
       return;

@@ -45,8 +45,8 @@ def projects_payload(db) -> dict:
     projects = list(
         db["projects"]
         .find({"user_id": DEMO_USER_ID}, {"embedding": 0})
-        .sort([("rescue_score", -1), ("_id", 1)])
-        .limit(20)
+        .sort([("rescue_score", -1), ("_id", -1)])
+        .limit(50)
     )
     for p in projects:
         p["_id"] = str(p["_id"])
@@ -77,12 +77,11 @@ def project_detail_payload(db, oid) -> dict | None:
 
 
 def dna_payload(db) -> dict:
-    """DNA summary computed from the seed fragments."""
+    """DNA summary computed from the seed fragments, as jobs/dna_insights.py does."""
     fragments = list(
         db["fragments"].find(
             {"user_id": DEMO_USER_ID},
-            {"emotions": 1, "themes": 1, "style": 1, "created_at": 1,
-             "project_id": 1, "connection_types": 1},
+            {"emotions": 1, "themes": 1, "style": 1, "created_at": 1, "structure_hint": 1},
         )
     )
     if not fragments:
@@ -92,28 +91,27 @@ def dna_payload(db) -> dict:
     themes: Counter[str] = Counter()
     styles: Counter[str] = Counter()
     structures: Counter[str] = Counter()
-    project_ids: set[str] = set()
 
     for f in fragments:
         emotions.update(f.get("emotions") or [])
         themes.update(f.get("themes") or [])
         styles.update(f.get("style") or [])
-        structures.update(f.get("connection_types") or [])
-        if f.get("project_id"):
-            project_ids.add(str(f["project_id"]))
+        if f.get("structure_hint"):
+            structures[f["structure_hint"]] += 1
 
     # The seed fragments were all inserted in one batch, so capture times
     # carry no rhythm; the hourly view is left empty rather than invented.
     return {
-        "emotions": dict(emotions),
-        "themes": dict(themes),
+        "emotions": dict(emotions.most_common()),
+        "dominant_emotion": emotions.most_common(1)[0][0] if emotions else None,
+        "themes": dict(themes.most_common(10)),
         "top_styles": [{"_id": k, "count": v} for k, v in styles.most_common(10)],
         "hourly_distribution": {},
         "structure_distribution": [
-            {"_id": k, "count": v} for k, v in structures.most_common(10)
+            {"_id": k, "count": v} for k, v in structures.most_common()
         ],
         "total_fragments": len(fragments),
-        "total_projects": len(project_ids),
+        "total_projects": db["projects"].count_documents({"user_id": DEMO_USER_ID}),
         "updated_at": max(
             (f["created_at"] for f in fragments if f.get("created_at")), default=None
         ),

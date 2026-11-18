@@ -1,115 +1,137 @@
 {
  "projects": [
   {
-   "_id": "6af494290339f3d248ad61ef",
+   "_id": "6b2100000000000000000001",
    "user_id": "demo-seed-user",
-   "title": "Late Night Feels",
+   "title": "Things Left Behind",
    "fragment_ids": [
-    "6af3b6ca46bd0f5f90c8341a",
-    "6af3b6d246bd0f5f90c8341b",
-    "6af3b6e346bd0f5f90c8341e",
-    "6af3b6b546bd0f5f90c83418"
+    "6b2000000000000000000002",
+    "6b2000000000000000000003",
+    "6b2000000000000000000004"
    ],
    "connection_reasons": [
-    "Four lyrics circle the same breakup from different distances: the sweater, the toothbrush, the replayed conversations, the sinking.",
-    "'broken heart' and 'illusion' are both in A at 117.5 BPM, which makes them same-song candidates and not only thematic neighbours.",
-    "'lake bottoms' (A minor, 136 BPM) shares the tonic and reads as the low point of the same story."
+    "Three lyrics about the same aftermath: things a person left behind that cannot be moved yet (the grey sweater, the toothbrush) and the question of whether any of it was real.",
+    "All three share the same longing and the same refusal to say the ending out loud."
    ],
    "connection_types": [
     "related_theme",
-    "same_song_candidate",
     "similar_emotion"
    ],
    "next_action": {
-    "action": "Start from the shared ground: 'broken heart' and 'illusion' are both in A at 117.5 BPM. Sing the 'illusion' chorus over the 'broken heart' verse bed at that tempo, then try the 'Wanna' lines as a second verse, transposed from D minor.",
-    "estimated_time": "30 min"
+    "action": "Write a chorus that says plainly what the sweater and the toothbrush are avoiding, and try ending it on 'and called it love'.",
+    "estimated_time": "20 min"
    },
-   "last_activity_at": "2026-11-11T16:13:29.102000",
-   "created_at": "2026-11-11T16:13:29.102000",
-   "rescue_score": 86,
+   "rescue_score": 70,
    "score_breakdown": {
-    "richness": 26,
-    "structure_completeness": 25,
+    "richness": 15,
+    "structure_completeness": 20,
     "emotional_coherence": 15,
     "freshness": 20
    },
    "sections": [
-    "bridge",
     "chorus",
     "verse"
-   ]
+   ],
+   "last_activity_at": "2026-11-11T00:27:30",
+   "created_at": "2026-11-11T00:27:30"
   },
   {
-   "_id": "6af494290339f3d248ad61f0",
+   "_id": "6b2100000000000000000003",
    "user_id": "demo-seed-user",
-   "title": "Bounce Session",
+   "title": "Nobody Knows My Order",
    "fragment_ids": [
-    "6af3b6eb46bd0f5f90c83420",
-    "6af3b6a646bd0f5f90c83416",
-    "6af3b53c952b2b2330ab4684"
+    "6b2000000000000000000006",
+    "6af3b6e746bd0f5f90c8341f"
    ],
    "connection_reasons": [
-    "Three pieces built on groove first and words second, all with a playful, confident attitude.",
-    "'somewhat bouncy bass' (129.2 BPM) and 'damn right' (136 BPM) sit within a small tempo stretch of each other."
+    "A lyric about leaving with no plan and a sparse, open loop you named 'leave this place': the same wish to be somewhere new."
+   ],
+   "connection_types": [
+    "related_theme"
+   ],
+   "next_action": {
+    "action": "Speak or half-sing the coffee-order lines over 'leave this place', then write two lines about arriving somewhere.",
+    "estimated_time": "20 min"
+   },
+   "rescue_score": 59,
+   "score_breakdown": {
+    "richness": 9,
+    "structure_completeness": 10,
+    "emotional_coherence": 20,
+    "freshness": 20
+   },
+   "sections": [
+    "melodic motif",
+    "verse"
+   ],
+   "last_activity_at": "2026-11-11T00:30:27.156000",
+   "created_at": "2026-11-11T00:30:27.156000"
+  },
+  {
+   "_id": "6b2100000000000000000004",
+   "user_id": "demo-seed-user",
+   "title": "Absolutely Nothing",
+   "fragment_ids": [
+    "6b2000000000000000000001",
+    "6af3b506952b2b2330ab4682"
+   ],
+   "connection_reasons": [
+    "A lyric about a night of doing nothing and a slow, unhurried loop you named 'Chilling': the same contentment in having no plans."
    ],
    "connection_types": [
     "similar_emotion",
     "related_theme"
    ],
    "next_action": {
-    "action": "Set the session to 129 BPM around the 'somewhat bouncy bass' loop and deliver the 'damn right' verse over it; 136 down to 129 is a small stretch. Keep 'Funkyy' (95.7 BPM) aside as a slower breakdown idea.",
-    "estimated_time": "20 min"
+    "action": "Hum a melody for 'this is the song for doing absolutely nothing' over 'Chilling', keeping it almost spoken.",
+    "estimated_time": "15 min"
    },
-   "last_activity_at": "2026-11-11T16:13:29.102000",
-   "created_at": "2026-11-11T16:13:29.102000",
-   "rescue_score": 69,
+   "rescue_score": 54,
    "score_breakdown": {
-    "richness": 19,
-    "structure_completeness": 20,
-    "emotional_coherence": 10,
+    "richness": 9,
+    "structure_completeness": 5,
+    "emotional_coherence": 20,
     "freshness": 20
    },
    "sections": [
-    "chorus",
-    "loop",
-    "verse"
-   ]
+    "hook",
+    "melodic motif"
+   ],
+   "last_activity_at": "2026-11-11T00:22:40",
+   "created_at": "2026-11-11T00:22:40"
   },
   {
-   "_id": "6af494290339f3d248ad61f1",
+   "_id": "6b2100000000000000000002",
    "user_id": "demo-seed-user",
-   "title": "Golden Hour",
+   "title": "Too Heavy to Swim",
    "fragment_ids": [
-    "6af3b546952b2b2330ab4685",
-    "6af3b506952b2b2330ab4682",
-    "6af3b6de46bd0f5f90c8341d"
+    "6b2000000000000000000005",
+    "6af3b6e346bd0f5f90c8341e"
    ],
    "connection_reasons": [
-    "Unhurried, warm material: a sunrise drive, a night of doing nothing, and an instrumental bed that fits under both.",
-    "'Chilling' at 68 BPM is exact half-time against 'delight ft ultradiolet' at 136 BPM, and 'laid back beat' shares A minor with 'delight'."
+    "The lyric is about being too tired to keep swimming, and you named this quiet, minor-key loop 'lake bottoms'. Both are about sinking under a weight."
    ],
    "connection_types": [
     "related_theme",
     "similar_emotion"
    ],
    "next_action": {
-    "action": "'Chilling' at 68 BPM is exact half-time against 'delight' at 136. Loop the 'Chilling' bed under the 'delight' verse and sing the road-trip lines in a half-time feel. Check G major against A minor by ear before committing.",
+    "action": "Sing the swimming lines quietly over 'lake bottoms' and mark the one place where the loop could brighten for a moment.",
     "estimated_time": "25 min"
    },
-   "last_activity_at": "2026-11-11T16:13:29.102000",
-   "created_at": "2026-11-11T16:13:29.102000",
-   "rescue_score": 61,
+   "rescue_score": 54,
    "score_breakdown": {
-    "richness": 16,
-    "structure_completeness": 15,
-    "emotional_coherence": 10,
+    "richness": 9,
+    "structure_completeness": 5,
+    "emotional_coherence": 20,
     "freshness": 20
    },
    "sections": [
-    "hook",
-    "loop",
-    "verse"
-   ]
+    "bridge",
+    "melodic motif"
+   ],
+   "last_activity_at": "2026-11-11T00:30:23.216000",
+   "created_at": "2026-11-11T00:30:23.216000"
   }
  ],
  "demo": true

@@ -164,6 +164,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated, readOnly, onReadO
   }
 
   async function saveTitle() {
+    if (readOnly) { setEditing(false); onReadOnlyAction?.(); return; }
     const trimmed = editTitle.trim();
     if (!trimmed || trimmed === displayTitle) {
       setEditing(false);
@@ -268,7 +269,12 @@ export function FragmentCard({ fragment, onDeleted, onUpdated, readOnly, onReadO
         )}
         </>
       ) : fragment.text ? (
-        <TextContent fragment={fragment} onUpdated={onUpdated} />
+        <TextContent
+          fragment={fragment}
+          onUpdated={onUpdated}
+          readOnly={readOnly}
+          onReadOnlyAction={onReadOnlyAction}
+        />
       ) : (
         <div className="flex items-center gap-2">
           <FileText size={14} className="text-slate" />

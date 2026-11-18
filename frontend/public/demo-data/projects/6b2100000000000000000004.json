@@ -1,0 +1,123 @@
+{
+ "_id": "6b2100000000000000000004",
+ "user_id": "demo-seed-user",
+ "title": "Absolutely Nothing",
+ "fragment_ids": [
+  "6b2000000000000000000001",
+  "6af3b506952b2b2330ab4682"
+ ],
+ "connection_reasons": [
+  "A lyric about a night of doing nothing and a slow, unhurried loop you named 'Chilling': the same contentment in having no plans."
+ ],
+ "connection_types": [
+  "similar_emotion",
+  "related_theme"
+ ],
+ "next_action": {
+  "action": "Hum a melody for 'this is the song for doing absolutely nothing' over 'Chilling', keeping it almost spoken.",
+  "estimated_time": "15 min"
+ },
+ "rescue_score": 54,
+ "score_breakdown": {
+  "richness": 9,
+  "structure_completeness": 5,
+  "emotional_coherence": 20,
+  "freshness": 20
+ },
+ "sections": [
+  "hook",
+  "melodic motif"
+ ],
+ "last_activity_at": "2026-11-11T00:22:40",
+ "created_at": "2026-11-11T00:22:40",
+ "fragments": [
+  {
+   "_id": "6b2000000000000000000001",
+   "user_id": "demo-seed-user",
+   "type": "text",
+   "title": "Absolutely Nothing",
+   "text": "no plans tonight just the ceiling fan\nthe fridge hums louder than my thoughts\nthis is the song for doing absolutely nothing",
+   "raw_text": "no plans tonight just the ceiling fan\nthe fridge hums louder than my thoughts\nthis is the song for doing absolutely nothing",
+   "upload": null,
+   "prompt_injection_flag": false,
+   "tags": [
+    "lyric",
+    "humor",
+    "everyday detail"
+   ],
+   "emotions": [
+    "peacefulness",
+    "playfulness"
+   ],
+   "themes": [
+    "solitude"
+   ],
+   "style": [],
+   "key": null,
+   "bpm": null,
+   "suggestion": "'This is the song for doing absolutely nothing' is the hook, and it is funny because it is accurate. The ceiling fan and the humming fridge set the scene in two lines. Keep the melody in a narrow range, almost spoken, to match the low energy. Repeat the last line at the end and let the second time trail off.",
+   "structure_hint": "hook_candidate",
+   "potential": "medium",
+   "transcript": null,
+   "status": "ready",
+   "seed": true,
+   "created_at": "2026-11-11T00:21:40",
+   "project_id": "6b2100000000000000000004",
+   "project_title": "Absolutely Nothing",
+   "connection_reason": "A lyric about a night of doing nothing and a slow, unhurried loop you named 'Chilling': the same contentment in having no plans.",
+   "connection_types": [
+    "similar_emotion",
+    "related_theme"
+   ],
+   "agent_narrative": "A night with no plans, and you already have a loop called 'Chilling' that moves at the same unhurried pace. I grouped them on that calm."
+  },
+  {
+   "_id": "6af3b506952b2b2330ab4682",
+   "user_id": "demo-seed-user",
+   "type": "audio",
+   "title": "Chilling",
+   "text": null,
+   "raw_text": null,
+   "tags": [
+    "loop",
+    "slow groove",
+    "warm low end"
+   ],
+   "emotions": [
+    "peacefulness"
+   ],
+   "themes": [],
+   "style": [
+    "lo-fi"
+   ],
+   "key": "G",
+   "bpm": 68.0,
+   "audio_features": {
+    "bpm": 68.0,
+    "key": "G",
+    "estimated_key": "G",
+    "estimated_mode": "major",
+    "duration_sec": 28.44,
+    "energy_mean": 0.1204,
+    "brightness": 695.7,
+    "onset_density": 1.93,
+    "spectral_flatness": 0.0001
+   },
+   "status": "ready",
+   "created_at": "2026-11-11T00:21:26.235000",
+   "seed": true,
+   "suggestion": "A slow, dark loop at 68 BPM in G major: the sound sits low, with the spectral centroid around 700 Hz, and the attacks are sparse, under two per second. That leaves the whole upper range open, so a melody or a voice placed above it will not have to compete. At this tempo the loop also reads as half-time against anything near 136 BPM, which gives two ways to use it. Keep added parts sparse too; one sustained line will suit it better than a busy one. A little room reverb on whatever goes on top would match its unhurried feel.",
+   "potential": "medium",
+   "structure_hint": "melodic_motif",
+   "transcript": null,
+   "project_id": "6b2100000000000000000004",
+   "project_title": "Absolutely Nothing",
+   "connection_reason": "A lyric about a night of doing nothing and a slow, unhurried loop you named 'Chilling': the same contentment in having no plans.",
+   "connection_types": [
+    "similar_emotion",
+    "related_theme"
+   ],
+   "agent_narrative": "The slow, low loop shares its contentment with the lyric about doing absolutely nothing."
+  }
+ ]
+}

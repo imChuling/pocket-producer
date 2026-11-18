@@ -60,7 +60,8 @@ export default function DemoLayout({ children }: { children: ReactNode }) {
         >
           Looperman
         </a>
-        . Lyrics are AI-generated samples.
+        . The lyric fragments, tags, analyses and project groupings are AI-generated
+        sample text, not output of the live pipeline.
       </p>
 
       {children}

@@ -58,6 +58,9 @@ class StubCollection:
             [self._project(d, projection) for d in self.docs if self._matches(d, query)]
         )
 
+    def count_documents(self, query):
+        return sum(1 for d in self.docs if self._matches(d, query))
+
     def find_one(self, query, projection=None):
         for doc in self.docs:
             if self._matches(doc, query):
@@ -239,15 +242,19 @@ def test_project_detail_rejects_a_malformed_id(client):
 
 
 def test_dna_counts_seed_fragments_and_invents_no_capture_rhythm(client, db):
-    add_fragment(db, project_id="p1")
-    add_fragment(db, emotions=["calm", "bright"])
+    first = add_fragment(db, project_id="p1", structure_hint="verse_candidate")
+    add_fragment(db, emotions=["calm", "bright"], structure_hint="verse_candidate")
     add_fragment(db, user_id="real-user", emotions=["angry"])
+    add_project(db, [first])
 
     body = client.get("/api/demo/dna").json()
 
     assert body["total_fragments"] == 2
     assert body["total_projects"] == 1
     assert body["emotions"] == {"calm": 2, "bright": 1}
+    assert body["dominant_emotion"] == "calm"
+    # Counted from structure_hint, as the real DNA job does.
+    assert body["structure_distribution"] == [{"_id": "verse_candidate", "count": 2}]
     assert body["hourly_distribution"] == {}
     assert "peak_hours" not in body
 
