@@ -45,7 +45,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y libsndfile1
           pip install uv
           uv pip install --system -r backend/requirements.txt
-          uv pip install --system pytest
+          uv pip install --system pytest matplotlib
       - name: Tests
         run: pytest research/tests -q --tb=short
 
