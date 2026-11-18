@@ -37,8 +37,8 @@
    "suggestion": "A loud 20-second bassline loop at 129.2 BPM in G minor, with nearly all of its energy at the bottom of the spectrum and a bouncing pattern of about 3.5 onsets per second. It is the loudest and darkest loop in the library, so it naturally becomes the floor of whatever it joins. Leave the low end to it and build upward: drums with a clear top end, then a melodic part in the mid-range. Because the energy is high and constant, the contrast has to come from the arrangement; strip back to the bass alone for two bars before bringing everything back in. A short gap of silence before a drop would also suit it.",
    "potential": "medium",
    "structure_hint": "melodic_motif",
-   "transcript": null,
-   "agent_narrative": "A heavy, bouncing bassline that nothing else here shares an idea with yet. It stays on its own until something joins it."
+   "agent_narrative": "A heavy, bouncing bassline that nothing else here shares an idea with yet. It stays on its own until something joins it.",
+   "transcript": null
   },
   {
    "_id": "6af3b6e746bd0f5f90c8341f",
@@ -76,14 +76,14 @@
    "suggestion": "A short, sparse loop at 123 BPM in D minor, bright in tone and with the fewest attacks in the library, about 1.3 per second. It has a sense of open space and forward lean at once, which suits a part that moves without crowding. A steady, simple pulse underneath would add motion without filling the gaps. The brightness leaves room below for a warm bass line. Try it as the opening of an arrangement, where its spaciousness can set the tone.",
    "potential": "medium",
    "structure_hint": "melodic_motif",
-   "transcript": null,
-   "project_id": "6b2100000000000000000003",
-   "project_title": "Nobody Knows My Order",
+   "agent_narrative": "The loop's name and its open, spacious sound match the coffee-order lyric's wish to leave. That shared wish is the link.",
    "connection_reason": "A lyric about leaving with no plan and a sparse, open loop you named 'leave this place': the same wish to be somewhere new.",
    "connection_types": [
     "related_theme"
    ],
-   "agent_narrative": "The loop's name and its open, spacious sound match the coffee-order lyric's wish to leave. That shared wish is the link."
+   "project_id": "6b2100000000000000000003",
+   "project_title": "Nobody Knows My Order",
+   "transcript": null
   },
   {
    "_id": "6af3b6e346bd0f5f90c8341e",
@@ -121,55 +121,55 @@
    "suggestion": "A quiet 28-second loop at 136 BPM in A minor, mid-range in tone and moderately busy. The low level and minor key give it a heavy, submerged feel even at this tempo. Reversing a section and layering it under the forward version would deepen that underwater quality. Its mood is the same from start to end; consider breaking it once, with a single brighter chord or a filter opening, before it returns to depth. Keep anything added above it soft so the weight of the loop stays in front.",
    "potential": "medium",
    "structure_hint": "melodic_motif",
-   "transcript": null,
-   "project_id": "6b2100000000000000000002",
-   "project_title": "Too Heavy to Swim",
+   "agent_narrative": "The loop's low, subdued sound and its name meet the swimming lyric on the same image: going under. I grouped them on that.",
    "connection_reason": "The lyric is about being too tired to keep swimming, and you named this quiet, minor-key loop 'lake bottoms'. Both are about sinking under a weight.",
    "connection_types": [
     "related_theme",
     "similar_emotion"
    ],
-   "agent_narrative": "The loop's low, subdued sound and its name meet the swimming lyric on the same image: going under. I grouped them on that."
+   "project_id": "6b2100000000000000000002",
+   "project_title": "Too Heavy to Swim",
+   "transcript": null
   },
   {
    "_id": "6b2000000000000000000006",
    "user_id": "demo-seed-user",
-   "type": "text",
-   "title": "Coffee Order",
-   "text": "leave the dishes in the sink\nthe dog can come obviously\nI want to be somewhere\nwhere nobody knows my coffee order",
-   "raw_text": "leave the dishes in the sink\nthe dog can come obviously\nI want to be somewhere\nwhere nobody knows my coffee order",
-   "upload": null,
+   "agent_narrative": "This is about leaving for somewhere nobody knows you. You named a loop 'leave this place', so I put the two together.",
+   "bpm": null,
+   "connection_reason": "A lyric about leaving with no plan and a sparse, open loop you named 'leave this place': the same wish to be somewhere new.",
+   "connection_types": [
+    "related_theme"
+   ],
+   "created_at": "2026-11-11T00:29:20",
+   "emotions": [
+    "longing",
+    "playfulness"
+   ],
+   "key": null,
+   "potential": "medium",
+   "project_id": "6b2100000000000000000003",
+   "project_title": "Nobody Knows My Order",
    "prompt_injection_flag": false,
+   "raw_text": "leave the dishes in the sink\nthe dog can come obviously\nI want to be somewhere\nwhere nobody knows my coffee order",
+   "seed": true,
+   "status": "ready",
+   "structure_hint": "verse_candidate",
+   "style": [],
+   "suggestion": "Leaving, told through small and funny details: the dishes, the dog, the coffee order. 'Where nobody knows my coffee order' is a sharp way to say you want to be a stranger somewhere, and it could be the title line. Keep the rhythm conversational. A second verse from the other side, after arriving, would give it somewhere to go.",
    "tags": [
     "lyric",
     "humor",
     "everyday detail"
    ],
-   "emotions": [
-    "longing",
-    "playfulness"
-   ],
+   "text": "leave the dishes in the sink\nthe dog can come obviously\nI want to be somewhere\nwhere nobody knows my coffee order",
    "themes": [
     "freedom-escape",
     "home"
    ],
-   "style": [],
-   "key": null,
-   "bpm": null,
-   "suggestion": "Leaving, told through small and funny details: the dishes, the dog, the coffee order. 'Where nobody knows my coffee order' is a sharp way to say you want to be a stranger somewhere, and it could be the title line. Keep the rhythm conversational. A second verse from the other side, after arriving, would give it somewhere to go.",
-   "structure_hint": "verse_candidate",
-   "potential": "medium",
+   "title": "Coffee Order",
    "transcript": null,
-   "status": "ready",
-   "seed": true,
-   "created_at": "2026-11-11T00:29:20",
-   "project_id": "6b2100000000000000000003",
-   "project_title": "Nobody Knows My Order",
-   "connection_reason": "A lyric about leaving with no plan and a sparse, open loop you named 'leave this place': the same wish to be somewhere new.",
-   "connection_types": [
-    "related_theme"
-   ],
-   "agent_narrative": "This is about leaving for somewhere nobody knows you. You named a loop 'leave this place', so I put the two together."
+   "type": "text",
+   "upload": null
   },
   {
    "_id": "6af3b6de46bd0f5f90c8341d",
@@ -209,8 +209,8 @@
    "suggestion": "This groove speaks for itself and does not need much help. The rhythmic pocket is relaxed but not sloppy, which is hard to achieve. Try writing a mumbled scratch vocal over it, nothing polished, just vibes and melodic shapes. The point is to find where a voice naturally wants to sit in the mix. The low end is warm and round, which leaves the mid and high frequencies open for melodic content. A Rhodes piano playing sustained chords on beats two and four would complement the existing texture without competing. This has strong playlist energy as-is, but a bridge section with a key change would elevate it from a loop to a composition.",
    "potential": "medium",
    "structure_hint": null,
-   "transcript": null,
-   "agent_narrative": "A relaxed groove with its own calm. It is close in mood to 'Chilling', but there is no specific link beyond that, so it stays on its own."
+   "agent_narrative": "A relaxed groove with its own calm. It is close in mood to 'Chilling', but there is no specific link beyond that, so it stays on its own.",
+   "transcript": null
   },
   {
    "_id": "6af3b6d846bd0f5f90c8341c",
@@ -249,8 +249,8 @@
    "suggestion": "A loud, bright 79-second piece in C minor with a measured tempo of 198.8 BPM; that may be a double-time reading, so check whether it feels closer to 99. Either way it has a lot of energy and a noisier, brighter texture than most of the library. Decide on the felt tempo first, because it changes what can sit on top of it. At the slower feel a half-time vocal would work over it; at the fast one, keep any added parts short and percussive. The minor key under the bright mix gives it an edge worth keeping.",
    "potential": "medium",
    "structure_hint": "melodic_motif",
-   "transcript": null,
-   "agent_narrative": "Loud and bright with an edge. Nothing in the library shares that feeling with a clear connection yet."
+   "agent_narrative": "Loud and bright with an edge. Nothing in the library shares that feeling with a clear connection yet.",
+   "transcript": null
   },
   {
    "_id": "6af3b6d246bd0f5f90c8341b",
@@ -288,8 +288,8 @@
    "suggestion": "A three-minute piece at 117.5 BPM in A major, darker in tone than most of the library and rhythmically busy, around four onsets per second. The density keeps it moving even at a moderate level. Its low brightness leaves the top of the range open for something lighter. Try isolating one sixteen-bar stretch to use as a loop; the full length is more than most ideas need. It shares its tempo and tonic with 'broken heart', so the two are easy to try together in a session.",
    "potential": "medium",
    "structure_hint": null,
-   "transcript": null,
-   "agent_narrative": "Dark and busy, without a fragment that shares a stated link with it yet. Ungrouped for now."
+   "agent_narrative": "Dark and busy, without a fragment that shares a stated link with it yet. Ungrouped for now.",
+   "transcript": null
   },
   {
    "_id": "6af3b6ca46bd0f5f90c8341a",
@@ -327,8 +327,8 @@
    "suggestion": "A long, sparse piece at 117.5 BPM in A major: quiet, bright in tone and with only about one and a half attacks per second over two and a half minutes. The space in it is its strength; resist filling every gap. A voice or a single close-miked instrument over it would sit well in that room. Because it is long, mark the passage you like most and work from that rather than from the start. It shares its tempo and tonic with 'illusion', which is worth trying in a session.",
    "potential": "medium",
    "structure_hint": null,
-   "transcript": null,
-   "agent_narrative": "Tender and spacious, but nothing here shares a specific idea with it yet. It stays on its own for now."
+   "agent_narrative": "Tender and spacious, but nothing here shares a specific idea with it yet. It stays on its own for now.",
+   "transcript": null
   },
   {
    "_id": "6af3b6c246bd0f5f90c83419",
@@ -366,47 +366,47 @@
    "suggestion": "A two-and-a-half-minute beat at 136 BPM in G major, loud, fairly bright and rhythmically busy throughout. It already sounds like a finished instrumental, so the useful question is what it is missing rather than what to add. Listen for a section where the energy drops; if there is none, that is the gap to fill with a breakdown. Its tempo matches several shorter loops in the library, which makes it a natural bed to try them against in a session. A topline written over it should stay simple, since the beat already fills a lot of space.",
    "potential": "medium",
    "structure_hint": null,
-   "transcript": null,
-   "agent_narrative": "A finished-sounding beat that does not yet connect to a feeling or theme elsewhere in your library. Keeping it separate."
+   "agent_narrative": "A finished-sounding beat that does not yet connect to a feeling or theme elsewhere in your library. Keeping it separate.",
+   "transcript": null
   },
   {
    "_id": "6b2000000000000000000005",
    "user_id": "demo-seed-user",
-   "type": "text",
-   "title": "Tired of Swimming",
-   "text": "used to be able to hold my breath\nfor the length of a whole song\nthe water's not cold it's just heavy\nand I'm just tired of swimming",
-   "raw_text": "used to be able to hold my breath\nfor the length of a whole song\nthe water's not cold it's just heavy\nand I'm just tired of swimming",
-   "upload": null,
-   "prompt_injection_flag": false,
-   "tags": [
-    "lyric",
-    "water imagery"
-   ],
-   "emotions": [
-    "sadness",
-    "melancholy"
-   ],
-   "themes": [
-    "mental-health"
-   ],
-   "style": [],
-   "key": null,
+   "agent_narrative": "Your lyric about being too tired to swim belongs with the loop you called 'lake bottoms'. Both sink under the same weight.",
    "bpm": null,
-   "suggestion": "The image of a skill being lost, holding your breath for a whole song, carries more weight than drowning would. 'The water's not cold it's just heavy' refuses the obvious reading, which keeps it honest. It reads as a turn in a larger piece, a moment where the mood drops lower before anything resolves. Sing it close and low.",
-   "structure_hint": "bridge_candidate",
-   "potential": "medium",
-   "transcript": null,
-   "status": "ready",
-   "seed": true,
-   "created_at": "2026-11-11T00:28:50",
-   "project_id": "6b2100000000000000000002",
-   "project_title": "Too Heavy to Swim",
    "connection_reason": "The lyric is about being too tired to keep swimming, and you named this quiet, minor-key loop 'lake bottoms'. Both are about sinking under a weight.",
    "connection_types": [
     "related_theme",
     "similar_emotion"
    ],
-   "agent_narrative": "Your lyric about being too tired to swim belongs with the loop you called 'lake bottoms'. Both sink under the same weight."
+   "created_at": "2026-11-11T00:28:50",
+   "emotions": [
+    "sadness",
+    "melancholy"
+   ],
+   "key": null,
+   "potential": "medium",
+   "project_id": "6b2100000000000000000002",
+   "project_title": "Too Heavy to Swim",
+   "prompt_injection_flag": false,
+   "raw_text": "used to be able to hold my breath\nfor the length of a whole song\nthe water's not cold it's just heavy\nand I'm just tired of swimming",
+   "seed": true,
+   "status": "ready",
+   "structure_hint": "bridge_candidate",
+   "style": [],
+   "suggestion": "The image of a skill being lost, holding your breath for a whole song, carries more weight than drowning would. 'The water's not cold it's just heavy' refuses the obvious reading, which keeps it honest. It reads as a turn in a larger piece, a moment where the mood drops lower before anything resolves. Sing it close and low.",
+   "tags": [
+    "lyric",
+    "water imagery"
+   ],
+   "text": "used to be able to hold my breath\nfor the length of a whole song\nthe water's not cold it's just heavy\nand I'm just tired of swimming",
+   "themes": [
+    "mental-health"
+   ],
+   "title": "Tired of Swimming",
+   "transcript": null,
+   "type": "text",
+   "upload": null
   },
   {
    "_id": "6af3b6b546bd0f5f90c83418",
@@ -444,8 +444,8 @@
    "suggestion": "A quiet 40-second loop at 129.2 BPM in D minor, mid-range in tone and moderately busy. Its low level and minor key give it a subdued, inward quality, so it suits a part that stays in the background. Raise it a few decibels against the rest of the library before deciding where it fits; quiet loops are easy to underrate. A single sustained line above it, in the same key, would bring out the mood without adding clutter. For contrast, pair its restraint with one louder section rather than making the loop itself busier.",
    "potential": "medium",
    "structure_hint": "melodic_motif",
-   "transcript": null,
-   "agent_narrative": "Subdued and inward. Its mood is close to some lyrics here, but there is no specific link to name yet, so it stays on its own."
+   "agent_narrative": "Subdued and inward. Its mood is close to some lyrics here, but there is no specific link to name yet, so it stays on its own.",
+   "transcript": null
   },
   {
    "_id": "6af3b6ad46bd0f5f90c83417",
@@ -485,8 +485,8 @@
    "suggestion": "Strong rhythmic energy with an electronic pulse that drives forward relentlessly. The layering is effective but the frequency spectrum is concentrated in the mid-range, which makes it feel slightly compressed. Try pitching the main loop down a semitone and layering it underneath the original for thickness, then high-passing the pitched copy to avoid muddiness. The absence of a melodic hook is fine for this style but a single repeated note, maybe a detuned saw, pulsing on the offbeat would give the ear something to follow. The build potential here is significant. Consider structuring this as a gradual accumulation that peaks around the two-minute mark.",
    "potential": "medium",
    "structure_hint": "melodic_motif",
-   "transcript": null,
-   "agent_narrative": "Tense and driving, with no fragment yet that shares a feeling or a theme with it. Ungrouped for now."
+   "agent_narrative": "Tense and driving, with no fragment yet that shares a feeling or a theme with it. Ungrouped for now.",
+   "transcript": null
   },
   {
    "_id": "6af3b6a646bd0f5f90c83416",
@@ -527,129 +527,129 @@
    "suggestion": "A loud, busy 20-second groove at 95.7 BPM in A# minor, with a syncopated feel and about 3.7 onsets per second. The pocket is tight, so the main job is to leave it room: anything added should play in the gaps rather than on top of the pattern. A short fill every four bars would break up the repetition without losing the groove. Try a section that drops to half-time for four bars; the main groove will hit harder when it returns. Its energy is high from the first beat, so plan where the quieter moments of a track would come from.",
    "potential": "medium",
    "structure_hint": "melodic_motif",
-   "transcript": null,
-   "agent_narrative": "Playful and loud, but no lyric or idea here shares that energy with a specific link yet. It stays on its own."
+   "agent_narrative": "Playful and loud, but no lyric or idea here shares that energy with a specific link yet. It stays on its own.",
+   "transcript": null
   },
   {
    "_id": "6b2000000000000000000004",
    "user_id": "demo-seed-user",
-   "type": "text",
-   "title": "Front Row Ticket",
-   "text": "was any of it real or just mirrors\nmaybe it was always a show\nand I just bought a front row ticket\nand called it love",
-   "raw_text": "was any of it real or just mirrors\nmaybe it was always a show\nand I just bought a front row ticket\nand called it love",
-   "upload": null,
+   "agent_narrative": "This asks the question the other two lines circle around, whether any of it was real. It reads like the chorus for the sweater and toothbrush verses.",
+   "bpm": null,
+   "connection_reason": "Three lyrics about the same aftermath: things a person left behind that cannot be moved yet (the grey sweater, the toothbrush) and the question of whether any of it was real.",
+   "connection_types": [
+    "related_theme",
+    "similar_emotion"
+   ],
+   "created_at": "2026-11-11T00:26:30",
+   "emotions": [
+    "vulnerability",
+    "melancholy"
+   ],
+   "key": null,
+   "potential": "high",
+   "project_id": "6b2100000000000000000001",
+   "project_title": "Things Left Behind",
    "prompt_injection_flag": false,
+   "raw_text": "was any of it real or just mirrors\nmaybe it was always a show\nand I just bought a front row ticket\nand called it love",
+   "seed": true,
+   "status": "ready",
+   "structure_hint": "chorus_candidate",
+   "style": [],
+   "suggestion": "This states a whole idea in four lines and ends on the phrase worth remembering, which is what a chorus needs. The mirror image runs into the theatre image, the show and the front row ticket, and 'and called it love' closes it. Try the first line close to a whisper and let the voice open up by the last. Leave a beat of silence after 'called it love'.",
    "tags": [
     "lyric",
     "metaphor",
     "hook idea"
    ],
-   "emotions": [
-    "vulnerability",
-    "melancholy"
-   ],
+   "text": "was any of it real or just mirrors\nmaybe it was always a show\nand I just bought a front row ticket\nand called it love",
    "themes": [
     "heartbreak"
    ],
-   "style": [],
-   "key": null,
-   "bpm": null,
-   "suggestion": "This states a whole idea in four lines and ends on the phrase worth remembering, which is what a chorus needs. The mirror image runs into the theatre image, the show and the front row ticket, and 'and called it love' closes it. Try the first line close to a whisper and let the voice open up by the last. Leave a beat of silence after 'called it love'.",
-   "structure_hint": "chorus_candidate",
-   "potential": "high",
+   "title": "Front Row Ticket",
    "transcript": null,
-   "status": "ready",
-   "seed": true,
-   "created_at": "2026-11-11T00:26:30",
-   "project_id": "6b2100000000000000000001",
-   "project_title": "Things Left Behind",
-   "connection_reason": "Three lyrics about the same aftermath: things a person left behind that cannot be moved yet (the grey sweater, the toothbrush) and the question of whether any of it was real.",
-   "connection_types": [
-    "related_theme",
-    "similar_emotion"
-   ],
-   "agent_narrative": "This asks the question the other two lines circle around, whether any of it was real. It reads like the chorus for the sweater and toothbrush verses."
+   "type": "text",
+   "upload": null
   },
   {
    "_id": "6b2000000000000000000003",
    "user_id": "demo-seed-user",
-   "type": "text",
-   "title": "Three Weeks",
-   "text": "it's been three weeks now\nand your toothbrush is still here\nI should probably move it\nbut then it's really real",
-   "raw_text": "it's been three weeks now\nand your toothbrush is still here\nI should probably move it\nbut then it's really real",
-   "upload": null,
-   "prompt_injection_flag": false,
-   "tags": [
-    "lyric",
-    "understatement"
-   ],
-   "emotions": [
-    "melancholy",
-    "loss"
-   ],
-   "themes": [
-    "heartbreak",
-    "home"
-   ],
-   "style": [],
-   "key": null,
+   "agent_narrative": "Like the sweater, the toothbrush stays because moving it would make the ending real. I grouped it with the other two lyrics about the same aftermath.",
    "bpm": null,
-   "suggestion": "Four plain lines hold a whole situation: three weeks, a toothbrush, and the reason it stays. 'But then it's really real' is the line everything leans on, so give it the longest note. The understatement is the strength; do not add an explanation after it. This could open a verse that a later chorus answers.",
-   "structure_hint": "verse_candidate",
-   "potential": "medium",
-   "transcript": null,
-   "status": "ready",
-   "seed": true,
-   "created_at": "2026-11-11T00:25:30",
-   "project_id": "6b2100000000000000000001",
-   "project_title": "Things Left Behind",
    "connection_reason": "Three lyrics about the same aftermath: things a person left behind that cannot be moved yet (the grey sweater, the toothbrush) and the question of whether any of it was real.",
    "connection_types": [
     "related_theme",
     "similar_emotion"
    ],
-   "agent_narrative": "Like the sweater, the toothbrush stays because moving it would make the ending real. I grouped it with the other two lyrics about the same aftermath."
+   "created_at": "2026-11-11T00:25:30",
+   "emotions": [
+    "melancholy",
+    "loss"
+   ],
+   "key": null,
+   "potential": "medium",
+   "project_id": "6b2100000000000000000001",
+   "project_title": "Things Left Behind",
+   "prompt_injection_flag": false,
+   "raw_text": "it's been three weeks now\nand your toothbrush is still here\nI should probably move it\nbut then it's really real",
+   "seed": true,
+   "status": "ready",
+   "structure_hint": "verse_candidate",
+   "style": [],
+   "suggestion": "Four plain lines hold a whole situation: three weeks, a toothbrush, and the reason it stays. 'But then it's really real' is the line everything leans on, so give it the longest note. The understatement is the strength; do not add an explanation after it. This could open a verse that a later chorus answers.",
+   "tags": [
+    "lyric",
+    "understatement"
+   ],
+   "text": "it's been three weeks now\nand your toothbrush is still here\nI should probably move it\nbut then it's really real",
+   "themes": [
+    "heartbreak",
+    "home"
+   ],
+   "title": "Three Weeks",
+   "transcript": null,
+   "type": "text",
+   "upload": null
   },
   {
    "_id": "6b2000000000000000000002",
    "user_id": "demo-seed-user",
-   "type": "text",
-   "title": "The Grey Sweater",
-   "text": "still got your sweater the grey one\nI wore it to the grocery store Tuesday\nsome lady asked if I was okay\nI said yeah I'm fine just cold but it's August",
-   "raw_text": "still got your sweater the grey one\nI wore it to the grocery store Tuesday\nsome lady asked if I was okay\nI said yeah I'm fine just cold but it's August",
-   "upload": null,
+   "agent_narrative": "The sweater is the first thing left behind in this set. I put it with the toothbrush and the front row ticket: all three are about an ending nobody says out loud.",
+   "bpm": null,
+   "connection_reason": "Three lyrics about the same aftermath: things a person left behind that cannot be moved yet (the grey sweater, the toothbrush) and the question of whether any of it was real.",
+   "connection_types": [
+    "related_theme",
+    "similar_emotion"
+   ],
+   "created_at": "2026-11-11T00:24:30",
+   "emotions": [
+    "longing",
+    "melancholy"
+   ],
+   "key": null,
+   "potential": "high",
+   "project_id": "6b2100000000000000000001",
+   "project_title": "Things Left Behind",
    "prompt_injection_flag": false,
+   "raw_text": "still got your sweater the grey one\nI wore it to the grocery store Tuesday\nsome lady asked if I was okay\nI said yeah I'm fine just cold but it's August",
+   "seed": true,
+   "status": "ready",
+   "structure_hint": "verse_candidate",
+   "style": [],
+   "suggestion": "The details do the work: a grey sweater, a grocery store on a Tuesday, a stranger asking if you are okay. 'But it's August' is the turn; the excuse falls apart inside the line, and the word heartbreak never has to appear. Keep the delivery close to spoken. What is missing is a chorus that steps back from the objects and says the feeling plainly, once.",
    "tags": [
     "lyric",
     "imagery",
     "everyday detail"
    ],
-   "emotions": [
-    "longing",
-    "melancholy"
-   ],
+   "text": "still got your sweater the grey one\nI wore it to the grocery store Tuesday\nsome lady asked if I was okay\nI said yeah I'm fine just cold but it's August",
    "themes": [
     "heartbreak",
     "nostalgia-memory"
    ],
-   "style": [],
-   "key": null,
-   "bpm": null,
-   "suggestion": "The details do the work: a grey sweater, a grocery store on a Tuesday, a stranger asking if you are okay. 'But it's August' is the turn; the excuse falls apart inside the line, and the word heartbreak never has to appear. Keep the delivery close to spoken. What is missing is a chorus that steps back from the objects and says the feeling plainly, once.",
-   "structure_hint": "verse_candidate",
-   "potential": "high",
+   "title": "The Grey Sweater",
    "transcript": null,
-   "status": "ready",
-   "seed": true,
-   "created_at": "2026-11-11T00:24:30",
-   "project_id": "6b2100000000000000000001",
-   "project_title": "Things Left Behind",
-   "connection_reason": "Three lyrics about the same aftermath: things a person left behind that cannot be moved yet (the grey sweater, the toothbrush) and the question of whether any of it was real.",
-   "connection_types": [
-    "related_theme",
-    "similar_emotion"
-   ],
-   "agent_narrative": "The sweater is the first thing left behind in this set. I put it with the toothbrush and the front row ticket: all three are about an ending nobody says out loud."
+   "type": "text",
+   "upload": null
   },
   {
    "_id": "6af3b58c952b2b2330ab4688",
@@ -687,8 +687,8 @@
    "suggestion": "The longest piece in the library at almost four minutes: A# major at 89.1 BPM, the brightest mix here (spectral centroid near 2.8 kHz) and a steady, moderate rhythm. With that much material, the first job is to find its strongest sixteen bars and loop them as a bed. The high brightness gives it an open, lifted quality; a warm, low part underneath would balance it. Listen for the moment the arrangement is at its fullest and use that as the target for anything built on it. Shorter excerpts will be easier to combine with other ideas than the whole piece.",
    "potential": "medium",
    "structure_hint": null,
-   "transcript": null,
-   "agent_narrative": "A long, bright piece with its own lifted feel. Nothing else shares it closely enough to group yet."
+   "agent_narrative": "A long, bright piece with its own lifted feel. Nothing else shares it closely enough to group yet.",
+   "transcript": null
   },
   {
    "_id": "6af3b57e952b2b2330ab4687",
@@ -726,8 +726,8 @@
    "suggestion": "A slow, sparse piece at 78.3 BPM in A# major, quiet and fairly bright, with fewer than two attacks per second over 70 seconds. It leaves a lot of room, which is what a starting point needs: hum or sing over it without words first and keep whatever melody comes back twice. The space between attacks is long enough for a vocal phrase to breathe without crowding. It shares its tempo and key with 'Choir Melody', so the two can be tried together in a session. Leave percussion out for now and settle the melody first.",
    "potential": "medium",
    "structure_hint": "melodic_motif",
-   "transcript": null,
-   "agent_narrative": "A quiet starting point without words yet. When a lyric or idea shows up that matches its mood, I will suggest pairing them."
+   "agent_narrative": "A quiet starting point without words yet. When a lyric or idea shows up that matches its mood, I will suggest pairing them.",
+   "transcript": null
   },
   {
    "_id": "6af3b54b952b2b2330ab4686",
@@ -767,8 +767,8 @@
    "suggestion": "A dark, quiet loop at 136 BPM in G major with a dense rhythm, about 4.6 onsets per second, and almost all of its energy below 600 Hz. That combination suits a beat: the low weight gives a floor and the busy pattern gives drive. Bring the level up before judging it; at this loudness the detail is easy to miss. A bright element on top, such as hats or a high pluck, would fill the space it leaves above. Keep the arrangement around it simple so the pattern stays at the centre.",
    "potential": "medium",
    "structure_hint": "melodic_motif",
-   "transcript": null,
-   "agent_narrative": "Dark and driving, but nothing in your library carries the same tension with a shared idea behind it. Ungrouped for now."
+   "agent_narrative": "Dark and driving, but nothing in your library carries the same tension with a shared idea behind it. Ungrouped for now.",
+   "transcript": null
   },
   {
    "_id": "6af3b546952b2b2330ab4685",
@@ -806,8 +806,8 @@
    "suggestion": "At two and a half minutes this is a full piece rather than a loop: A minor at 136 BPM, loud and bright, with the spectral centroid above 2.6 kHz and a noisier texture than most of the library. Listen through once and mark where the energy changes; those points are where it could be cut into sections to reuse. The brightness means anything added on top needs to be darker or it will crowd the high end. Try pulling out a single eight-bar stretch and looping it to hear whether it holds up on its own. If it does, it becomes a bed to write over; if not, it works better as a reference for mood.",
    "potential": "medium",
    "structure_hint": null,
-   "transcript": null,
-   "agent_narrative": "A bright, full piece that does not clearly share a feeling or theme with anything else yet. Keeping it on its own."
+   "agent_narrative": "A bright, full piece that does not clearly share a feeling or theme with anything else yet. Keeping it on its own.",
+   "transcript": null
   },
   {
    "_id": "6af3b53c952b2b2330ab4684",
@@ -846,48 +846,48 @@
    "suggestion": "A short 14-second loop at 136 BPM in E minor with the busiest rhythm in the library, close to five onsets per second. Its length and density make it work like a hook: something to drop in for four bars rather than run underneath a whole section. Try cutting it into two halves and alternating them to hear which half carries the identity. The mid-range tone is neither dark nor bright, so a sub-bass under the downbeats would give it weight without clouding it. Because it is minor and driving, it would also make a strong contrast against one of the calmer loops.",
    "potential": "medium",
    "structure_hint": "hook_candidate",
-   "transcript": null,
-   "agent_narrative": "A short, tense hook with nothing else in the library on the same emotional edge yet. It stays ungrouped for now."
+   "agent_narrative": "A short, tense hook with nothing else in the library on the same emotional edge yet. It stays ungrouped for now.",
+   "transcript": null
   },
   {
    "_id": "6b2000000000000000000001",
    "user_id": "demo-seed-user",
-   "type": "text",
-   "title": "Absolutely Nothing",
-   "text": "no plans tonight just the ceiling fan\nthe fridge hums louder than my thoughts\nthis is the song for doing absolutely nothing",
-   "raw_text": "no plans tonight just the ceiling fan\nthe fridge hums louder than my thoughts\nthis is the song for doing absolutely nothing",
-   "upload": null,
-   "prompt_injection_flag": false,
-   "tags": [
-    "lyric",
-    "humor",
-    "everyday detail"
-   ],
-   "emotions": [
-    "peacefulness",
-    "playfulness"
-   ],
-   "themes": [
-    "solitude"
-   ],
-   "style": [],
-   "key": null,
+   "agent_narrative": "A night with no plans, and you already have a loop called 'Chilling' that moves at the same unhurried pace. I grouped them on that calm.",
    "bpm": null,
-   "suggestion": "'This is the song for doing absolutely nothing' is the hook, and it is funny because it is accurate. The ceiling fan and the humming fridge set the scene in two lines. Keep the melody in a narrow range, almost spoken, to match the low energy. Repeat the last line at the end and let the second time trail off.",
-   "structure_hint": "hook_candidate",
-   "potential": "medium",
-   "transcript": null,
-   "status": "ready",
-   "seed": true,
-   "created_at": "2026-11-11T00:21:40",
-   "project_id": "6b2100000000000000000004",
-   "project_title": "Absolutely Nothing",
    "connection_reason": "A lyric about a night of doing nothing and a slow, unhurried loop you named 'Chilling': the same contentment in having no plans.",
    "connection_types": [
     "similar_emotion",
     "related_theme"
    ],
-   "agent_narrative": "A night with no plans, and you already have a loop called 'Chilling' that moves at the same unhurried pace. I grouped them on that calm."
+   "created_at": "2026-11-11T00:21:40",
+   "emotions": [
+    "peacefulness",
+    "playfulness"
+   ],
+   "key": null,
+   "potential": "medium",
+   "project_id": "6b2100000000000000000004",
+   "project_title": "Absolutely Nothing",
+   "prompt_injection_flag": false,
+   "raw_text": "no plans tonight just the ceiling fan\nthe fridge hums louder than my thoughts\nthis is the song for doing absolutely nothing",
+   "seed": true,
+   "status": "ready",
+   "structure_hint": "hook_candidate",
+   "style": [],
+   "suggestion": "'This is the song for doing absolutely nothing' is the hook, and it is funny because it is accurate. The ceiling fan and the humming fridge set the scene in two lines. Keep the melody in a narrow range, almost spoken, to match the low energy. Repeat the last line at the end and let the second time trail off.",
+   "tags": [
+    "lyric",
+    "humor",
+    "everyday detail"
+   ],
+   "text": "no plans tonight just the ceiling fan\nthe fridge hums louder than my thoughts\nthis is the song for doing absolutely nothing",
+   "themes": [
+    "solitude"
+   ],
+   "title": "Absolutely Nothing",
+   "transcript": null,
+   "type": "text",
+   "upload": null
   },
   {
    "_id": "6af3b50f952b2b2330ab4683",
@@ -928,8 +928,8 @@
    "suggestion": "The choral texture carries a lot of emotional weight on its own. The harmonic movement is slow and deliberate, which gives it an almost sacred quality. Rather than adding another choral layer, consider writing a solo vocal melody that weaves through the pads, something that enters after the first four bars and uses the choir as a bed rather than a foreground element. The dynamic range here is narrow, which is appropriate for the mood, but a single moment of swelling intensity around the midpoint would give the listener something to hold onto. This has strong potential as the emotional centerpiece of a larger arrangement.",
    "potential": "medium",
    "structure_hint": "melodic_motif",
-   "transcript": null,
-   "agent_narrative": "The choir sits in a calm, reverent place that nothing else here reaches yet. Keeping it on its own until something joins it."
+   "agent_narrative": "The choir sits in a calm, reverent place that nothing else here reaches yet. Keeping it on its own until something joins it.",
+   "transcript": null
   },
   {
    "_id": "6af3b506952b2b2330ab4682",
@@ -969,15 +969,15 @@
    "suggestion": "A slow, dark loop at 68 BPM in G major: the sound sits low, with the spectral centroid around 700 Hz, and the attacks are sparse, under two per second. That leaves the whole upper range open, so a melody or a voice placed above it will not have to compete. At this tempo the loop also reads as half-time against anything near 136 BPM, which gives two ways to use it. Keep added parts sparse too; one sustained line will suit it better than a busy one. A little room reverb on whatever goes on top would match its unhurried feel.",
    "potential": "medium",
    "structure_hint": "melodic_motif",
-   "transcript": null,
-   "project_id": "6b2100000000000000000004",
-   "project_title": "Absolutely Nothing",
+   "agent_narrative": "The slow, low loop shares its contentment with the lyric about doing absolutely nothing.",
    "connection_reason": "A lyric about a night of doing nothing and a slow, unhurried loop you named 'Chilling': the same contentment in having no plans.",
    "connection_types": [
     "similar_emotion",
     "related_theme"
    ],
-   "agent_narrative": "The slow, low loop shares its contentment with the lyric about doing absolutely nothing."
+   "project_id": "6b2100000000000000000004",
+   "project_title": "Absolutely Nothing",
+   "transcript": null
   },
   {
    "_id": "6af3b500952b2b2330ab4681",
@@ -1015,8 +1015,8 @@
    "suggestion": "A 28-second loop at 136 BPM in C# major, quiet overall but with a busy rhythmic surface of about 3.6 onsets per second. The low level means it will sit under almost anything without fighting it, so treat it as a texture rather than a lead. Try doubling its rhythm with a filtered percussion layer to hear whether the figure carries more weight when it is reinforced. Because the energy stays flat across the loop, a second part that drops out for one bar in every eight would give it shape. Its tempo is a common one, so it is easy to set into a session without stretching.",
    "potential": "medium",
    "structure_hint": "melodic_motif",
-   "transcript": null,
-   "agent_narrative": "This loop has its own light, busy feel. Nothing else in your library shares its mood closely enough yet, so it stays on its own for now."
+   "agent_narrative": "This loop has its own light, busy feel. Nothing else in your library shares its mood closely enough yet, so it stays on its own for now.",
+   "transcript": null
   }
  ],
  "demo": true

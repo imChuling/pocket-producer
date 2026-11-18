@@ -8,20 +8,20 @@
   "longing": 3,
   "power": 2,
   "tenderness": 1,
-  "wonder": 1,
-  "transcendence": 1,
-  "loss": 1,
+  "sadness": 1,
   "vulnerability": 1,
-  "sadness": 1
+  "loss": 1,
+  "wonder": 1,
+  "transcendence": 1
  },
  "dominant_emotion": "melancholy",
  "themes": {
   "heartbreak": 3,
   "home": 2,
-  "solitude": 1,
-  "nostalgia-memory": 1,
+  "freedom-escape": 1,
   "mental-health": 1,
-  "freedom-escape": 1
+  "nostalgia-memory": 1,
+  "solitude": 1
  },
  "top_styles": [
   {
@@ -60,11 +60,11 @@
    "count": 2
   },
   {
-   "_id": "chorus_candidate",
+   "_id": "bridge_candidate",
    "count": 1
   },
   {
-   "_id": "bridge_candidate",
+   "_id": "chorus_candidate",
    "count": 1
   }
  ],

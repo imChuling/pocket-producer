@@ -36,123 +36,123 @@
   {
    "_id": "6b2000000000000000000002",
    "user_id": "demo-seed-user",
-   "type": "text",
-   "title": "The Grey Sweater",
-   "text": "still got your sweater the grey one\nI wore it to the grocery store Tuesday\nsome lady asked if I was okay\nI said yeah I'm fine just cold but it's August",
-   "raw_text": "still got your sweater the grey one\nI wore it to the grocery store Tuesday\nsome lady asked if I was okay\nI said yeah I'm fine just cold but it's August",
-   "upload": null,
+   "agent_narrative": "The sweater is the first thing left behind in this set. I put it with the toothbrush and the front row ticket: all three are about an ending nobody says out loud.",
+   "bpm": null,
+   "connection_reason": "Three lyrics about the same aftermath: things a person left behind that cannot be moved yet (the grey sweater, the toothbrush) and the question of whether any of it was real.",
+   "connection_types": [
+    "related_theme",
+    "similar_emotion"
+   ],
+   "created_at": "2026-11-11T00:24:30",
+   "emotions": [
+    "longing",
+    "melancholy"
+   ],
+   "key": null,
+   "potential": "high",
+   "project_id": "6b2100000000000000000001",
+   "project_title": "Things Left Behind",
    "prompt_injection_flag": false,
+   "raw_text": "still got your sweater the grey one\nI wore it to the grocery store Tuesday\nsome lady asked if I was okay\nI said yeah I'm fine just cold but it's August",
+   "seed": true,
+   "status": "ready",
+   "structure_hint": "verse_candidate",
+   "style": [],
+   "suggestion": "The details do the work: a grey sweater, a grocery store on a Tuesday, a stranger asking if you are okay. 'But it's August' is the turn; the excuse falls apart inside the line, and the word heartbreak never has to appear. Keep the delivery close to spoken. What is missing is a chorus that steps back from the objects and says the feeling plainly, once.",
    "tags": [
     "lyric",
     "imagery",
     "everyday detail"
    ],
-   "emotions": [
-    "longing",
-    "melancholy"
-   ],
+   "text": "still got your sweater the grey one\nI wore it to the grocery store Tuesday\nsome lady asked if I was okay\nI said yeah I'm fine just cold but it's August",
    "themes": [
     "heartbreak",
     "nostalgia-memory"
    ],
-   "style": [],
-   "key": null,
-   "bpm": null,
-   "suggestion": "The details do the work: a grey sweater, a grocery store on a Tuesday, a stranger asking if you are okay. 'But it's August' is the turn; the excuse falls apart inside the line, and the word heartbreak never has to appear. Keep the delivery close to spoken. What is missing is a chorus that steps back from the objects and says the feeling plainly, once.",
-   "structure_hint": "verse_candidate",
-   "potential": "high",
+   "title": "The Grey Sweater",
    "transcript": null,
-   "status": "ready",
-   "seed": true,
-   "created_at": "2026-11-11T00:24:30",
-   "project_id": "6b2100000000000000000001",
-   "project_title": "Things Left Behind",
-   "connection_reason": "Three lyrics about the same aftermath: things a person left behind that cannot be moved yet (the grey sweater, the toothbrush) and the question of whether any of it was real.",
-   "connection_types": [
-    "related_theme",
-    "similar_emotion"
-   ],
-   "agent_narrative": "The sweater is the first thing left behind in this set. I put it with the toothbrush and the front row ticket: all three are about an ending nobody says out loud."
+   "type": "text",
+   "upload": null
   },
   {
    "_id": "6b2000000000000000000003",
    "user_id": "demo-seed-user",
-   "type": "text",
-   "title": "Three Weeks",
-   "text": "it's been three weeks now\nand your toothbrush is still here\nI should probably move it\nbut then it's really real",
-   "raw_text": "it's been three weeks now\nand your toothbrush is still here\nI should probably move it\nbut then it's really real",
-   "upload": null,
-   "prompt_injection_flag": false,
-   "tags": [
-    "lyric",
-    "understatement"
-   ],
-   "emotions": [
-    "melancholy",
-    "loss"
-   ],
-   "themes": [
-    "heartbreak",
-    "home"
-   ],
-   "style": [],
-   "key": null,
+   "agent_narrative": "Like the sweater, the toothbrush stays because moving it would make the ending real. I grouped it with the other two lyrics about the same aftermath.",
    "bpm": null,
-   "suggestion": "Four plain lines hold a whole situation: three weeks, a toothbrush, and the reason it stays. 'But then it's really real' is the line everything leans on, so give it the longest note. The understatement is the strength; do not add an explanation after it. This could open a verse that a later chorus answers.",
-   "structure_hint": "verse_candidate",
-   "potential": "medium",
-   "transcript": null,
-   "status": "ready",
-   "seed": true,
-   "created_at": "2026-11-11T00:25:30",
-   "project_id": "6b2100000000000000000001",
-   "project_title": "Things Left Behind",
    "connection_reason": "Three lyrics about the same aftermath: things a person left behind that cannot be moved yet (the grey sweater, the toothbrush) and the question of whether any of it was real.",
    "connection_types": [
     "related_theme",
     "similar_emotion"
    ],
-   "agent_narrative": "Like the sweater, the toothbrush stays because moving it would make the ending real. I grouped it with the other two lyrics about the same aftermath."
+   "created_at": "2026-11-11T00:25:30",
+   "emotions": [
+    "melancholy",
+    "loss"
+   ],
+   "key": null,
+   "potential": "medium",
+   "project_id": "6b2100000000000000000001",
+   "project_title": "Things Left Behind",
+   "prompt_injection_flag": false,
+   "raw_text": "it's been three weeks now\nand your toothbrush is still here\nI should probably move it\nbut then it's really real",
+   "seed": true,
+   "status": "ready",
+   "structure_hint": "verse_candidate",
+   "style": [],
+   "suggestion": "Four plain lines hold a whole situation: three weeks, a toothbrush, and the reason it stays. 'But then it's really real' is the line everything leans on, so give it the longest note. The understatement is the strength; do not add an explanation after it. This could open a verse that a later chorus answers.",
+   "tags": [
+    "lyric",
+    "understatement"
+   ],
+   "text": "it's been three weeks now\nand your toothbrush is still here\nI should probably move it\nbut then it's really real",
+   "themes": [
+    "heartbreak",
+    "home"
+   ],
+   "title": "Three Weeks",
+   "transcript": null,
+   "type": "text",
+   "upload": null
   },
   {
    "_id": "6b2000000000000000000004",
    "user_id": "demo-seed-user",
-   "type": "text",
-   "title": "Front Row Ticket",
-   "text": "was any of it real or just mirrors\nmaybe it was always a show\nand I just bought a front row ticket\nand called it love",
-   "raw_text": "was any of it real or just mirrors\nmaybe it was always a show\nand I just bought a front row ticket\nand called it love",
-   "upload": null,
+   "agent_narrative": "This asks the question the other two lines circle around, whether any of it was real. It reads like the chorus for the sweater and toothbrush verses.",
+   "bpm": null,
+   "connection_reason": "Three lyrics about the same aftermath: things a person left behind that cannot be moved yet (the grey sweater, the toothbrush) and the question of whether any of it was real.",
+   "connection_types": [
+    "related_theme",
+    "similar_emotion"
+   ],
+   "created_at": "2026-11-11T00:26:30",
+   "emotions": [
+    "vulnerability",
+    "melancholy"
+   ],
+   "key": null,
+   "potential": "high",
+   "project_id": "6b2100000000000000000001",
+   "project_title": "Things Left Behind",
    "prompt_injection_flag": false,
+   "raw_text": "was any of it real or just mirrors\nmaybe it was always a show\nand I just bought a front row ticket\nand called it love",
+   "seed": true,
+   "status": "ready",
+   "structure_hint": "chorus_candidate",
+   "style": [],
+   "suggestion": "This states a whole idea in four lines and ends on the phrase worth remembering, which is what a chorus needs. The mirror image runs into the theatre image, the show and the front row ticket, and 'and called it love' closes it. Try the first line close to a whisper and let the voice open up by the last. Leave a beat of silence after 'called it love'.",
    "tags": [
     "lyric",
     "metaphor",
     "hook idea"
    ],
-   "emotions": [
-    "vulnerability",
-    "melancholy"
-   ],
+   "text": "was any of it real or just mirrors\nmaybe it was always a show\nand I just bought a front row ticket\nand called it love",
    "themes": [
     "heartbreak"
    ],
-   "style": [],
-   "key": null,
-   "bpm": null,
-   "suggestion": "This states a whole idea in four lines and ends on the phrase worth remembering, which is what a chorus needs. The mirror image runs into the theatre image, the show and the front row ticket, and 'and called it love' closes it. Try the first line close to a whisper and let the voice open up by the last. Leave a beat of silence after 'called it love'.",
-   "structure_hint": "chorus_candidate",
-   "potential": "high",
+   "title": "Front Row Ticket",
    "transcript": null,
-   "status": "ready",
-   "seed": true,
-   "created_at": "2026-11-11T00:26:30",
-   "project_id": "6b2100000000000000000001",
-   "project_title": "Things Left Behind",
-   "connection_reason": "Three lyrics about the same aftermath: things a person left behind that cannot be moved yet (the grey sweater, the toothbrush) and the question of whether any of it was real.",
-   "connection_types": [
-    "related_theme",
-    "similar_emotion"
-   ],
-   "agent_narrative": "This asks the question the other two lines circle around, whether any of it was real. It reads like the chorus for the sweater and toothbrush verses."
+   "type": "text",
+   "upload": null
   }
  ]
 }

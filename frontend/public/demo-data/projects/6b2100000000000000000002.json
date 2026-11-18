@@ -34,41 +34,41 @@
   {
    "_id": "6b2000000000000000000005",
    "user_id": "demo-seed-user",
-   "type": "text",
-   "title": "Tired of Swimming",
-   "text": "used to be able to hold my breath\nfor the length of a whole song\nthe water's not cold it's just heavy\nand I'm just tired of swimming",
-   "raw_text": "used to be able to hold my breath\nfor the length of a whole song\nthe water's not cold it's just heavy\nand I'm just tired of swimming",
-   "upload": null,
-   "prompt_injection_flag": false,
-   "tags": [
-    "lyric",
-    "water imagery"
-   ],
-   "emotions": [
-    "sadness",
-    "melancholy"
-   ],
-   "themes": [
-    "mental-health"
-   ],
-   "style": [],
-   "key": null,
+   "agent_narrative": "Your lyric about being too tired to swim belongs with the loop you called 'lake bottoms'. Both sink under the same weight.",
    "bpm": null,
-   "suggestion": "The image of a skill being lost, holding your breath for a whole song, carries more weight than drowning would. 'The water's not cold it's just heavy' refuses the obvious reading, which keeps it honest. It reads as a turn in a larger piece, a moment where the mood drops lower before anything resolves. Sing it close and low.",
-   "structure_hint": "bridge_candidate",
-   "potential": "medium",
-   "transcript": null,
-   "status": "ready",
-   "seed": true,
-   "created_at": "2026-11-11T00:28:50",
-   "project_id": "6b2100000000000000000002",
-   "project_title": "Too Heavy to Swim",
    "connection_reason": "The lyric is about being too tired to keep swimming, and you named this quiet, minor-key loop 'lake bottoms'. Both are about sinking under a weight.",
    "connection_types": [
     "related_theme",
     "similar_emotion"
    ],
-   "agent_narrative": "Your lyric about being too tired to swim belongs with the loop you called 'lake bottoms'. Both sink under the same weight."
+   "created_at": "2026-11-11T00:28:50",
+   "emotions": [
+    "sadness",
+    "melancholy"
+   ],
+   "key": null,
+   "potential": "medium",
+   "project_id": "6b2100000000000000000002",
+   "project_title": "Too Heavy to Swim",
+   "prompt_injection_flag": false,
+   "raw_text": "used to be able to hold my breath\nfor the length of a whole song\nthe water's not cold it's just heavy\nand I'm just tired of swimming",
+   "seed": true,
+   "status": "ready",
+   "structure_hint": "bridge_candidate",
+   "style": [],
+   "suggestion": "The image of a skill being lost, holding your breath for a whole song, carries more weight than drowning would. 'The water's not cold it's just heavy' refuses the obvious reading, which keeps it honest. It reads as a turn in a larger piece, a moment where the mood drops lower before anything resolves. Sing it close and low.",
+   "tags": [
+    "lyric",
+    "water imagery"
+   ],
+   "text": "used to be able to hold my breath\nfor the length of a whole song\nthe water's not cold it's just heavy\nand I'm just tired of swimming",
+   "themes": [
+    "mental-health"
+   ],
+   "title": "Tired of Swimming",
+   "transcript": null,
+   "type": "text",
+   "upload": null
   },
   {
    "_id": "6af3b6e346bd0f5f90c8341e",
@@ -106,15 +106,15 @@
    "suggestion": "A quiet 28-second loop at 136 BPM in A minor, mid-range in tone and moderately busy. The low level and minor key give it a heavy, submerged feel even at this tempo. Reversing a section and layering it under the forward version would deepen that underwater quality. Its mood is the same from start to end; consider breaking it once, with a single brighter chord or a filter opening, before it returns to depth. Keep anything added above it soft so the weight of the loop stays in front.",
    "potential": "medium",
    "structure_hint": "melodic_motif",
-   "transcript": null,
-   "project_id": "6b2100000000000000000002",
-   "project_title": "Too Heavy to Swim",
+   "agent_narrative": "The loop's low, subdued sound and its name meet the swimming lyric on the same image: going under. I grouped them on that.",
    "connection_reason": "The lyric is about being too tired to keep swimming, and you named this quiet, minor-key loop 'lake bottoms'. Both are about sinking under a weight.",
    "connection_types": [
     "related_theme",
     "similar_emotion"
    ],
-   "agent_narrative": "The loop's low, subdued sound and its name meet the swimming lyric on the same image: going under. I grouped them on that."
+   "project_id": "6b2100000000000000000002",
+   "project_title": "Too Heavy to Swim",
+   "transcript": null
   }
  ]
 }

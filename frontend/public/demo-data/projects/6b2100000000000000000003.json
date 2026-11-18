@@ -33,42 +33,42 @@
   {
    "_id": "6b2000000000000000000006",
    "user_id": "demo-seed-user",
-   "type": "text",
-   "title": "Coffee Order",
-   "text": "leave the dishes in the sink\nthe dog can come obviously\nI want to be somewhere\nwhere nobody knows my coffee order",
-   "raw_text": "leave the dishes in the sink\nthe dog can come obviously\nI want to be somewhere\nwhere nobody knows my coffee order",
-   "upload": null,
+   "agent_narrative": "This is about leaving for somewhere nobody knows you. You named a loop 'leave this place', so I put the two together.",
+   "bpm": null,
+   "connection_reason": "A lyric about leaving with no plan and a sparse, open loop you named 'leave this place': the same wish to be somewhere new.",
+   "connection_types": [
+    "related_theme"
+   ],
+   "created_at": "2026-11-11T00:29:20",
+   "emotions": [
+    "longing",
+    "playfulness"
+   ],
+   "key": null,
+   "potential": "medium",
+   "project_id": "6b2100000000000000000003",
+   "project_title": "Nobody Knows My Order",
    "prompt_injection_flag": false,
+   "raw_text": "leave the dishes in the sink\nthe dog can come obviously\nI want to be somewhere\nwhere nobody knows my coffee order",
+   "seed": true,
+   "status": "ready",
+   "structure_hint": "verse_candidate",
+   "style": [],
+   "suggestion": "Leaving, told through small and funny details: the dishes, the dog, the coffee order. 'Where nobody knows my coffee order' is a sharp way to say you want to be a stranger somewhere, and it could be the title line. Keep the rhythm conversational. A second verse from the other side, after arriving, would give it somewhere to go.",
    "tags": [
     "lyric",
     "humor",
     "everyday detail"
    ],
-   "emotions": [
-    "longing",
-    "playfulness"
-   ],
+   "text": "leave the dishes in the sink\nthe dog can come obviously\nI want to be somewhere\nwhere nobody knows my coffee order",
    "themes": [
     "freedom-escape",
     "home"
    ],
-   "style": [],
-   "key": null,
-   "bpm": null,
-   "suggestion": "Leaving, told through small and funny details: the dishes, the dog, the coffee order. 'Where nobody knows my coffee order' is a sharp way to say you want to be a stranger somewhere, and it could be the title line. Keep the rhythm conversational. A second verse from the other side, after arriving, would give it somewhere to go.",
-   "structure_hint": "verse_candidate",
-   "potential": "medium",
+   "title": "Coffee Order",
    "transcript": null,
-   "status": "ready",
-   "seed": true,
-   "created_at": "2026-11-11T00:29:20",
-   "project_id": "6b2100000000000000000003",
-   "project_title": "Nobody Knows My Order",
-   "connection_reason": "A lyric about leaving with no plan and a sparse, open loop you named 'leave this place': the same wish to be somewhere new.",
-   "connection_types": [
-    "related_theme"
-   ],
-   "agent_narrative": "This is about leaving for somewhere nobody knows you. You named a loop 'leave this place', so I put the two together."
+   "type": "text",
+   "upload": null
   },
   {
    "_id": "6af3b6e746bd0f5f90c8341f",
@@ -106,14 +106,14 @@
    "suggestion": "A short, sparse loop at 123 BPM in D minor, bright in tone and with the fewest attacks in the library, about 1.3 per second. It has a sense of open space and forward lean at once, which suits a part that moves without crowding. A steady, simple pulse underneath would add motion without filling the gaps. The brightness leaves room below for a warm bass line. Try it as the opening of an arrangement, where its spaciousness can set the tone.",
    "potential": "medium",
    "structure_hint": "melodic_motif",
-   "transcript": null,
-   "project_id": "6b2100000000000000000003",
-   "project_title": "Nobody Knows My Order",
+   "agent_narrative": "The loop's name and its open, spacious sound match the coffee-order lyric's wish to leave. That shared wish is the link.",
    "connection_reason": "A lyric about leaving with no plan and a sparse, open loop you named 'leave this place': the same wish to be somewhere new.",
    "connection_types": [
     "related_theme"
    ],
-   "agent_narrative": "The loop's name and its open, spacious sound match the coffee-order lyric's wish to leave. That shared wish is the link."
+   "project_id": "6b2100000000000000000003",
+   "project_title": "Nobody Knows My Order",
+   "transcript": null
   }
  ]
 }
