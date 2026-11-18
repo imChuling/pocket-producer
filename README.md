@@ -9,8 +9,7 @@ Audiotool project you are working on, ranks your own audio fragments by how
 well they could fit that piece of music, shows the evidence behind each
 suggestion, and lets you preview, insert, and undo.
 
-**Revision of 2026-11-16:** start with the short
-[project note](docs/portfolio/PROJECT_NOTE.md).
+**Revision of 2026-11-16:**
 `beat-fit-v1` is merged, registered and deployed as a selectable ranker; fragments
 ingested before it carry no stored beat frames, and no production backfill has run,
 so it scores only newer fragments. Feedback training is an offline prototype.

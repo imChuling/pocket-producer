@@ -10,7 +10,7 @@ the production frame backfill has not run, so fragments ingested before it
 are left out of its lists. Offline feedback training is not automatic online
 adaptation. Seven-signal artifacts are explicitly research-only and rejected
 by the online five-signal loader. See [capability boundaries and evidence
-semantics](research/design-online-signals.md) and the [project note](docs/portfolio/PROJECT_NOTE.md).
+semantics](research/design-online-signals.md).
 
 Controlled perturbation and as-is synchronized-stem retrieval results do
 not establish musician preference or improved creativity. The two-signal

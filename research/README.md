@@ -358,6 +358,5 @@ not preference testing or adapted-loop retrieval.
 Feedback training aligns by recorded signal names and availability masks.
 Extended weights are research-only and cannot be loaded by the online
 five-signal ranker. Beat-fit/backfill changes are local, not a deployed or
-automatically learning service; see [online design](design-online-signals.md)
-and [portfolio note](../docs/portfolio/PROJECT_NOTE.md). Missing masks in historical
+automatically learning service; see [online design](design-online-signals.md). Missing masks in historical
 extended logs cannot be repaired by treating zero as a valid measurement.
