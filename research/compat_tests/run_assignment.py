@@ -8,7 +8,7 @@ scorers, combinations and statistics are retrieval's own functions, used
 unchanged. No audio is touched.
 
   python -m research.compat_tests.run_assignment \
-    --store /Volumes/Shirlene/Pocket_Producer/cache/musdb18_v1 \
+    --store /Volumes/Shirlene2/Pocket_Producer/cache/musdb18_v1 \
     --output artifacts/compat-assignment-musdb18
 """
 
@@ -34,7 +34,7 @@ from .run_retrieval import (
     summarise,
 )
 
-DEFAULT_STORE = pathlib.Path("/Volumes/Shirlene/Pocket_Producer/cache/musdb18_v1")
+DEFAULT_STORE = pathlib.Path("/Volumes/Shirlene2/Pocket_Producer/cache/musdb18_v1")
 PRIMARY_POOL = "same_role"
 BASELINES = ("fusion5_online", "clap_cos_mean")
 CHALLENGERS = ("classic_grid", "classic_onset", "fusion_plus_classic_onset", "cocola")
