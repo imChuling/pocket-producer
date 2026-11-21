@@ -9,7 +9,7 @@ older fragments have not been backfilled with beat frames. The
 capacity-ladder models described below are research models and are not
 deployed. Training from logged feedback exists only as an offline prototype;
 its seven-signal variant is research-only and the online loader refuses it.
-In this checkout, Beat Fit compares accents on the beats where both parts
+Beat Fit compares accents on the beats where both parts
 sound. A rhythm value measured for just one candidate appears on its card
 but cannot move it ahead of another. The reported retrieval scores use the
 earlier full-window measure. See the [design notes](research/design-online-signals.md).

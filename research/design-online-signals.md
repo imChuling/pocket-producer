@@ -1,8 +1,7 @@
 # Design: beat-synchronous signals online
 
-The deployed `beat-fit-v1` is selectable. This checkout revises its onset
-measurement and opening-window sample selection. Deployment of this revision
-has not been verified.
+The deployed `beat-fit-v1` is selectable. Since 2026-11-21 it measures onsets
+on shared sounding beats and selects samples from the opening window.
 
 ## Goal
 
@@ -20,7 +19,7 @@ that adding harmony helps.
 
 Two uses:
 
-1. `beat-fit-v1` scores harmony and rhythm together. The local revision restricts rhythm to shared sounding beats.
+1. `beat-fit-v1` scores harmony and rhythm together. The current revision restricts rhythm to shared sounding beats.
 2. `fusion-5sig-v1` logs them next to its own five, so fusion weights that
    include them can later be learned from logged decisions with
    `research/finetune_from_feedback.py --extra-signals
@@ -43,7 +42,7 @@ checks their numerical agreement.
    both sides sound (0 with fewer than 4 such beats); `onset_pattern` =
    full-grid Pearson correlation of the two slot patterns mapped to [0, 1].
    The frozen MUSDB comparisons and fusion logs use this full-grid signal.
-4. Local Beat Fit computes `onset_pattern_shared_beats` from the eight slots
+4. Beat Fit computes `onset_pattern_shared_beats` from the eight slots
    of each beat where both chroma rows have nonzero norm after RMS gating.
    Both the flatness check and the correlation use those same slots. At
    least four shared beats and two varying patterns are required for rhythm
@@ -53,7 +52,7 @@ In a synthetic 120 BPM opening, the onset strengths rise across each beat
 in one part and fall in the other. Both play for four beats and rest for
 sixteen. Their full-grid correlation is +0.30. On the four sounding beats
 it is −1.00. If either part has constant onset strength on those beats,
-the local ranker reports rhythm as unavailable. The signed value describes
+Beat Fit reports rhythm as unavailable. The signed value describes
 whether accents coincide. A musician may still prefer alternating accents.
 The frozen retrieval and behavioural results do not evaluate this variant.
 
@@ -71,7 +70,7 @@ tempo the helper returns no grid; malformed API input is rejected.
   uploads `/session-embed` already receives, the project `bpm` and
   `placements`: one list per uploaded file of
   `{start_beats, duration_beats}`.
-- For local Beat Fit, only readable placements that start before the
+- For Beat Fit, only readable placements that start before the
   opening grid's final boundary qualify. The frontend takes the first eight
   distinct samples among those placements in document order and sends their
   in-window placements. At 70 BPM, for example, the last whole beat ends at
@@ -105,7 +104,7 @@ tempo the helper returns no grid; malformed API input is rejected.
 
 ## Rankers and logging
 
-- `beat-fit-v1` (local revision `shared-beat-onsets-v4`): sum of the
+- `beat-fit-v1` (revision `shared-beat-onsets-v4`): sum of the
   signals standardised over candidates with usable values for each signal.
   With several candidates, a signal needs two measurements to affect their
   order. A rhythm measurement available for just one candidate still appears
@@ -137,7 +136,7 @@ tempo the helper returns no grid; malformed API input is rejected.
 |---|---|
 | Five-signal fusion and reversible DAW insert | Deployed; fusion is selectable, `rules-v1` is the default |
 | Beat-fit, frame ingest, bounded grid, availability/evidence fixes | Deployed; `beat-fit-v1` is selectable |
-| Shared-beat onset scoring and selection of opening samples before the cap | Local revision with synthetic regression tests. Deployment unverified |
+| Shared-beat onset scoring and selection of opening samples before the cap | Deployed 2026-11-21; synthetic regression tests only, no retrieval or listener evaluation |
 | Existing-fragment frame backfill | Script exists; not run on production |
 | Five-signal feedback training | Offline research workflow, tested artifact-to-loader-to-score; not automatic online learning |
 | Seven-signal feedback training | Research only; artifact marked nondeployable, distinct identity; online five-signal loader refuses it |
