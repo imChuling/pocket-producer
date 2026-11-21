@@ -1,9 +1,11 @@
 """Route tests for /api/projects/audiotool-session link/unlink."""
 
+from copy import deepcopy
 from unittest.mock import MagicMock, patch
 
 import pytest
 from bson import ObjectId
+from pymongo.errors import DuplicateKeyError
 
 FAKE_USER_ID = "test_user_123"
 
@@ -17,7 +19,9 @@ class StubCollection:
 
     def insert_one(self, doc):
         doc.setdefault("_id", ObjectId())
-        self.docs.append(doc)
+        if any(existing["_id"] == doc["_id"] for existing in self.docs):
+            raise DuplicateKeyError("duplicate _id")
+        self.docs.append(deepcopy(doc))
         result = MagicMock()
         result.inserted_id = doc["_id"]
         return result
@@ -25,7 +29,7 @@ class StubCollection:
     def find_one(self, query, projection=None, sort=None):
         for doc in self.docs:
             if self._matches(doc, query):
-                return doc
+                return deepcopy(doc)
         return None
 
     def find(self, query, projection=None):
@@ -33,7 +37,7 @@ class StubCollection:
 
     def update_one(self, query, update):
         result = MagicMock()
-        result.modified_count = 0
+        result.matched_count = result.modified_count = 0
         for doc in self.docs:
             if self._matches(doc, query):
                 for key, value in update.get("$set", {}).items():
@@ -45,8 +49,11 @@ class StubCollection:
                     if value not in doc[key]:
                         doc[key].append(value)
                 for key, value in update.get("$pull", {}).items():
-                    doc[key] = [v for v in doc.get(key, []) if v != value]
-                result.modified_count = 1
+                    if key in doc:
+                        doc[key] = [v for v in doc[key] if not (
+                            self._matches(v, value) if isinstance(value, dict) else v == value
+                        )]
+                result.matched_count = result.modified_count = 1
                 break
         return result
 
@@ -54,7 +61,17 @@ class StubCollection:
         for i, doc in enumerate(self.docs):
             if self._matches(doc, query):
                 del self.docs[i]
-                break
+                return MagicMock(deleted_count=1)
+        return MagicMock(deleted_count=0)
+
+    def update_many(self, query, update):
+        ids = [doc["_id"] for doc in self.docs if self._matches(doc, query)]
+        for oid in ids:
+            self.update_one({"_id": oid}, update)
+        return MagicMock(modified_count=len(ids))
+
+    def delete_many(self, query):
+        self.docs = [doc for doc in self.docs if not self._matches(doc, query)]
 
     @staticmethod
     def _matches(doc, query):
@@ -62,6 +79,12 @@ class StubCollection:
             value = doc.get(key)
             if isinstance(expected, dict) and "$in" in expected:
                 if value not in expected["$in"]:
+                    return False
+            elif isinstance(expected, dict) and "$size" in expected:
+                if not isinstance(value, list) or len(value) != expected["$size"]:
+                    return False
+            elif isinstance(value, list) and not isinstance(expected, list):
+                if expected not in value:
                     return False
             elif value != expected:
                 return False
@@ -243,3 +266,124 @@ def test_unlink_without_session_project_is_noop(auth_client):
     )
     assert response.status_code == 200
     assert response.json() == {"unlinked": False}
+
+
+def test_undo_targets_one_placement_and_retries_are_idempotent(auth_client):
+    seed_fragment()
+    link = "/api/projects/audiotool-session"
+    first = {**link_payload(), "insertion_id": "region-1"}
+    second = {**link_payload(), "insertion_id": "region-2"}
+    for payload in (first, second, second):
+        assert auth_client.post(link, json=payload, headers=HEADERS).is_success
+
+    assert auth_client.post(link + "/unlink", json=second, headers=HEADERS).json() == {
+        "unlinked": True, "project_deleted": False,
+    }
+    assert auth_client.post(link + "/unlink", json=second, headers=HEADERS).json() == {
+        "unlinked": False,
+    }
+    assert _stub_db["projects"].docs[0]["fragment_ids"] == [str(FRAGMENT_A)]
+    assert auth_client.post(link + "/unlink", json=first, headers=HEADERS).json() == {
+        "unlinked": True, "project_deleted": True,
+    }
+
+
+def test_named_placement_preserves_legacy_membership(auth_client):
+    seed_fragment()
+    _stub_db["projects"].insert_one({
+        "user_id": FAKE_USER_ID, "audiotool_project_id": "at-project-1",
+        "fragment_ids": [str(FRAGMENT_A)], "title": "Legacy session",
+    })
+    link = "/api/projects/audiotool-session"
+    named = {**link_payload(), "insertion_id": "region-new"}
+    auth_client.post(link, json=named, headers=HEADERS).raise_for_status()
+    assert auth_client.post(link + "/unlink", json=named, headers=HEADERS).json() == {
+        "unlinked": True, "project_deleted": False,
+    }
+    assert auth_client.post(link + "/unlink", json=link_payload(), headers=HEADERS).json() == {
+        "unlinked": True, "project_deleted": True,
+    }
+
+
+def test_concurrent_first_links_share_one_project(auth_client, monkeypatch):
+    from api.routes.projects import AudiotoolLinkRequest, _link_audiotool_sync
+
+    seed_fragment(FRAGMENT_A)
+    seed_fragment(FRAGMENT_B)
+    projects = _stub_db["projects"]
+    insert = projects.insert_one
+
+    def interleaved_create(doc):
+        monkeypatch.setattr(projects, "insert_one", insert)
+        other = AudiotoolLinkRequest(**link_payload(str(FRAGMENT_B)), insertion_id="b")
+        _link_audiotool_sync(_stub_db, FAKE_USER_ID, other)
+        return insert(doc)
+
+    monkeypatch.setattr(projects, "insert_one", interleaved_create)
+    response = auth_client.post(
+        "/api/projects/audiotool-session", json={**link_payload(), "insertion_id": "a"},
+        headers=HEADERS,
+    )
+    response.raise_for_status()
+    assert len(projects.docs) == 1
+    assert set(projects.docs[0]["fragment_ids"]) == {str(FRAGMENT_A), str(FRAGMENT_B)}
+
+
+def test_last_unlink_racing_another_link_preserves_the_new_placement(auth_client, monkeypatch):
+    from api.routes.projects import AudiotoolLinkRequest, _link_audiotool_sync
+
+    seed_fragment(FRAGMENT_A)
+    seed_fragment(FRAGMENT_B)
+    url = "/api/projects/audiotool-session"
+    payload = {**link_payload(), "insertion_id": "a"}
+    auth_client.post(url, json=payload, headers=HEADERS).raise_for_status()
+    projects = _stub_db["projects"]
+    delete = projects.delete_one
+
+    def interleaved_delete(query):
+        monkeypatch.setattr(projects, "delete_one", delete)
+        other = AudiotoolLinkRequest(**link_payload(str(FRAGMENT_B)), insertion_id="b")
+        _link_audiotool_sync(_stub_db, FAKE_USER_ID, other)
+        return delete(query)
+
+    monkeypatch.setattr(projects, "delete_one", interleaved_delete)
+    result = auth_client.post(url + "/unlink", json=payload, headers=HEADERS)
+    assert result.json() == {"unlinked": True, "project_deleted": False}
+    assert projects.docs[0]["fragment_ids"] == [str(FRAGMENT_B)]
+
+
+
+def test_fragment_deletion_cleans_its_placements_and_preserves_other_members(auth_client):
+    seed_fragment(FRAGMENT_A)
+    a, b = str(FRAGMENT_A), str(FRAGMENT_B)
+    other = {"fragment_id": b, "insertion_id": "region-b"}
+    _stub_db["projects"].insert_one({
+        "user_id": FAKE_USER_ID, "audiotool_project_id": "session", "fragment_ids": [a, b],
+        "audiotool_insertions": [{"fragment_id": a, "insertion_id": "region-a"}, other],
+    })
+    unrelated = _stub_db["projects"].insert_one({
+        "user_id": FAKE_USER_ID, "fragment_ids": [], "sections": ["draft arrangement"],
+    })
+    auth_client.post(f"/api/fragments/{a}/delete", headers=HEADERS).raise_for_status()
+    assert _stub_db["projects"].find_one({"_id": unrelated.inserted_id}) is not None
+    project = _stub_db["projects"].docs[0]
+    assert project["fragment_ids"] == [b]
+    assert project["audiotool_insertions"] == [other]
+
+
+def test_concurrent_fragment_deletion_does_not_leave_a_dangling_mirror(auth_client, monkeypatch):
+    seed_fragment()
+    projects = _stub_db["projects"]
+    insert = projects.insert_one
+
+    def delete_fragment_before_create(doc):
+        _stub_db["fragments"].delete_one({"_id": FRAGMENT_A})
+        return insert(doc)
+
+    monkeypatch.setattr(projects, "insert_one", delete_fragment_before_create)
+    response = auth_client.post(
+        "/api/projects/audiotool-session", json={**link_payload(), "insertion_id": "region-a"},
+        headers=HEADERS,
+    )
+    assert response.status_code == 404
+    assert projects.docs == []

@@ -81,6 +81,8 @@ def test_export_writes_no_identity_and_feeds_the_pair_builder(tmp_path):
     assert set(requests[0]) <= set(REQUEST_FIELDS) | {"participant_hash"}
     assert all(set(row) <= set(FEEDBACK_FIELDS) | {"participant_hash"} for row in feedback)
     assert requests[0]["created_at"] == WHEN.isoformat()
+    assert all(row["exposure_verified"] is True for row in feedback)
+    assert all(row["participant_hash"] == requests[0]["participant_hash"] for row in feedback)
 
     pairs = build_feedback_pairs(requests, feedback)
     assert [(p["positive"], p["negative"]) for p in pairs] == [("good", "bad")]

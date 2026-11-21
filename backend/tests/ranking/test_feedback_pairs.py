@@ -173,3 +173,40 @@ def test_extended_pairs_without_available_training_signals_are_skipped(mask):
         )
         == []
     )
+
+
+@pytest.mark.parametrize(("actions", "retained"), [
+    ([("accept", None)], False),
+    ([("insert", None), ("undo", None)], False),
+    ([("undo", None), ("insert", None)], True),
+    ([("insert", None), ("undo", None), ("insert", None)], True),
+    ([("insert", None), ("insert", None), ("undo", None)], True),
+    ([("insert", "x"), ("insert", "y"), ("undo", "x"), ("undo", "x")], True),
+    ([("insert", "x"), ("undo", "other")], True),
+    ([("insert", "x"), ("undo", "x"), ("insert", "x")], False),
+])
+def test_only_retained_insertions_supervise_training(actions, retained):
+    feedback = [
+        {
+            **event("r1", "a", name), "insertion_id": placement,
+            "created_at": f"2026-11-19T09:00:0{i}Z",
+        }
+        for i, (name, placement) in enumerate(actions)
+    ]
+    pairs = build_feedback_pairs(
+        [served("r1", ["a", "b"], [SIG_A, SIG_B])],
+        [event("r1", "b", "reject"), *reversed(feedback)],
+    )
+    assert bool(pairs) is retained
+
+
+@pytest.mark.parametrize(("identity", "allowed"), [
+    ({"participant_hash": "someone-else", "exposure_verified": True}, False),
+    ({"participant_hash": "owner", "exposure_verified": False}, False),
+    ({"participant_hash": "owner", "exposure_verified": True}, True),
+    ({}, True),
+])
+def test_training_checks_verified_exposure_and_participant_when_available(identity, allowed):
+    req = {**served("r", ["a", "b"], [SIG_A, SIG_B]), "participant_hash": "owner"}
+    feedback = [{**event("r", "a", "insert"), **identity}, event("r", "b", "reject")]
+    assert bool(build_feedback_pairs([req], feedback)) is allowed

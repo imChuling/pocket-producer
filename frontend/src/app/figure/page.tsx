@@ -22,9 +22,11 @@ const FINGERPRINT: SessionFingerprint = {
   text_intent: "dark bass, slower bridge",
 };
 
-const FRAGMENTS: Fragment[] = [
+const FRAGMENTS: (Fragment & { upload: { duration_sec: number } })[] = [
   {
     _id: "f1",
+    audio_url: "/api/fragments/f1/audio",
+    upload: { duration_sec: 8 },
     user_id: "demo",
     type: "audio",
     title: "Rooftop pad idea (voice memo)",
@@ -35,6 +37,8 @@ const FRAGMENTS: Fragment[] = [
   },
   {
     _id: "f2",
+    audio_url: "/api/fragments/f2/audio",
+    upload: { duration_sec: 4 },
     user_id: "demo",
     type: "audio",
     title: "Late-night perc jam",
@@ -45,6 +49,8 @@ const FRAGMENTS: Fragment[] = [
   },
   {
     _id: "f3",
+    audio_url: "/api/fragments/f3/audio",
+    upload: { duration_sec: 6 },
     user_id: "demo",
     type: "audio",
     title: "Tape hiss texture, Jul 14",

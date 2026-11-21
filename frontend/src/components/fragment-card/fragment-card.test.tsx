@@ -45,3 +45,36 @@ describe("FragmentCard delete", () => {
     expect(onDeleted).not.toHaveBeenCalled();
   });
 });
+
+describe("FragmentCard analysis status", () => {
+  it("shows a stopped analysis as failed instead of processing forever", () => {
+    render(
+      <FragmentCard
+        fragment={{
+          ...textFragment,
+          status: "processing",
+          pipeline_step: "Analyzing emotions and themes...",
+          analysis_stalled: true,
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Processing failed")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /reanalyze fragment/i })).toBeEnabled();
+  });
+
+  it("keeps a running analysis in progress", () => {
+    render(
+      <FragmentCard
+        fragment={{
+          ...textFragment,
+          status: "processing",
+          pipeline_step: "Analyzing emotions and themes...",
+          analysis_stalled: false,
+        }}
+      />,
+    );
+
+    expect(screen.queryByText("Processing failed")).not.toBeInTheDocument();
+  });
+});

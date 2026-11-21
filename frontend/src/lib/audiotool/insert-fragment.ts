@@ -5,7 +5,7 @@
 // acknowledged by the server, so a failed upload never leaves a broken
 // sample entity in the user's project. The insert happens in one Nexus
 // transaction; on failure no partial timeline state exists. The receipt
-// records every created entity so undo removes exactly this insertion.
+// records the inserted region and its routing so undo can preserve later copies.
 
 import { secondsToTicks } from "@audiotool/nexus/utils";
 
@@ -21,6 +21,8 @@ type EntityLike = { id: string; entityType?: string };
 type TransactionLike = {
   entities: {
     get: () => EntityLike[];
+    has: (id: string) => boolean;
+    pointingTo: { entities: (...ids: string[]) => { get: () => EntityLike[] } };
   };
   insertSample: (
     sample: { name: string; durationSeconds: number; bpm?: number },
@@ -30,6 +32,7 @@ type TransactionLike = {
       displayName?: string;
     },
   ) => EntityLike;
+  remove: (id: string) => void;
   removeWithDependencies: (id: string) => void;
 };
 
@@ -121,12 +124,18 @@ export async function undoInsert(
   receipt: InsertReceipt,
 ): Promise<void> {
   await document.modify((t) => {
-    const created = new Set(receipt.createdEntityIds);
-    for (const id of [...receipt.createdEntityIds].reverse()) {
-      const stillExists = t.entities
-        .get()
-        .some((entity) => entity.id === id && created.has(id));
-      if (stillExists) t.removeWithDependencies(id);
+    if (t.entities.has(receipt.regionId)) t.remove(receipt.regionId);
+
+    const remaining = receipt.createdEntityIds.filter((id) => t.entities.has(id));
+    if (!remaining.length) return;
+    const owned = new Set(remaining);
+    const shared = t.entities.pointingTo.entities(...remaining).get()
+      .some((entity) => !owned.has(entity.id));
+    // A new region can reuse the track and sample. Keep their complete
+    // playback routing, including cables that have no incoming references.
+    if (shared) return;
+    for (const id of remaining.reverse()) {
+      if (t.entities.has(id)) t.removeWithDependencies(id);
     }
   });
 }

@@ -209,3 +209,21 @@ describe("importProjectAsFragments", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+
+it("retries only the unfinished samples of a partial import", async () => {
+  const doc = fakeDocument(
+    [{ id: "r1", sampleRef: "s1" }, { id: "r2", sampleRef: "s2" }],
+    [{ id: "s1", sampleName: "one" }, { id: "s2", sampleName: "two" }],
+  );
+  const downloaded = vi.fn<(name: string) => Promise<Blob>>(async () => new Blob(["wav"]));
+  downloaded.mockRejectedValueOnce(new Error("offline"));
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true })));
+  const imported = new Set<string>();
+  const options = {
+    projectDisplayName: "Sketchbook", getAuthToken: async () => "token",
+    alreadyImported: imported, onImported: (name: string) => imported.add(name),
+  };
+  await importProjectAsFragments(doc, { download: downloaded }, options);
+  await importProjectAsFragments(doc, { download: downloaded }, options);
+  expect(downloaded.mock.calls.map(([name]) => name)).toEqual(["one", "two", "one"]);
+});

@@ -69,6 +69,8 @@ export type ImportOptions = {
   getAuthToken: () => Promise<string>;
   onProgress?: (done: number, total: number) => void;
   signal?: AbortSignal;
+  alreadyImported?: ReadonlySet<string>;
+  onImported?: (sampleName: string) => void;
 };
 
 export async function importProjectAsFragments(
@@ -76,7 +78,9 @@ export async function importProjectAsFragments(
   samplesApi: { download: NexusSamplesPort["download"] },
   options: ImportOptions,
 ): Promise<ProjectImportResult> {
-  const sampleNames = listImportableSampleNames(document);
+  const sampleNames = listImportableSampleNames(document).filter(
+    (name) => !options.alreadyImported?.has(name),
+  );
   if (sampleNames.length === 0) {
     return { imported: 0, failed: 0, totalSamples: 0 };
   }
@@ -96,6 +100,7 @@ export async function importProjectAsFragments(
   ): Promise<Response> {
     let response: Response | null = null;
     for (let attempt = 0; attempt < attempts; attempt++) {
+      opts.signal?.throwIfAborted();
       const token = await opts.getAuthToken();
       response = await fetch(url, {
         method: "POST",
@@ -126,8 +131,7 @@ export async function importProjectAsFragments(
     try {
       const blob = await samplesApi.download(name, { format: "wav" });
       if (blob instanceof Error) {
-        failed++;
-        continue;
+        throw blob;
       }
       const shortName = name.replace(/\//g, "_");
       const wavBlob =
@@ -142,6 +146,7 @@ export async function importProjectAsFragments(
       const response = await postWithRetry("/api/ingest", formData, options);
       if (response.ok) {
         imported++;
+        options.onImported?.(name);
       } else {
         failed++;
       }

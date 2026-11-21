@@ -16,6 +16,10 @@ class Recorder:
     def find_one(self, query, projection=None):
         return dict(self.doc) if query.get("_id") == self.doc["_id"] else None
 
+    def find_one_and_update(self, query, update, **kwargs):
+        self.updates.append(update)
+        return {"user_edited_fields": update["$addToSet"]["user_edited_fields"]["$each"]}
+
     def update_one(self, query, update):
         self.updates.append(update)
         return MagicMock(matched_count=1)

@@ -7,46 +7,59 @@ import { useAuth } from "./use-auth";
 import type { Fragment } from "@/types";
 
 const POLL_INTERVAL = 10_000;
-// After this long a "processing" fragment is stuck (the capture page shows
-// the same threshold with a fix-up action); polling it would never end.
-const STUCK_AFTER_MS = 2 * 60 * 1000;
+const EMPTY_FRAGMENTS: Fragment[] = [];
 
-function stillProcessing(fragment: Fragment): boolean {
-  if (fragment.status !== "processing") return false;
-  if (fragment.tags && fragment.tags.length > 0) return false;
-  const started = new Date(fragment.created_at).getTime();
-  return !Number.isFinite(started) || Date.now() - started < STUCK_AFTER_MS;
-}
+type FragmentPage = { fragments: Fragment[]; next_cursor?: string | null };
 
-export function useFragments() {
+export function useFragments(before: string | null = null) {
   const { user } = useAuth();
-  const [fragments, setFragments] = useState<Fragment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState<{
+    scope: string;
+    page: FragmentPage;
+    error?: string;
+  } | null>(null);
+  const latestRequest = useRef<symbol | null>(null);
+  const scope = JSON.stringify([user?.uid, before]);
+  const current = loaded?.scope === scope ? loaded : null;
+  const fragments = current?.page.fragments ?? EMPTY_FRAGMENTS;
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const refresh = useCallback(async () => {
     if (!user) return;
+    const request = Symbol();
+    latestRequest.current = request;
+    const query = new URLSearchParams({ limit: "200" });
+    if (before) query.set("before", before);
     try {
-      const data = await apiFetch<{ fragments: Fragment[] }>("/fragments?limit=200");
-      setFragments(data.fragments);
+      const page = await apiFetch<FragmentPage>(`/fragments?${query}`);
+      if (request === latestRequest.current) setLoaded({ scope, page });
     } catch {
-      /* silent */
-    } finally {
-      setLoading(false);
+      if (request === latestRequest.current) {
+        setLoaded((previous) => ({
+          scope,
+          page: previous?.scope === scope ? previous.page : { fragments: [] },
+          error: "Could not load your sketches.",
+        }));
+      }
     }
-  }, [user]);
+  }, [user, before, scope]);
 
   // Initial fetch
   useEffect(() => {
     const id = window.setTimeout(() => {
       void refresh();
     }, 0);
-    return () => window.clearTimeout(id);
+    return () => {
+      window.clearTimeout(id);
+      latestRequest.current = null;
+    };
   }, [refresh]);
 
   // Auto-poll while any fragment can still finish processing
   useEffect(() => {
-    const hasProcessing = fragments.some(stillProcessing);
+    const hasProcessing = fragments.some((fragment) => fragment.status === "processing" &&
+      !fragment.analysis_stalled &&
+      fragment.pipeline_step !== "done" && fragment.pipeline_step !== "error");
 
     if (hasProcessing) {
       if (!timerRef.current) {
@@ -69,5 +82,5 @@ export function useFragments() {
     };
   }, [fragments, refresh]);
 
-  return { fragments, loading, refresh };
+  return { fragments, loading: !current, refresh, nextCursor: current?.page.next_cursor, error: current?.error };
 }

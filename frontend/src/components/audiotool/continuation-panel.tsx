@@ -5,6 +5,7 @@ import { Loader2, Sparkles } from "lucide-react";
 
 import { CandidateCard } from "@/components/audiotool/candidate-card";
 import { SessionSummary } from "@/components/audiotool/session-summary";
+import { toCandidates, type FeedbackPayload } from "@/lib/ranking-api";
 import type { Fragment } from "@/types";
 import type {
   ParsedIntent,
@@ -13,14 +14,7 @@ import type {
   SessionFingerprint,
 } from "@/types/audiotool";
 
-export type PanelFeedback = {
-  request_id: string;
-  project_id: string;
-  fragment_id: string;
-  event: RecommendationEvent;
-  rank_position: number;
-  model_id: string;
-};
+export type PanelFeedback = FeedbackPayload;
 
 type PanelStatus = "idle" | "loading" | "ready" | "error";
 
@@ -54,20 +48,12 @@ const MODEL_LABELS: Record<string, string> = {
   "pocketrank-context-v1": "PocketRank",
 };
 
-export function ContinuationPanel({
-  fingerprint,
-  fragments,
-  availableModels,
-  requestRecommendations,
-  onIntentChange,
-  sessionAudioNote,
-  parsedIntent,
-  onParsedIntentChange,
-  onPreview,
-  onInsert,
-  onFeedback,
-}: {
+type PanelProps = {
+  libraryPage?: string | null;
+  libraryReady?: boolean;
+  mutationPending?: boolean;
   fingerprint: SessionFingerprint;
+  intentText?: string;
   fragments: Fragment[];
   /** Model ids actually registered on the server (/ranking/model-card).
    * Absent or empty means only the guaranteed rules fallback is offered. */
@@ -75,6 +61,7 @@ export function ContinuationPanel({
   requestRecommendations: (
     limit: number,
     modelId: string,
+    skipped: ReadonlySet<string>,
   ) => Promise<RankResponse>;
   onIntentChange: (intent: string) => void;
   /** Why session audio may be missing; explains a fallback to rules. */
@@ -83,16 +70,60 @@ export function ContinuationPanel({
   parsedIntent?: ParsedIntent | null;
   onParsedIntentChange?: (parsed: ParsedIntent | null) => void;
   onPreview: (fragment: Fragment) => Promise<void> | void;
-  onInsert: (fragment: Fragment) => Promise<void>;
+  onInsert: (fragment: Fragment, feedback: PanelFeedback) => Promise<string | void>;
   onFeedback: (feedback: PanelFeedback) => void;
+};
+
+export function ContinuationPanel(props: PanelProps) {
+  const [intensity, setIntensity] = useState<Intensity>("suggest");
+  const [modelId, setModelId] = useState<string | null>(null);
+  const scope = JSON.stringify([props.fingerprint.project_id, props.fingerprint.text_intent]);
+  const [history, setHistory] = useState(() => ({ scope, edit: 0, skipped: new Set<string>() }));
+  if (history.scope !== scope) {
+    setHistory({ scope, edit: 0, skipped: new Set() });
+  }
+
+  return (
+    <div className="space-y-4">
+      <SessionSummary
+        fingerprint={props.fingerprint}
+        intentText={props.intentText ?? props.fingerprint.text_intent}
+        onIntentChange={props.onIntentChange}
+        parsedIntent={props.parsedIntent}
+        onParsedIntentChange={props.onParsedIntentChange}
+        onEditInterpretation={() => setHistory({ scope, edit: history.edit + 1, skipped: new Set() })}
+      />
+      {props.libraryReady !== false && (
+        <Suggestions
+          key={JSON.stringify([scope, history.edit, props.libraryPage])}
+          {...props}
+          skipped={history.skipped}
+          setSkipped={(skipped) => setHistory({ ...history, skipped })}
+          intensity={intensity}
+          setIntensity={setIntensity}
+          modelId={modelId}
+          setModelId={setModelId}
+        />
+      )}
+    </div>
+  );
+}
+
+function Suggestions({
+  fingerprint, fragments, availableModels, requestRecommendations, sessionAudioNote,
+  onPreview, onInsert, onFeedback, mutationPending, intensity, setIntensity, modelId, setModelId,
+  skipped, setSkipped,
+}: PanelProps & {
+  skipped: ReadonlySet<string>;
+  setSkipped: (ids: Set<string>) => void;
+  intensity: Intensity;
+  setIntensity: (level: Intensity) => void;
+  modelId: string | null;
+  setModelId: (id: string) => void;
 }) {
   const [status, setStatus] = useState<PanelStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [response, setResponse] = useState<RankResponse | null>(null);
-  const [skipped, setSkipped] = useState<Set<string>>(new Set());
-  const [intensity, setIntensity] = useState<Intensity>("suggest");
-  // null = the user has not chosen; follow the server-side preference order.
-  const [modelId, setModelId] = useState<string | null>(null);
 
   const modelOptions =
     availableModels && availableModels.length > 0
@@ -112,8 +143,9 @@ export function ContinuationPanel({
     for (const fragment of fragments) map.set(fragment._id, fragment);
     return map;
   }, [fragments]);
+  const playable = useMemo(() => toCandidates(fragments), [fragments]);
 
-  async function suggest() {
+  async function suggest(excluded = skipped) {
     if (status === "loading") return;
     setStatus("loading");
     setError(null);
@@ -121,9 +153,9 @@ export function ContinuationPanel({
       const result = await requestRecommendations(
         INTENSITY_CONFIG[intensity].limit,
         selectedModel,
+        excluded,
       );
       setResponse(result);
-      setSkipped(new Set());
       setStatus("ready");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
@@ -163,32 +195,22 @@ export function ContinuationPanel({
     ) ?? [];
 
   const { limit, label } = INTENSITY_CONFIG[intensity];
+  const allSkipped = playable.length > 0 && playable.every(candidate => skipped.has(candidate.fragment_id));
 
   if (fragments.length === 0) {
     return (
-      <div className="space-y-4">
-        <SessionSummary
-          fingerprint={fingerprint}
-          onIntentChange={onIntentChange}
-          parsedIntent={parsedIntent}
-          onParsedIntentChange={onParsedIntentChange}
-        />
-        <p className="rounded-xl border border-chalk bg-powder p-6 text-center text-slate">
-          No fragments in your library yet. Capture a few ideas first, then
-          Pocket Producer can suggest what fits this session.
-        </p>
-      </div>
+      <p className="rounded-xl border border-chalk bg-powder p-6 text-center text-slate">
+        No fragments in your library yet. Capture a few ideas first, then
+        Pocket Producer can suggest what fits this session.
+      </p>
     );
+  }
+  if (playable.length === 0) {
+    return <p className="text-sm text-slate">No playable sketches on this page.</p>;
   }
 
   return (
     <div className="space-y-4">
-      <SessionSummary
-        fingerprint={fingerprint}
-        onIntentChange={onIntentChange}
-        parsedIntent={parsedIntent}
-        onParsedIntentChange={onParsedIntentChange}
-      />
       <div className="flex flex-wrap items-center gap-3">
         <div
           className="inline-flex rounded-lg border border-chalk"
@@ -227,7 +249,7 @@ export function ContinuationPanel({
         <button
           type="button"
           onClick={() => void suggest()}
-          disabled={status === "loading"}
+          disabled={status === "loading" || allSkipped}
           className="inline-flex items-center gap-2 rounded-lg bg-obsidian px-4 py-2 text-sm font-medium text-white hover:bg-gravel disabled:opacity-60"
         >
           {status === "loading" ? (
@@ -237,6 +259,20 @@ export function ContinuationPanel({
           )}
           {response ? `${label} ${limit} again` : `${label} ${limit}`}
         </button>
+        {skipped.size > 0 && (
+          <button
+            type="button"
+            disabled={status === "loading"}
+            onClick={() => {
+              const reset = new Set<string>();
+              setSkipped(reset);
+              void suggest(reset);
+            }}
+            className="text-sm text-slate underline underline-offset-2 hover:text-gravel disabled:opacity-60"
+          >
+            Include skipped sketches
+          </button>
+        )}
         {response &&
           (response.fallback_used ? (
             <span
@@ -269,9 +305,13 @@ export function ContinuationPanel({
           </button>
         </div>
       )}
-      {status === "ready" && visibleCandidates.length === 0 && (
-        <p className="text-sm text-slate">
-          All suggestions were skipped. Ask again for a fresh set.
+      {(allSkipped || (status === "ready" && visibleCandidates.length === 0)) && (
+        <p role="status" className="text-sm text-slate">
+          {allSkipped
+            ? "You’ve skipped every playable sketch on this page."
+            : response?.candidates.length
+              ? "Ask again for more suggestions."
+              : "No suggestions available on this page."}
         </p>
       )}
       <div className={`grid gap-3 ${GRID_COLS[intensity]}`}>
@@ -283,20 +323,22 @@ export function ContinuationPanel({
               key={candidate.fragment_id}
               fragment={fragment}
               ranked={candidate}
+              insertDisabled={mutationPending}
               onPreview={async () => {
                 emit(candidate.fragment_id, "preview");
                 await onPreview(fragment);
               }}
               onInsert={async () => {
-                emit(candidate.fragment_id, "accept");
-                await onInsert(fragment);
-                emit(candidate.fragment_id, "insert");
+                const feedback = feedbackFor(candidate.fragment_id, "insert");
+                if (!feedback) return;
+                // The choice is logged even if the upload or SDK write fails.
+                onFeedback({ ...feedback, event: "accept" });
+                const insertionId = await onInsert(fragment, feedback);
+                onFeedback(insertionId ? { ...feedback, insertion_id: insertionId } : feedback);
               }}
               onSkip={() => {
                 emit(candidate.fragment_id, "reject");
-                setSkipped(
-                  (previous) => new Set([...previous, candidate.fragment_id]),
-                );
+                setSkipped(new Set([...skipped, candidate.fragment_id]));
               }}
             />
           );

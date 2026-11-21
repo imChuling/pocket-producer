@@ -49,6 +49,8 @@ export type SessionAudioResult = {
   timedOut: boolean;
   /** Set when the backend refused outright (e.g. CLAP disabled, HTTP 503). */
   backendError: string | null;
+  /** Why the project supplied no audio usable for the selected ranker. */
+  selectionNote?: string;
   /** The session on its beat grid; null without a project tempo or region positions. */
   sessionBeats: SessionBeats | null;
 };
@@ -65,6 +67,8 @@ const EMPTY: SessionAudioResult = {
 };
 
 const MAX_SAMPLES = 8;
+// Matches ranking/beat_sync.py: only whole beats in the opening ten seconds.
+const BEAT_WINDOW_SECONDS = 10;
 
 /**
  * Rankers that never read the session's audio, chroma or beat grid. For
@@ -101,6 +105,7 @@ export async function extractSessionAudio(
     authToken: string;
     signal?: AbortSignal;
     cache?: SessionAudioCache;
+    modelId?: string;
     /** Project tempo; with it the backend places regions on the beat grid. */
     bpm?: number | null;
   },
@@ -115,6 +120,19 @@ export async function extractSessionAudio(
   if (regions.length === 0) {
     console.info("[session-audio] no audioRegion entities in document");
     return { ...EMPTY };
+  }
+
+  const bpm =
+    typeof options.bpm === "number" && Number.isFinite(options.bpm) && options.bpm > 0
+      ? options.bpm
+      : null;
+
+  let endBeat: number | null = null;
+  if (options.modelId === "beat-fit-v1") {
+    if (bpm === null || bpm < 20 || bpm > 360) {
+      return { ...EMPTY, selectionNote: "Beat Fit needs a project tempo between 20 and 360 BPM." };
+    }
+    endBeat = Math.floor(BEAT_WINDOW_SECONDS * bpm / 60 + 1e-9);
   }
 
   // Each audioRegion references a sample entity via the `sample` field.
@@ -146,6 +164,7 @@ export async function extractSessionAudio(
     const sampleName = sampleNameById.get(sampleRef);
     if (!sampleName) continue;
     const placement = regionPlacement(region);
+    if (endBeat !== null && (!placement || placement.start_beats >= endBeat)) continue;
     if (placement) {
       const list = placementsBySample.get(sampleName) ?? [];
       list.push(placement);
@@ -156,12 +175,10 @@ export async function extractSessionAudio(
     seen.add(sampleName);
     uniqueSampleNames.push(sampleName);
   }
-  const bpm =
-    typeof options.bpm === "number" && Number.isFinite(options.bpm) && options.bpm > 0
-      ? options.bpm
-      : null;
-
   if (uniqueSampleNames.length === 0) {
+    if (endBeat !== null) {
+      return { ...EMPTY, selectionNote: "Beat Fit found no sample placed on the opening beat grid." };
+    }
     console.info(
       "[session-audio] no resolvable sample refs: " +
         `regions=${regions.length} sampleEntities=${sampleEntities.length} ` +
@@ -286,6 +303,7 @@ export async function extractSessionAudio(
 
 /** One-line explanation of why session audio may be missing, for the UI. */
 export function describeSessionAudio(result: SessionAudioResult): string | null {
+  if (result.selectionNote) return result.selectionNote;
   if (result.backendError) return `Session audio unavailable: ${result.backendError}`;
   const parts: string[] = [];
   if (result.failedCount > 0) parts.push(`${result.failedCount} could not be downloaded`);

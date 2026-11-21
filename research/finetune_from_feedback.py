@@ -2,7 +2,8 @@
 
 Replaces (part of) the cold-start pack co-membership proxy with the evidence
 the prototype was built to collect: within one served proposal list, an
-accepted or inserted fragment is preferred over a rejected one. Pairs come
+inserted fragment with at least one retained placement is preferred over an
+explicitly rejected one. Older accept-only attempts do not establish retention. Pairs come
 from the exposure log and feedback events, as the JSONL files written by
 the export script (allowlisted fields, user IDs replaced by a salted hash):
 

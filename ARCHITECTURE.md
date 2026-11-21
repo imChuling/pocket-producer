@@ -93,7 +93,7 @@ one process-wide instance (`ranking/adapters/shared.py`) with serialized
 inference, warmed at startup together with the role probe; ranking runs
 on its own two-thread pool so a slow ranker cannot starve other work.
 
-Nine rankers are registered in the default deployment (with `POCKET_ENABLE_CLAP=1` and the fusion weights present, as deployed): `rules-v1`, `recency-v1`, `mean-session-v1`, `text-only-v1`, `audio-cosine-v1`, `role-gap-v1`, `harmonic-fit-v1`, `beat-fit-v1` and `fusion-5sig-v1`.
+With `POCKET_ENABLE_CLAP=1` and the fusion weights present, this checkout registers nine rankers: `rules-v1`, `recency-v1`, `mean-session-v1`, `text-only-v1`, `audio-cosine-v1`, `role-gap-v1`, `harmonic-fit-v1`, `beat-fit-v1` and `fusion-5sig-v1`.
 
 | Model id | Needs | Notes |
 |---|---|---|
@@ -102,7 +102,7 @@ Nine rankers are registered in the default deployment (with `POCKET_ENABLE_CLAP=
 | `text-only-v1` | Voyage text vectors | Intent encoded with the same frozen `voyage-3` model |
 | `mean-session-v1` | region audio embeddings | Cosine to the mean of the session's CLAP vectors |
 | `harmonic-fit-v1` | 12-dim chroma on regions and candidates | Transpose-invariant cross-correlation, so it scores pitch-class similarity after the best transposition, not fit in the current key (behavioural test P2 blind); chroma is computed for session regions in `/session-embed` and for candidates at ingest (`representations.chroma`) |
-| `beat-fit-v1` | project tempo, region positions, `representations.beat_frames` on candidates | Beat-synchronous chroma agreement plus onset-pattern correlation on the session's beat grid, each standardised over the request's candidates; no fitted weights. Fragments without stored frames are left out |
+| `beat-fit-v1` | project tempo, region positions, `representations.beat_frames` on candidates | Beat-synchronous chroma agreement plus onset correlation over jointly sounding beats on the session's grid, each standardised over the request's candidates; no fitted weights. Fragments without stored frames are left out |
 | `audio-cosine-v1` | `POCKET_ENABLE_CLAP=1` | Intent text encoded into MS-CLAP audio space, cosine against candidate audio |
 | `role-gap-v1` | `POCKET_ENABLE_CLAP=1`, region audio embeddings | Zero-shot role probe; rewards roles the session lacks |
 | `fusion-5sig-v1` | region audio embeddings, `artifacts/fusion-deploy/weights.json` | BPR-trained weights over audio cosine (mean, max), tempo, key, tag Jaccard; the key term is non-zero only when the typed intent states a key, since the DAW reports none |
@@ -138,13 +138,18 @@ server to acknowledge the bytes; only then is the document modified, in a
 single `document.modify` transaction that inserts the sample at the start of
 the timeline (the insert position is converted to ticks at the project tempo,
 or the fragment's tempo, or 120 BPM; the SDK exposes no playhead). The transaction returns an `InsertReceipt` listing every entity
-id that did not exist before it ran. `undoInsert` removes exactly those ids,
-in reverse creation order, with `removeWithDependencies`, skipping any the
-user already deleted.
+id created by the insertion. Undo removes the original region. Before cleaning
+up the sample, track and routing, it checks whether other entities now use
+them. If the musician has duplicated the region, the copy and its playback
+routing stay in the document.
 
 Feedback events (`preview`, `accept`, `reject`, `insert`, `undo`) carry the
 `request_id`, `fragment_id`, `rank_position`, and `model_id` of the served
-list and are written to `ranking_feedback`. The client queues them and
+list and are written to `ranking_feedback`. Insert and undo also carry the
+region ID from the SDK receipt as `insertion_id`. The Projects mirror tracks
+each region and shows the fragment while any of its placements remain. An
+older mirror with only fragment IDs keeps one legacy membership per fragment.
+The client queues feedback events and
 retries on failure so a flaky connection never blocks the editing loop.
 `user_id` comes from the verified Firebase token only; Audiotool OAuth
 tokens stay inside the Nexus client and are never sent to the backend.
@@ -189,6 +194,12 @@ When a user submits a fragment (`POST /api/ingest`):
 3. Audio file (if any) uploads to Google Cloud Storage
 4. A minimal fragment document is saved to MongoDB with `status: "processing"`
 5. The API returns immediately (HTTP 202) with the fragment ID
+
+If the instance stops before the background analysis reports a result, the
+fragment would stay in `processing`. After 20 minutes from
+`analysis_started_at`, the list endpoint flags it as `analysis_stalled` and
+the card shows it as failed, with reanalysis available. `/api/fix-stuck` saves
+that state as `error`.
 
 Rate limit: 12 requests/minute per IP.
 
@@ -620,6 +631,7 @@ from following instructions embedded in creator-provided content.
   "notes": "string | null (creator's own context/intent)",
   "prompt_injection_flag": false,
   "status": "processing | ready | error | timeout",
+  "analysis_started_at": "ISODate (when the current analysis was claimed)",
   "user_edited_fields": ["emotions"],
   "edit_history": [{"id": "uuid", "text": "old text", "edited_at": "ISO"}],
   "created_at": "ISODate"

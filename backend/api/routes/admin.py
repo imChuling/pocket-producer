@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 
+from ..analysis_status import analysis_stalled
 from ..auth import verify_firebase_token
 from ..deps import debounced_dna_update, get_db, limiter
 
@@ -128,22 +129,31 @@ async def fix_stuck_fragments(
     request: Request,
     user_id: str = Depends(verify_firebase_token),
 ):
-    from datetime import timedelta
-    db = get_db()
-    cutoff = datetime.now(UTC) - timedelta(minutes=2)
-    result = await asyncio.to_thread(
-        db["fragments"].update_many,
-        {
-            "user_id": user_id,
-            "status": "processing",
-            "$or": [
-                {"tags": {"$exists": True, "$ne": []}},
-                {"created_at": {"$lt": cutoff}},
-            ],
-        },
-        {"$set": {"status": "ready"}},
-    )
-    return {"fixed": result.modified_count}
+    fragments = get_db()["fragments"]
+
+    def reconcile():
+        fixed = 0
+        for step, status in (("done", "ready"), ("error", "error")):
+            result = fragments.update_many(
+                {"user_id": user_id, "status": "processing", "pipeline_step": step},
+                {"$set": {"status": status}},
+            )
+            fixed += result.modified_count
+        # An analysis that stopped without a result can be retried from the card.
+        now = datetime.now(UTC)
+        for fragment in list(fragments.find({"user_id": user_id, "status": "processing"})):
+            if not analysis_stalled(fragment, now):
+                continue
+            result = fragments.update_one(
+                {"_id": fragment["_id"], "user_id": user_id, "status": "processing",
+                 "analysis_revision": fragment.get("analysis_revision"),
+                 "pipeline_step": fragment.get("pipeline_step")},
+                {"$set": {"status": "error", "pipeline_step": "error"}},
+            )
+            fixed += result.modified_count
+        return fixed
+
+    return {"fixed": await asyncio.to_thread(reconcile)}
 
 
 def _reset_projects_sync(db, user_id):

@@ -13,6 +13,7 @@ RAW_DOCS = [
         "project_title": "My secret song",
         "fragment_id": "f1",
         "event": "insert",
+        "insertion_id": "region-1",
         "rank_position": 1,
         "model_id": "rules-v1",
         "created_at": "2026-07-30T12:00:00Z",
@@ -48,6 +49,7 @@ def test_export_hashes_participant_one_way_and_stably():
 def test_export_keeps_research_fields():
     row = export_feedback_rows(RAW_DOCS, salt="test-salt")[0]
     assert row["event"] == "insert"
+    assert row["insertion_id"] == "region-1"
     assert row["rank_position"] == 1
     assert row["model_id"] == "rules-v1"
     assert row["request_id"] == "req-1"

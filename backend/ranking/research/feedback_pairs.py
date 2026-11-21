@@ -2,10 +2,9 @@
 
 Joins ranking_requests (served lists with per-candidate signal vectors) and
 ranking_feedback (preview / accept / reject / insert / undo) by request_id.
-Within one served list, a fragment the musician accepted or inserted and did
-not undo is a positive; a fragment they rejected and never accepted is a
-negative. Previews are not decisions. Lists served by another model, or
-logged without signal vectors, contribute nothing.
+Within one served list, a positive needs at least one retained insertion.
+An explicitly rejected fragment with no accept or insert provides a negative.
+Lists served by another model, or logged without signal vectors, contribute nothing.
 
 These pairs are the interaction-derived evidence the cold-start proxy is
 meant to be replaced by, so fine-tuning starts from the deployed weights and
@@ -13,12 +12,12 @@ is pulled back toward them: with few decisions the result stays close to
 the proxy-trained fusion instead of overfitting a handful of clicks.
 """
 
+from collections import defaultdict
+
 import numpy as np
 
 from ranking.fusion_ranker import LOGGED_SIGNAL_NAMES, SIGNAL_NAMES
-
-POSITIVE_EVENTS = frozenset({"accept", "insert"})
-NEGATIVE_EVENTS = frozenset({"reject"})
+from ranking.research.feedback_outcomes import matches_participant, proposal_outcomes
 
 
 def build_feedback_pairs(
@@ -40,6 +39,7 @@ def build_feedback_pairs(
 
     validate_names(requested)
     vectors_by_request: dict[str, dict[str, list[float]]] = {}
+    participants = {}
     for req in requests:
         if req.get("model_id_served") != model_id:
             continue
@@ -88,28 +88,21 @@ def build_feedback_pairs(
             vectors[fid] = [sig[j] for j in indices]
         if vectors:
             vectors_by_request[req["request_id"]] = vectors
+            participants[req["request_id"]] = req.get("participant_hash")
 
-    events: dict[str, dict[str, set[str]]] = {}
+    events = defaultdict(list)
     for event in feedback:
         request_id = event.get("request_id")
-        if request_id not in vectors_by_request:
-            continue
-        per_fragment = events.setdefault(request_id, {})
-        per_fragment.setdefault(event.get("fragment_id"), set()).add(event.get("event"))
+        if request_id in participants and matches_participant(event, participants[request_id]):
+            events[request_id].append(event)
 
     pairs: list[dict] = []
     for request_id in sorted(events):
         vectors = vectors_by_request[request_id]
-        per_fragment = events[request_id]
-        positives = sorted(
-            fid
-            for fid, evs in per_fragment.items()
-            if fid in vectors and evs & POSITIVE_EVENTS and "undo" not in evs
-        )
+        outcomes = proposal_outcomes(vectors, events[request_id])
+        positives = sorted(fid for fid, state in outcomes.items() if state.retained)
         negatives = sorted(
-            fid
-            for fid, evs in per_fragment.items()
-            if fid in vectors and evs & NEGATIVE_EVENTS and not evs & POSITIVE_EVENTS
+            fid for fid, state in outcomes.items() if state.rejected and not state.chosen
         )
         for positive in positives:
             for negative in negatives:

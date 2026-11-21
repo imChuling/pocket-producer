@@ -71,6 +71,7 @@ export function linkAudiotoolInsert(body: {
   audiotool_project_id: string;
   display_name: string;
   fragment_id: string;
+  insertion_id?: string;
 }): Promise<{ project_id: string; title: string }> {
   return apiPost("/projects/audiotool-session", body);
 }
@@ -79,6 +80,7 @@ export function linkAudiotoolInsert(body: {
 export function unlinkAudiotoolInsert(body: {
   audiotool_project_id: string;
   fragment_id: string;
+  insertion_id?: string;
 }): Promise<{ unlinked: boolean }> {
   return apiPost("/projects/audiotool-session/unlink", body);
 }

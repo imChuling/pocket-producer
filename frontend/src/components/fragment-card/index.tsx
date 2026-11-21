@@ -46,9 +46,10 @@ export function FragmentCard({ fragment, onDeleted, onUpdated, readOnly, onReadO
     onUpdatedRef.current = onUpdated;
   });
 
-  const isStuckProcessing = fragment.status === "processing" && fragment.tags && fragment.tags.length > 0;
-  const isProcessing = reanalyzing || (fragment.status === "processing" && !isStuckProcessing);
-  const isError = fragment.status === "error" || fragment.status === "timeout";
+  const isProcessing = reanalyzing || (fragment.status === "processing" && !fragment.analysis_stalled &&
+    fragment.pipeline_step !== "done" && fragment.pipeline_step !== "error");
+  const isError = !reanalyzing && (fragment.status === "error" || fragment.status === "timeout" ||
+    (fragment.status === "processing" && (fragment.pipeline_step === "error" || Boolean(fragment.analysis_stalled))));
   const isAudio = fragment.type === "audio";
   const isAudiotool = Boolean(fragment.text && fragment.text.includes("Imported from Audiotool"));
   const displayTitle = fragment.title || "Audio fragment";
@@ -90,7 +91,7 @@ export function FragmentCard({ fragment, onDeleted, onUpdated, readOnly, onReadO
             try {
               const msg = JSON.parse(line.slice(6));
               if (msg.step && msg.step !== "done") setPipelineStep(msg.step);
-              if (msg.status === "ready" || msg.step === "done") {
+              if (msg.status === "ready" || msg.status === "error" || msg.step === "done" || msg.step === "error") {
                 setPipelineStep(null);
                 onUpdatedRef.current?.();
               }

@@ -37,9 +37,16 @@ class StubCollection:
     @staticmethod
     def _matches(doc, query):
         for key, expected in query.items():
+            if key == "$or":
+                if not any(StubCollection._matches(doc, clause) for clause in expected):
+                    return False
+                continue
             value = doc.get(key)
             if isinstance(expected, dict) and "$in" in expected:
                 if value not in expected["$in"]:
+                    return False
+            elif isinstance(expected, dict) and "$lt" in expected:
+                if value is None or value >= expected["$lt"]:
                     return False
             elif value != expected:
                 return False
@@ -375,3 +382,15 @@ def test_demo_routes_are_off_unless_enabled(client, db, monkeypatch):
         "/api/demo/dna",
     ):
         assert client.get(path).status_code == 404
+
+
+def test_fragment_pages_reach_old_sketches_with_tied_dates(owner_client, db):
+    oldest, middle, newest = [add_fragment(db) for _ in range(3)]
+    add_fragment(db, user_id="another-musician")
+    page = owner_client.get("/api/fragments", params={"limit": 2}).json()
+    assert [f["_id"] for f in page["fragments"]] == [str(newest["_id"]), str(middle["_id"])]
+    add_fragment(db)  # A new upload must not shift the boundary between requests.
+    older = owner_client.get("/api/fragments", params={"limit": 2, "before": page["next_cursor"]})
+    assert [f["_id"] for f in older.json()["fragments"]] == [str(oldest["_id"])]
+    assert older.json()["next_cursor"] is None
+    assert owner_client.get("/api/fragments", params={"before": "broken"}).status_code == 422

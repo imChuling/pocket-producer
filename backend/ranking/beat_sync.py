@@ -12,12 +12,9 @@ not estimated: the project tempo is known, beats start at timeline zero and
 each region is placed at its own position. Candidates are inserted at the
 start of the timeline, so their first 10 s are pooled from beat 0.
 
-These functions mirror research/compat_tests (beatgrid, progression, signals),
-and the two must change together: a change on one side that is not made on
-the other silently moves the product away from what the behavioural tests
-measured. tests/ranking/test_beat_sync.py checks that outputs agree and that
-the shared constants (sample rate, hop, silence threshold, window length,
-onset subdivisions, minimum shared beats) are equal.
+Frame analysis, pooling and the full-grid signal mirror research/compat_tests
+(beatgrid, progression, signals). Beat Fit restricts onset correlation to
+shared sounding beats. Fusion's historical log uses the full-grid definition.
 """
 
 import base64
@@ -37,7 +34,7 @@ MAX_BPM = 360.0
 MAX_BEATS = int(WINDOW_SECONDS * MAX_BPM / 60)
 MAX_FRAMES = int(WINDOW_SECONDS * SAMPLE_RATE / HOP_LENGTH) + 1
 BEAT_FRAMES_REVISION = "beat-frames-v1"
-SIGNAL_NAMES = ("chroma_beat_aligned", "onset_pattern")
+BEAT_FIT_SIGNAL_NAMES = ("chroma_beat_aligned", "onset_pattern_shared_beats")
 logger = logging.getLogger(__name__)
 
 
@@ -291,14 +288,13 @@ class CandidateMeasurements:
 
 
 def candidate_measurements(
-    beats: dict | None, record: dict | None,
+    beats: dict | None, record: dict | None, *, shared_onsets_only: bool = False,
 ) -> CandidateMeasurements | None:
     """Raw values plus support, independently of their relative ranking.
 
-    The correlation transform agrees with the frozen research function.
-    Availability additionally requires four shared sounding beats and a
-    non-flat onset pattern. Neither a positive transformed value nor a
-    positive z-score establishes musical alignment or listener preference.
+    The default measures onsets across the full grid for historical fusion
+    logs. Beat Fit restricts both the flatness check and the correlation
+    to subdivisions on shared sounding beats.
     """
     if not beats:
         return None
@@ -318,9 +314,14 @@ def candidate_measurements(
     session_onsets = np.asarray(checked.onsets, dtype=np.float64)
     candidate_chroma = pool_chroma(clip, grid)
     candidate_onsets = pool_onsets(clip, grid)
-    shared = int(((np.linalg.norm(session_chroma, axis=1) > 1e-8)
-                  & (np.linalg.norm(candidate_chroma, axis=1) > 1e-8)).sum())
+    shared_mask = ((np.linalg.norm(session_chroma, axis=1) > 1e-8)
+                   & (np.linalg.norm(candidate_chroma, axis=1) > 1e-8))
+    shared = int(shared_mask.sum())
     harmony_available = shared >= MIN_SHARED_BEATS
+    if shared_onsets_only:
+        slots = np.repeat(shared_mask, ONSET_SUBDIVISIONS)
+        session_onsets = session_onsets[slots]
+        candidate_onsets = candidate_onsets[slots]
     rhythm_available = (harmony_available and session_onsets.std() > 1e-8
                         and candidate_onsets.std() > 1e-8)
     return CandidateMeasurements(

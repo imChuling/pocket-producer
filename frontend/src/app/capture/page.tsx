@@ -34,32 +34,17 @@ function CaptureDashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
-  // Recomputed in an effect (not during render) because the age check
-  // reads the clock; re-runs whenever the fragment list changes.
-  const [stuckCount, setStuckCount] = useState(0);
-  useEffect(() => {
-    const compute = () =>
-      setStuckCount(
-        fragments.filter((f) => {
-          if (f.status !== "processing") return false;
-          if (f.tags && f.tags.length > 0) return true;
-          const age = Date.now() - new Date(f.created_at).getTime();
-          return age > 2 * 60 * 1000;
-        }).length,
-      );
-    const timer = setTimeout(compute, 0);
-    const interval = setInterval(compute, 30_000);
-    return () => {
-      clearTimeout(timer);
-      clearInterval(interval);
-    };
-  }, [fragments]);
+  const completedCount = fragments.filter((fragment) => fragment.status === "processing" &&
+    (fragment.pipeline_step === "done" || fragment.pipeline_step === "error" ||
+      Boolean(fragment.analysis_stalled))).length;
 
-  const handleFixStuck = useCallback(async () => {
+  const reconcileStatus = useCallback(async () => {
     try {
       await apiPost("/fix-stuck", {});
-      refresh();
-    } catch {}
+      await refresh();
+    } catch {
+      setStatus("Could not refresh analysis status. Try again.");
+    }
   }, [refresh]);
 
   const greeting = (() => {
@@ -229,13 +214,12 @@ function CaptureDashboard() {
                     {fragments.length}
                   </span>
                 </div>
-                {stuckCount > 0 && (
+                {completedCount > 0 && (
                   <button
-                    onClick={handleFixStuck}
+                    onClick={reconcileStatus}
                     className="text-xs text-gravel hover:text-obsidian transition-colors"
                   >
-                    {stuckCount} fragment{stuckCount > 1 ? "s" : ""} stuck processing:{" "}
-                    <span className="underline">fix now</span>
+                    Refresh analysis status for {completedCount} fragment{completedCount > 1 ? "s" : ""}
                   </button>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">

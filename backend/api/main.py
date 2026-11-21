@@ -213,6 +213,7 @@ async def ingest_fragment(
         else:
             title = original_name.rsplit(".", 1)[0] if "." in original_name else original_name
 
+    now = datetime.now(UTC)
     fragment_doc = {
         "user_id": user_id,
         "type": frag_type,
@@ -226,7 +227,8 @@ async def ingest_fragment(
         "emotions": [],
         "themes": [],
         "status": "processing",
-        "created_at": datetime.now(UTC),
+        "created_at": now,
+        "analysis_started_at": now,
     }
     result = await asyncio.to_thread(db["fragments"].insert_one, fragment_doc)
     fragment_id = str(result.inserted_id)
@@ -243,7 +245,7 @@ async def ingest_fragment(
                 queued_note_written = True
                 await asyncio.to_thread(
                     db["fragments"].update_one,
-                    {"_id": result.inserted_id},
+                    {"_id": result.inserted_id, "user_id": user_id, "analysis_revision": None},
                     {"$set": {"pipeline_step": "Queued behind other uploads..."}},
                 )
             await asyncio.sleep(1)
@@ -251,7 +253,7 @@ async def ingest_fragment(
             logger.error("Pipeline slot timeout for fragment %s", fragment_id)
             await asyncio.to_thread(
                 db["fragments"].update_one,
-                {"_id": result.inserted_id},
+                {"_id": result.inserted_id, "user_id": user_id, "analysis_revision": None},
                 {"$set": {"status": "error", "pipeline_step": "error"}},
             )
             return

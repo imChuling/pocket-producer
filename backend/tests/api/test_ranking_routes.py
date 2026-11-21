@@ -177,6 +177,7 @@ def test_feedback_persists_server_side_user_id(auth_client):
         "project_id": "p1",
         "fragment_id": "f1",
         "event": "insert",
+        "insertion_id": "region-1",
         "rank_position": 1,
         "model_id": "rules-v1",
     }
@@ -191,6 +192,7 @@ def test_feedback_persists_server_side_user_id(auth_client):
     doc = docs[0]
     assert doc["user_id"] == FAKE_USER_ID
     assert doc["event"] == "insert"
+    assert doc.get("insertion_id") == "region-1"
     assert doc["rank_position"] == 1
     assert "created_at" in doc
     # OAuth material must never be stored
@@ -270,6 +272,32 @@ def test_rank_logs_exposure(auth_client):
     assert "authorization" not in lowered
 
 
+def test_beat_fit_revision_survives_exposure_export(auth_client):
+    import numpy as np
+
+    from ranking import beat_sync
+    from ranking.beat_fit_ranker import BeatFitRanker
+    from ranking.research.export import export_request_rows
+
+    times = np.arange(431) * beat_sync.HOP_LENGTH / beat_sync.SAMPLE_RATE
+    frames = beat_sync.Frames(
+        np.ones((12, len(times)), dtype=np.float32),
+        np.asarray(times % 0.5, dtype=np.float32),
+        np.ones(len(times), dtype=np.float32), times, 10.0,
+    )
+    payload = rank_payload(model_id="beat-fit-v1")
+    payload["session"]["session_beats"] = beat_sync.session_beats(
+        [beat_sync.Placement(frames, 0)], 120,
+    )
+    payload["candidates"][0]["beat_frames"] = beat_sync.encode_frames(frames)
+    body = auth_client.post(
+        "/api/ranking/rank", json=payload, headers={"Authorization": "Bearer fake"},
+    ).json()
+    assert body["model_id"] == "beat-fit-v1"
+    row, = export_request_rows(_stub_db["ranking_requests"].docs, "test-salt")
+    assert row["implementation_revision"] == BeatFitRanker.model_card["implementation_revision"]
+
+
 def test_rank_logs_signal_vectors_for_fusion(auth_client):
     import numpy as np
 
@@ -313,6 +341,7 @@ def test_rank_logs_exposure_on_fallback(auth_client):
     assert response.status_code == 200
     doc = _stub_db["ranking_requests"].docs[0]
     assert doc["model_id_requested"] == "missing-model"
+    assert doc.get("implementation_revision") is None
     assert doc["model_id_served"] == "rules-v1"
     assert doc["fallback_used"] is True
 
@@ -431,7 +460,12 @@ def _wav_bytes(seconds=1.0, freq=220.0, sr=22050, stereo=False):
 def test_session_embed_returns_embeddings_chroma_and_failures(auth_client, monkeypatch):
     from ranking.adapters import shared
 
+    # This checks real DSP output, including a cold librosa/Numba import.
+    # The partial-response test below exercises the production timeout path.
+    monkeypatch.setattr("api.routes.ranking.EMBED_TIMEOUT_SECONDS", None)
     monkeypatch.setenv("POCKET_ENABLE_CLAP", "1")
+    frames = MagicMock(side_effect=AssertionError("a request without a grid has no beat frames"))
+    monkeypatch.setattr("ranking.beat_sync.frames", frames)
     shared.reset_for_tests(_FakeClap())
     response = auth_client.post(
         "/api/ranking/session-embed",
@@ -444,6 +478,7 @@ def test_session_embed_returns_embeddings_chroma_and_failures(auth_client, monke
     )
     assert response.status_code == 200
     body = response.json()
+    frames.assert_not_called()
     assert body["total"] == 3 and body["encoded"] == 2
     assert len(body["embeddings"]) == 2 and all(len(e) == 1024 for e in body["embeddings"])
     assert len(body["chroma"]) == 2 and all(len(c) == 12 for c in body["chroma"])
@@ -459,6 +494,9 @@ def test_session_embed_places_regions_on_the_project_grid(auth_client, monkeypat
 
     from ranking.adapters import shared
 
+    # This checks real DSP output, including a cold librosa/Numba import.
+    # The partial-response test below exercises the production timeout path.
+    monkeypatch.setattr("api.routes.ranking.EMBED_TIMEOUT_SECONDS", None)
     monkeypatch.setenv("POCKET_ENABLE_CLAP", "1")
     shared.reset_for_tests(_FakeClap())
     try:
@@ -630,3 +668,39 @@ def test_rank_rejects_too_many_candidates(auth_client):
         "/api/ranking/rank", json=payload, headers={"Authorization": "Bearer fake"}
     )
     assert response.status_code == 422
+
+
+def test_session_embed_timeout_preserves_completed_files(auth_client, monkeypatch):
+    import numpy as np
+
+    from api.routes import ranking
+    from ranking.adapters import shared
+
+    monkeypatch.setenv("POCKET_ENABLE_CLAP", "1")
+    monkeypatch.setattr(ranking, "EMBED_TIMEOUT_SECONDS", 1.0)
+    calls = []
+
+    def encode(mono, sample_rate, abandoned, *, need_beats):
+        calls.append(len(mono))
+        if len(calls) == 2:
+            deadline = time.monotonic() + 5
+            while not abandoned["value"] and time.monotonic() < deadline:
+                time.sleep(0.01)
+            return None
+        return np.ones(1024), [1.0] * 12, None
+
+    monkeypatch.setattr(ranking, "_encode_region", encode)
+    shared.reset_for_tests(_FakeClap())
+    try:
+        wav = _wav_bytes()
+        response = auth_client.post(
+            "/api/ranking/session-embed",
+            files=[("files", (name, wav, "audio/wav")) for name in ("a.wav", "b.wav")],
+            headers={"Authorization": "Bearer fake"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["timed_out"] and body["encoded"] == 1 and body["total"] == 2
+        assert len(calls) == 2
+    finally:
+        shared.reset_for_tests(None)

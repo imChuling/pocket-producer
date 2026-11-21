@@ -76,6 +76,22 @@ after repeated model selection. Calling `check(..., manifest=None)` directly
 from Python is a development shortcut and does not tie the result to the
 594-pair set.
 
+Each training pair compares a proposal with a retained logged insertion to an
+explicitly rejected proposal in the same served list. The join drops feedback
+marked unverified and rows with conflicting participant hashes. An accept
+without a logged insert counts as an attempt, not as a positive. Retries for
+the same region ID count once, and undo cancels that region. Older exports
+lack region IDs, so the trainer counts unmatched insertions in server
+timestamp order, using file order for ties or undated histories. Duplicate
+events and incorrect attribution in those older logs cannot be resolved.
+Manual DAW edits and missing telemetry also limit what the recorded outcomes
+establish.
+
+The feedback report groups Beat Fit lists by the revision that served them.
+For older lists it uses the logged signal names to distinguish full-window
+from shared-beat measurements. Lists without either field have their own
+unknown-revision group.
+
 Feedback vectors are matched by `candidate_signal_names`, and optional beat
 measurements need an availability mask. Older unnamed five-signal rows are
 read in their known order; extended rows that are ambiguous are refused.

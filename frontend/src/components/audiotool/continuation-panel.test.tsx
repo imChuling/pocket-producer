@@ -38,6 +38,7 @@ function fragment(id: string, title: string): Fragment {
     themes: [],
     created_at: "2026-07-01T00:00:00Z",
     audio_url: `gs://bucket/${id}`,
+    upload: { duration_sec: 5 },
   } as Fragment;
 }
 
@@ -76,8 +77,9 @@ function setup(overrides: Partial<Parameters<typeof ContinuationPanel>[0]> = {})
     onFeedback: vi.fn(),
     ...overrides,
   };
-  render(<ContinuationPanel {...props} />);
-  return props;
+  const view = render(<ContinuationPanel {...props} />);
+  return { ...props, update: (changes: Partial<typeof props>) =>
+    view.rerender(<ContinuationPanel {...props} {...changes} />) };
 }
 
 describe("ContinuationPanel", () => {
@@ -152,6 +154,7 @@ describe("ContinuationPanel", () => {
     expect(props.requestRecommendations).toHaveBeenCalledWith(
       3,
       "pocketrank-context-v1",
+      new Set(),
     );
   });
 
@@ -214,5 +217,77 @@ describe("ContinuationPanel", () => {
     expect(props.onFeedback).toHaveBeenCalledWith(
       expect.objectContaining({ event: "reject", fragment_id: "f1" }),
     );
+  });
+
+  it("ranks beyond the first three and lets the musician restore skipped sketches", async () => {
+    const fragments = ["A", "B", "C", "D"].map(id => fragment(id, id));
+    const rank = vi.fn(async (limit: number, _model: string, skipped = new Set<string>()) =>
+      response(fragments.map(f => f._id).filter(id => !skipped.has(id)).slice(0, limit)),
+    );
+    setup({ fragments, requestRecommendations: rank });
+    await userEvent.click(screen.getByRole("button", { name: "Suggest 3" }));
+    for (const skip of screen.getAllByRole("button", { name: "Skip" })) {
+      await userEvent.click(skip);
+    }
+    await userEvent.click(screen.getByRole("button", { name: "Suggest 3 again" }));
+    expect(screen.queryByRole("heading", { name: "A" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "D" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Skip" }));
+    expect(screen.getByText(/skipped every playable sketch on this page/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Suggest 3 again" })).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "Include skipped sketches" }));
+    expect(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
+    expect(rank).toHaveBeenLastCalledWith(3, "rules-v1", new Set());
+  });
+
+  it("remembers skips across library pages and clears them for a new intent or project", async () => {
+    const { update, requestRecommendations } = setup();
+    await userEvent.click(screen.getByRole("button", { name: "Suggest 3" }));
+    await userEvent.click(screen.getAllByRole("button", { name: "Skip" })[0]);
+    update({ libraryReady: false });
+    update({ libraryPage: "older" });
+    await userEvent.click(screen.getByRole("button", { name: "Suggest 3" }));
+    expect(requestRecommendations).toHaveBeenLastCalledWith(3, "rules-v1", new Set(["f1"]));
+    expect(screen.queryByText("Night bass")).toBeNull();
+
+    const changedIntent = { ...fingerprint, text_intent: "warm brass" };
+    update({ fingerprint: changedIntent });
+    await userEvent.click(screen.getByRole("button", { name: "Suggest 3" }));
+    expect(screen.getByText("Night bass")).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole("button", { name: "Skip" })[0]);
+    update({ fingerprint: { ...changedIntent, project_id: "p2" } });
+    await userEvent.click(screen.getByRole("button", { name: "Suggest 3" }));
+    expect(requestRecommendations).toHaveBeenLastCalledWith(3, "rules-v1", new Set());
+    expect(screen.getByText("Night bass")).toBeInTheDocument();
+  });
+
+  it("shows when a library page has no playable sketches", () => {
+    setup({ fragments: [{ ...fragment("f1", "Draft"), type: "text" }] });
+    expect(screen.getByText(/no playable sketches on this page/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Suggest 3" })).toBeNull();
+  });
+
+  it("treats a partly playable page as exhausted after its last playable sketch is skipped", async () => {
+    setup({
+      fragments: [fragment("f1", "Bass"), { ...fragment("f2", "Lyrics"), type: "text" }],
+      requestRecommendations: async () => response(["f1"]),
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Suggest 3" }));
+    await userEvent.click(screen.getByRole("button", { name: "Skip" }));
+    expect(screen.getByRole("button", { name: "Suggest 3 again" })).toBeDisabled();
+    expect(screen.getByText(/skipped every playable sketch/i)).toBeInTheDocument();
+  });
+
+  it("keeps skips when a reading arrives and starts a new round when the musician edits it", async () => {
+    const { update, requestRecommendations } = setup({ onParsedIntentChange: vi.fn() });
+    await userEvent.click(screen.getByRole("button", { name: "Suggest 3" }));
+    await userEvent.click(screen.getAllByRole("button", { name: "Skip" })[0]);
+    update({ parsedIntent: { tags: ["dark"], roles: [], key: null, bpm: null } });
+    expect(screen.queryByText("Night bass")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Remove dark" }));
+    expect(screen.queryByText("Rain pad")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Suggest 3" }));
+    expect(requestRecommendations).toHaveBeenLastCalledWith(3, "rules-v1", new Set());
+    expect(screen.getByText("Night bass")).toBeInTheDocument();
   });
 });

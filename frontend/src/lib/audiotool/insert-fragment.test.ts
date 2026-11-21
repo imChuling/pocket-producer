@@ -121,6 +121,29 @@ describe("insertFragment", () => {
     expect(idsAfter).toEqual(idsBefore);
   }, 30000);
 
+  it("preserves a musician's copy and its playback routing when undoing the insert", async () => {
+    const doc = await offlineDocument();
+    const deps = {
+      samples: { upload: async () => fakeUpload() },
+      document: doc as unknown as InsertDeps["document"],
+    };
+    const receipt = await insertFragment(deps, FRAGMENT, {
+      audioBlob: new Blob(["audio"]), playheadSeconds: 0, projectBpm: 120,
+    });
+    const region = doc.queryEntities.ofTypes("audioRegion").get()[0];
+    const positionTicks = 8 * 3840;
+    const copy = await doc.modify((t) => t.clone(region, { region: { positionTicks } }));
+    const beforeUndo = new Set(doc.queryEntities.get().map((entity) => entity.id));
+    beforeUndo.delete(region.id);
+
+    await undoInsert(deps.document, receipt);
+
+    const remaining = doc.queryEntities.ofTypes("audioRegion").get();
+    expect(remaining.map((entity) => entity.id)).toEqual([copy.id]);
+    expect(remaining[0].fields.region.fields.positionTicks.value).toBe(positionTicks);
+    expect(new Set(doc.queryEntities.get().map((entity) => entity.id))).toEqual(beforeUndo);
+  }, 30000);
+
   it("undo is idempotent when entities are already gone", async () => {
     const doc = await offlineDocument();
     const upload = vi.fn(async () => fakeUpload());

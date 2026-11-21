@@ -1,10 +1,13 @@
 import asyncio
+import hashlib
+import json
 import logging
 from datetime import UTC, datetime
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from pymongo.errors import DuplicateKeyError
 
 from ..auth import verify_firebase_token
 from ..deps import get_db, limiter, parse_object_id
@@ -20,11 +23,13 @@ class AudiotoolLinkRequest(BaseModel):
     audiotool_project_id: str
     display_name: str = ""
     fragment_id: str
+    insertion_id: str | None = Field(default=None, min_length=1)
 
 
 class AudiotoolUnlinkRequest(BaseModel):
     audiotool_project_id: str
     fragment_id: str
+    insertion_id: str | None = Field(default=None, min_length=1)
 
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
@@ -47,47 +52,92 @@ async def list_projects(request: Request, user_id: str = Depends(verify_firebase
 
 
 def _link_audiotool_sync(db, user_id, body):
-    """Find-or-create Audiotool session project and add the fragment."""
-    frag_oid = ObjectId(body.fragment_id)
-    fragment = db["fragments"].find_one({"_id": frag_oid, "user_id": user_id})
-    if not fragment:
+    source = {"_id": parse_object_id(body.fragment_id, "fragment_id"), "user_id": user_id}
+    if db["fragments"].find_one(source, {"_id": 1}) is None:
         raise HTTPException(status_code=404, detail="Fragment not found")
+    result = _change_audiotool_placement(db, user_id, body, link=True)
+    # A concurrent library deletion may have cleaned its mirrors before this write.
+    if db["fragments"].find_one(source, {"_id": 1}) is None:
+        _change_audiotool_placement(db, user_id, body, link=False)
+        raise HTTPException(status_code=404, detail="Fragment not found")
+    return result
 
-    now = datetime.now(UTC)
-    display = body.display_name.strip() or body.audiotool_project_id
-    title = f"Audiotool: {display}"[:80]
 
-    project = db["projects"].find_one(
-        {"user_id": user_id, "audiotool_project_id": body.audiotool_project_id}
-    )
-    if project:
-        db["projects"].update_one(
-            {"_id": project["_id"], "user_id": user_id},
-            {
-                "$addToSet": {"fragment_ids": body.fragment_id},
-                "$set": {"last_activity_at": now},
-            },
+def _create_audiotool_project(projects, session, placement, title, now):
+    # Mongo's unique _id serializes simultaneous first inserts across API workers.
+    # Pre-existing mirrors retain their original ObjectId and title.
+    key = json.dumps([session["user_id"], session["audiotool_project_id"]]).encode()
+    project_id = ObjectId(hashlib.sha256(key).digest()[:12])
+    projects.insert_one({
+        **session,
+        "_id": project_id,
+        "title": title,
+        "fragment_ids": [placement["fragment_id"]],
+        "audiotool_insertions": [placement],
+        "connection_reasons": ["Inserted into this Audiotool session"],
+        "connection_types": ["audiotool_session"],
+        "sections": [],
+        "rescue_score": None,
+        "last_activity_at": now,
+        "created_at": now,
+    })
+    return {"project_id": str(project_id), "title": title}
+
+
+def _change_audiotool_placement(db, user_id, body, *, link):
+    projects = db["projects"]
+    session = {"user_id": user_id, "audiotool_project_id": body.audiotool_project_id}
+    placement = {"fragment_id": body.fragment_id, "insertion_id": body.insertion_id}
+    if link:
+        title = f"Audiotool: {body.display_name.strip() or body.audiotool_project_id}"[:80]
+    for _ in range(32):
+        project = projects.find_one(session)
+        now = datetime.now(UTC)
+        if project is None:
+            if not link:
+                return {"unlinked": False}
+            try:
+                return _create_audiotool_project(projects, session, placement, title, now)
+            except DuplicateKeyError:
+                continue
+
+        placements = list(project.get("audiotool_insertions") or [])
+        recorded = {p["fragment_id"] for p in placements}
+        # A fragment-only record represents one legacy membership. Older clients can
+        # still add/remove that membership alongside independently addressable regions.
+        placements.extend(
+            {"fragment_id": fid, "insertion_id": None}
+            for fid in project.get("fragment_ids", []) if fid not in recorded
         )
-        project_id = str(project["_id"])
-        title = project.get("title", title)
-    else:
-        result = db["projects"].insert_one(
-            {
-                "user_id": user_id,
-                "title": title,
-                "audiotool_project_id": body.audiotool_project_id,
-                "fragment_ids": [body.fragment_id],
-                "connection_reasons": ["Inserted into this Audiotool session"],
-                "connection_types": ["audiotool_session"],
-                "sections": [],
-                "rescue_score": None,
-                "last_activity_at": now,
-                "created_at": now,
-            }
-        )
-        project_id = str(result.inserted_id)
+        if link:
+            response = {"project_id": str(project["_id"]), "title": project.get("title", title)}
+            if placement in placements:
+                return response
+            placements.append(placement)
+        else:
+            if placement not in placements:
+                return {"unlinked": False}
+            placements.remove(placement)
+            response = {"unlinked": True, "project_deleted": not placements}
 
-    return {"project_id": project_id, "title": title}
+        # Condition both mutation paths on the snapshot. Racing additions, removals or
+        # fragment deletions force a fresh read before we write or delete the mirror.
+        snapshot = {
+            **session,
+            "_id": project["_id"],
+            "fragment_ids": project.get("fragment_ids"),
+            "audiotool_insertions": project.get("audiotool_insertions"),
+        }
+        if placements:
+            members = list(dict.fromkeys(p["fragment_id"] for p in placements))
+            saved = projects.update_one(snapshot, {"$set": {
+                "fragment_ids": members, "audiotool_insertions": placements, "last_activity_at": now,
+            }}).matched_count
+        else:
+            saved = projects.delete_one(snapshot).deleted_count
+        if saved:
+            return response
+    raise HTTPException(status_code=503, detail="Concurrent project update. Please retry.")
 
 
 @router.post("/audiotool-session")
@@ -110,22 +160,7 @@ async def link_audiotool_fragment(
 
 
 def _unlink_audiotool_sync(db, user_id, body):
-    """Remove fragment from Audiotool session project, deleting if empty."""
-    project = db["projects"].find_one(
-        {"user_id": user_id, "audiotool_project_id": body.audiotool_project_id}
-    )
-    if not project:
-        return {"unlinked": False}
-
-    db["projects"].update_one(
-        {"_id": project["_id"], "user_id": user_id},
-        {"$pull": {"fragment_ids": body.fragment_id}},
-    )
-    remaining = [f for f in project.get("fragment_ids", []) if f != body.fragment_id]
-    if not remaining:
-        db["projects"].delete_one({"_id": project["_id"], "user_id": user_id})
-
-    return {"unlinked": True, "project_deleted": not remaining}
+    return _change_audiotool_placement(db, user_id, body, link=False)
 
 
 @router.post("/audiotool-session/unlink")
@@ -137,8 +172,8 @@ async def unlink_audiotool_fragment(
 ):
     """Undo the project-side record of an Audiotool insertion.
 
-    Removes the fragment from the session project, deleting the project if
-    it becomes empty.
+    Removes one placement. The fragment stays visible while another placement remains.
+    The final removal deletes the empty mirror.
     """
     db = get_db()
     return await asyncio.to_thread(_unlink_audiotool_sync, db, user_id, body)

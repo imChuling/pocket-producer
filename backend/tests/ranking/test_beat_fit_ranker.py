@@ -70,8 +70,30 @@ def test_in_step_candidate_ranks_first_with_beat_evidence(session_beats, records
     top = response.candidates[0]
     assert {e.code for e in top.evidence} <= {"beat_harmony", "beat_rhythm"}
     assert top.evidence and all(e.contribution > 0 for e in top.evidence)
-    assert response.signal_names == ["chroma_beat_aligned", "onset_pattern"]
+    assert response.signal_names == ["chroma_beat_aligned", "onset_pattern_shared_beats"]
     assert len(top.signals) == 2
+
+
+def test_unopposed_rhythm_is_reported_without_changing_the_order():
+    times = np.arange(431) * beat_sync.HOP_LENGTH / SR
+    sounding = times < 2
+    slots = (np.floor(times / (0.5 / 8)) % 8).astype(int)
+    chroma = np.zeros((12, len(times)), dtype=np.float32)
+    chroma[0, sounding] = 1
+
+    def clip(accents):
+        onsets = np.where(sounding, np.asarray(accents)[slots], 0).astype(np.float32)
+        return beat_sync.Frames(chroma, onsets, sounding.astype(np.float32), times, 10.0)
+
+    beats = beat_sync.session_beats([beat_sync.Placement(clip(range(1, 9)), 0)], BPM)
+    response = BeatFitRanker().rank(_request([
+        _candidate("flat", beat_frames=beat_sync.encode_frames(clip([1] * 8))),
+        _candidate("opposed", beat_frames=beat_sync.encode_frames(clip([7, 8, 5, 6, 3, 4, 1, 2]))),
+    ], beats))
+    rhythm = next(e for c in response.candidates for e in c.evidence if e.code == "beat_rhythm")
+    assert rhythm.raw_value < -0.9
+    assert rhythm.contribution == 0
+    assert response.candidates[0].score == response.candidates[1].score
 
 
 def test_candidates_without_beat_data_are_skipped(session_beats, records):
@@ -230,6 +252,38 @@ def test_non_overlapping_audio_is_not_rhythm_alignment():
     assert measured.available == (False, False)
     with pytest.raises(InsufficientContextError):
         BeatFitRanker().rank(_request([_candidate("early", beat_frames=record)], beats))
+
+
+@pytest.mark.parametrize("flat", [False, True])
+def test_beat_fit_compares_onsets_only_during_four_shared_sounding_beats(flat):
+    # Four sounding beats followed by sixteen beats of silence at 120 BPM.
+    times = np.arange(431) * beat_sync.HOP_LENGTH / SR
+    active = times < 2.0
+    subdivision = np.floor(times * BPM / 60 * beat_sync.ONSET_SUBDIVISIONS) % 8
+    candidate = beat_sync.Frames(
+        np.ones((12, len(times)), dtype=np.float32),
+        np.where(active, 1 if flat else subdivision, 0).astype(np.float32),
+        active.astype(np.float32), times, 10.0,
+    )
+    session = beat_sync.Frames(
+        candidate.chroma, np.where(active, 7 - subdivision, 0).astype(np.float32),
+        candidate.rms, times, 10.0,
+    )
+    beats = beat_sync.session_beats([beat_sync.Placement(session, 0)], BPM)
+    record = beat_sync.encode_frames(candidate)
+    response = BeatFitRanker().rank(_request([_candidate("phrase", beat_frames=record)], beats))
+    ranked = response.candidates[0]
+    rhythm = [e for e in ranked.evidence if e.code == "beat_rhythm"]
+    if flat:
+        assert ranked.signal_available == [True, False]
+        assert rhythm == []
+    else:
+        assert ranked.signal_available == [True, True]
+        assert rhythm[0].raw_value == pytest.approx(-1)
+        assert "4 shared beats" in rhythm[0].label
+        # Fusion's historical whole-grid measurement is positive from shared silence.
+        legacy = beat_sync.candidate_measurements(beats, record)
+        assert legacy.onset_correlation > 0
 
 
 def test_negative_correlation_is_a_signed_measurement_not_a_match(session_beats, records):

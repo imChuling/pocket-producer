@@ -95,6 +95,7 @@ export type FeedbackPayload = {
   request_id: string;
   project_id: string;
   fragment_id: string;
+  insertion_id?: string;
   event: RecommendationEvent;
   rank_position: number;
   model_id: string;

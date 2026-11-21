@@ -58,7 +58,8 @@ read its name and docstring before editing it.
   agreement plus onset-pattern correlation on the project's beat grid
   (`ranking/beat_sync.py`, design in `research/design-online-signals.md`).
   It needs the project tempo and `representations.beat_frames`; fusion logs
-  the same two signals but does not score with them. All nine registered
+  the full-window onset measure alongside beat chroma. Beat Fit compares onsets
+  on jointly sounding beats. All nine registered
   rankers (`rules-v1`, `recency-v1`, `mean-session-v1`, `text-only-v1`, `audio-cosine-v1`, `role-gap-v1`, `harmonic-fit-v1`, `beat-fit-v1` and `fusion-5sig-v1`)
   serve without fallback given full inputs.
 - MS-CLAP is one shared instance (`backend/ranking/adapters/shared.py`).

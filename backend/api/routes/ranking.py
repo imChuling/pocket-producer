@@ -96,6 +96,7 @@ def _log_exposure(db, user_id: str, rank_request: RankRequest, response: RankRes
                 "project_id": rank_request.session.project_id,
                 "model_id_requested": rank_request.model_id,
                 "model_id_served": response.model_id,
+                "implementation_revision": response.implementation_revision,
                 "fallback_used": response.fallback_used,
                 "fragment_ids": [c.fragment_id for c in response.candidates],
                 "candidate_signals": [c.signals for c in response.candidates],
@@ -158,7 +159,7 @@ EMBED_TIMEOUT_SECONDS = 20.0
 _embed_slots = asyncio.Semaphore(2)
 
 
-def _encode_region(waveform, sample_rate, abandoned: dict):
+def _encode_region(waveform, sample_rate, abandoned: dict, *, need_beats: bool):
     """CLAP vector, 12-dim chroma and beat frames for one mono session region.
 
     CLAP sees the model window (first 7 s); chroma is taken over the region
@@ -181,7 +182,8 @@ def _encode_region(waveform, sample_rate, abandoned: dict):
         return None
     from ranking import beat_sync
 
-    return vector, chroma, beat_sync.frames(waveform, sample_rate)
+    frames = beat_sync.frames(waveform, sample_rate) if need_beats else None
+    return vector, chroma, frames
 
 
 def _parse_placements(text: str | None, n_files: int) -> list[list[dict]] | None:
@@ -300,8 +302,15 @@ async def session_embed(
                 del waveform
                 # Shielded so a timeout cancels this coroutine, not the thread's
                 # future: the future is what tells us when the thread is done.
+                need_beats = (
+                    bpm is not None
+                    and region_positions is not None
+                    and bool(region_positions[index])
+                )
                 inflight = asyncio.ensure_future(
-                    asyncio.to_thread(_encode_region, mono, sample_rate, abandoned)
+                    asyncio.to_thread(
+                        _encode_region, mono, sample_rate, abandoned, need_beats=need_beats,
+                    )
                 )
                 outcome = await asyncio.shield(inflight)
                 if outcome is None:

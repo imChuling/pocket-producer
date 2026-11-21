@@ -16,48 +16,34 @@ import type { ParsedIntent, SessionFingerprint } from "@/types/audiotool";
 // back into the fingerprint and allowed to influence ranking.
 export function SessionSummary({
   fingerprint,
+  intentText = fingerprint.text_intent,
   onIntentChange,
   parsedIntent,
   onParsedIntentChange,
+  onEditInterpretation,
 }: {
   fingerprint: SessionFingerprint;
+  intentText?: string;
   onIntentChange: (intent: string) => void;
   parsedIntent?: ParsedIntent | null;
   onParsedIntentChange?: (parsed: ParsedIntent | null) => void;
+  onEditInterpretation?: () => void;
 }) {
   const [interpreting, setInterpreting] = useState(false);
-  const lastParsedRef = useRef("");
   // Only the newest request may report: a slow reading of an older text
   // must not overwrite the chips for what the user has typed since, and
   // nothing may report after unmount.
   const requestSeq = useRef(0);
-  const text = fingerprint.text_intent;
+  const trimmed = intentText.trim();
 
   useEffect(() => {
-    return () => {
-      requestSeq.current += 1;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!onParsedIntentChange) return;
-    const trimmed = text.trim();
-    if (trimmed.length < 4) {
-      if (lastParsedRef.current !== "") {
-        lastParsedRef.current = "";
-        onParsedIntentChange(null);
-      }
-      return;
-    }
-    if (trimmed.toLowerCase() === lastParsedRef.current) return;
+    if (!onParsedIntentChange || trimmed.length < 4) return;
+    const seq = ++requestSeq.current;
     const timer = setTimeout(() => {
-      const seq = ++requestSeq.current;
       setInterpreting(true);
       parseIntent(trimmed)
         .then((parsed) => {
-          if (seq !== requestSeq.current) return;
-          lastParsedRef.current = trimmed.toLowerCase();
-          onParsedIntentChange(parsed);
+          if (seq === requestSeq.current) onParsedIntentChange(parsed);
         })
         .catch(() => {
           // Interpretation is an enhancement; raw text still ranks.
@@ -67,8 +53,20 @@ export function SessionSummary({
           if (seq === requestSeq.current) setInterpreting(false);
         });
     }, 800);
-    return () => clearTimeout(timer);
-  }, [text, onParsedIntentChange]);
+    return () => {
+      clearTimeout(timer);
+      requestSeq.current += 1;
+    };
+  }, [trimmed, onParsedIntentChange]);
+
+  function changeText(value: string) {
+    if (value.trim() !== trimmed) {
+      requestSeq.current += 1;
+      setInterpreting(false);
+      onParsedIntentChange?.(null);
+    }
+    onIntentChange(value);
+  }
 
   function update(partial: Partial<ParsedIntent>) {
     if (!onParsedIntentChange || !parsedIntent) return;
@@ -79,6 +77,7 @@ export function SessionSummary({
       next.bpm === null &&
       next.key === null;
     onParsedIntentChange(empty ? null : next);
+    onEditInterpretation?.();
   }
 
   return (
@@ -120,8 +119,8 @@ export function SessionSummary({
         <input
           type="text"
           maxLength={240}
-          value={text}
-          onChange={(event) => onIntentChange(event.target.value)}
+          value={intentText}
+          onChange={(event) => changeText(event.target.value)}
           placeholder="e.g. darker, more cinematic, but not too heavy…"
           className="w-full rounded-lg border border-chalk bg-surface px-3 py-2 text-obsidian placeholder:text-slate focus:border-gravel focus:outline-none"
         />

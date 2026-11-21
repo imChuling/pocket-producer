@@ -9,14 +9,15 @@ which keeps only allowlisted fields and replaces user IDs with a salted hash:
 
 Do not dump the raw collections: they hold user IDs. Keep the export local.
 
-Per model_id_served:
+Per served model and implementation revision:
   n_requests            served lists (the exposure denominator)
   n_proposals           proposals shown (sum of list lengths)
   list_acceptance       fraction of lists with >=1 accept or insert
-  item_accept_rate      accepts+inserts / proposals
-  undo_per_insert       undos / inserts
+  item_accept_rate      unique chosen proposals (accept or insert) / proposals
+  item_retained_rate    proposals with at least one remaining logged insert / proposals
+  undo_per_insert       matched undone placements / successful logged placements
   preview_reject_rate   previewed proposals later rejected / previewed
-  mean_accepted_rank    mean rank_position over accept+insert events
+  mean_accepted_rank    mean served rank over unique chosen proposals
 Bootstrap CIs (percentile, resampled over requests) are reported for
 list_acceptance and undo_per_insert.
 
@@ -30,11 +31,14 @@ Usage:
 import argparse
 import json
 import pathlib
+import sys
 from collections import defaultdict
 
 import numpy as np
 
-ACCEPT_EVENTS = ("accept", "insert")
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "backend"))
+from ranking.research.feedback_outcomes import matches_participant, proposal_outcomes  # noqa: E402
+
 N_BOOTSTRAP = 10_000
 ALPHA = 0.05
 BOOTSTRAP_SEED = 20260825
@@ -52,14 +56,14 @@ def load_jsonl(path):
 def join_events(requests, feedback):
     """Attach feedback events to their served request; return orphan count.
 
-    Events whose request_id has no logged exposure are dropped (they have
-    no denominator) and counted, so a pipeline gap is visible in output.
+    Count events lacking a matching exposure, including server-rejected
+    attribution and differing participant hashes when both hashes exist.
     """
     by_request = {r["request_id"]: dict(r, events=[]) for r in requests}
     orphans = 0
     for event in feedback:
         req = by_request.get(event.get("request_id"))
-        if req is None:
+        if req is None or not matches_participant(event, req.get("participant_hash")):
             orphans += 1
             continue
         req["events"].append(event)
@@ -68,21 +72,22 @@ def join_events(requests, feedback):
 
 def _request_stats(req):
     """Per-request counters used by both point estimates and bootstrap."""
-    events = req["events"]
-    accepts = [e for e in events if e["event"] in ACCEPT_EVENTS]
-    inserts = [e for e in events if e["event"] == "insert"]
-    undos = [e for e in events if e["event"] == "undo"]
-    previewed = {e["fragment_id"] for e in events if e["event"] == "preview"}
-    rejected = {e["fragment_id"] for e in events if e["event"] == "reject"}
+    fragments = req.get("fragment_ids", [])
+    outcomes = proposal_outcomes(fragments, req["events"])
+    ranks = [
+        index for index, fid in enumerate(fragments, 1)
+        if fid in outcomes and outcomes[fid].chosen
+    ]
     return {
-        "n_proposals": len(req.get("fragment_ids", [])),
-        "accepted_list": 1 if accepts else 0,
-        "n_accepts": len(accepts),
-        "n_inserts": len(inserts),
-        "n_undos": len(undos),
-        "n_previewed": len(previewed),
-        "n_preview_rejected": len(previewed & rejected),
-        "accepted_ranks": [e["rank_position"] for e in accepts],
+        "n_proposals": len(fragments),
+        "accepted_list": int(bool(ranks)),
+        "n_accepts": len(ranks),
+        "n_retained": sum(s.retained for s in outcomes.values()),
+        "n_inserts": sum(s.inserts for s in outcomes.values()),
+        "n_undos": sum(s.undos for s in outcomes.values()),
+        "n_previewed": sum(s.previewed for s in outcomes.values()),
+        "n_preview_rejected": sum(s.rejected_after_preview for s in outcomes.values()),
+        "accepted_ranks": ranks,
     }
 
 
@@ -102,6 +107,7 @@ def _metrics_from_stats(stats):
         "n_proposals": n_proposals,
         "list_acceptance": _ratio(sum(s["accepted_list"] for s in stats), n_requests),
         "item_accept_rate": _ratio(n_accepts, n_proposals),
+        "item_retained_rate": _ratio(sum(s["n_retained"] for s in stats), n_proposals),
         "undo_per_insert": _ratio(n_undos, n_inserts),
         "preview_reject_rate": _ratio(
             sum(s["n_preview_rejected"] for s in stats),
@@ -128,11 +134,26 @@ def bootstrap_ci(stats, metric, rng, n_bootstrap=N_BOOTSTRAP, alpha=ALPHA):
     return {"lo": float(lo), "hi": float(hi), "n_resamples": len(values)}
 
 
+def _served_model(req):
+    model = req.get("model_id_served", "unknown")
+    revision = req.get("implementation_revision")
+    if model == "beat-fit-v1" and not revision:
+        # Older exports identify the measurement, but not the exact code revision.
+        names = req.get("candidate_signal_names")
+        if names == ["chroma_beat_aligned", "onset_pattern"]:
+            revision = "legacy-full-grid"
+        elif names == ["chroma_beat_aligned", "onset_pattern_shared_beats"]:
+            revision = "legacy-shared-beats"
+        else:
+            revision = "unknown-revision"
+    return f"{model}/{revision}" if revision else model
+
+
 def analyze(requests, feedback):
     joined, orphans = join_events(requests, feedback)
     by_model = defaultdict(list)
     for req in joined:
-        by_model[req.get("model_id_served", "unknown")].append(_request_stats(req))
+        by_model[_served_model(req)].append(_request_stats(req))
     rng = np.random.default_rng(BOOTSTRAP_SEED)
     models = {}
     for model_id in sorted(by_model):
@@ -173,7 +194,7 @@ def main():
         )
     if result["orphan_feedback_events"]:
         print(f"WARNING: {result['orphan_feedback_events']} feedback events "
-              "had no logged exposure (predate exposure logging?)")
+              "had no matching verified exposure for this participant")
 
 
 if __name__ == "__main__":

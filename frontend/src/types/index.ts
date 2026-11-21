@@ -14,7 +14,10 @@ export interface Fragment {
   _id: string;
   user_id: string;
   type: "audio" | "text";
+  pipeline_step?: string;
   status?: "processing" | "ready" | "error" | "timeout";
+  /** Set by the server when an analysis stopped without reporting a result. */
+  analysis_stalled?: boolean;
   title?: string;
   text?: string;
   raw_text?: string;

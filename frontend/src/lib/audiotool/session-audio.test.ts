@@ -293,6 +293,60 @@ describe("extractSessionAudio", () => {
     vi.unstubAllGlobals();
   });
 
+  it("selects Beat Fit samples on the opening grid before the eight-file cap", async () => {
+    // At 70 BPM the opening grid ends at beat 11, just before ten seconds.
+    const samples = Array.from({ length: 10 }, (_, i) => ({ id: `s${i}`, sampleName: `samples/${i}` }));
+    const regions = samples.map((sample, i) => ({
+      id: `r${i}`, sampleRef: sample.id, positionTicks: (11 + i) * 3840,
+    }));
+    regions.push({ id: "opening", sampleRef: "s9", positionTicks: 10.5 * 3840 });
+    const doc = fakeDocument(regions, samples);
+    const download = vi.fn<(name: string) => Promise<Blob>>().mockResolvedValue(new Blob(["wav"]));
+    const fetchSpy = vi.fn<(url: string, init: { body: FormData }) => Promise<Response>>()
+      .mockImplementation(async () => Response.json({ embeddings: [[1]] }));
+    vi.stubGlobal("fetch", fetchSpy);
+    try {
+      const options = { backendUrl: "/embed", authToken: "tok", bpm: 70, cache: new Map() };
+      await extractSessionAudio(doc, { download }, { ...options, modelId: "fusion-5sig-v1" });
+      expect(download.mock.calls.map(([name]) => name)).toEqual(samples.slice(0, 8).map(s => s.sampleName));
+      download.mockClear();
+      await extractSessionAudio(doc, { download }, { ...options, modelId: "beat-fit-v1" });
+      expect(download.mock.calls.map(([name]) => name)).toEqual(["samples/9"]);
+      const form = fetchSpy.mock.calls[1][1].body;
+      expect(JSON.parse(String(form.get("placements")))).toEqual([
+        [{ start_beats: 10.5, duration_beats: null }],
+      ]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it.each([null, 361])("skips Beat Fit uploads without a supported tempo (%s)", async bpm => {
+    const doc = fakeDocument(
+      [{ id: "first", sampleRef: "s", positionTicks: 0 }],
+      [{ id: "s", sampleName: "samples/first" }],
+    );
+    const download = vi.fn(async () => new Error("unexpected download"));
+    const result = await extractSessionAudio(doc, { download }, {
+      backendUrl: "/embed", authToken: "tok", bpm, modelId: "beat-fit-v1",
+    });
+    expect(download).not.toHaveBeenCalled();
+    expect(describeSessionAudio(result)).toMatch(/tempo/i);
+  });
+
+  it("describes an empty opening when the session has only later regions", async () => {
+    const doc = fakeDocument(
+      [{ id: "later", sampleRef: "s", positionTicks: 21 * 3840 }],
+      [{ id: "s", sampleName: "samples/later" }],
+    );
+    const download = vi.fn(async () => new Error("unexpected download"));
+    const result = await extractSessionAudio(doc, { download }, {
+      backendUrl: "/embed", authToken: "tok", bpm: 120, modelId: "beat-fit-v1",
+    });
+    expect(download).not.toHaveBeenCalled();
+    expect(describeSessionAudio(result)).toMatch(/opening/i);
+  });
+
   it("re-analyses when two samples swap positions", async () => {
     const samples = [
       { id: "s1", sampleName: "samples/a" },

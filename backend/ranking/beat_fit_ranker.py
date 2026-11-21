@@ -1,6 +1,6 @@
 """beat-fit-v1: rank candidates by harmony and rhythm in step with the session.
 
-Score = beat-synchronous chroma agreement plus onset-pattern correlation,
+Score = beat-synchronous chroma agreement plus shared-beat onset correlation,
 each standardised over the candidates in the request. No weights are fitted.
 Combining harmony and rhythm is a product design choice; the retrieval
 study did not establish a gain over onset_pattern alone. It was added after
@@ -29,16 +29,17 @@ class BeatFitRanker:
     model_card = {
         "id": "beat-fit-v1",
         "task": "session-conditioned fragment ranking",
-        "type": "standardised sum of beat-synchronous chroma agreement and onset-pattern "
+        "type": "standardised sum of beat-synchronous chroma agreement and shared-beat onset "
         "correlation, no fitted weights",
-        "signals": list(beat_sync.SIGNAL_NAMES),
-        "implementation_revision": "evidence-and-support-v2",
+        "signals": list(beat_sync.BEAT_FIT_SIGNAL_NAMES),
+        "implementation_revision": "shared-beat-onsets-v4",
         "limitations": [
             "needs the project tempo; without it the session has no beat grid",
             "the fragment's first 10 s are compared with the session's first 10 s",
             "region loop and offset settings are ignored; each region plays its sample "
             "from the start",
-            "selected post hoc on MUSDB18-HQ in the retrieval study",
+            "the original full-grid combination was selected post hoc on MUSDB18-HQ",
+            "shared-beat onset correlation has no independent retrieval or listener evaluation",
         ],
     }
 
@@ -57,7 +58,9 @@ class BeatFitRanker:
         # candidates. A mapped correlation > 0 is not evidence of alignment.
         scorable = []
         for candidate in request.candidates:
-            measured = beat_sync.candidate_measurements(beats_dict, candidate.beat_frames)
+            measured = beat_sync.candidate_measurements(
+                beats_dict, candidate.beat_frames, shared_onsets_only=True,
+            )
             if measured is not None and any(measured.available):
                 scorable.append((candidate, measured))
         if not scorable:
@@ -68,14 +71,15 @@ class BeatFitRanker:
 
         raw = np.asarray([m.values for _, m in scorable], dtype=np.float64)
         available = np.asarray([m.available for _, m in scorable], dtype=bool)
-        # With one candidate there is no set to standardise against; its own
-        # values are the score and the evidence.
+        # A measurement unique to one candidate can be shown but cannot compare two clips.
         parts = np.zeros_like(raw)
         for index in range(raw.shape[1]):
             usable = available[:, index]
             values = raw[usable, index]
-            if values.size:
-                parts[usable, index] = _standardise(values) if values.size > 1 else values
+            if len(scorable) == 1:
+                parts[usable, index] = values
+            elif values.size > 1:
+                parts[usable, index] = _standardise(values)
 
         ranked: list[RankedCandidate] = []
         for (candidate, measured), contributions in zip(scorable, parts):
@@ -109,7 +113,8 @@ class BeatFitRanker:
         return RankResponse(
             request_id=str(uuid.uuid4()),
             model_id=self.model_id,
+            implementation_revision=self.model_card["implementation_revision"],
             fallback_used=False,
             candidates=ranked[: request.limit],
-            signal_names=list(beat_sync.SIGNAL_NAMES),
+            signal_names=list(beat_sync.BEAT_FIT_SIGNAL_NAMES),
         )

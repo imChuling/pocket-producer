@@ -51,8 +51,9 @@ URL="$(gcloud run services describe "$SERVICE" --project "$PROJECT" --region "$R
 for _ in $(seq 1 30); do
   if body="$(curl -sf --max-time 10 "$URL/ready")"; then
     echo "$body"
-    break
+    exit 0
   fi
   sleep 5
 done
-echo "Check logs for 'CLAP warmup complete' and 'role probe warmup complete'."
+echo "Readiness failed after 30 attempts at $URL/ready. Check the Cloud Run logs." >&2
+exit 1

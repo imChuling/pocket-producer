@@ -59,21 +59,34 @@ def _spawn_clap_encoding(db, user_id: str, fragment_id: str, gcs_uri: str) -> No
     task.add_done_callback(_forget)
 
 
-def _set_step(db, fragment_id: str, user_id: str, step: str):
-    db["fragments"].update_one(
-        {"_id": ObjectId(fragment_id), "user_id": user_id},
-        {"$set": {"pipeline_step": step}},
-    )
+def save_analysis_fields(db, revision_query: dict, fields: dict) -> bool:
+    """Save results for the current input while preserving concurrent creator edits."""
+    fragments = db["fragments"]
+    while (fragment := fragments.find_one(revision_query, {"user_edited_fields": 1})):
+        edited = fragment.get("user_edited_fields")
+        result = fragments.update_one(
+            {**revision_query, "user_edited_fields": edited},
+            {"$set": {k: v for k, v in fields.items() if k not in (edited or [])}},
+        )
+        if result.matched_count:
+            return True
+    return False
+
+
+def _set_step(db, revision_query: dict, step: str):
+    db["fragments"].update_one(revision_query, {"$set": {"pipeline_step": step}})
 
 
 async def process_fragment_background(
-    user_id: str, fragment_id: str, audio_url: str | None, text: str | None
+    user_id: str, fragment_id: str, audio_url: str | None, text: str | None,
+    revision: str | None = None,
 ):
     import time
 
     from tools.embedding import generate_embedding
 
     db = get_db()
+    current = {"_id": ObjectId(fragment_id), "user_id": user_id, "analysis_revision": revision}
     t0 = time.monotonic()
     # Ranking needs the CLAP vector and chroma, not the LLM tags. Start that
     # encoding first so a Gemini outage or quota error cannot leave a
@@ -85,7 +98,7 @@ async def process_fragment_background(
         features = None
         if audio_url:
             from tools.audio_features import extract_audio_features
-            _set_step(db, fragment_id, user_id, "Listening to your audio...")
+            _set_step(db, current, "Listening to your audio...")
             features_task = asyncio.create_task(extract_audio_features(audio_url))
             try:
                 features = await asyncio.wait_for(asyncio.shield(features_task), timeout=25)
@@ -96,7 +109,7 @@ async def process_fragment_background(
                 logger.warning("Audio features extraction failed: %s", e)
                 features_task = None
 
-        _set_step(db, fragment_id, user_id, "Analyzing emotions and themes...")
+        _set_step(db, current, "Analyzing emotions and themes...")
         from tools.edit_context import user_edit_context
 
         tag_task = tag_fragment_direct(
@@ -132,7 +145,7 @@ async def process_fragment_background(
             transcript = tag_result.pop("transcript")
 
         if not embedding:
-            _set_step(db, fragment_id, user_id, "Building memory fingerprint...")
+            _set_step(db, current, "Building memory fingerprint...")
             embed_source = transcript
             if not embed_source and tag_result:
                 tag_text_parts = []
@@ -188,17 +201,14 @@ async def process_fragment_background(
                 fkey = features["estimated_key"]
                 final_update["key"] = f"{fkey}m" if mode == "minor" else fkey
 
-        db["fragments"].update_one(
-            {"_id": ObjectId(fragment_id), "user_id": user_id},
-            {"$set": final_update},
-        )
+        if not save_analysis_fields(db, current, final_update):
+            return
 
         ai_title = (tag_result or {}).get("title")
         if isinstance(ai_title, str) and 0 < len(ai_title.strip()) <= 80:
             db["fragments"].update_one(
                 {
-                    "_id": ObjectId(fragment_id),
-                    "user_id": user_id,
+                    **current,
                     "$or": [
                         {"title": None},
                         {"title": {"$regex": r"^Audio fragment \d+$"}},
@@ -214,7 +224,7 @@ async def process_fragment_background(
         )
 
         if embedding:
-            _set_step(db, fragment_id, user_id, "Searching memory for connections...")
+            _set_step(db, current, "Searching memory for connections...")
             for _retry in range(3):
                 try:
                     await memory_and_project(
@@ -234,17 +244,17 @@ async def process_fragment_background(
                     else:
                         logger.exception("Memory/project phase failed for %s after 3 attempts", fragment_id)
 
-        _set_step(db, fragment_id, user_id, "done")
+        _set_step(db, current, "done")
 
     except Exception:
         logger.exception("Processing failed for fragment %s", fragment_id)
         frag_check = db["fragments"].find_one(
-            {"_id": ObjectId(fragment_id), "user_id": user_id},
+            current,
             {"tags": 1, "emotions": 1, "status": 1},
         )
         has_data = frag_check and (frag_check.get("tags") or frag_check.get("emotions"))
         db["fragments"].update_one(
-            {"_id": ObjectId(fragment_id), "user_id": user_id},
+            current,
             {"$set": {
                 "status": "ready" if has_data else "error",
                 "pipeline_step": "done" if has_data else "error",

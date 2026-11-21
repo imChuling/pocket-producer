@@ -139,6 +139,7 @@ class RankResponse(BaseModel):
     model_id: str
     fallback_used: bool
     candidates: list[RankedCandidate]
+    implementation_revision: str | None = None
     # Names of the entries in each candidate's `signals`, when present.
     signal_names: list[str] | None = None
 
@@ -147,6 +148,7 @@ class FeedbackEvent(BaseModel):
     request_id: str
     project_id: str
     fragment_id: str
+    insertion_id: str | None = Field(default=None, min_length=1)
     event: Literal["preview", "accept", "reject", "insert", "undo"]
     rank_position: int = Field(ge=1)
     model_id: str

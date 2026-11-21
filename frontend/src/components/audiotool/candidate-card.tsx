@@ -29,12 +29,14 @@ function evidenceClass(code: RankEvidence["code"]): string {
 export function CandidateCard({
   fragment,
   ranked,
+  insertDisabled,
   onPreview,
   onInsert,
   onSkip,
 }: {
   fragment: Fragment;
   ranked: RankedCandidate;
+  insertDisabled?: boolean;
   onPreview: () => Promise<void> | void;
   onInsert: () => Promise<void> | void;
   onSkip: () => void;
@@ -44,7 +46,7 @@ export function CandidateCard({
   const evidence = ranked.evidence.slice(0, 3);
 
   async function handleInsert() {
-    if (inserting) return;
+    if (insertDisabled || inserting) return;
     setInserting(true);
     setInsertError(null);
     try {
@@ -92,7 +94,7 @@ export function CandidateCard({
         </button>
         <button
           type="button"
-          disabled={inserting}
+          disabled={insertDisabled || inserting}
           onClick={() => void handleInsert()}
           className="inline-flex items-center gap-1.5 rounded-lg bg-obsidian px-3 py-1.5 text-sm font-medium text-white hover:bg-gravel disabled:opacity-60"
         >

@@ -32,6 +32,9 @@ compare candidates with the sound of the session get those samples, embedded
 with MS-CLAP on the server. The default ranker does not use them, so nothing
 is sent for it.
 
+The descriptions below cover the current source. The linked demo predates the
+shared-beat rhythm measurement and the update that preserves copied regions on Undo.
+
 **Ranking.** Nine rankers can be chosen in the panel: `rules-v1`,
 `recency-v1`, `mean-session-v1`, `text-only-v1`, `audio-cosine-v1`,
 `role-gap-v1`, `harmonic-fit-v1`, `beat-fit-v1` and `fusion-5sig-v1`.
@@ -40,16 +43,24 @@ key, a missing instrument role, the typed intent, tag overlap, tag novelty and
 recency). `fusion-5sig-v1` combines mean and max CLAP cosine, tempo, key and
 tag overlap, with weights learned by Bayesian Personalized Ranking from loops
 that share a sample pack. `beat-fit-v1` puts the session and a candidate on
-one beat grid and compares their harmony beat by beat and where their onsets
-fall. Audiotool does not give a project key, so key only counts when you type
-one in the intent. Fragments uploaded before Beat Fit shipped have no stored
-beat frames yet, so it can only score newer ones.
+one beat grid and compares their harmony and onset patterns on the beats where
+both sound. Two recordings can pause together even when the accents in their
+playing differ. The original research measured onset correlation across the
+whole window, including those pauses. The reported retrieval scores describe
+that original measurement. Audiotool supplies no project key, so the rankers
+can use a key you specify in the intent. Beat Fit needs stored beat frames
+for each candidate.
 
-**Trying a suggestion.** Each suggestion lists the signals behind it. Insert
-places the sample at the start of the timeline in one Nexus transaction, and
-undo removes exactly what that insert created. Previews, inserts, undos,
-accepts and rejects are logged with their rank so they can be used for
-training later; that training exists only as an offline prototype.
+**Trying a suggestion.** The panel ranks up to 200 sketches from the current
+library page. Choose **Older sketches** to try the same settings on earlier
+recordings. Skip a sketch and the next round draws from the ones you haven't
+skipped for this intent. Each suggestion lists its evidence. Insert places the recording
+at the start of the timeline. If you copy that region to a later bar and then
+undo the original insertion, your copy keeps its track and sample. Feedback
+records which list you saw and what you tried. The offline training prototype
+uses recorded inserts and undos to distinguish a retained suggestion from one
+you removed in the panel. Edits made directly in the DAW, including copying a
+region or deleting it later, are outside that feedback log.
 
 **Grouping sketches into projects.** Separately from ranking, captured
 fragments are grouped into projects by feeling and theme. Gemini makes that
@@ -74,7 +85,7 @@ the musician decides.
   evidence shown with it.
 - [`frontend/src/lib/audiotool/insert-fragment.ts`](frontend/src/lib/audiotool/insert-fragment.ts),
   `insertFragment` and `undoInsert`: inserting a sample in one transaction and
-  undoing exactly what it created.
+  preserving later copies when the original insertion is undone.
 
 MS-CLAP, librosa's chroma and onset analysis and the Nexus SDK are existing
 tools. What was built here is how they are tied to the open session, how the
